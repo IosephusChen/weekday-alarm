@@ -53,6 +53,7 @@ public class GuideActivity extends AppCompatActivity {
     private final List<View> modeCards = new ArrayList<>();
     private final WeekSchedule.Mode[] modes = WeekSchedule.Mode.values();
 
+    private TextView tvVolume, tvFade;
     private TextView stNotif, stExact, stFsi, stBattery;
 
     private int index = 0;
@@ -82,6 +83,7 @@ public class GuideActivity extends AppCompatActivity {
 
         bindModeCards();
         bindTime();
+        bindRing();
         bindPermissions();
 
         btnNext.setOnClickListener(v -> {
@@ -224,6 +226,60 @@ public class GuideActivity extends AppCompatActivity {
             Prefs.setEnabled(this, true);
         }
         return created;
+    }
+
+    // ================= 第 2 页：响铃方式（音量 / 渐响）=================
+
+    private void bindRing() {
+        tvVolume = findViewById(R.id.tv_volume);
+        tvFade = findViewById(R.id.tv_fade);
+        findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
+        findViewById(R.id.row_fade).setOnClickListener(v -> {
+            Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
+            refreshRing();
+        });
+        refreshRing();
+    }
+
+    private void refreshRing() {
+        int v = Prefs.getVolume(this);
+        tvVolume.setText(v == 0 ? "静音（仅震动）" : v + "%");
+        tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
+    }
+
+    /** 音量条：与设置页同一个对话框布局，拖到 0 = 静音仅震动。 */
+    private void showVolumeDialog() {
+        View view = getLayoutInflater().inflate(R.layout.dialog_volume, null);
+        android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
+        TextView value = view.findViewById(R.id.tv_volume_value);
+        seek.setProgress(Prefs.getVolume(this));
+        value.setText(volumeText(seek.getProgress()));
+        seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
+                value.setText(volumeText(progress));
+            }
+
+            @Override
+            public void onStartTrackingTouch(android.widget.SeekBar sb) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(android.widget.SeekBar sb) {
+            }
+        });
+        new RoundedDialog.Builder(this)
+                .setView(view)
+                .setPositiveButton("确定", (d, w) -> {
+                    Prefs.setVolume(this, seek.getProgress());
+                    refreshRing();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private static String volumeText(int v) {
+        return v == 0 ? "静音（仅震动）" : v + "%";
     }
 
     // ================= 第 3 页：权限清单 =================

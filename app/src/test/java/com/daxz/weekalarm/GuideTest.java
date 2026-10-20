@@ -229,6 +229,32 @@ public class GuideTest {
         assertEquals(15, alarms.get(0).minute);
     }
 
+    /** 音量按当前设置显示，0 要读成「静音（仅震动）」而不是「0%」。 */
+    @Test
+    public void volumeRow_showsCurrentSetting() {
+        wipe();
+        Prefs.setVolume(ctx(), 0);
+        GuideActivity a = launch();
+        assertEquals("静音（仅震动）", text(a, R.id.tv_volume));
+    }
+
+    /** 渐响行点一下切换，立刻写进设置并回显——不做「改完还得回设置页确认」的蠢事。 */
+    @Test
+    public void fadeRow_togglesAndWrites() {
+        GuideActivity a = fresh();
+        assertEquals("关", text(a, R.id.tv_fade));
+        assertFalse(Prefs.isFadeIn(ctx()));
+
+        tap(a, R.id.row_fade);
+        assertTrue(Prefs.isFadeIn(ctx()));
+        assertTrue("开了要写明是 30 秒渐响，只说「开」等于没说",
+                text(a, R.id.tv_fade).startsWith("开"));
+
+        tap(a, R.id.row_fade);
+        assertFalse(Prefs.isFadeIn(ctx()));
+        assertEquals("关", text(a, R.id.tv_fade));
+    }
+
     // ================= 第三页：权限清单 =================
 
     @Test

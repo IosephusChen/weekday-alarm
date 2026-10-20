@@ -82,8 +82,10 @@ public class AlarmTest {
     @Test
     public void fromJson_modeOutOfRange_clamps() {
         List<Alarm> out = Alarm.fromJson("[{\"id\":1,\"mode\":99},{\"id\":2,\"mode\":-3}]");
-        assertEquals(Alarm.Mode.WEEKEND, out.get(0).mode);   // 99 钳到最大
-        assertEquals(Alarm.Mode.WORKDAY, out.get(1).mode);   // 负数钳到最小
+        // 越界一律兜回 WORKDAY。v1.27 起最大是 ONCE，钳过去会造出一个
+        // 没有日期、永远不会响的「仅一次」闹钟——兜回默认值才安全
+        assertEquals(Alarm.Mode.WORKDAY, out.get(0).mode);   // 99 越界
+        assertEquals(Alarm.Mode.WORKDAY, out.get(1).mode);   // 负数越界
     }
 
     // ================= Mode 规则过滤 =================
@@ -190,7 +192,8 @@ public class AlarmTest {
         assertEquals(Alarm.Mode.WORKDAY, Alarm.Mode.fromOrdinal(0));
         assertEquals(Alarm.Mode.DAILY, Alarm.Mode.fromOrdinal(1));
         assertEquals(Alarm.Mode.WEEKEND, Alarm.Mode.fromOrdinal(2));
-        assertEquals(Alarm.Mode.WEEKEND, Alarm.Mode.fromOrdinal(99));   // 钳到最大
-        assertEquals(Alarm.Mode.WORKDAY, Alarm.Mode.fromOrdinal(-1));   // 钳到最小
+        assertEquals(Alarm.Mode.ONCE, Alarm.Mode.fromOrdinal(3));       // v1.27 新增
+        assertEquals(Alarm.Mode.WORKDAY, Alarm.Mode.fromOrdinal(99));   // 越界兜回默认
+        assertEquals(Alarm.Mode.WORKDAY, Alarm.Mode.fromOrdinal(-1));
     }
 }

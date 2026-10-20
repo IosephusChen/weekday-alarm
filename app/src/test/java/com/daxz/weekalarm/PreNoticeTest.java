@@ -68,7 +68,8 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 0);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        ctl.get().findViewById(R.id.row_pre_notice).performClick();
+        // v1.27：整行改成了开关（点了就是开/关），调提前量要点副标题那一行
+        ctl.get().findViewById(R.id.tv_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
@@ -93,12 +94,41 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 60);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        ctl.get().findViewById(R.id.row_pre_notice).performClick();
+        // v1.27：整行改成了开关（点了就是开/关），调提前量要点副标题那一行
+        ctl.get().findViewById(R.id.tv_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
         RadioGroup rg = d.findViewById(R.id.rg_pre_notice);
         assertEquals(R.id.rb_pre_60, rg.getCheckedRadioButtonId());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * v1.27：整行改成开关。关掉写 0，再打开要回到上次选的 15 分钟。
+     *
+     * <p>这条防的是「关一下就被悄悄改成 1 小时」——那是最容易被忽略、
+     * 又最容易被用户当成 bug 的行为：明明显式关过一次，回来却变了数。
+     */
+    @Test
+    public void switchOff_thenOn_restoresPreviousMinutes() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 15);
+        ActivityController<SettingsActivity> ctl =
+                Robolectric.buildActivity(SettingsActivity.class).setup();
+        SettingsActivity a = ctl.get();
+
+        a.findViewById(R.id.row_pre_notice).performClick();
+        assertEquals("关掉应写 0", 0, Prefs.getPreNoticeMinutes(ctx()));
+        assertEquals("关着时副标题该说明「开着会怎样」，而不是复述「关闭」",
+                "响铃前先发一条通知",
+                ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
+
+        a.findViewById(R.id.row_pre_notice).performClick();
+        assertEquals("再打开要回到上次选的 15 分钟，不是默认 1 小时",
+                15, Prefs.getPreNoticeMinutes(ctx()));
+        assertEquals("提前 15 分钟提醒",
+                ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
         ctl.pause().stop().destroy();
     }
 

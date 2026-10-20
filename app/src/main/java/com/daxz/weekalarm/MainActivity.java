@@ -809,7 +809,7 @@ public class MainActivity extends AppCompatActivity {
             name.setIncludeFontPadding(false);
 
             TextView rule = new TextView(this);
-            rule.setText(a.enabled ? a.mode.text() : "已停用 · " + a.mode.text());
+            rule.setText(a.enabled ? a.modeTextWithDate() : "已停用 · " + a.modeTextWithDate());
             rule.setTextColor(ContextCompat.getColor(this, R.color.sub));
             rule.setTextSize(12);
             rule.setIncludeFontPadding(false);
@@ -880,6 +880,12 @@ public class MainActivity extends AppCompatActivity {
         TextView tvTime = view.findViewById(R.id.tv_alarm_pick_time);
         RadioGroup group = view.findViewById(R.id.rg_alarm_mode);
         TextView btnDelete = view.findViewById(R.id.btn_alarm_delete);
+        View rowOnceDate = view.findViewById(R.id.row_once_date);
+        TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
+
+        // v1.27：一次性闹钟的那一天。新建默认给「明天」而不是今天——
+        // 此刻多半已经过了今天的起床时间，建一个今天的一次性闹钟几乎必然不响。
+        final LocalDate[] once = {LocalDate.now().plusDays(1)};
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
@@ -892,10 +898,15 @@ public class MainActivity extends AppCompatActivity {
                 case WEEKEND:
                     group.check(R.id.rb_mode_weekend);
                     break;
+                case ONCE:
+                    group.check(R.id.rb_mode_once);
+                    break;
                 default:
                     group.check(R.id.rb_mode_workday);
                     break;
             }
+            LocalDate saved = target.parseOnceDate();
+            if (saved != null) once[0] = saved;
         } else {
             // 新建默认：跟随已有第一个「仅上班日」闹钟的时间，或 07:30
             Alarm primary = primaryAlarm();
@@ -917,6 +928,17 @@ public class MainActivity extends AppCompatActivity {
             tvTime.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m));
         }));
 
+        // 日期行：勾上「仅一次」才出现
+        tvOnceDate.setText(onceDateText(once[0]));
+        group.setOnCheckedChangeListener((g, checkedId) ->
+                rowOnceDate.setVisibility(checkedId == R.id.rb_mode_once ? View.VISIBLE : View.GONE));
+        rowOnceDate.setVisibility(group.getCheckedRadioButtonId() == R.id.rb_mode_once
+                ? View.VISIBLE : View.GONE);
+        rowOnceDate.setOnClickListener(v -> pickOnceDate(once[0], picked -> {
+            once[0] = picked;
+            tvOnceDate.setText(onceDateText(picked));
+        }));
+
         final boolean[] handled = {false};
         AlertDialog dialog = new RoundedDialog.Builder(this)
                 .setView(view)
@@ -935,17 +957,37 @@ public class MainActivity extends AppCompatActivity {
                         mode = Alarm.Mode.DAILY;
                     } else if (mid == R.id.rb_mode_weekend) {
                         mode = Alarm.Mode.WEEKEND;
+                    } else if (mid == R.id.rb_mode_once) {
+                        mode = Alarm.Mode.ONCE;
                     } else {
                         mode = Alarm.Mode.WORKDAY;
                     }
+                    // only ONCE 存日期。换成别的模式时把 onceDate 清掉，
+                    // 否则以后再切回 ONCE 会读到一条陈旧的日期，用户会莫名被吵醒。
+                    LocalDate onceDay = once[0];
+                    if (mode == Alarm.Mode.ONCE) {
+                        // 「今天 6:30」而现在已经 9 点：这条闹钟永远不会响，
+                        // 明天还会被过期清理悄悄删掉。用户要的是「响一次」，
+                        // 那个意思就是明天的 6:30——顺延并当面说清，别留个哑弹
+                        LocalDate fixed = onceDayAfter(onceDay, hour[0], minute[0],
+                                LocalDateTime.now());
+                        if (!fixed.equals(onceDay)) {
+                            onceDay = fixed;
+                            Toast.makeText(this,
+                                    "这个时间已经过了，已改到" + onceDateText(fixed),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                    String onceStr = mode == Alarm.Mode.ONCE ? onceDay.toString() : null;
                     if (target == null) {
                         int id = Prefs.nextAlarmId(this);
-                        alarms.add(new Alarm(id, hour[0], minute[0], label, mode, true));
+                        alarms.add(new Alarm(id, hour[0], minute[0], label, mode, true, onceStr));
                     } else {
                         target.hour = hour[0];
                         target.minute = minute[0];
                         target.label = label;
                         target.mode = mode;
+                        target.onceDate = onceStr;
                     }
                     Prefs.setAlarms(this, alarms);
                     applySettingsIfEnabled();
@@ -977,6 +1019,87 @@ public class MainActivity extends AppCompatActivity {
      */
     private void showTimeWheelDialog(int initHour, int initMinute, TimeWheelDialog.OnPicked cb) {
         TimeWheelDialog.show(this, initHour, initMinute, cb);
+    }
+
+    /**
+     * 一次性闹钟的生效日：若给定的「日 + 时:分」已经过去，就顺延到之后最近的那一天。
+     *
+     * <p>只对 ONCE 用。普通闹钟时间过了就是「明天同一时间」，本来就是日复一日；
+     * 而一次性闹钟时间一过就是个哑弹——不会响，第二天还会被过期清理删掉。
+     *
+     * <p>循环而不是只加一天：用户可能手动挑了个旧日期（改过系统时间、或者从
+     * 备份里恢复），一次加法补不回来。
+     */
+    static LocalDate onceDayAfter(LocalDate day, int hour, int minute, LocalDateTime now) {
+        LocalDate d = day;
+        while (!LocalDateTime.of(d, LocalTime.of(hour, minute)).isAfter(now)) {
+            d = d.plusDays(1);
+        }
+        return d;
+    }
+
+    /** 一次性闹钟的日期行文案：「明天 · 10月22日 周四」。 */
+    static String onceDateText(LocalDate d) {
+        LocalDate today = LocalDate.now();
+        String rel = d.equals(today) ? "今天"
+                : d.equals(today.plusDays(1)) ? "明天"
+                : d.equals(today.plusDays(2)) ? "后天"
+                : d.getDayOfWeek().getValue() >= 6 ? "本周末" : "";
+        String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
+        return rel.isEmpty() ? abs : rel + " · " + abs;
+    }
+
+    /**
+     * 选「哪一天」（v1.27）。不用框架 DatePickerDialog：同 TimePicker 一样，
+     * 部分系统（澎湃实测）会无视主题强制换一套皮肤；而且这里要的只是
+     * 「今天到一周内某天」，一个七项列表比日历更直接——临时闹钟本来就是近事。
+     *
+     * <p>没有接受「取消」以外的返回通道：点完立刻关闭，走回调回填即可。
+     */
+    private void pickOnceDate(LocalDate current, java.util.function.Consumer<LocalDate> cb) {
+        LocalDate today = LocalDate.now();
+        final int count = 7;
+        String[] names = new String[count];
+        final LocalDate[] dates = new LocalDate[count];
+        String[] rel = {"今天", "明天", "后天"};
+        for (int i = 0; i < count; i++) {
+            LocalDate d = today.plusDays(i);
+            dates[i] = d;
+            String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
+            String head = i < rel.length ? rel[i] : weekdayOf(d);
+            names[i] = head + " · " + abs;
+        }
+        int checked = indexOfDate(dates, current);
+        if (checked < 0) {
+            // 存的日期不在未来七天里（很旧，或用户手动改过系统日期）：不预选，
+            // 免得打开就看到一个自己没选过的项被高亮
+            new RoundedDialog.Builder(this)
+                    .setTitle("哪一天响？")
+                    .setItems(names, (d, which) -> cb.accept(dates[which]))
+                    .setNegativeButton("取消", null)
+                    .show();
+            return;
+        }
+        new RoundedDialog.Builder(this)
+                .setTitle("哪一天响？")
+                .setSingleChoiceItems(names, checked, (d, which) -> {
+                    cb.accept(dates[which]);
+                    d.dismiss();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private static String weekdayOf(LocalDate d) {
+        String[] w = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+        return w[d.getDayOfWeek().getValue() - 1];
+    }
+
+    private static int indexOfDate(LocalDate[] arr, LocalDate want) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i].equals(want)) return i;
+        }
+        return -1;
     }
 
     /** 主闹钟：第一个启用的「仅上班日」闹钟（没有则第一个启用的，再没有返回 null）。 */

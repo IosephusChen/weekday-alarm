@@ -493,7 +493,10 @@
 
             <View style="@style/SettingsDivider" />
 
-            <!-- 提前提醒 -->
+            <!-- 提前提醒（v1.27 改成「标题 + 副标题 + 开关」）
+                 参照系统设置里通知类开关的写法：一句话说清是什么，一行说清状态，
+                 开关直接给开关。原先只有一行标题加一个「关闭」的值，
+                 想开要先点进去才知道里面有什么。 -->
             <LinearLayout
                 android:id="@+id/row_pre_notice"
                 android:layout_width="match_parent"
@@ -502,26 +505,40 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="54dp"
+                android:minHeight="64dp"
                 android:orientation="horizontal"
                 android:paddingStart="16dp"
-                android:paddingEnd="14dp">
+                android:paddingEnd="14dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
-                <TextView
-                    style="@style/SettingsTitle"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="提前提醒" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_pre_notice"
-                    style="@style/SettingsValue"
+                    <TextView
+                        style="@style/SettingsTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="提前提醒" />
+
+                    <TextView
+                        android:id="@+id/tv_pre_notice"
+                        style="@style/SettingsSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="响铃前先发一条通知" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_pre_notice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="关闭" />
-
-                <TextView style="@style/SettingsChevron" />
+                    android:clickable="false"
+                    android:focusable="false" />
             </LinearLayout>
 
             <View style="@style/SettingsDivider" />

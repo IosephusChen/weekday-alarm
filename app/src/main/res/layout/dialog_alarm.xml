@@ -89,7 +89,45 @@
             android:layout_height="wrap_content"
             android:minHeight="44dp"
             android:text="仅休息日（双休=周末，单休=那一天）" />
+
+        <RadioButton
+            android:id="@+id/rb_mode_once"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="仅一次（临时闹钟，响完自动删）" />
     </RadioGroup>
+
+    <!-- v1.27：只有选中「仅一次」才出现的那一天。默认隐藏，
+         勾上即显示——免得每次编辑普通闹钟都让一个用不上的日期控件占位。 -->
+    <LinearLayout
+        android:id="@+id/row_once_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_time_outline"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="11dp"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/FieldLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="哪一天" />
+
+        <TextView
+            android:id="@+id/tv_once_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textColor="@color/indigo"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/btn_alarm_delete"

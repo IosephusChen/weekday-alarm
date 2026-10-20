@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,9 @@ public final class Prefs {
     public static final String KEY_SNOOZE_MINUTES = "snooze_minutes"; // 稍后提醒间隔（分钟），默认 5
     public static final String KEY_SNOOZE_TIMES = "snooze_times";       // 每次响铃最多稍后几次，-1 = 不限
     public static final String KEY_PRE_NOTICE_MINUTES = "pre_notice_minutes"; // 提前多久发通知栏提醒，0 = 关闭
+    // v1.27：上次选过的非零提前量。关掉再打开时要回到这个数，而不是默认值——
+    // 否则「临时关一下」会被人悄悄改成 1 小时，用户下次被提前一小时吵醒会莫名其妙
+    public static final String KEY_PRE_NOTICE_LAST = "pre_notice_last_minutes";
     public static final String KEY_GUIDE_SEEN = "guide_seen";             // 使用说明是否已自动展开过（v1.19.8）
     public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v1.19.9）
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v1.19.9）
@@ -150,10 +154,10 @@ public final class Prefs {
     // ================= 多闹钟（v1.13 起）=================
 
     /**
-     * 读取闹钟列表。首次读取时把旧版单闹钟（alarm_hour/alarm_min）迁移为「起床」闹钟，
+     * 原始读取：首次读取时把旧版单闹钟（alarm_hour/alarm_min）迁移为「起床」闹钟，
      * 并预置一个默认关闭的「午休」闹钟——老用户无感，新用户开箱即有午休可选。
      */
-    public static List<Alarm> getAlarms(Context c) {
+    private static List<Alarm> getAlarmsRaw(Context c) {
         SharedPreferences sp = sp(c);
         if (!sp.getBoolean(KEY_ALARMS_MIGRATED, false)) {
             List<Alarm> migrated = new java.util.ArrayList<>();
@@ -168,6 +172,35 @@ public final class Prefs {
             return migrated;
         }
         return Alarm.fromJson(sp.getString(KEY_ALARMS, null));
+    }
+
+    /**
+     * 读取闹钟列表，并顺手清掉已经过期的一次性闹钟（v1.27）。
+     *
+     * <p>为什么放在这里而不是调用方各自处理：一次性闹钟有三条独立的消费路径
+     * ——排程（{@link ScheduleManager}）、列表渲染（{@link MainActivity}）、
+     * 睡前提醒（{@link BedtimeReminder}）。任何一条忘了清理，用户就会看到
+     * 一个「昨天就该响、之后再也不会响」的僵尸闹钟躺在列表里，而它还会占着 id。
+     * 收在唯一的读取入口，三条路径自动都对。
+     *
+     * <p>写回只在真的删掉了东西时才做，避免每次读都落一次盘。
+     */
+    public static List<Alarm> getAlarms(Context c) {
+        List<Alarm> all = getAlarmsRaw(c);
+        List<Alarm> alive = new ArrayList<>(all.size());
+        LocalDate today = LocalDate.now();
+        boolean dropped = false;
+        for (Alarm a : all) {
+            if (a.isExpiredOn(today)) {
+                dropped = true;
+            } else {
+                alive.add(a);
+            }
+        }
+        if (dropped) {
+            sp(c).edit().putString(KEY_ALARMS, Alarm.toJson(alive)).apply();
+        }
+        return alive;
     }
 
     public static void setAlarms(Context c, List<Alarm> alarms) {
@@ -518,8 +551,17 @@ public final class Prefs {
         return sp(c).getInt(KEY_PRE_NOTICE_MINUTES, PRE_NOTICE_DEFAULT);
     }
 
+    /** 上次选过的非零提前量，用于「关掉再打开」时恢复。从没设过则给默认值。 */
+    public static int getPreNoticeLastMinutes(Context c) {
+        return sp(c).getInt(KEY_PRE_NOTICE_LAST, PRE_NOTICE_DEFAULT);
+    }
+
     public static void setPreNoticeMinutes(Context c, int minutes) {
-        sp(c).edit().putInt(KEY_PRE_NOTICE_MINUTES, Math.max(0, Math.min(60, minutes))).apply();
+        int v = Math.max(0, Math.min(60, minutes));
+        SharedPreferences.Editor e = sp(c).edit().putInt(KEY_PRE_NOTICE_MINUTES, v);
+        // 只在选了非零值时更新「上次的值」：关掉（0）不该把记忆清成 0
+        if (v > 0) e.putInt(KEY_PRE_NOTICE_LAST, v);
+        e.apply();
     }
 
     /** 某闹钟在某日已经「稍后提醒」了几次。 */

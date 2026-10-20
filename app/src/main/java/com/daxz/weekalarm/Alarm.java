@@ -13,13 +13,16 @@ import java.util.List;
  * - mode = WORKDAY：仅上班日响（默认，按周休制度自动排程，节假日/调休自动适配）
  * - mode = DAILY：每天响
  * - mode = WEEKEND：仅休息日响（随周休制度：双休=周六日，单休=那一个休息日）
+ * - mode = ONCE：仅 {@link #onceDate} 那一天响（v1.27：临时闹钟，响完即弃）
  */
 public final class Alarm {
 
     public enum Mode {
         WORKDAY("仅上班日"),
         DAILY("每天"),
-        WEEKEND("仅休息日");
+        WEEKEND("仅休息日"),
+        /** v1.27：一次性。只有 onceDate 那天响，与周休制度、节假日、请假都无关。 */
+        ONCE("仅一次");
 
         private final String text;
 
@@ -31,9 +34,17 @@ public final class Alarm {
             return text;
         }
 
+        /**
+         * 由 JSON 里的 ordinal 还原。越界一律兜回 {@link #WORKDAY}。
+         *
+         * <p>v1.27 之前是「钳到最近的一端」，那时最大值是 WEEKEND，钳过去只是
+         * 变成「仅休息日」，无伤大雅。现在最大值是 ONCE——越界的脏数据若钳到它，
+         * 会造出一个没有 onceDate、永远不会响的「仅一次」闹钟躺在列表里，
+         * 比「仅上班日」糟糕得多。兜回默认值才是安全的那个方向。
+         */
         public static Mode fromOrdinal(int i) {
             Mode[] vs = values();
-            return vs[Math.max(0, Math.min(vs.length - 1, i))];
+            return i < 0 || i >= vs.length ? WORKDAY : vs[i];
         }
     }
 
@@ -44,13 +55,62 @@ public final class Alarm {
     public Mode mode;
     public boolean enabled;
 
+    /**
+     * 一次性闹钟的那一天（v1.27，{@link Mode#ONCE} 专用）。
+     *
+     * <p>存字符串而不是 {@link LocalDate}：一是 {@code LocalDate} 不可序列化进 JSON，
+     * 二是这个字段本来就只在 {@link #appliesTo} 里跟传入的 {@code d} 比一次，
+     * 用不用得上的差别很小，字符串反而省掉一次 parse 失败的分支。
+     *
+     * <p>为 null 时（老版本数据、或构造时忘了给）{@link Mode#ONCE} 视为不响——
+     * 宁可少响一次，也不要因为一个空日期在用户不知道的情况下乱响。
+     */
+    public String onceDate;
+
     public Alarm(int id, int hour, int minute, String label, Mode mode, boolean enabled) {
+        this(id, hour, minute, label, mode, enabled, null);
+    }
+
+    public Alarm(int id, int hour, int minute, String label, Mode mode, boolean enabled,
+                 String onceDate) {
         this.id = id;
         this.hour = hour;
         this.minute = minute;
         this.label = label;
         this.mode = mode;
         this.enabled = enabled;
+        this.onceDate = onceDate;
+    }
+
+    /** 一次性闹钟的规则文案，带上具体日期：「仅一次 · 10月21日 周三」。 */
+    public String modeTextWithDate() {
+        if (mode != Mode.ONCE) return mode.text();
+        LocalDate d = parseOnceDate();
+        return d == null ? mode.text()
+                : mode.text() + " · " + (d.getMonthValue() + "月" + d.getDayOfMonth() + "日"
+                + " " + weekLabel(d));
+    }
+
+    /** onceDate 解析失败返回 null，绝不抛——渲染路径上抛异常会直接崩首页。 */
+    public LocalDate parseOnceDate() {
+        if (onceDate == null || onceDate.isEmpty()) return null;
+        try {
+            return LocalDate.parse(onceDate);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** 一次性闹钟是否已经过期（那天已经过完）。 */
+    public boolean isExpiredOn(LocalDate today) {
+        if (mode != Mode.ONCE) return false;
+        LocalDate d = parseOnceDate();
+        return d == null || d.isBefore(today);
+    }
+
+    private static String weekLabel(LocalDate d) {
+        String[] names = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+        return names[d.getDayOfWeek().getValue() - 1];
     }
 
     /** 该闹钟在指定日期是否应该响（按大小周判断，兼容旧调用）。 */
@@ -85,6 +145,10 @@ public final class Alarm {
      */
     public boolean appliesTo(LocalDate d, WeekSchedule.Rule rule, boolean overtime) {
         switch (mode) {
+            case ONCE:
+                // 临时闹钟只看日期：那天是休息日、法定节假日还是请假日，都照响。
+                // 这是它存在的意义——「明早临时有事，早点起」，不是「按制度排的班」
+                return onceDate != null && onceDate.equals(d.toString());
             case DAILY:
                 return true;
             case WEEKEND:
@@ -112,6 +176,7 @@ public final class Alarm {
                 o.put("label", a.label);
                 o.put("mode", a.mode.ordinal());
                 o.put("enabled", a.enabled);
+                if (a.onceDate != null) o.put("onceDate", a.onceDate);
                 arr.put(o);
             } catch (Exception ignore) {
             }
@@ -133,7 +198,10 @@ public final class Alarm {
                         o.optInt("minute", 30),
                         o.optString("label", "闹钟"),
                         Mode.fromOrdinal(o.optInt("mode", 0)),
-                        o.optBoolean("enabled", true)));
+                        o.optBoolean("enabled", true),
+                        // 老版本没有这个键：optString 默认给 null，
+                        // ONCE 遇到 null 就视为不响（见字段注释）
+                        o.optString("onceDate", null)));
             }
         } catch (Exception e) {
             return new ArrayList<>();

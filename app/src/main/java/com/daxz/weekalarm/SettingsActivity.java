@@ -31,7 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private TextView tvKeys, tvSnooze, tvPreNotice, tvRingDuration, tvRingtone;
     private TextView tvHorizon, tvHolidayData, tvVolume, tvBedtime, tvWeekStart;
-    private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday;
+    private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
     private SwitchCompat swChristian;
 
     /** 开关同步保护：回写开关状态时避免触发用户操作逻辑。 */
@@ -134,7 +134,10 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.row_ringtone).setOnClickListener(v -> openRingtonePicker());
         findViewById(R.id.row_ring_duration).setOnClickListener(v -> showRingDurationDialog());
         findViewById(R.id.row_snooze).setOnClickListener(v -> showSnoozeDialog());
-        findViewById(R.id.row_pre_notice).setOnClickListener(v -> showPreNoticeDialog());
+        swPreNotice = findViewById(R.id.switch_pre_notice);
+        // 整行点开关（跟震动、渐响一致），副标题那一小块点进对话框调提前量
+        findViewById(R.id.row_pre_notice).setOnClickListener(v -> swPreNotice.toggle());
+        findViewById(R.id.tv_pre_notice).setOnClickListener(v -> showPreNoticeDialog());
         findViewById(R.id.row_keys).setOnClickListener(v -> showKeysDialog());
         // v1.20：睡前提醒（时刻 + 是否只在上班前提醒）
         findViewById(R.id.row_bedtime).setOnClickListener(v -> showBedtimeDialog());
@@ -417,7 +420,15 @@ public class SettingsActivity extends AppCompatActivity {
 
     /** 提前提醒行文案：0 = 关闭。 */
     private void updatePreNoticeText() {
-        tvPreNotice.setText(PrefDialogs.preNoticeText(this));
+        tvPreNotice.setText(PrefDialogs.preNoticeSummary(this));
+        // 开关回显时不能触发 OnCheckedChange——否则会在这里反向写回 Prefs，
+        // 把用户刚点的状态又覆盖掉（典型的自激）
+        swPreNotice.setOnCheckedChangeListener(null);
+        swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
+        swPreNotice.setOnCheckedChangeListener((v, checked) -> {
+            PrefDialogs.setPreNoticeEnabled(this, checked);
+            updatePreNoticeText();
+        });
     }
 
     /** 响铃时长行文案：0 = 不限。 */

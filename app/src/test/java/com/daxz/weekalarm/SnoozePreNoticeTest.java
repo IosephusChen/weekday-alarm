@@ -246,7 +246,9 @@ public class SnoozePreNoticeTest {
                 ((TextView) activity.findViewById(R.id.tv_horizon)).getText().toString());
         assertEquals("静音（仅震动）",
                 ((TextView) activity.findViewById(R.id.tv_volume)).getText().toString());
-        assertEquals("关闭",
+        // v1.27 起这一行是开关下方的副标题：关着时说「开着会怎样」，
+        // 不再只复述一个「关闭」——那等于把开关状态念一遍，看完还是不知道有什么用
+        assertEquals("响铃前先发一条通知",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
         assertTrue("节假日数据行应正常渲染",
                 ((TextView) activity.findViewById(R.id.tv_holiday_data)).getText().toString()
@@ -287,7 +289,7 @@ public class SnoozePreNoticeTest {
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
         assertEquals("10 分钟 × 2 次",
                 ((TextView) activity.findViewById(R.id.tv_snooze)).getText().toString());
-        assertEquals("提前 15 分钟",
+        assertEquals("提前 15 分钟提醒",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
         assertTrue("按键行应摘要显示两个键的作用",
                 ((TextView) activity.findViewById(R.id.tv_keys)).getText().toString()

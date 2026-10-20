@@ -70,9 +70,11 @@ public class SnoozePreNoticeTest {
 
     @Test
     public void snoozeAndPreNotice_defaults() {
-        assertEquals(5, Prefs.getSnoozeMinutes(ctx()));
-        assertEquals(1, Prefs.getSnoozeTimes(ctx()));
-        assertEquals(0, Prefs.getPreNoticeMinutes(ctx()));
+        assertEquals("间隔默认 5 分钟", 5, Prefs.getSnoozeMinutes(ctx()));
+        assertEquals("次数默认 3 次（v1.26.2）", Prefs.SNOOZE_TIMES_DEFAULT,
+                Prefs.getSnoozeTimes(ctx()));
+        assertEquals("提前提醒默认 1 小时（v1.26.2）", Prefs.PRE_NOTICE_DEFAULT,
+                Prefs.getPreNoticeMinutes(ctx()));
     }
 
     @Test

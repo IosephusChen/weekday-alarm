@@ -447,9 +447,17 @@ public final class Prefs {
         return sp(c);
     }
 
-    /** 响铃多少分钟后自动停止（防扰民 / 省电）。0 = 不限，一直响到手动停止。 */
+    /**
+     * 响铃多少分钟后自动停止（防扰民 / 省电）。0 = 不限，一直响到手动停止。
+     *
+     * <p>v1.26.2 起默认 10 分钟：没人管的时候不该一直响——
+     * 尤其响铃页改成滑动停止后，睡过头或滑不动时「一直响」没有下限。
+     * 想要一直响的人去设置里改回「不限」，一行的事。
+     */
+    public static final int RING_MINUTES_DEFAULT = 10;
+
     public static int getRingMinutes(Context c) {
-        return Math.max(0, sp(c).getInt(KEY_RING_MINUTES, 0));
+        return Math.max(0, sp(c).getInt(KEY_RING_MINUTES, RING_MINUTES_DEFAULT));
     }
 
     public static void setRingMinutes(Context c, int minutes) {
@@ -478,9 +486,17 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_SNOOZE_MINUTES, Math.max(1, Math.min(60, minutes))).apply();
     }
 
-    /** 每次响铃最多「稍后提醒」几次：默认 1；{@link #SNOOZE_UNLIMITED} = 不限次数。 */
+    /**
+     * 每次响铃最多「稍后提醒」几次：默认 3；{@link #SNOOZE_UNLIMITED} = 不限次数。
+     *
+     * <p>v1.26.2 从 1 次放宽到 3 次：只给一次的话，按掉之后想再眯五分钟就没机会了，
+     * 人得彻底清醒才能决定「今天要不要再睡」——而这恰恰是刚响铃时最做不到的事。
+     * 5 分钟 × 3 次 = 最多多睡 15 分钟，仍在多数人的可控范围内。
+     */
+    public static final int SNOOZE_TIMES_DEFAULT = 3;
+
     public static int getSnoozeTimes(Context c) {
-        return sp(c).getInt(KEY_SNOOZE_TIMES, 1);
+        return sp(c).getInt(KEY_SNOOZE_TIMES, SNOOZE_TIMES_DEFAULT);
     }
 
     public static void setSnoozeTimes(Context c, int times) {
@@ -488,9 +504,18 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_SNOOZE_TIMES, times).apply();
     }
 
-    /** 响铃前提前多少分钟推送通知栏提醒：0 = 关闭。 */
+    /**
+     * 响铃前提前多少分钟推送通知栏提醒：0 = 关闭。默认提前 1 小时（v1.26.2）。
+     *
+     * <p>以前默认关着，理由是「不该在用户没同意时先发通知」。但对闹钟来说，
+     * 提前一小时知道「还有一小时就要响了」是有用的信息——够决定要不要今晚早点睡，
+     * 也够在响之前把这个闹钟关掉。而且它带「关闭这次响铃」，不像纯提醒那么多余。
+     * 真不想要的人去设置里选「关闭」，同样一行的事。
+     */
+    public static final int PRE_NOTICE_DEFAULT = 60;
+
     public static int getPreNoticeMinutes(Context c) {
-        return sp(c).getInt(KEY_PRE_NOTICE_MINUTES, 0);
+        return sp(c).getInt(KEY_PRE_NOTICE_MINUTES, PRE_NOTICE_DEFAULT);
     }
 
     public static void setPreNoticeMinutes(Context c, int minutes) {

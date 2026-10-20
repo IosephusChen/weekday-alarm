@@ -193,7 +193,9 @@ public class ChangelogTest {
     @Test
     public void sameDayEntries_collapseToTongRi() {
         for (Changelog.Entry e : Changelog.all()) {
-            if (e.code >= 42) {
+            // code >= 78（v1.26.1）为止都是 2026/10/20 那一天赶出来的；
+            // 之后的版本按实际日期写，这条断言不该把未来也钉死在那天
+            if (e.code >= 42 && e.code <= 78) {
                 assertEquals("v1.19.7 起都是同一天开发的：" + e.version,
                         "2026/10/20", e.date);
             }
@@ -201,12 +203,19 @@ public class ChangelogTest {
         LinearLayout box = new LinearLayout(ctx());
         Changelog.renderInto(ctx(), box, Changelog.all(), installedCode());
         assertEquals(Changelog.all().size(), box.getChildCount());
-        assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), "2026/10/20"));
+        // 最新一版（v1.26.2）是第二天接着赶的，日期不再是 2026/10/20，
+        // 所以下面按「与上一张卡是否同日」来判断，不写死具体日期
+        Changelog.Entry newest = Changelog.all().get(0);
+        assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), newest.date));
         // 卡片第 2 行是 meta（日期 · versionCode），只看这一行，别被正文里的日期串扰
-        TextView meta = (TextView) ((ViewGroup) box.getChildAt(1)).getChildAt(1);
-        assertTrue("下一版同一天应写「同日」，实际：" + meta.getText(),
+        TextView prev = (TextView) ((ViewGroup) box.getChildAt(1)).getChildAt(1);
+        assertTrue("与前一张不同日就该印日期，实际：" + prev.getText(),
+                prev.getText().toString().contains(Changelog.all().get(1).date));
+        // 第 3 张与第 2 张同一天，这里才该折叠成「同日」
+        TextView meta = (TextView) ((ViewGroup) box.getChildAt(2)).getChildAt(1);
+        assertTrue("同一天应写「同日」，实际：" + meta.getText(),
                 meta.getText().toString().startsWith("同日"));
         assertFalse("同一天不该重复印日期，实际：" + meta.getText(),
-                meta.getText().toString().contains("2026/10/20"));
+                meta.getText().toString().contains(Changelog.all().get(2).date));
     }
 }

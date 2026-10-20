@@ -84,9 +84,9 @@ public class RingerSettingsTest {
     }
 
     @Test
-    public void ringMinutes_defaultZero_andClamped() {
-        // 默认 0 = 不限（一直响到手动停止）
-        assertEquals(0, Prefs.getRingMinutes(ctx()));
+    public void ringMinutes_defaultTen_andClamped() {
+        // v1.26.2：默认 10 分钟——没人管时不该一直响
+        assertEquals(Prefs.RING_MINUTES_DEFAULT, Prefs.getRingMinutes(ctx()));
         Prefs.setRingMinutes(ctx(), 5);
         assertEquals(5, Prefs.getRingMinutes(ctx()));
         Prefs.setRingMinutes(ctx(), -3);   // 负数压到 0

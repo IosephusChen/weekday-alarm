@@ -56,6 +56,9 @@ public class AlarmLimitTest {
     @Test
     public void rescheduleAll_overRomLimit_staysUnderCap() {
         setupUpgradeUserWithTwoAlarms();
+        // 关掉提前提醒：本用例钉的是「主闹钟自己撞上限时怎么截断」，
+        // 开着提醒时主闹钟只占一半预算（见下面那个用例），两条混在一起就没法判断了
+        Prefs.setPreNoticeMinutes(ctx(), 0);
         ShadowAlarmManager sam = org.robolectric.Shadows.shadowOf(
                 (android.app.AlarmManager) ctx().getSystemService(Context.ALARM_SERVICE));
 
@@ -82,6 +85,7 @@ public class AlarmLimitTest {
                 .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, HORIZON)
                 .apply();
+        Prefs.setPreNoticeMinutes(ctx(), 0);   // 同上：只看主闹钟的截断
 
         int n = ScheduleManager.rescheduleAll(ctx());
         assertTrue("单闹钟 365 天被误截断: " + n, n > 200);
@@ -92,6 +96,29 @@ public class AlarmLimitTest {
         for (String r : recs) {
             assertTrue("记录缺少 alarmId 前缀: " + r, r.startsWith("1:"));
         }
+    }
+
+    /**
+     * v1.26.2 起提前提醒默认开（1 小时），主闹钟的排程天数因此减半：
+     * 系统闹钟槽位是主闹钟和提前通知共用一份预算，不能因为多了一条提醒
+     * 就把总数顶到 ROM 硬限上——那正是 v1.13.1 修过的闪退。
+     *
+     * <p>排程天数变短的代价由滚动补排兜住：每天响铃后都会重排，窗口不断前移，
+     * 所以「能排多少天」不等于「多少天后会漏响」。
+     */
+    @Test
+    public void rescheduleAll_withPreNotice_halvesMainAlarms_butStaysUnderCap() {
+        setupUpgradeUserWithTwoAlarms();
+        assertEquals("用例按 v1.26.2 的默认值写死，改默认值时这里要跟着改",
+                60, Prefs.getPreNoticeMinutes(ctx()));
+        ShadowAlarmManager sam = org.robolectric.Shadows.shadowOf(
+                (android.app.AlarmManager) ctx().getSystemService(Context.ALARM_SERVICE));
+
+        int n = ScheduleManager.rescheduleAll(ctx());
+
+        assertEquals(ScheduleManager.MAX_REGISTERED_ALARMS / 2, n);
+        assertTrue("主闹钟 + 提前通知的总数仍不能越过 ROM 硬限：" + sam.getScheduledAlarms().size(),
+                sam.getScheduledAlarms().size() <= ScheduleManager.MAX_REGISTERED_ALARMS);
     }
 
     @Test

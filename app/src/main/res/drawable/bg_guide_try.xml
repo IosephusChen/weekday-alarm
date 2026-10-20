@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 引导页「试听响铃」（v1.25.1）：白底 + 主色细描边。
+     放在权限清单下面，是这一页唯一的动作入口，所以用描边而不是实心——
+     实心会和底部的「开始使用」抢，用户会以为有两个主按钮。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/card" />
+    <corners android:radius="14dp" />
+    <stroke
+        android:width="1.5dp"
+        android:color="@color/indigo" />
+</shape>

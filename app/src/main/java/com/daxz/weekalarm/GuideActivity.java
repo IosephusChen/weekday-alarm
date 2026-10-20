@@ -233,6 +233,25 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
         findViewById(R.id.perm_fsi).setOnClickListener(v -> openFullScreenIntentSettings());
         findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
+        // v1.25.1：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
+        // 让用户等到第二天早上才发现不响，比什么都不做还糟。
+        findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
+    }
+
+    /**
+     * 试听一次响铃：与主界面「测试响铃」同一条路径（前台服务 + 响铃页），
+     * 这样用户听到的、看到的就是正式响铃的样子。
+     */
+    private void tryRing() {
+        Intent svc = new Intent(this, AlarmService.class);
+        svc.setAction(AlarmService.ACTION_TEST);
+        svc.putExtra(AlarmService.EXTRA_LABEL, "试听");
+        ContextCompat.startForegroundService(this, svc);
+
+        Intent full = new Intent(this, AlarmActivity.class);
+        full.putExtra(AlarmActivity.EXTRA_TEST, true);
+        full.putExtra(AlarmActivity.EXTRA_LABEL, "试听");
+        startActivity(full);
     }
 
     private void refreshPermissions() {

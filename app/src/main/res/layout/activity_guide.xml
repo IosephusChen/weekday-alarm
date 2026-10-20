@@ -624,6 +624,30 @@
                     android:text="没全开也能用，只是可能不响、或者只躺在通知栏里。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
+
+                <!-- v1.25.1：开完权限当场试一次，别等第二天早上才发现不响 -->
+                <TextView
+                    android:id="@+id/btn_try"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_guide_try"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="试听一下响铃"
+                    android:textColor="@color/indigo"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="会响一声并弹出响铃页，点「结束测试」就停，不影响正式排班。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
             </LinearLayout>
         </ScrollView>
     </ViewFlipper>

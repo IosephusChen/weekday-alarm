@@ -9,6 +9,7 @@ import static org.robolectric.Shadows.shadowOf;
 import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -254,6 +255,28 @@ public class GuideTest {
             assertNotNull("权限行缺失 " + id, row);
             assertTrue("权限行要能点，否则用户只能自己去翻设置", row.isClickable());
         }
+    }
+
+    /** 试听：起前台服务（有声音）+ 打开响铃页（看得见），与主界面测试响铃同一条路径。 */
+    @Test
+    public void tryRing_startsServiceAndOpensTestPage() {
+        GuideActivity a = fresh();
+        Application app = (Application) ctx();
+        shadowOf(app).clearNextStartedActivities();
+
+        tap(a, R.id.btn_try);
+
+        Intent svc = shadowOf(app).getNextStartedService();
+        assertNotNull("试听要起前台服务，否则只有页面没有声音", svc);
+        assertEquals(AlarmService.ACTION_TEST, svc.getAction());
+
+        Intent full = shadowOf(app).getNextStartedActivity();
+        assertNotNull("试听要弹出响铃页，用户才知道真的响了", full);
+        assertTrue("必须是测试模式，不能写正式响铃状态",
+                full.getBooleanExtra(AlarmActivity.EXTRA_TEST, false));
+        assertNotNull(full.getComponent());
+        assertTrue("拉起的应是 AlarmActivity，实际：" + full.getComponent(),
+                full.getComponent().getClassName().endsWith("AlarmActivity"));
     }
 
     // ================= 翻页与收尾 =================

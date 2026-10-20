@@ -809,7 +809,15 @@ public class MainActivity extends AppCompatActivity {
             name.setIncludeFontPadding(false);
 
             TextView rule = new TextView(this);
-            rule.setText(a.enabled ? a.modeTextWithDate() : "已停用 · " + a.modeTextWithDate());
+            // v1.27.2：一次性闹钟响过会自动关闭。此时写「已停用」像是用户自己关的，
+            // 「已响过」才说明白它为什么是关着的
+            if (!a.enabled && a.mode == Alarm.Mode.ONCE
+                    && a.isExpiredAt(LocalDateTime.now())) {
+                String day = a.onceDayText();
+                rule.setText("已响过 · " + (day == null ? "仅一次" : day));
+            } else {
+                rule.setText(a.enabled ? a.modeTextWithDate() : "已停用 · " + a.modeTextWithDate());
+            }
             rule.setTextColor(ContextCompat.getColor(this, R.color.sub));
             rule.setTextSize(12);
             rule.setIncludeFontPadding(false);
@@ -859,6 +867,14 @@ public class MainActivity extends AppCompatActivity {
         for (Alarm x : alarms) {
             if (x.id == a.id) {
                 x.enabled = checked;
+                // v1.27.2：一次性闹钟响过会自动关闭，日期留在过去。用户再打开它，
+                // 意思是「照这个时间再来一次」，不是想打开一条永远不会响的闹钟——
+                // 顺手把日期顺延到下一个该时刻，并当面说清
+                if (checked && x.reviveOnce(LocalDateTime.now())) {
+                    LocalDate d = x.parseOnceDate();
+                    Toast.makeText(this, "这个时间已经过了，已改到" + onceDateText(d),
+                            Toast.LENGTH_LONG).show();
+                }
             }
         }
         Prefs.setAlarms(this, alarms);
@@ -967,7 +983,7 @@ public class MainActivity extends AppCompatActivity {
                     LocalDate onceDay = once[0];
                     if (mode == Alarm.Mode.ONCE) {
                         // 「今天 6:30」而现在已经 9 点：这条闹钟永远不会响，
-                        // 明天还会被过期清理悄悄删掉。用户要的是「响一次」，
+                        // 只会在下次读列表时被自动关掉。用户要的是「响一次」，
                         // 那个意思就是明天的 6:30——顺延并当面说清，别留个哑弹
                         LocalDate fixed = onceDayAfter(onceDay, hour[0], minute[0],
                                 LocalDateTime.now());
@@ -1025,7 +1041,7 @@ public class MainActivity extends AppCompatActivity {
      * 一次性闹钟的生效日：若给定的「日 + 时:分」已经过去，就顺延到之后最近的那一天。
      *
      * <p>只对 ONCE 用。普通闹钟时间过了就是「明天同一时间」，本来就是日复一日；
-     * 而一次性闹钟时间一过就是个哑弹——不会响，第二天还会被过期清理删掉。
+     * 而一次性闹钟时间一过就是个哑弹——不会响，只会被自动关掉。
      *
      * <p>循环而不是只加一天：用户可能手动挑了个旧日期（改过系统时间、或者从
      * 备份里恢复），一次加法补不回来。

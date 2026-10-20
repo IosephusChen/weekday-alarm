@@ -176,32 +176,36 @@ public final class Prefs {
     }
 
     /**
-     * 读取闹钟列表，并顺手清掉已经过期的一次性闹钟（v1.27）。
+     * 读取闹钟列表，并顺手把已经过期的一次性闹钟关掉（v1.27，v1.27.2 起改为「关闭」）。
      *
      * <p>为什么放在这里而不是调用方各自处理：一次性闹钟有三条独立的消费路径
      * ——排程（{@link ScheduleManager}）、列表渲染（{@link MainActivity}）、
-     * 睡前提醒（{@link BedtimeReminder}）。任何一条忘了清理，用户就会看到
-     * 一个「昨天就该响、之后再也不会响」的僵尸闹钟躺在列表里，而它还会占着 id。
-     * 收在唯一的读取入口，三条路径自动都对。
+     * 睡前提醒（{@link BedtimeReminder}）。任何一条忘了处理，用户就会看到一个
+     * 「昨天就该响、之后再也不会响」却仍显示开启的闹钟。收在唯一的读取入口，
+     * 三条路径自动都对。
      *
-     * <p>写回只在真的删掉了东西时才做，避免每次读都落一次盘。
+     * <p>v1.27.2：过期后只置 {@code enabled = false}，不再从列表里删除。
+     * 用户反馈「响过就消失」比「留着但关掉」更难接受——他会怀疑自己是不是
+     * 建错了、或者想照着这条再设一次却找不到参照。留着一条关掉的记录，
+     * 既能说明「这条已经响过了」，也能一键再打开（见 {@link Alarm#reviveOnce}）。
+     *
+     * <p>写回只在真的改动了什么时才做，避免每次读都落一次盘。
      */
     public static List<Alarm> getAlarms(Context c) {
         List<Alarm> all = getAlarmsRaw(c);
-        List<Alarm> alive = new ArrayList<>(all.size());
         LocalDateTime now = LocalDateTime.now();
-        boolean dropped = false;
+        boolean changed = false;
         for (Alarm a : all) {
-            if (a.isExpiredAt(now)) {
-                dropped = true;
-            } else {
-                alive.add(a);
+            // 已经关掉的不用再算：它本来就不响，日期过没过都不影响任何路径
+            if (a.enabled && a.isExpiredAt(now)) {
+                a.enabled = false;
+                changed = true;
             }
         }
-        if (dropped) {
-            sp(c).edit().putString(KEY_ALARMS, Alarm.toJson(alive)).apply();
+        if (changed) {
+            sp(c).edit().putString(KEY_ALARMS, Alarm.toJson(all)).apply();
         }
-        return alive;
+        return all;
     }
 
     public static void setAlarms(Context c, List<Alarm> alarms) {

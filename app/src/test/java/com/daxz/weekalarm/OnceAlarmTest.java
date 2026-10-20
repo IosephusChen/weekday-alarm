@@ -26,8 +26,8 @@ import java.util.List;
  * 一次性闹钟（v1.27）。
  *
  * <p>它的价值全在「只响那一天」这一条上：临时早起、赶车、开会，不该为了这一次
- * 去改整套排班，更不该响完之后还赖在列表里。所以这里钉三件事——
- * 只看日期不看制度、没有日期就绝不响、过期就从列表里消失。
+ * 去改整套排班。所以这里钉三件事——只看日期不看制度、没有日期就绝不响、
+ * 过期就自动关闭（v1.27.2 起不再从列表删除）。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -79,35 +79,49 @@ public class OnceAlarmTest {
         Alarm a = once(null);
         assertFalse(a.appliesTo(LocalDate.now(), NO_RULE, false));
         assertNull(a.parseOnceDate());
-        assertTrue("没有日期就算过期，读列表时会被清掉",
+        assertTrue("没有日期就算过期，读列表时会被自动关掉",
                 a.isExpiredAt(java.time.LocalDateTime.now()));
     }
 
     @Test
     public void otherModesNeverExpire() {
-        // 过期清理只针对 ONCE。普通闹钟哪怕 onceDate 是脏的也照常保留——
-        // 一条误判的清理会直接删掉用户的起床闹钟，这比留着脏数据严重得多
+        // 过期自动关闭只针对 ONCE。普通闹钟哪怕 onceDate 是脏的也照常保留——
+        // 一条误判的关闭会让用户的起床闹钟悄悄停掉，这比留着脏数据严重得多
         Alarm workday = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true, "2020-01-01");
         assertFalse(workday.isExpiredAt(java.time.LocalDateTime.now()));
     }
 
     @Test
-    public void expiredOnce_isDroppedWhenRead() {
+    public void expiredOnce_isAutoDisabledWhenRead() {
         LocalDate today = LocalDate.now();
         List<Alarm> all = new ArrayList<>(Arrays.asList(
                 once(today.minusDays(1)),          // 昨天响过了
-                once(today),                       // 今天还该响
+                once(today.plusDays(1)),           // 明天还该响（别用「今天 6:30」——
+                                                   // 测试若在上午 10 点跑，它自己就过期了）
                 new Alarm(3, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
         Prefs.setAlarms(ctx(), all);
 
         List<Alarm> got = Prefs.getAlarms(ctx());
-        assertEquals("过期的那条应被清掉，其余保留", 2, got.size());
-        for (Alarm a : got) {
-            assertFalse("清理后不该再有过期项",
-                    a.isExpiredAt(java.time.LocalDateTime.now()));
+        assertEquals("v1.27.2：过期的那条要留着，不再从列表里删掉", 3, got.size());
+        Alarm yesterday = got.get(0);
+        assertEquals("昨天那条应被自动关闭", false, yesterday.enabled);
+        assertEquals("其余照常", true, got.get(1).enabled);
+        assertEquals("普通闹钟不受影响", true, got.get(2).enabled);
+        // 关闭要落盘：否则每次读都要重新算一遍，且列表页与排程可能读到不同结果
+        assertEquals("关闭结果应写回存储", false, Prefs.getAlarms(ctx()).get(0).enabled);
+        assertEquals("列表长度也不能变", 3, Prefs.getAlarms(ctx()).size());
+    }
+
+    /** 自动关闭是幂等的：连读多次不会把条目读没，也不会反复改状态。 */
+    @Test
+    public void autoDisableIsIdempotent() {
+        LocalDate today = LocalDate.now();
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(2))));
+        for (int i = 0; i < 3; i++) {
+            List<Alarm> got = Prefs.getAlarms(ctx());
+            assertEquals(1, got.size());
+            assertFalse(got.get(0).enabled);
         }
-        // 清理要落盘：否则每次读都要重新算一遍，且列表页与排程可能读到不同结果
-        assertEquals("清理结果应写回存储", 2, Prefs.getAlarms(ctx()).size());
     }
 
     @Test
@@ -168,14 +182,47 @@ public class OnceAlarmTest {
                         today.atStartOfDay(), 1));
     }
 
-    /** 响过就该从列表消失，而不是躺到明天零点。 */
+    /** 响过之后留在列表里，但必须自己关掉——不能躺到明天零点还显示「已开启」。 */
     @Test
-    public void disappearsRightAfterItRings() {
+    public void staysInListButTurnsOffAfterItRings() {
         java.time.LocalDateTime past = java.time.LocalDateTime.now().minusHours(2);
         Alarm rang = new Alarm(9, past.getHour(), past.getMinute(), "赶车",
                 Alarm.Mode.ONCE, true, past.toLocalDate().toString());
         Prefs.setAlarms(ctx(), java.util.Collections.singletonList(rang));
-        assertTrue("响完之后列表里不该还有它", Prefs.getAlarms(ctx()).isEmpty());
+        List<Alarm> got = Prefs.getAlarms(ctx());
+        assertEquals("响完之后条目还在", 1, got.size());
+        assertFalse("但要自动关闭", got.get(0).enabled);
+        assertEquals("时间与名称原样保留，用户能照着再设一次", "赶车", got.get(0).label);
+        assertEquals(past.getHour(), got.get(0).hour);
+    }
+
+    /**
+     * 关掉之后再打开，日期要顺延到下一个该时刻。
+     *
+     * <p>只把开关拨上去、日期留在过去，就是一条「显示已开启、永远不会响」的哑弹——
+     * 比不让他打开更糟。
+     */
+    @Test
+    public void reopeningSpentOnce_movesItToNextSlot() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.of(2026, 10, 21, 9, 0);
+        Alarm spent = new Alarm(1, 6, 30, "赶车", Alarm.Mode.ONCE, false, "2026-10-20");
+        assertTrue("过期的一次性闹钟该被顺延", spent.reviveOnce(now));
+        assertEquals(LocalDate.of(2026, 10, 22), spent.parseOnceDate());
+        assertTrue("顺延后必须真的能响",
+                spent.appliesTo(LocalDate.of(2026, 10, 22), NO_RULE, false));
+
+        // 今天的时刻还没到 → 就今天，不要白白推一天
+        Alarm todayLater = new Alarm(2, 10, 0, "开会", Alarm.Mode.ONCE, false,
+                LocalDate.of(2026, 10, 20).toString());
+        assertTrue(todayLater.reviveOnce(now));
+        assertEquals(LocalDate.of(2026, 10, 21), todayLater.parseOnceDate());
+
+        // 还没过期的、以及普通闹钟，都不该被动
+        Alarm future = new Alarm(3, 6, 30, "赶车", Alarm.Mode.ONCE, true, "2026-10-25");
+        assertFalse(future.reviveOnce(now));
+        assertEquals("2026-10-25", future.onceDate);
+        Alarm daily = new Alarm(4, 6, 30, "起床", Alarm.Mode.DAILY, true, null);
+        assertFalse(daily.reviveOnce(now));
     }
 
     /** 还没到点的一次性闹钟当然要留着。 */

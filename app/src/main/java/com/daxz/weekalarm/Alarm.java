@@ -15,7 +15,8 @@ import java.util.List;
  * - mode = WORKDAY：仅上班日响（默认，按周休制度自动排程，节假日/调休自动适配）
  * - mode = DAILY：每天响
  * - mode = WEEKEND：仅休息日响（随周休制度：双休=周六日，单休=那一个休息日）
- * - mode = ONCE：仅 {@link #onceDate} 那一天响（v1.27：临时闹钟，响完即弃）
+ * - mode = ONCE：仅 {@link #onceDate} 那一天响（v1.27：临时闹钟；响过自动关闭，
+ *   条目留在列表里，v1.27.2 起不再自动删除）
  */
 public final class Alarm {
 
@@ -87,10 +88,20 @@ public final class Alarm {
     /** 一次性闹钟的规则文案，带上具体日期：「仅一次 · 10月21日 周三」。 */
     public String modeTextWithDate() {
         if (mode != Mode.ONCE) return mode.text();
+        String day = onceDayText();
+        return day == null ? mode.text() : mode.text() + " · " + day;
+    }
+
+    /**
+     * 一次性闹钟的日期文案「10月21日 周三」；不是 ONCE 或日期解析失败返回 null。
+     *
+     * <p>单独抽出来，是因为「已响过」那一行要的只是日期，前面不该再挂「仅一次」——
+     * 那条已经响完了，再写「仅一次」像是在说它还会响一次。
+     */
+    public String onceDayText() {
         LocalDate d = parseOnceDate();
-        return d == null ? mode.text()
-                : mode.text() + " · " + (d.getMonthValue() + "月" + d.getDayOfMonth() + "日"
-                + " " + weekLabel(d));
+        return d == null ? null
+                : d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekLabel(d);
     }
 
     /** onceDate 解析失败返回 null，绝不抛——渲染路径上抛异常会直接崩首页。 */
@@ -121,15 +132,39 @@ public final class Alarm {
     /**
      * 一次性闹钟是否已经过期（v1.27.1 起按「时刻」而不只是「日期」判断）。
      *
-     * <p>只比日期的话，今天 6:30 响过之后它还会在列表里躺到明天零点——
-     * 用户看到一条已经响完的闹钟，会怀疑是不是还会再响一次。响完即从列表消失，
-     * 才是「仅一次」该有的样子。
+     * <p>只比日期的话，今天 6:30 响过之后它还会以「已开启」的样子躺到明天零点，
+     * 用户会以为它还会再响一次。按时刻判断，响过那一刻起就算过期，
+     * 由 {@link Prefs#getAlarms} 自动关掉（v1.27.2：关掉而不是删除）。
      */
     public boolean isExpiredAt(LocalDateTime now) {
         if (mode != Mode.ONCE) return false;
         LocalDate d = parseOnceDate();
         if (d == null) return true;
         return !LocalDateTime.of(d, LocalTime.of(hour, minute)).isAfter(now);
+    }
+
+    /**
+     * 把已经过期的一次性闹钟顺延到下一个「该时刻」（v1.27.2）。
+     *
+     * <p>自动关闭之后，用户再打开这条闹钟，意思多半是「就照这个时间再来一次」。
+     * 若只把开关打开、日期留在过去，它显示「已开启」却永远不会响——又回到
+     * 之前那种哑弹。这里顺手把日期推到今天或明天同一时刻。
+     *
+     * <p>返回是否真的改动过；非 ONCE、还没过期都返回 false。
+     */
+    public boolean reviveOnce(LocalDateTime now) {
+        if (mode != Mode.ONCE || !isExpiredAt(now)) return false;
+        LocalDate d = parseOnceDate();
+        LocalDate today = now.toLocalDate();
+        if (d == null || d.isBefore(today)) d = today;
+        LocalTime t = LocalTime.of(hour, minute);
+        // 先跳到今天再逐日补：从备份恢复或改过系统时间的闹钟可能落后好几年，
+        // 一天一天加会白转几千圈
+        while (!LocalDateTime.of(d, t).isAfter(now)) {
+            d = d.plusDays(1);
+        }
+        onceDate = d.toString();
+        return true;
     }
 
     private static String weekLabel(LocalDate d) {

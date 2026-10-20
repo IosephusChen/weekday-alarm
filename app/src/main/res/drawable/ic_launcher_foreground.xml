@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 与 App 内左上角 logo 同比例：42dp 圆形底 + 白色钟面直径 17.6 ≈ 42%。
+         桌面图标同样让钟面外径约占整个图标的 42%（46/108），
+         环粗细 / 指针长度比例与 ic_clock_white 完全一致 -->
+    <!-- 表盘：圆心 (54,54)，中线半径 19.5，描边 7，外缘半径 23 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54 m-19.5,0 a19.5,19.5 0 1,0 39,0 a19.5,19.5 0 1,0 -39,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7" />
+    <!-- 分针：指向 12 点（长度比例与 ic_clock_white 一致，0.59×外缘半径） -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54 L54,40.4"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="7" />
+    <!-- 时针：指向右下（与 App 内图标一致，0.39×外缘半径） -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54 L61.3,59.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="7" />
+</vector>

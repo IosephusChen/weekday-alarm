@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 新手引导页顶部大圆：indigo → violet 斜向渐变，与主界面 hero 卡同色系 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:endColor="@color/violet"
+        android:startColor="@color/indigo" />
+</shape>

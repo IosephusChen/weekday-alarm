@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 睡前提醒时间选择（v1.20）。
+     与其它设置一样用自绘 RadioGroup：MIUI / 澎湃 OS 上 setSingleChoiceItems
+     经常只显示标题不显示选项（已实测），自绘布局最稳。
+     选「其他时间」会接着弹出时/分滚轮。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="睡前提醒"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingMultiplier="1.2"
+        android:text="到点发一条安静的通知，告诉你明天要不要早起、闹钟几点响。通知里的「明天请假」可一键把明天标为请假并取消明早闹钟。"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
+    <RadioGroup
+        android:id="@+id/rg_bedtime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_bed_off"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="关闭" />
+
+        <RadioButton
+            android:id="@+id/rb_bed_2130"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="21:30" />
+
+        <RadioButton
+            android:id="@+id/rb_bed_2200"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="22:00" />
+
+        <RadioButton
+            android:id="@+id/rb_bed_2230"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="22:30" />
+
+        <RadioButton
+            android:id="@+id/rb_bed_2300"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="23:00" />
+
+        <RadioButton
+            android:id="@+id/rb_bed_custom"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="其他时间…" />
+    </RadioGroup>
+</LinearLayout>

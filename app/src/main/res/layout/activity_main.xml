@@ -1,0 +1,647 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主界面（v1.19.7）：只保留「闹钟」与「排班日历」两张卡片 + 一个页面入口。
+     ① 闹钟区：大小周设置 + 闹钟列表 + 闹钟总开关（日常最常用）
+     ② 日历区：排班日历 + 图例 + 请假 / 加班标记（核对与临时调整）
+     ③ 设置与使用说明：整页独立（SettingsActivity），设置项全部平铺在一级，
+        不再有「更多设置」二级菜单，也不再和闹钟 / 日历挤在同一屏 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- 顶部标题 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="14dp">
+
+            <ImageView
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:background="@drawable/bg_hero"
+                android:padding="8dp"
+                android:src="@drawable/ic_clock_white" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="打工人闹钟"
+                    android:textColor="@color/ink"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="双休 / 单休 / 大小周 · 上班日系统级响铃"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- 设置与使用说明入口（v1.19.7）：常驻标题栏右上角，一屏之内即可点到。
+                 设置项与使用说明整体独立成页，主界面不再内嵌设置卡片。 -->
+            <TextView
+                android:id="@+id/btn_settings_entry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="13dp"
+                android:paddingEnd="11dp"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="设置 ›"
+                android:textColor="@color/indigo"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- 今日状态 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_hero"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- 日期 + 农历两行（v1.20）：农历单独一行，窄屏也不会把日期挤成两行 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_today_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textColor="#E6E4FF"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tv_today_lunar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text=""
+                        android:textColor="#C9CEFD"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_week_chip"
+                    style="@style/WeekChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_today_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="—"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_today_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="—"
+                android:textColor="#E6E4FF"
+                android:textSize="14sp"
+                android:lineSpacingMultiplier="1.15" />
+
+            <!-- 距下次响铃倒计时（v1.22.5）：
+                 左边一句说明，右边等宽数字每秒跳。总开关关掉时整条变灰并写明原因，
+                 避免用户盯着一个不动的「下一个 13:40」以为闹钟还会响。 -->
+            <LinearLayout
+                android:id="@+id/box_countdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_hero_pill"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <TextView
+                    android:id="@+id/tv_countdown_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="距下次响铃"
+                    android:textColor="#D9D8FF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tv_countdown"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="--:--:--"
+                    android:textColor="@color/white"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ===== ① 排班 =====
+             v1.23：排班和闹钟拆成两张卡。上一版把它们并成一张、用小节标签分组，
+             实际用下来「周休制度」和「闹钟列表」是两件事，混在一张卡里要滚过三行设置
+             才看到闹钟。拆开后各占一张，标题直接写「排班」「闹钟」。 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="排班" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:paddingTop="4dp">
+
+            <!-- 周休制度（v1.22）：双休 / 单休 / 大小周。整行可点，弹单选对话框 -->
+            <LinearLayout
+                android:id="@+id/row_week_mode"
+                style="@style/CardRow">
+
+                <TextView
+                    style="@style/CardRowLabel"
+                    android:text="周休制度" />
+
+                <TextView
+                    android:id="@+id/tv_week_mode"
+                    style="@style/CardRowValue"
+                    android:text="大小周" />
+
+                <TextView style="@style/CardRowChevron" />
+            </LinearLayout>
+
+            <!-- 大小周专属：选「大小周」时才显示；双休 / 单休下整块隐藏 -->
+            <LinearLayout
+                android:id="@+id/ll_big_small"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <View style="@style/CardDivider" />
+
+                <!-- 本周是大周还是小周：原来两个大单选 + 通栏按钮占了近 200dp，
+                     改成「左标题 + 右值 + ›」一行，高度减半。 -->
+                <LinearLayout
+                    android:id="@+id/row_week_big"
+                    style="@style/CardRow">
+
+                    <TextView
+                        style="@style/CardRowLabel"
+                        android:text="本周是" />
+
+                    <TextView
+                        android:id="@+id/tv_week_big"
+                        style="@style/CardRowValue"
+                        android:text="大周（休2天）" />
+
+                    <TextView style="@style/CardRowChevron" />
+                </LinearLayout>
+
+                <View style="@style/CardDivider" />
+
+                <!-- 小周休哪天：整行可点，弹单选对话框（MIUI 上 Spinner 选中文字不渲染） -->
+                <LinearLayout
+                    android:id="@+id/row_small_rest"
+                    style="@style/CardRow">
+
+                    <TextView
+                        style="@style/CardRowLabel"
+                        android:text="小周休哪天" />
+
+                    <TextView
+                        android:id="@+id/tv_small_rest"
+                        style="@style/CardRowValue"
+                        android:text="周日（周六上班）" />
+
+                    <TextView style="@style/CardRowChevron" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== ② 闹钟 ===== -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="闹钟" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:paddingTop="4dp">
+
+            <!-- 闹钟总开关（v1.22.4）：它管着下面所有闹钟，所以排在列表上方当「总指挥」 -->
+            <LinearLayout
+                android:id="@+id/row_alarm_switch"
+                style="@style/CardRow">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="闹钟总开关"
+                        android:textColor="@color/ink"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_switch_hint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="开启后按当前设置自动排程"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_alarm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false" />
+            </LinearLayout>
+
+            <!-- 卡头与列表之间的线，起点在 renderAlarmList() 里跟着时间列宽对齐 -->
+            <View
+                android:id="@+id/div_alarm_top"
+                style="@style/CardDivider" />
+
+            <!-- 闹钟列表：由 MainActivity.renderAlarmList() 动态生成（每行：时间/名称/规则/开关） -->
+            <LinearLayout
+                android:id="@+id/alarm_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="12dp" />
+
+            <TextView
+                android:id="@+id/btn_add_alarm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_add_alarm"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="13dp"
+                android:text="+ 添加闹钟"
+                android:textColor="@color/indigo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===== ③ 日历区 ===== -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="排班日历" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/btn_prev"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textColor="@color/ink"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cal_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="—"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_next"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textColor="@color/ink"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/cal_dow_0"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="一" />
+
+                <TextView
+                    android:id="@+id/cal_dow_1"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="二" />
+
+                <TextView
+                    android:id="@+id/cal_dow_2"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="三" />
+
+                <TextView
+                    android:id="@+id/cal_dow_3"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="四" />
+
+                <TextView
+                    android:id="@+id/cal_dow_4"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="五" />
+
+                <TextView
+                    android:id="@+id/cal_dow_5"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="六" />
+
+                <TextView
+                    android:id="@+id/cal_dow_6"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="日" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cal_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- 图例：色块由 MainActivity.setupLegend() 动态生成（与日历格子同款底色/描边） -->
+            <LinearLayout
+                android:id="@+id/legend_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical" />
+
+            <!-- 请假 / 加班：单日标记在日历上点对应日期，这里显示总数并支持一键清除 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:background="@color/line" />
+
+            <TextView
+                android:id="@+id/tv_vacation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="11dp"
+                android:text="请假标记：无"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_overtime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="11dp"
+                android:text="加班标记：无"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===== ④ 使用说明（v1.19.8）=====
+             从设置页搬回主界面底部，做成折叠卡片：收起时只占一行，不挤占闹钟与日历；
+             首次安装自动展开一次，之后记住收起状态。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/row_guide_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="52dp"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="使用说明"
+                    android:textColor="@color/ink"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_guide_toggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="展开"
+                    android:textColor="@color/indigo"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/guide_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="14dp"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@color/line" />
+
+                <TextView
+                    android:id="@+id/tv_guide"
+                    style="@style/FieldHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingMultiplier="1.3"
+                    android:text="1. 先在「排班」里选周休制度（双休 / 单休 / 大小周），之后每周自动推算，日历里可直接核对。\n2. 「+ 添加闹钟」可加多个闹钟，各自选「仅上班日 / 每天 / 仅休息日」；点已有闹钟可改时间、名称、规则或删除。\n3. 某天请假：在日历里点那天 →「标记为请假」，当天闹钟全部跳过；再点一次取消。\n4. 休息日加班：在日历里点那天 →「标记为加班」，当天「仅上班日」闹钟照响。\n5. 打开「闹钟总开关」即开始排程，首页会显示距下次响铃的倒计时；开启状态下改任何设置都即时生效。\n6. 音量、铃声、稍后提醒、睡前提醒、备份，都在右上角「设置」里。\n7. 日历里日期下方的「班 / 休 / 假 / 补」是当天状态；农历节日、基督教节日可在设置里开关。\n8. 桌面长按空白处可添加「下一个闹钟」「本周班表」两个小组件。\n9. 换手机用「导出配置 / 导入配置」；若被杀后台漏响，请允许自启动并加入电池白名单。" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- 操作与自检 -->
+        <TextView
+            android:id="@+id/btn_test"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_btn_outline"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="测试响铃"
+            android:textColor="@color/indigo"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_status"
+            style="@style/FieldHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="—" />
+
+        <TextView
+            android:id="@+id/tv_anchor"
+            style="@style/FieldHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="当前基准（大周周六）：" />
+        <TextView
+            android:id="@+id/tv_holiday_note"
+            style="@style/FieldHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="已内置 2026 年节假日安排（放假与调休优先于周休制度）" />
+    </LinearLayout>
+</ScrollView>

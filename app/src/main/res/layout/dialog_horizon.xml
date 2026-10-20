@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  提醒范围选择对话框（自定义布局）。
+  不用 AlertDialog 的 setMessage + setSingleChoiceItems 组合——该组合在 MIUI 主题下
+  单选列表不渲染（消息把列表挤出可见区域），这里整体自绘保证三选项必然可见。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="提醒范围"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="节假日安排目前内置到 2026 年底。选择更长范围时，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖），2027 年安排公布后 App 更新数据即可自动生效，无需改设置。"
+        android:textColor="@color/sub"
+        android:textSize="12sp"
+        android:lineSpacingMultiplier="1.2" />
+
+    <RadioGroup
+        android:id="@+id/rg_horizon"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_h90"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="90 天（默认）"
+            android:textColor="@color/ink"
+            android:textSize="15sp" />
+
+        <RadioButton
+            android:id="@+id/rb_h180"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="180 天"
+            android:textColor="@color/ink"
+            android:textSize="15sp" />
+
+        <RadioButton
+            android:id="@+id/rb_h365"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="365 天（一整年）"
+            android:textColor="@color/ink"
+            android:textSize="15sp" />
+    </RadioGroup>
+</LinearLayout>

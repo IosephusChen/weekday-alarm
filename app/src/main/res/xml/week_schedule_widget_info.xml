@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 本周班表小组件（v1.20）。
+     尺寸按「一行 7 个格子」设计：4×2 时每格约 44dp 宽，2 字标签（请假/加班）也放得下；
+     更窄时系统会等比压缩，因此 minWidth 不宜再小。 -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="100dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:minResizeWidth="200dp"
+    android:minResizeHeight="80dp"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/ic_launcher_foreground"
+    android:initialLayout="@layout/widget_week_schedule"
+    android:description="@string/widget_week_schedule_desc"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  通知栏小图标（v1.23.8）。
+
+  和启动图标同一套几何：圆环 + 分针指 12 点 + 时针指右下。比例取自
+  ic_launcher_foreground：圆环中线半径 / 外缘 = 0.848，分针 0.59×外缘，时针 0.39×外缘。
+
+  和启动图标唯一的差别是尺寸：启动图标按 108 视口留了大量安全边距（外缘只占 42%），
+  那是桌面图标的规范；通知小图标在状态栏里只有 18dp 左右，照搬会缩成一粒。
+  这里把外缘放大到 10.2（24 视口的 85%），描边相应减到 2.4，小尺寸下两根针仍看得清。
+
+  旧版的问题：圆心在 (12, 6.5) 而不是画布中心，且只有一根朝下的针，
+  渲染出来是一个偏上的小圆圈加一个点，跟 App 的钟面 logo 完全不像。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 表盘：圆心 (12,12)，中线半径 9.0，描边 2.4，外缘 10.2 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4" />
+    <!-- 分针：指向 12 点 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L12,6"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
+    <!-- 时针：指向右下 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L15.26,14.32"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
+</vector>

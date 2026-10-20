@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="indigo">#4F46E5</color>
+    <color name="indigo_dark">#4338CA</color>
+    <color name="violet">#7C3AED</color>
+    <color name="ink">#1E2235</color>
+    <color name="sub">#6B7189</color>
+    <color name="card">#FFFFFF</color>
+    <color name="bg">#F4F5FB</color>
+    <color name="line">#E7E9F3</color>
+    <color name="section_bg">#F7F8FD</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ===== 日历格子与图例语义色（日间）=====
+         底色与 bg_day_*.xml 的 solid 一致；描边为同色系淡边（今天为 indigo 主色）。
+         MainActivity.setupLegend / renderCalendar 通过资源引用读取，保证图例与格子永远同源。 -->
+    <color name="day_work_bg">#EEF2FF</color>
+    <color name="day_work_stroke">#C7D2FE</color>
+    <color name="day_work_text">#4338CA</color>
+
+    <color name="day_rest_bg">#F1F5F9</color>
+    <color name="day_rest_stroke">#CBD5E1</color>
+    <color name="day_rest_text">#64748B</color>
+
+    <color name="day_holiday_bg">#FEF3C7</color>
+    <color name="day_holiday_stroke">#FDE68A</color>
+    <color name="day_holiday_text">#92400E</color>
+
+    <color name="day_makeup_bg">#FEE2E2</color>
+    <color name="day_makeup_stroke">#FECACA</color>
+    <color name="day_makeup_text">#B91C1C</color>
+
+    <!-- 个人请假：淡紫，与法定节假日（黄）明确区分 -->
+    <color name="day_vacation_bg">#F3E8FF</color>
+    <color name="day_vacation_stroke">#DDD6FE</color>
+    <color name="day_vacation_text">#7C3AED</color>
+
+    <!-- 个人加班（v1.15）：橙色，与调休补班（红）明确区分 -->
+    <color name="day_overtime_bg">#FFEDD5</color>
+    <color name="day_overtime_stroke">#FDBA74</color>
+    <color name="day_overtime_text">#C2410C</color>
+
+    <color name="day_today_bg">#E0E7FF</color>
+    <color name="day_today_stroke">#4F46E5</color>
+    <color name="day_today_text">#312E81</color>
+
+    <!-- 非当月格子数字 -->
+    <color name="day_dim_text">#C9CEED</color>
+
+    <!-- ===== 本周班表小组件（v1.20）=====
+         组件底色是紫色渐变（bg_hero），因此标签取同色系浅色：
+         上班用纯白最醒目，休息降到淡紫灰，节假日/补班/请假/加班各自沿用日历语义色系的亮版。 -->
+    <color name="widget_dim">#C7CBF0</color>
+    <color name="widget_rest">#C7D2FE</color>
+    <color name="widget_holiday">#FDE68A</color>
+    <color name="widget_makeup">#FCA5A5</color>
+    <color name="widget_vacation">#DDD6FE</color>
+    <color name="widget_overtime">#FDBA74</color>
+</resources>

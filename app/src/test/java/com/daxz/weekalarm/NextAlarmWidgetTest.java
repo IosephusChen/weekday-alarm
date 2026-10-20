@@ -1,0 +1,97 @@
+package com.daxz.weekalarm;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * v1.19：桌面小组件「下一个闹钟」内容计算。
+ * 复用主 App 的 ScheduleManager，保证与 App 内状态一致。
+ */
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 34, application = Application.class)
+public class NextAlarmWidgetTest {
+
+    private Context ctx() {
+        return ApplicationProvider.getApplicationContext();
+    }
+
+    private void putAlarms(List<Alarm> list) {
+        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+        sp.edit()
+                .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
+                .putBoolean(Prefs.KEY_ENABLED, true)
+                .putInt(Prefs.KEY_HORIZON, 90)
+                .apply();
+    }
+
+    @Before
+    public void setUp() {
+        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+        sp.edit().clear().apply();
+    }
+
+    @Test
+    public void disabled_showsOffHint() {
+        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+        sp.edit().putBoolean(Prefs.KEY_ENABLED, false).apply();
+        NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
+        assertFalse(m.enabled);
+        assertEquals("尚未开启", m.title);
+        assertEquals("打开「闹钟总开关」即自动排程", m.subtitle);
+    }
+
+    @Test
+    public void enabledButNoAlarms_showsEmptyHint() {
+        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+        sp.edit().putBoolean(Prefs.KEY_ENABLED, true).apply();
+        NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
+        assertTrue(m.enabled);
+        assertEquals("暂无提醒", m.title);
+        assertTrue(m.subtitle.contains("90 天"));
+    }
+
+    @Test
+    public void enabledWithDailyAlarm_showsNextAlarm() {
+        List<Alarm> list = new ArrayList<>();
+        // 每天 07:00 的「起床」闹钟（开启状态）
+        list.add(new Alarm(1, 7, 0, "起床", Alarm.Mode.DAILY, true));
+        putAlarms(list);
+        // 登记后 computeModel 才能查到「已登记」的闹钟
+        ScheduleManager.rescheduleAll(ctx());
+
+        NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
+        assertTrue(m.enabled);
+        assertTrue("主信息应含下一次响铃时刻", m.title.contains("07:00"));
+        assertTrue("副信息应含闹钟名称", m.subtitle.contains("起床"));
+        assertTrue("副信息应含提醒总数", m.subtitle.contains("共"));
+    }
+
+    @Test
+    public void onUpdate_and_updateAll_safe() {
+        // mgr 为 null 时不崩（Robolectric 下 AppWidgetManager 可能未初始化）
+        NextAlarmWidget widget = new NextAlarmWidget();
+        widget.onUpdate(ctx(), null, new int[]{});
+        // 系统实例 + 空 id 列表也不崩
+        widget.onUpdate(ctx(), android.appwidget.AppWidgetManager.getInstance(ctx()), new int[]{});
+        // 主动推送入口（含 null 保护）不崩
+        NextAlarmWidget.updateAll(ctx());
+    }
+}

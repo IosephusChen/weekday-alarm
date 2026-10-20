@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_hero"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp">
+
+    <ImageView
+        android:layout_width="84dp"
+        android:layout_height="84dp"
+        android:src="@drawable/ic_clock_white" />
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="该起床上班了"
+        android:textColor="@color/white"
+        android:textSize="32sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="今天是上班日"
+        android:textColor="#E6E4FF"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="闹钟响铃中"
+        android:textColor="#CFCBFF"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/btn_stop"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="44dp"
+        android:background="@drawable/bg_btn_white"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="停止响铃"
+        android:textColor="@color/indigo"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/btn_snooze"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_btn_ghost"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="5分钟后再响"
+        android:textColor="@color/white"
+        android:textSize="15sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="铃声会持续响到你做出选择"
+        android:textColor="#CFCBFF"
+        android:textSize="12sp" />
+</LinearLayout>

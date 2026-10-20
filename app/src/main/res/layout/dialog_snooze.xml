@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 稍后提醒设置对话框（v1.17）：间隔（分钟）+ 最多几次。
+     自绘 RadioGroup：setSingleChoiceItems 在 MIUI 主题下可能不渲染（已实测复现）。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="间隔" />
+
+    <RadioGroup
+        android:id="@+id/rg_snooze_minutes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_snooze_3"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="3 分钟" />
+
+        <RadioButton
+            android:id="@+id/rb_snooze_5"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="5 分钟" />
+
+        <RadioButton
+            android:id="@+id/rb_snooze_10"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="10 分钟" />
+
+        <RadioButton
+            android:id="@+id/rb_snooze_15"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="15 分钟" />
+
+        <RadioButton
+            android:id="@+id/rb_snooze_30"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="30 分钟" />
+    </RadioGroup>
+
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="最多几次（每次响铃分别计数）" />
+
+    <RadioGroup
+        android:id="@+id/rg_snooze_times"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rb_times_1"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="1 次" />
+
+        <RadioButton
+            android:id="@+id/rb_times_2"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="2 次" />
+
+        <RadioButton
+            android:id="@+id/rb_times_3"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="3 次" />
+
+        <RadioButton
+            android:id="@+id/rb_times_5"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="5 次" />
+
+        <RadioButton
+            android:id="@+id/rb_times_unlimited"
+            style="@style/WeekRadio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            android:text="不限次数" />
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="提示：次数用完后响铃界面只提供「停止」，需手动关闭；计数按「闹钟 × 日期」分别统计，次日自动重置。"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+</LinearLayout>

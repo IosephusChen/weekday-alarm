@@ -1,0 +1,150 @@
+package com.daxz.weekalarm;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 本周班表小组件（v1.20）。
+ *
+ * 组件本身只是「7 个格子」，真正会错的是这 7 天的判定：必须和 App 内日历同源，
+ * 所以这里逐条核对星期顺序、今天高亮、请假/加班覆盖，以及大周/小周标题。
+ */
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 34, application = Application.class)
+public class WeekWidgetTest {
+
+    private Context ctx() {
+        return ApplicationProvider.getApplicationContext();
+    }
+
+    private SharedPreferences sp() {
+        return ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+    }
+
+    @Before
+    public void setUp() {
+        sp().edit().clear().commit();
+    }
+
+    @Test
+    public void model_isMondayToSundayWithTodayFlagged() {
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        assertEquals(7, m.days.size());
+        String[] letters = {"一", "二", "三", "四", "五", "六", "日"};
+        int todayIndex = LocalDate.now().getDayOfWeek().getValue() - 1;
+        int flagged = 0;
+        for (int i = 0; i < 7; i++) {
+            assertEquals(letters[i], m.days.get(i).dayLetter);
+            if (m.days.get(i).today) {
+                flagged++;
+                assertEquals("今天应该落在正确的星期列", todayIndex, i);
+            }
+        }
+        assertEquals("有且只有一天是今天", 1, flagged);
+    }
+
+    @Test
+    public void model_labelsCoverAllDayTypes() {
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        for (WeekScheduleWidget.DayCell c : m.days) {
+            assertNotNull(c.label);
+            assertFalse("标签不能为空，否则格子里会缺字", c.label.isEmpty());
+            assertTrue("标签最多 2 字（格子宽度只够 2 字）",
+                    c.label.equals("班") || c.label.equals("休") || c.label.equals("假")
+                            || c.label.equals("补") || c.label.equals("请假")
+                            || c.label.equals("加班"));
+        }
+    }
+
+    @Test
+    public void model_titleMatchesBigOrSmallWeek() {
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(ctx()));
+        // v1.22.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休2天」，格子窄，前缀留给制度
+        assertTrue(big ? m.title.startsWith("大周") : m.title.startsWith("小周"));
+        assertTrue(m.title.contains("休"));
+    }
+
+    @Test
+    public void model_enabledStateReflectedInSubtitle() {
+        sp().edit().putBoolean(Prefs.KEY_ENABLED, true).commit();
+        assertTrue(WeekScheduleWidget.computeModel(ctx()).subtitle.contains("已开启"));
+        sp().edit().putBoolean(Prefs.KEY_ENABLED, false).commit();
+        assertFalse(WeekScheduleWidget.computeModel(ctx()).enabled);
+        assertTrue(WeekScheduleWidget.computeModel(ctx()).subtitle.contains("未开启"));
+    }
+
+    /** 本周内找一个上班日 / 休息日（一周里两者必然都有）。 */
+    private LocalDate findInThisWeek(boolean wantWork) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = monday.plusDays(i);
+            boolean work = WeekSchedule.isWorkday(d, Prefs.getAnchor(ctx()),
+                    Prefs.isSmallRestSat(ctx()));
+            if (work == wantWork) return d;
+        }
+        throw new IllegalStateException("本周找不到目标类型的一天");
+    }
+
+    private WeekScheduleWidget.DayCell cellOf(WeekScheduleWidget.WeekModel m, LocalDate d) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
+        int idx = (int) java.time.temporal.ChronoUnit.DAYS.between(monday, d);
+        return m.days.get(idx);
+    }
+
+    @Test
+    public void model_vacationOverridesWorkdayLabel() {
+        LocalDate workday = findInThisWeek(true);
+        Prefs.addVacation(ctx(), workday);
+        WeekScheduleWidget.DayCell c = cellOf(WeekScheduleWidget.computeModel(ctx()), workday);
+        assertTrue(c.vacation);
+        assertEquals("请假", c.label);
+    }
+
+    @Test
+    public void model_overtimeOverridesRestDayLabel() {
+        LocalDate rest = findInThisWeek(false);
+        Prefs.addOvertime(ctx(), rest);
+        WeekScheduleWidget.DayCell c = cellOf(WeekScheduleWidget.computeModel(ctx()), rest);
+        assertTrue(c.overtime);
+        assertEquals("加班", c.label);
+    }
+
+    @Test
+    public void model_holidayLabelForNationalDay() {
+        // 2026-10-01 是法定节假日（国庆），落在哪一周都该显示「假」
+        LocalDate d = LocalDate.of(2026, 10, 1);
+        WeekSchedule.DayType t = WeekSchedule.dayType(d, Prefs.getAnchor(ctx()), false);
+        assertEquals(WeekSchedule.DayType.HOLIDAY, t);
+        assertEquals("假", t.label);
+    }
+
+    @Test
+    public void updateEntryPoints_areNullSafe() {
+        WeekScheduleWidget w = new WeekScheduleWidget();
+        w.onUpdate(ctx(), null, new int[]{});
+        w.onUpdate(ctx(), android.appwidget.AppWidgetManager.getInstance(ctx()), new int[]{});
+        WeekScheduleWidget.updateAll(ctx());
+        Widgets.updateAll(ctx());   // 两个组件一起刷（无实例时也必须是空操作）
+    }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- legacy 圆形图标兜底：同 ic_launcher -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/indigo" />
+    <item>
+        <inset
+            android:drawable="@drawable/ic_launcher_foreground"
+            android:insetLeft="16%"
+            android:insetTop="16%"
+            android:insetRight="16%"
+            android:insetBottom="16%" />
+    </item>
+</layer-list>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 本周班表小组件「今天」格子的底：半透明白 + 8dp 圆角，
+     在紫色渐变上既突出今天又不喧宾夺主。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#33FFFFFF" />
+    <corners android:radius="8dp" />
+</shape>

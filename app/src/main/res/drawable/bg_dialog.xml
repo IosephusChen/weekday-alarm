@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 对话框圆角底（v1.22.4）。
+     全局 UI 都是圆角矩形（卡片 18dp、按钮 14dp），而 appcompat 的 AlertDialog
+     默认窗口背景是直角白块，弹出来像另一个 App。
+     由 RoundedDialog.round() 在 create / show 之后设成窗口背景，所有对话框一起生效。
+     不走主题覆盖：换 alertDialogTheme 会连带改掉标题与按钮的内边距，对话框反而变高。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/card" />
+    <corners android:radius="24dp" />
+</shape>

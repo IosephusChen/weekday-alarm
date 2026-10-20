@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  夜间配色（跟随系统暗色模式自动生效）。
+  设计原则：语义色保持「同色相、低明度」——格子的类型辨识度不变（靛蓝/灰/黄/红/靛蓝描边），
+  只是整体压暗以适应深色底；文字色统一提亮到 300 阶，保证深底上的对比度（>=4.5:1）。
+-->
+<resources>
+    <!-- 主题基色 -->
+    <color name="indigo">#818CF8</color>       <!-- indigo-400，暗底上更鲜明 -->
+    <color name="indigo_dark">#4F46E5</color>
+    <color name="violet">#A78BFA</color>
+    <color name="ink">#F1F3FE</color>          <!-- 主文字：近白 -->
+    <color name="sub">#9AA0BE</color>          <!-- 次要文字：中灰，对比度 4.6:1+ -->
+    <color name="card">#1C1F35</color>         <!-- 卡片：深靛蓝灰 -->
+    <color name="bg">#0F1120</color>           <!-- 页面底：深靛黑 -->
+    <color name="line">#2A2E47</color>         <!-- 描边/分隔线 -->
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ===== 日历格子与图例语义色（夜间）===== -->
+    <color name="day_work_bg">#232847</color>
+    <color name="day_work_stroke">#3D4470</color>
+    <color name="day_work_text">#A5B4FC</color>   <!-- indigo-300 -->
+
+    <color name="day_rest_bg">#23263C</color>
+    <color name="day_rest_stroke">#3A3F58</color>
+    <color name="day_rest_text">#CBD5E1</color>   <!-- slate-300 -->
+
+    <color name="day_holiday_bg">#3A2F16</color>
+    <color name="day_holiday_stroke">#5C4A24</color>
+    <color name="day_holiday_text">#FCD34D</color> <!-- amber-300 -->
+
+    <color name="day_makeup_bg">#3D2226</color>
+    <color name="day_makeup_stroke">#5F343B</color>
+    <color name="day_makeup_text">#FCA5A5</color>  <!-- red-300 -->
+
+    <color name="day_vacation_bg">#2E2A4A</color>
+    <color name="day_vacation_stroke">#4C4468</color>
+    <color name="day_vacation_text">#C4B5FD</color>  <!-- violet-300 -->
+
+    <color name="day_overtime_bg">#3B2A17</color>
+    <color name="day_overtime_stroke">#6B4A24</color>
+    <color name="day_overtime_text">#FDBA74</color>  <!-- orange-300 -->
+
+    <color name="day_today_bg">#2A2F5C</color>
+    <color name="day_today_stroke">#818CF8</color>
+    <color name="day_today_text">#C7D2FE</color>   <!-- indigo-200 -->
+
+    <!-- 非当月格子数字：压暗但可辨 -->
+    <color name="day_dim_text">#454B70</color>
+</resources>

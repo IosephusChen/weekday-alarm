@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 提前提醒弹窗（v1.23）。
+     锁屏 / 息屏 / 正在用别的 App 时由全屏 intent 拉起，只回答两件事：
+     「还有多久」「要不要现在就关掉这一次」。
+     不做成响铃页那种全屏大界面——它只是预告，真正的闹钟界面还是 AlarmActivity。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="32dp"
+    android:paddingBottom="32dp">
+
+    <ImageView
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:background="@drawable/bg_hero"
+        android:padding="16dp"
+        android:src="@drawable/ic_clock_white" />
+
+    <TextView
+        android:id="@+id/tv_pre_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="还有 30 分钟"
+        android:textColor="@color/ink"
+        android:textSize="26sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_pre_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="起床 · 07:00 响铃"
+        android:textColor="@color/ink"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/tv_pre_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:text="提前提醒不响铃；到点仍会正常响铃"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/btn_pre_ok"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="26dp"
+        android:background="@drawable/bg_btn_gradient"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="知道了"
+        android:textColor="@color/white"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/btn_pre_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_btn_outline"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="关闭这次响铃"
+        android:textColor="@color/indigo"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="45 秒后自动收起，通知栏仍可查看"
+        android:textColor="@color/sub"
+        android:textSize="11sp" />
+</LinearLayout>

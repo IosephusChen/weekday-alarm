@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.DaxiaoWeekAlarm" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/indigo</item>
+        <item name="colorPrimaryVariant">@color/indigo_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- 「时 / 分」滚轮选择器的文字样式：居中大字，选中值加粗主色 -->
+    <style name="WheelPickerText">
+        <item name="android:textColorPrimary">@color/ink</item>
+        <item name="android:textColorSecondary">@color/sub</item>
+        <item name="android:textSize">22sp</item>
+        <item name="colorControlActivated">@color/indigo</item>
+    </style>
+
+    <!-- 时间选择器：与系统闹钟一致的「时 / 分」双列滚轮样式（spinner 模式） -->
+    <style name="Theme.DaxiaoWeekAlarm.TimeSpinner" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:timePickerMode">spinner</item>
+    </style>
+
+    <style name="WeekChip">
+        <item name="android:background">@drawable/bg_chip_white</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:paddingLeft">10dp</item>
+        <item name="android:paddingRight">10dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+    </style>
+
+    <style name="SectionTitle">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="FieldLabel">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="FieldHint">
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="WeekRadio">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:buttonTint">@color/indigo</item>
+    </style>
+
+    <!-- ===== 设置列表（v1.19.8）=====
+         所有行统一「左标题 + 右值/开关」，行高与左右内边距一致，
+         避免旧版「有的居中、有的左对齐」造成的视觉错位。 -->
+    <style name="SettingsTitle">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <style name="SettingsValue">
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="SettingsSummary">
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <!-- 行末箭头：与右值同色，统一 16sp，保证每行右侧基线一致 -->
+    <style name="SettingsChevron">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:text">›</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <!-- 分组标题条（v1.22.1）：通栏浅色底，把 15 行设置分成四段，
+         省得「铃声」和「睡前提醒」混在一起找 -->
+    <style name="SettingsSection">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/section_bg</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 卡片内列表行：统一左右内边距与最小高度，行与行之间只留一条细线 -->
+    <style name="CardRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">52dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+    </style>
+
+    <!-- 行内分隔线：左边缘与行标题对齐（16dp），右侧留 12dp -->
+    <style name="CardDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">12dp</item>
+        <item name="android:background">@color/line</item>
+    </style>
+
+    <!-- 行内「左标题」：比右值轻，视线先落在右值上 -->
+    <style name="CardRowLabel">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- 行内「右值」：统一 15sp 加粗，与闹钟名同级 -->
+    <style name="CardRowValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 行末箭头 -->
+    <style name="CardRowChevron">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:text">›</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!-- 行内分隔线：左右各留 16dp，与标题左边缘对齐 -->
+    <style name="SettingsDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:background">@color/line</item>
+    </style>
+
+</resources>

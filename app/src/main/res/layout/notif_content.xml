@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  提前提醒的折叠态自绘布局（v1.23.6）。
+
+  为什么需要它：锁屏卡片和下拉后未展开的卡片，渲染的都是通知的「折叠态」。
+  折叠态由系统模板生成，只有小图标 + 标题 + 一行正文，**不渲染 addAction 的按钮**——
+  所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
+  把按钮画进 setCustomContentView 的布局里，折叠态才是我们说了算。
+
+  宽度约束：折叠卡片可用宽度约等于屏宽减去两侧留白，窄屏（360dp）下
+  34dp 图标 + 10dp 间距 + 药丸（约 76dp）之后还剩约 200dp 给文字，够放一行标题。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <ImageView
+        android:id="@+id/nc_icon"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:padding="7dp"
+        android:src="@drawable/ic_notification"
+        android:background="@drawable/bg_notif_icon"
+        android:contentDescription="@null" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/nc_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/nc_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/nc_action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_notif_action"
+        android:includeFontPadding="false"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:text="关闭闹钟"
+        android:textSize="13sp" />
+</LinearLayout>

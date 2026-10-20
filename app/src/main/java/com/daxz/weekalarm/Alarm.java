@@ -4,6 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -101,11 +103,33 @@ public final class Alarm {
         }
     }
 
-    /** 一次性闹钟是否已经过期（那天已经过完）。 */
-    public boolean isExpiredOn(LocalDate today) {
+    /**
+     * 请假是否该把这支闹钟一起静音（v1.27.1）。
+     *
+     * <p>「请假」的语义是「我今天不上班，按作息排的闹钟别吵我」——它针对的是
+     * 跟着排班走的那几种模式。一次性闹钟是用户指着日历说「这天要叫我」，
+     * 哪怕那天他正好请了假（赶车、赶飞机、约了人），也照响。
+     *
+     * <p>抽成一个方法而不是各处写 {@code mode != ONCE}：请假过滤散在排程、
+     * 计数、下次响铃、自检四个地方，漏一处就会出现「首页说会响、实际不响」
+     * 这种最难查的不一致。
+     */
+    public boolean ignoresVacation() {
+        return mode == Mode.ONCE;
+    }
+
+    /**
+     * 一次性闹钟是否已经过期（v1.27.1 起按「时刻」而不只是「日期」判断）。
+     *
+     * <p>只比日期的话，今天 6:30 响过之后它还会在列表里躺到明天零点——
+     * 用户看到一条已经响完的闹钟，会怀疑是不是还会再响一次。响完即从列表消失，
+     * 才是「仅一次」该有的样子。
+     */
+    public boolean isExpiredAt(LocalDateTime now) {
         if (mode != Mode.ONCE) return false;
         LocalDate d = parseOnceDate();
-        return d == null || d.isBefore(today);
+        if (d == null) return true;
+        return !LocalDateTime.of(d, LocalTime.of(hour, minute)).isAfter(now);
     }
 
     private static String weekLabel(LocalDate d) {

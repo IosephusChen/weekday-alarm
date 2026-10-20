@@ -83,20 +83,23 @@ public class AlarmActivity extends AppCompatActivity {
      */
     private void insetForSystemBars() {
         final View root = findViewById(R.id.alarm_root);
+        // 记下布局自己写的内边距，之后每次按「它 + inset」算。
+        // 曾经这里写死 dp(32)，与 XML 里的 32dp 是两份独立的值：
+        // 谁改了布局的内边距，内容就会莫名其妙地多一截或少一截，且很难联想到这行
+        final int baseLeft = root.getPaddingLeft();
+        final int baseTop = root.getPaddingTop();
+        final int baseRight = root.getPaddingRight();
+        final int baseBottom = root.getPaddingBottom();
         // 用 androidx.core 而不是平台 API：省掉 Build.VERSION 分支，
         // API 26（minSdk）到 34 行为一致，也让单测能直接喂一份 inset 进来
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(bars.left + dp(32), bars.top + dp(32),
-                    bars.right + dp(32), bars.bottom + dp(32));
+            v.setPadding(baseLeft + bars.left, baseTop + bars.top,
+                    baseRight + bars.right, baseBottom + bars.bottom);
             return insets;
         });
         root.requestApplyInsets();
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     /** 按当前 intent 刷新界面（onCreate 与 singleInstance 复用时都走这里）。 */

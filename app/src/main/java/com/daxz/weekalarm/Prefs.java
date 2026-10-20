@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -188,10 +189,10 @@ public final class Prefs {
     public static List<Alarm> getAlarms(Context c) {
         List<Alarm> all = getAlarmsRaw(c);
         List<Alarm> alive = new ArrayList<>(all.size());
-        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         boolean dropped = false;
         for (Alarm a : all) {
-            if (a.isExpiredOn(today)) {
+            if (a.isExpiredAt(now)) {
                 dropped = true;
             } else {
                 alive.add(a);
@@ -204,7 +205,13 @@ public final class Prefs {
     }
 
     public static void setAlarms(Context c, List<Alarm> alarms) {
-        sp(c).edit().putString(KEY_ALARMS, Alarm.toJson(alarms)).apply();
+        // 必须同时置「已迁移」：否则「先写列表、后读列表」会被迁移逻辑当成首次启动，
+        // 用预置的起床/午休把刚写的整份列表覆盖掉。真机上的触发条件是
+        // 「装好后还没读过列表就写」——比如恢复备份、或引导页在首次读取前落库。
+        sp(c).edit()
+                .putString(KEY_ALARMS, Alarm.toJson(alarms))
+                .putBoolean(KEY_ALARMS_MIGRATED, true)
+                .apply();
     }
 
     /** 生成不会碰撞的新闹钟 id（现有最大 id + 1）。 */

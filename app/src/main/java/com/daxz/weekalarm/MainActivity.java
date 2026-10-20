@@ -1041,10 +1041,13 @@ public class MainActivity extends AppCompatActivity {
     /** 一次性闹钟的日期行文案：「明天 · 10月22日 周四」。 */
     static String onceDateText(LocalDate d) {
         LocalDate today = LocalDate.now();
+        // 只保留「今天 / 明天 / 后天」这三种绝不会说错的相对说法。
+        // 曾经还有一档「本周末」（周六日），但五天后的周日并不是「本周末」——
+        // 与其判断周次，不如不给相对词：绝对日期本来就在后面写着
         String rel = d.equals(today) ? "今天"
                 : d.equals(today.plusDays(1)) ? "明天"
                 : d.equals(today.plusDays(2)) ? "后天"
-                : d.getDayOfWeek().getValue() >= 6 ? "本周末" : "";
+                : "";
         String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
         return rel.isEmpty() ? abs : rel + " · " + abs;
     }

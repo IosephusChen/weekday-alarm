@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -78,7 +79,8 @@ public class OnceAlarmTest {
         Alarm a = once(null);
         assertFalse(a.appliesTo(LocalDate.now(), NO_RULE, false));
         assertNull(a.parseOnceDate());
-        assertTrue("没有日期就算过期，读列表时会被清掉", a.isExpiredOn(LocalDate.now()));
+        assertTrue("没有日期就算过期，读列表时会被清掉",
+                a.isExpiredAt(java.time.LocalDateTime.now()));
     }
 
     @Test
@@ -86,7 +88,7 @@ public class OnceAlarmTest {
         // 过期清理只针对 ONCE。普通闹钟哪怕 onceDate 是脏的也照常保留——
         // 一条误判的清理会直接删掉用户的起床闹钟，这比留着脏数据严重得多
         Alarm workday = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true, "2020-01-01");
-        assertFalse(workday.isExpiredOn(LocalDate.now()));
+        assertFalse(workday.isExpiredAt(java.time.LocalDateTime.now()));
     }
 
     @Test
@@ -101,7 +103,8 @@ public class OnceAlarmTest {
         List<Alarm> got = Prefs.getAlarms(ctx());
         assertEquals("过期的那条应被清掉，其余保留", 2, got.size());
         for (Alarm a : got) {
-            assertFalse("清理后不该再有过期项", a.isExpiredOn(today));
+            assertFalse("清理后不该再有过期项",
+                    a.isExpiredAt(java.time.LocalDateTime.now()));
         }
         // 清理要落盘：否则每次读都要重新算一遍，且列表页与排程可能读到不同结果
         assertEquals("清理结果应写回存储", 2, Prefs.getAlarms(ctx()).size());
@@ -133,6 +136,58 @@ public class OnceAlarmTest {
      * <p>这是最容易踩的坑：上午 9 点建一条「今天 6:30 仅一次」，它不会响，
      * 第二天还会被过期清理悄悄删掉——用户等了一整天，什么也没发生。
      */
+    /**
+     * 请假当天，一次性闹钟必须照响。
+     *
+     * <p>这是它最容易被写坏的地方：请假过滤写在排程的「天」那一层，
+     * 顺手就把所有闹钟一起跳过了。可用户请的是「不上班」，不是「不要叫我」——
+     * 明早要赶车，跟今天上不上班毫无关系。
+     */
+    @Test
+    public void onceRingsEvenOnVacationDay() {
+        LocalDate day = LocalDate.now().plusDays(1);
+        Alarm a = once(day);
+        ScheduleManager.NextAlarm next = ScheduleManager.nextRing(
+                java.util.Collections.singletonList(a), null,
+                java.util.Collections.singleton(day), java.util.Collections.emptySet(),
+                LocalDate.now().atStartOfDay(), 7);
+        assertNotNull("请假那天的一次性闹钟也该排上", next);
+        assertEquals(java.time.LocalDateTime.of(day, java.time.LocalTime.of(6, 30)), next.when);
+    }
+
+    /** 反向对照：同一个请假日期，普通闹钟确实该被跳过。 */
+    @Test
+    public void dailyAlarmIsStillSkippedOnVacationDay() {
+        LocalDate today = LocalDate.now();
+        Alarm daily = new Alarm(2, 7, 0, "起床", Alarm.Mode.DAILY, true);
+        // 只看今天这一天：请假只标了今天，若把窗口拉到 7 天，
+        // DAILY 自然会排到明天去，那不是「没跳过」而是「跳过之后还有下一天」
+        assertNull("请假那天普通闹钟不该排",
+                ScheduleManager.nextRing(java.util.Collections.singletonList(daily), null,
+                        java.util.Collections.singleton(today), java.util.Collections.emptySet(),
+                        today.atStartOfDay(), 1));
+    }
+
+    /** 响过就该从列表消失，而不是躺到明天零点。 */
+    @Test
+    public void disappearsRightAfterItRings() {
+        java.time.LocalDateTime past = java.time.LocalDateTime.now().minusHours(2);
+        Alarm rang = new Alarm(9, past.getHour(), past.getMinute(), "赶车",
+                Alarm.Mode.ONCE, true, past.toLocalDate().toString());
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(rang));
+        assertTrue("响完之后列表里不该还有它", Prefs.getAlarms(ctx()).isEmpty());
+    }
+
+    /** 还没到点的一次性闹钟当然要留着。 */
+    @Test
+    public void futureOnce_staysInList() {
+        java.time.LocalDateTime future = java.time.LocalDateTime.now().plusHours(2);
+        Alarm soon = new Alarm(10, future.getHour(), future.getMinute(), "赶车",
+                Alarm.Mode.ONCE, true, future.toLocalDate().toString());
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(soon));
+        assertEquals("还没响的不能被清理", 1, Prefs.getAlarms(ctx()).size());
+    }
+
     @Test
     public void pastTime_rollsToNextDay() {
         LocalDate today = LocalDate.of(2026, 10, 21);

@@ -2,7 +2,15 @@
 <!-- 闹钟编辑对话框：名称 + 时间 + 重复规则 + 删除。
      用自定义布局而非 setMessage + setSingleChoiceItems：后者在 MIUI 主题下
      单选列表不渲染（已实测复现），自绘 RadioGroup 三选项必然可见。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- v1.27.1：外面套一层 ScrollView。加了第四个模式与「哪一天」行之后，
+     内容在小屏上会超出对话框高度——而对话框本身不会滚，底部的「删除 / 取消 / 保存」
+     会被顶出屏幕，等于没保存按钮。ScrollView 让内容自己滚，按钮始终在。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -144,3 +152,5 @@
         android:textSize="14sp"
         android:textStyle="bold" />
 </LinearLayout>
+
+</ScrollView>

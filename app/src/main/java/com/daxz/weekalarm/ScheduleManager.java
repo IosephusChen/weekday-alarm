@@ -486,7 +486,9 @@ public final class ScheduleManager {
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
             for (int i = 0; i < horizon; i++) {
                 LocalDate d = today.plusDays(i);
-                if (vacations.contains(d)) continue;   // 个人请假：当天全部闹钟不响
+                // 个人请假：当天不响——但一次性闹钟豁免，它是「这天要叫我」，
+                // 不是「按作息排的班」（见 Alarm.ignoresVacation）
+                if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 // 个人加班（v1.15）：休息日标记加班后「仅上班日」闹钟当天照响
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 LocalDateTime when = LocalDateTime.of(d, alarmTime);
@@ -614,7 +616,7 @@ public final class ScheduleManager {
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
             for (int i = 0; i < horizon; i++) {
                 LocalDate d = today.plusDays(i);
-                if (vacations.contains(d)) continue;
+                if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 if (LocalDateTime.of(d, alarmTime).isAfter(now)) n++;
             }
@@ -681,7 +683,7 @@ public final class ScheduleManager {
                 LocalDate d = today.plusDays(i);
                 LocalDateTime when = LocalDateTime.of(d, alarmTime);
                 if (!when.isAfter(now)) continue;
-                if (vacations.contains(d)) continue;   // 请假：跳过
+                if (!a.ignoresVacation() && vacations.contains(d)) continue;   // 请假：跳过
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 candidates.add(new Object[]{a, when});
             }
@@ -724,10 +726,13 @@ public final class ScheduleManager {
         LocalDate start = from.toLocalDate();
         for (int i = 0; i < days; i++) {
             LocalDate d = start.plusDays(i);
-            if (vacations.contains(d)) continue;      // 请假：当天全部跳过
+            // 请假判断原本在闹钟循环之外（整天跳过）。一次性闹钟要豁免，
+            // 就只能挪进循环里逐支判断——否则首页会说「明天不响」，而它其实会响
+            boolean vacation = vacations.contains(d);
             boolean overtime = overtimes.contains(d);
             for (Alarm a : alarms) {
                 if (!a.enabled) continue;
+                if (vacation && !a.ignoresVacation()) continue;
                 if (!a.appliesTo(d, rule, overtime)) continue;
                 LocalDateTime when = LocalDateTime.of(d, LocalTime.of(a.hour, a.minute));
                 if (!when.isAfter(from)) continue;

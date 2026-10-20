@@ -29,7 +29,7 @@ import java.util.Locale;
  *
  * <p>三页不再是纯讲解，而是每页做一件事：
  * <ol>
- *   <li>选周休制度 —— 点哪个写哪个，大小周还能顺手定「本周是大周还是小周」</li>
+ *   <li>选周休制度 —— 点哪个写哪个；大小周顺手定「本周大 / 小周」，单休顺手定「休周日 / 休周六」</li>
  *   <li>设第一个闹钟 —— 默认 07:30、仅上班日，点时间可改</li>
  *   <li>权限清单 —— 实时显示已开 / 未开，点一下直接跳到对应系统页</li>
  * </ol>
@@ -48,10 +48,11 @@ public class GuideActivity extends AppCompatActivity {
     private ViewFlipper flipper;
     private LinearLayout dots;
     private TextView btnNext, btnPrev, btnSkip, tvTime, tvTimeHint;
-    private LinearLayout rowWeekBig;
-    private TextView optBig, optSmall;
+    private LinearLayout rowWeekBig, rowSingleDay;
+    private TextView optBig, optSmall, optRestSun, optRestSat, tvSingleSub;
     private final List<View> modeCards = new ArrayList<>();
-    private final WeekSchedule.Mode[] modes = WeekSchedule.Mode.values();
+    /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
+    private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade;
     private TextView stNotif, stExact, stFsi, stBattery;
@@ -75,6 +76,10 @@ public class GuideActivity extends AppCompatActivity {
         rowWeekBig = findViewById(R.id.row_weekbig);
         optBig = findViewById(R.id.opt_big);
         optSmall = findViewById(R.id.opt_small);
+        rowSingleDay = findViewById(R.id.row_singleday);
+        optRestSun = findViewById(R.id.opt_rest_sun);
+        optRestSat = findViewById(R.id.opt_rest_sat);
+        tvSingleSub = findViewById(R.id.tv_single_sub);
 
         stNotif = findViewById(R.id.st_notif);
         stExact = findViewById(R.id.st_exact);
@@ -121,19 +126,36 @@ public class GuideActivity extends AppCompatActivity {
     // ================= 第 1 页：周休制度 =================
 
     private void bindModeCards() {
-        modeCards.add(findViewById(R.id.mode_bigsmall));
-        modeCards.add(findViewById(R.id.mode_double));
-        modeCards.add(findViewById(R.id.mode_sun));
-        modeCards.add(findViewById(R.id.mode_sat));
-        for (int i = 0; i < modeCards.size() && i < modes.length; i++) {
-            final WeekSchedule.Mode mode = modes[i];
-            modeCards.get(i).setOnClickListener(v -> selectMode(mode));
-        }
+        addModeCard(R.id.mode_bigsmall, WeekSchedule.Mode.BIG_SMALL);
+        addModeCard(R.id.mode_double, WeekSchedule.Mode.DOUBLE_REST);
+        // v1.26.1：周六休 / 周日休合成一张卡，休哪天交给下面的子选项。
+        // 卡本身用 SINGLE_REST_SUN 代表「单休这一组」，真正写哪个由 selectMode 决定。
+        addModeCard(R.id.mode_single, WeekSchedule.Mode.SINGLE_REST_SUN);
+
         optBig.setOnClickListener(v -> setWeekBig(true));
         optSmall.setOnClickListener(v -> setWeekBig(false));
+        optRestSun.setOnClickListener(v -> setSingleRestDay(true));
+        optRestSat.setOnClickListener(v -> setSingleRestDay(false));
     }
 
+    private void addModeCard(int id, WeekSchedule.Mode mode) {
+        View card = findViewById(id);
+        modeCards.add(card);
+        cardModes.add(mode);
+        card.setOnClickListener(v -> selectMode(mode));
+    }
+
+    /**
+     * 选中一种制度。
+     *
+     * <p>「单休」那张卡不绑定具体休哪天：点它沿用用户已经选过的那天，
+     * 第一次点则按「休周日」起步（国内绝大多数单休如此），再在子选项里改。
+     * 若写死成某一种，重看引导的老用户会被悄悄改掉排班。
+     */
     private void selectMode(WeekSchedule.Mode mode) {
+        if (mode == WeekSchedule.Mode.SINGLE_REST_SUN) {
+            mode = currentSingleMode();
+        }
         Prefs.setWeekMode(this, mode);
         // 首次安装选大小周：默认按「本周是大周」起步，anchor 落在本周六。
         // 重看引导时不覆盖用户已有的 anchor，否则会把排班整体挪一周。
@@ -144,6 +166,19 @@ public class GuideActivity extends AppCompatActivity {
         syncModeUi();
     }
 
+    /** 已经是某种单休就沿用，否则按「休周日」起步。 */
+    private WeekSchedule.Mode currentSingleMode() {
+        WeekSchedule.Mode cur = Prefs.getWeekMode(this);
+        return cur == WeekSchedule.Mode.SINGLE_REST_SAT ? cur : WeekSchedule.Mode.SINGLE_REST_SUN;
+    }
+
+    /** 单休休哪天：周日休 = 周六上班，周六休 = 周日上班。 */
+    private void setSingleRestDay(boolean sunday) {
+        Prefs.setWeekMode(this, sunday ? WeekSchedule.Mode.SINGLE_REST_SUN
+                : WeekSchedule.Mode.SINGLE_REST_SAT);
+        syncModeUi();
+    }
+
     private void setWeekBig(boolean big) {
         Prefs.setWeekBig(this, big);
         LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
@@ -151,12 +186,16 @@ public class GuideActivity extends AppCompatActivity {
         syncModeUi();
     }
 
-    /** 把当前设置回写到界面上：选中哪个制度、大小周那一行显不显示。 */
+    /** 把当前设置回写到界面上：选中哪张卡、两种子选项行显不显示、副标题写什么。 */
     private void syncModeUi() {
         WeekSchedule.Mode current = Prefs.getWeekMode(this);
-        for (int i = 0; i < modeCards.size() && i < modes.length; i++) {
-            modeCards.get(i).setSelected(modes[i] == current);
+        for (int i = 0; i < modeCards.size(); i++) {
+            WeekSchedule.Mode card = cardModes.get(i);
+            boolean on = card == current
+                    || (card == WeekSchedule.Mode.SINGLE_REST_SUN && isSingleRest(current));
+            modeCards.get(i).setSelected(on);
         }
+
         boolean bigSmall = current == WeekSchedule.Mode.BIG_SMALL;
         rowWeekBig.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
         if (bigSmall) {
@@ -164,6 +203,23 @@ public class GuideActivity extends AppCompatActivity {
             optBig.setSelected(big);
             optSmall.setSelected(!big);
         }
+
+        boolean single = isSingleRest(current);
+        rowSingleDay.setVisibility(single ? View.VISIBLE : View.GONE);
+        if (single) {
+            boolean sun = current == WeekSchedule.Mode.SINGLE_REST_SUN;
+            optRestSun.setSelected(sun);
+            optRestSat.setSelected(!sun);
+            // 副标题直接写明「哪天休、哪天上班」，省得用户回头猜自己选的是哪种
+            tvSingleSub.setText(sun ? "周日休 · 周六上班" : "周六休 · 周日上班");
+        } else {
+            tvSingleSub.setText("每周只休一天");
+        }
+    }
+
+    private static boolean isSingleRest(WeekSchedule.Mode mode) {
+        return mode == WeekSchedule.Mode.SINGLE_REST_SUN
+                || mode == WeekSchedule.Mode.SINGLE_REST_SAT;
     }
 
     // ================= 第 2 页：第一个闹钟 =================

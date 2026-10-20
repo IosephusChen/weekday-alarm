@@ -57,6 +57,17 @@ public class SnoozePreNoticeTest {
         sp.edit().clear().apply();
     }
 
+    /**
+     * 「稍后提醒」会登记在哪天：现在 + 间隔后的那一天。
+     *
+     * <p>见 ScheduleRegressionTest#snoozeDay 的说明：写死 {@link LocalDate#now()} 的话，
+     * 23:55 之后跑测试，加 5 分钟就跨到次日，探测必然落空。
+     */
+    private LocalDate snoozeDay() {
+        return LocalDateTime.now()
+                .plusMinutes(Math.max(1, Prefs.getSnoozeMinutes(ctx()))).toLocalDate();
+    }
+
     @Test
     public void snoozeAndPreNotice_defaults() {
         assertEquals(5, Prefs.getSnoozeMinutes(ctx()));
@@ -305,9 +316,10 @@ public class SnoozePreNoticeTest {
     @Test
     public void autoStop_setAndCancel() {
         int alarmId = 1;
-        // 自动停止按「alarmId × 当天」登记，探测时也用同一天（when.toLocalDate()）
-        LocalDate day = LocalDate.now();
+        // 自动停止按「alarmId × 触发时刻那天」登记，探测必须用 when 的那天：
+        // 23:55 + 5 分钟就到次日了，写死 LocalDate.now() 会探空
         LocalDateTime when = LocalDateTime.now().plusMinutes(5);
+        LocalDate day = when.toLocalDate();
         assertFalse("注册前应查不到",
                 ScheduleManager.isAutoStopRegistered(ctx(), alarmId, day));
         ScheduleManager.setAutoStop(ctx(), when, alarmId);
@@ -344,20 +356,19 @@ public class SnoozePreNoticeTest {
     public void alarmService_snoozeGuard_allowsWhenAvailable() {
         enableSingleDailyAlarm(30);
         Prefs.setSnoozeTimes(ctx(), 1);
-        LocalDate today = LocalDate.now();
+        LocalDate day = snoozeDay();   // 跨午夜时会是明天，不能写死今天
 
         Robolectric.buildService(AlarmService.class,
                 new Intent(ctx(), AlarmService.class)
                         .setAction(AlarmService.ACTION_SNOOZE)
                         .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
                         .putExtra(AlarmService.EXTRA_LABEL, "起床")
-                        .putExtra(AlarmService.EXTRA_DATE, today.toString()))
+                        .putExtra(AlarmService.EXTRA_DATE, day.toString()))
                 .startCommand(0, 0);
 
-        // 小睡必定注册在「当天」（此刻 + 间隔仍在今天），所以用 today 探测
         assertTrue("次数充足时应注册小睡闹钟",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
-        assertEquals(1, Prefs.getSnoozeCount(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, day));
+        assertEquals(1, Prefs.getSnoozeCount(ctx(), 1, day));
     }
 
     /** 启动指定闹钟 / 日期的 AlarmActivity。 */

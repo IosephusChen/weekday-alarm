@@ -33,7 +33,8 @@ import java.util.List;
  *
  * <p>这页最容易悄悄坏掉，因为它只在全新安装时出现一次，谁也不会天天点。所以钉住四条主线：
  * <ol>
- *   <li>第一页点哪个制度就写哪个，大小周还要顺手把「本周大/小」和 anchor 定对</li>
+ *   <li>第一页点哪个制度就写哪个：大小周顺手把「本周大/小」和 anchor 定对，
+ *       单休顺手把「休周日 / 休周六」定对</li>
  *   <li>第二页默认 07:30，改时间改的是第一个闹钟，不能凭空多出一个</li>
  *   <li>第三页四项权限状态跟系统真实状态一致</li>
  *   <li>「看过」的标记只在点「开始使用 / 跳过」时写，返回键退出不写</li>
@@ -117,10 +118,57 @@ public class GuideTest {
     }
 
     @Test
-    public void tapSingleRestSunday_writesMode() {
+    public void tapSingleRest_writesMode_andDefaultsToSunday() {
         GuideActivity a = fresh();
-        tap(a, R.id.mode_sun);
-        assertEquals(WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
+        tap(a, R.id.mode_single);
+        assertEquals("第一次点单休按最常见的「休周日」起步",
+                WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
+        assertTrue(a.findViewById(R.id.mode_single).isSelected());
+    }
+
+    /** 单休：休哪天是子选项，选了才出现，别让双休 / 大小周的人也看见它。 */
+    @Test
+    public void tapSingleRest_showsRestDayRow() {
+        GuideActivity a = fresh();
+        assertEquals("默认不是单休，子选项该收着", View.GONE, visibility(a, R.id.row_singleday));
+
+        tap(a, R.id.mode_single);
+        assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
+        assertTrue(a.findViewById(R.id.opt_rest_sun).isSelected());
+        assertFalse(a.findViewById(R.id.opt_rest_sat).isSelected());
+        assertEquals("副标题要写明哪天休、哪天上班", "周日休 · 周六上班",
+                text(a, R.id.tv_single_sub));
+    }
+
+    /** 改子选项：立刻换制度，副标题跟着变。 */
+    @Test
+    public void chooseRestSaturday_writesSingleRestSat() {
+        GuideActivity a = fresh();
+        tap(a, R.id.mode_single);
+        tap(a, R.id.opt_rest_sat);
+
+        assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
+        assertTrue(a.findViewById(R.id.opt_rest_sat).isSelected());
+        assertFalse(a.findViewById(R.id.opt_rest_sun).isSelected());
+        assertEquals("周六休 · 周日上班", text(a, R.id.tv_single_sub));
+        assertTrue("卡片本身仍是选中态，不能因为换了子选项就掉",
+                a.findViewById(R.id.mode_single).isSelected());
+    }
+
+    /** 已经是单休（周六休）的用户重看引导：点「单休」不能把那天改回周日。 */
+    @Test
+    public void tapSingleRest_keepsExistingRestDay() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.SINGLE_REST_SAT);
+        GuideActivity a = launch();
+
+        assertEquals("重看引导要回显原来的休周六",
+                WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
+        assertTrue(a.findViewById(R.id.opt_rest_sat).isSelected());
+
+        tap(a, R.id.mode_single);
+        assertEquals("再点一次卡片不能悄悄改成休周日",
+                WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
     }
 
     /** 大小周：默认按「本周是大周」起步，anchor 落在本周六。 */
@@ -157,6 +205,17 @@ public class GuideTest {
         tap(a, R.id.mode_bigsmall);
         tap(a, R.id.mode_double);
         assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
+        assertEquals(View.GONE, visibility(a, R.id.row_singleday));
+    }
+
+    /** 两种子选项行互斥：选了单休就不该还挂着「本周大 / 小周」。 */
+    @Test
+    public void chooseSingleRest_hidesBigSmallRow() {
+        GuideActivity a = fresh();
+        tap(a, R.id.mode_bigsmall);
+        tap(a, R.id.mode_single);
+        assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
+        assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
     }
 
     // ================= 第二页：第一个闹钟 =================

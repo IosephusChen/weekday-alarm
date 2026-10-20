@@ -75,26 +75,38 @@ public class ScheduleRegressionTest {
                 ScheduleManager.isAlarmRegistered(ctx(), 1, d));
     }
 
+    /**
+     * 「稍后提醒」会登记在哪天：现在 + 间隔后的那一天。
+     *
+     * <p>不能写死 {@link LocalDate#now()}——晚上 23:55 之后跑测试，加 5 分钟就跨到次日，
+     * 于是「注册了却用今天去查」恒为假，测试在一天里只有 23:55 之后这几分钟会红。
+     * 这种只在某个钟点炸的测试最阴，排查时根本想不到和时间有关。
+     */
+    private LocalDate snoozeDay() {
+        return LocalDateTime.now()
+                .plusMinutes(Math.max(1, Prefs.getSnoozeMinutes(ctx()))).toLocalDate();
+    }
+
     /** 关总开关要连「稍后提醒」一起清，否则点了小睡再关开关，几分钟后照样响。 */
     @Test
     public void cancelAllIncludingTransient_clearsSnooze() {
-        LocalDate today = LocalDate.now();
+        LocalDate day = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
-        assertTrue(ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+        assertTrue(ScheduleManager.isSnoozeRegistered(ctx(), 1, day));
 
         ScheduleManager.cancelAllIncludingTransient(ctx());
         assertFalse("关开关后不应再有待触发的小睡",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, day));
     }
 
     /** cancelAll 不能误伤小睡（响铃后重排时小睡要存活）。 */
     @Test
     public void cancelAll_keepsSnooze() {
-        LocalDate today = LocalDate.now();
+        LocalDate day = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
         ScheduleManager.cancelAll(ctx());
         assertTrue("普通重排不应取消待触发的小睡",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, day));
     }
 
 }

@@ -283,6 +283,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadPrefs() {
+        reloadAlarms();
+        updateSmallRestText();
+        updateVacationText();
+        updateOvertimeText();
+        updateWeekBigText();
+        updateWeekModeUi();
+    }
+
+    /**
+     * 重读闹钟列表（v1.25.3）。
+     *
+     * <p>以前只在 {@code onCreate} 里读一次存进 {@link #alarms}，之后全局刷新都拿这份快照渲染
+     * 列表；而倒计时走 {@code ScheduleManager.nextRing}，每次都重新读 Prefs。于是改完闹钟时间
+     * 回到主界面，列表显示旧时间、倒计时显示新时间——两处能差 30 分钟（2026-10-20 实测）。
+     * 现在列表和倒计时共用这一份，每次全局刷新都重读。
+     */
+    private void reloadAlarms() {
         alarms = Prefs.getAlarms(this);
         // 兜底：列表为空（用户删空或数据异常）时恢复一个默认「起床」闹钟，避免无闹钟可用
         if (alarms.isEmpty()) {
@@ -291,11 +308,6 @@ public class MainActivity extends AppCompatActivity {
             alarms.add(new Alarm(Prefs.nextAlarmId(this), h, m, "起床", Alarm.Mode.WORKDAY, true));
             Prefs.setAlarms(this, alarms);
         }
-        updateSmallRestText();
-        updateVacationText();
-        updateOvertimeText();
-        updateWeekBigText();
-        updateWeekModeUi();
     }
 
     /** 周休制度：刷新右侧文字，并只在「大小周」下显示本周是大周/小周、小周休哪天。 */
@@ -1120,6 +1132,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshStatus() {
+        reloadAlarms();   // v1.25.3：列表与倒计时同源，先拿最新数据再算
         LocalDate today = LocalDate.now();
         WeekSchedule.Rule rule = Prefs.getRule(this);
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
@@ -1170,7 +1183,11 @@ public class MainActivity extends AppCompatActivity {
         // ② 完全不看总开关——开关关着，副标题照样说「下一个闹钟 13:40」。
         boolean masterOn = Prefs.isEnabled(this);
         LocalDateTime now = LocalDateTime.now();
-        ScheduleManager.NextAlarm next = ScheduleManager.nextRing(this, now);
+        // v1.25.3：喂上面刚重读的 alarms，而不是让 nextRing 再去读一遍 Prefs。
+        // 两处各读一次就会各读各的，改完闹钟回来必然对不上。
+        ScheduleManager.NextAlarm next = ScheduleManager.nextRing(alarms, rule,
+                Prefs.getVacationDates(this), Prefs.getOvertimeDates(this),
+                now, Prefs.getHorizonDays(this));
         // 总开关关着就没有「下一次」：nextRingAt 置空，tick 才不会把「--:--:--」又写成倒计时
         nextRingAt = masterOn && next != null ? next.when : null;
         tickDay = today;

@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -71,6 +72,48 @@ public class UiLayoutTest {
         int listIndex = card.indexOfChild(list);
         assertTrue("总开关（" + switchIndex + "）应在闹钟列表（" + listIndex + "）之前",
                 switchIndex < listIndex);
+    }
+
+
+    private static String collectText(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof TextView) sb.append(((TextView) v).getText()).append('|');
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(collectText(g.getChildAt(i)));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 改完闹钟时间回到主界面，列表和倒计时必须都跟着变（v1.25.3）。
+     *
+     * <p>以前列表用 onCreate 的快照、倒计时重读设置，改一次就分叉一次：
+     * 用户把起床从 07:30 改成 07:00，列表还写 07:30，顶部却说「下次 07:00」。
+     */
+    @Test
+    public void afterEditingAlarm_listAndHeroAgree() {
+        ActivityController<MainActivity> ctl = Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MainActivity a = ctl.get();
+        Prefs.setEnabled(ctx(), true);
+
+        java.util.List<Alarm> alarms = new java.util.ArrayList<>(Prefs.getAlarms(ctx()));
+        assertFalse("预置闹钟不该是空的", alarms.isEmpty());
+        Alarm first = alarms.get(0);
+        alarms.set(0, new Alarm(first.id, 7, 0, first.label, Alarm.Mode.WORKDAY, true));
+        Prefs.setAlarms(ctx(), alarms);
+
+        ctl.pause().resume();
+        ShadowLooper.idleMainLooper();
+
+        String list = collectText(a.findViewById(R.id.alarm_list));
+        assertTrue("列表要显示改后的 07:00，实际：" + list, list.contains("07:00"));
+        assertFalse("列表不该还留着改前的 07:30，实际：" + list, list.contains("07:30"));
+
+        TextView hero = a.findViewById(R.id.tv_today_sub);
+        assertTrue("倒计时卡片也要是 07:00，实际：" + hero.getText(),
+                hero.getText().toString().contains("07:00"));
     }
 
     /** 名字从「闹钟开关」改成「闹钟总开关」，避免被当成单个闹钟的开关。 */

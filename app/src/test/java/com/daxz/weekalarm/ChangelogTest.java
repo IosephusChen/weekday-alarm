@@ -208,14 +208,15 @@ public class ChangelogTest {
         Changelog.Entry newest = Changelog.all().get(0);
         assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), newest.date));
         // 卡片第 2 行是 meta（日期 · versionCode），只看这一行，别被正文里的日期串扰
-        TextView prev = (TextView) ((ViewGroup) box.getChildAt(1)).getChildAt(1);
-        assertTrue("与前一张不同日就该印日期，实际：" + prev.getText(),
-                prev.getText().toString().contains(Changelog.all().get(1).date));
-        // 第 3 张与第 2 张同一天，这里才该折叠成「同日」
-        TextView meta = (TextView) ((ViewGroup) box.getChildAt(2)).getChildAt(1);
+        // 第 2 张与最新一版同一天（v1.26.2 与 v1.26.3 都是 10/21），这里该折叠
+        TextView meta = (TextView) ((ViewGroup) box.getChildAt(1)).getChildAt(1);
         assertTrue("同一天应写「同日」，实际：" + meta.getText(),
                 meta.getText().toString().startsWith("同日"));
         assertFalse("同一天不该重复印日期，实际：" + meta.getText(),
-                meta.getText().toString().contains(Changelog.all().get(2).date));
+                meta.getText().toString().contains(Changelog.all().get(1).date));
+        // 第 3 张换了一天（v1.26.1 是 10/20），日期要重新印出来
+        TextView older = (TextView) ((ViewGroup) box.getChildAt(2)).getChildAt(1);
+        assertTrue("换了一天就该重新印日期，实际：" + older.getText(),
+                older.getText().toString().contains(Changelog.all().get(2).date));
     }
 }

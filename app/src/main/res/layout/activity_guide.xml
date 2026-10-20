@@ -460,6 +460,73 @@
                             android:textColor="@color/sub"
                             android:textSize="14sp" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/line" />
+
+                    <!-- v1.26.3：稍后提醒与提前提醒搬进来。
+                         前者决定「响铃后还能再眯几次」，后者决定「响之前要不要先来一条通知」——
+                         两者都是闹钟最核心的体验，却都藏在设置页第三段。 -->
+                    <LinearLayout
+                        android:id="@+id/row_snooze"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="稍后提醒"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tv_snooze"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5 分钟 × 3 次"
+                            android:textColor="@color/sub"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/line" />
+
+                    <LinearLayout
+                        android:id="@+id/row_prenotice"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="提前提醒"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tv_prenotice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="提前 1 小时"
+                            android:textColor="@color/sub"
+                            android:textSize="14sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <TextView
@@ -468,7 +535,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="渐响会从静音用 30 秒慢慢升到设定音量，适合怕被吓醒的人。"
+                    android:text="渐响会从静音用 30 秒升到设定音量。提前提醒会在响铃前先来一条通知，嫌吵就关掉。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>

@@ -314,6 +314,27 @@ public class GuideTest {
         assertEquals("关", text(a, R.id.tv_fade));
     }
 
+    /** 稍后提醒：按当前默认值显示「5 分钟 × 3 次」，不给光秃秃的数字。 */
+    @Test
+    public void snoozeRow_showsCurrentSetting() {
+        GuideActivity a = fresh();
+        assertEquals("5 分钟 × 3 次", text(a, R.id.tv_snooze));
+    }
+
+    /**
+     * 提前提醒：默认 1 小时，而且必须能在引导页里改成关闭——
+     * 「未经同意就发通知」的唯一正当解法是当面让人选一次，不是默认关掉藏起来。
+     */
+    @Test
+    public void preNoticeRow_showsOneHour_andCanBeTurnedOff() {
+        GuideActivity a = fresh();
+        assertEquals("提前 1 小时", text(a, R.id.tv_prenotice));
+
+        Prefs.setPreNoticeMinutes(ctx(), 0);
+        a.refreshRingForTest();
+        assertEquals("关闭", text(a, R.id.tv_prenotice));
+    }
+
     // ================= 第三页：权限清单 =================
 
     @Test

@@ -54,7 +54,7 @@ public class GuideActivity extends AppCompatActivity {
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
-    private TextView tvVolume, tvFade;
+    private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
     private TextView stNotif, stExact, stFsi, stBattery;
 
     private int index = 0;
@@ -289,11 +289,24 @@ public class GuideActivity extends AppCompatActivity {
     private void bindRing() {
         tvVolume = findViewById(R.id.tv_volume);
         tvFade = findViewById(R.id.tv_fade);
+        tvSnooze = findViewById(R.id.tv_snooze);
+        tvPreNotice = findViewById(R.id.tv_prenotice);
         findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
         findViewById(R.id.row_fade).setOnClickListener(v -> {
             Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
             refreshRing();
         });
+        // v1.26.3：这两个对话框与设置页共用同一份（PrefDialogs），
+        // 免得两处各自维护「档位 ↔ 存值」的映射，哪天加一档就漏一处
+        findViewById(R.id.row_snooze).setOnClickListener(
+                v -> PrefDialogs.showSnooze(this, this::refreshRing));
+        findViewById(R.id.row_prenotice).setOnClickListener(
+                v -> PrefDialogs.showPreNotice(this, this::refreshRing));
+        refreshRing();
+    }
+
+    /** 包级可见：单测直接触发一次回显刷新，不必去驱动对话框。 */
+    void refreshRingForTest() {
         refreshRing();
     }
 
@@ -301,6 +314,8 @@ public class GuideActivity extends AppCompatActivity {
         int v = Prefs.getVolume(this);
         tvVolume.setText(v == 0 ? "静音（仅震动）" : v + "%");
         tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
+        tvSnooze.setText(PrefDialogs.snoozeText(this));
+        tvPreNotice.setText(PrefDialogs.preNoticeText(this));
     }
 
     /** 音量条：与设置页同一个对话框布局，拖到 0 = 静音仅震动。 */

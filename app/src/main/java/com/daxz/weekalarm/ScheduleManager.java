@@ -602,8 +602,19 @@ public final class ScheduleManager {
      * 双层循环，改一处忘另一处就会让界面数字与实际排程对不上。
      */
     private static int countCandidates(Context ctx) {
-        List<Alarm> alarms = Prefs.getAlarms(ctx);
-        if (alarms.isEmpty()) return 0;
+        return countCandidates(ctx, Prefs.getAlarms(ctx));
+    }
+
+    /**
+     * 同上，但用调用方已经读好的列表。
+     *
+     * <p>v1.28：首页一次刷新要算「下次响铃 / 实例总数 / 已登记闹钟」三样，
+     * 旧写法每样都重新读一遍 Prefs。而 {@code Prefs.getAlarms} 现在会顺手
+     * 关闭过期的一次性闹钟（可能写盘），三次读就是三次序列化 + 两次多余判断。
+     * 传进来一次，三处共用。
+     */
+    static int countCandidates(Context ctx, List<Alarm> alarms) {
+        if (alarms == null || alarms.isEmpty()) return 0;
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
@@ -643,6 +654,11 @@ public final class ScheduleManager {
         return countCandidates(ctx);
     }
 
+    /** 同上，复用调用方已读好的列表（首页刷新用，省掉重复读 Prefs）。 */
+    public static int countScheduled(Context ctx, List<Alarm> alarms) {
+        return countCandidates(ctx, alarms);
+    }
+
     /** 检查某闹钟在某天的实例是否仍在系统中登记（FLAG_NO_CREATE 不会新建，只探测）。 */
     public static boolean isAlarmRegistered(Context ctx, int alarmId, LocalDate d) {
         return isSegmentRegistered(ctx, alarmId, d, SEG_MAIN);
@@ -668,6 +684,11 @@ public final class ScheduleManager {
      * 3 个闹钟 × 365 天 ≈ 1000 次 IPC，主界面每次刷新都要跑一遍，是明显的卡顿来源。
      */
     public static NextAlarm nextRegisteredAlarm(Context ctx) {
+        return nextRegisteredAlarm(ctx, Prefs.getAlarms(ctx));
+    }
+
+    /** 同上，复用调用方已读好的列表（v1.28）。 */
+    public static NextAlarm nextRegisteredAlarm(Context ctx, List<Alarm> alarms) {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         int horizon = Prefs.getHorizonDays(ctx);
@@ -676,7 +697,7 @@ public final class ScheduleManager {
         Set<LocalDate> overtimes = Prefs.getOvertimeDates(ctx);
 
         List<Object[]> candidates = new ArrayList<>();
-        for (Alarm a : Prefs.getAlarms(ctx)) {
+        for (Alarm a : alarms) {
             if (!a.enabled) continue;
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
             for (int i = 0; i < horizon; i++) {

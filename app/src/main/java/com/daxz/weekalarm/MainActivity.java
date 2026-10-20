@@ -61,6 +61,10 @@ public class MainActivity extends AppCompatActivity {
     private View guideBody;
     private TextView tvGuideToggle;
     private boolean guideExpanded;
+    /** 运行状态折叠卡（v1.28）：自检信息默认收起，标题行只留一句摘要。 */
+    private View runBody;
+    private TextView tvRunSummary, tvRunToggle;
+    private boolean runExpanded;
 
     /** 新手引导（v1.19.9）：本次启动是否拉起过引导页；onResume 计次用于延后权限请求。 */
     private boolean firstRunGuideShown;
@@ -118,6 +122,9 @@ public class MainActivity extends AppCompatActivity {
         swAlarm = findViewById(R.id.switch_alarm);
         guideBody = findViewById(R.id.guide_body);
         tvGuideToggle = findViewById(R.id.tv_guide_toggle);
+        runBody = findViewById(R.id.run_body);
+        tvRunSummary = findViewById(R.id.tv_run_summary);
+        tvRunToggle = findViewById(R.id.tv_run_toggle);
 
         // 使用说明：首次安装自动展开一次，让新用户先看到用法；之后记住收起状态
         guideExpanded = !Prefs.isGuideSeen(this);
@@ -138,6 +145,10 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.row_guide_header).setOnClickListener(v -> {
             guideExpanded = !guideExpanded;
             applyGuideState();
+        });
+        findViewById(R.id.row_run_header).setOnClickListener(v -> {
+            runExpanded = !runExpanded;
+            applyRunState();
         });
         tvVacation.setOnClickListener(v -> showVacationClearDialog());
         tvOvertime.setOnClickListener(v -> showOvertimeClearDialog());
@@ -345,6 +356,12 @@ public class MainActivity extends AppCompatActivity {
         tvGuideToggle.setText(guideExpanded ? "收起" : "展开");
     }
 
+    /** 运行状态展开 / 收起（v1.28）：同上，默认收起，不记忆。 */
+    private void applyRunState() {
+        runBody.setVisibility(runExpanded ? View.VISIBLE : View.GONE);
+        tvRunToggle.setText(runExpanded ? "收起" : "展开");
+    }
+
     private void updateWeekBigText() {
         tvWeekBig.setText(Prefs.isWeekBig(this) ? "大周（休2天）" : "小周（休1天）");
     }
@@ -379,7 +396,8 @@ public class MainActivity extends AppCompatActivity {
     /** 请假标记行文案：已标记天数；点击弹清除确认。 */
     private void updateVacationText() {
         int n = countUpcoming(Prefs.getVacationDates(this));
-        tvVacation.setText(n == 0 ? "请假标记：无" : "请假标记：" + n + " 天（点击清除）");
+        // v1.28：两个按钮并排后只有半屏宽，文案要短到一行放得下
+        tvVacation.setText(n == 0 ? "请假标记" : "请假 " + n + " 天 · 清除");
     }
 
     /** 设置区「请假标记」行：一键清除全部请假（单日标记在排班日历上点对应日期）。 */
@@ -407,7 +425,7 @@ public class MainActivity extends AppCompatActivity {
     /** 加班标记行文案：已标记天数；点击弹清除确认。 */
     private void updateOvertimeText() {
         int n = countUpcoming(Prefs.getOvertimeDates(this));
-        tvOvertime.setText(n == 0 ? "加班标记：无" : "加班标记：" + n + " 天（点击清除）");
+        tvOvertime.setText(n == 0 ? "加班标记" : "加班 " + n + " 天 · 清除");
     }
 
     /**
@@ -543,8 +561,9 @@ public class MainActivity extends AppCompatActivity {
                 ScheduleManager.dropStalePreNotices(this);
             }
             if (Prefs.isEnabled(this)) {
+                // v1.28：这里不再单独 refreshAll——onResume 末尾会统一刷一次。
+                // 旧写法在升级那次启动要刷两遍（42 个日历格子 + 两个小组件各重建一次）。
                 ScheduleManager.rescheduleAll(this);
-                refreshAll();
             }
             // v1.22.3：升级后弹一次本次更新内容，看过即不再弹（last 已写成当前版本）
             if (upgraded) {
@@ -1373,25 +1392,31 @@ public class MainActivity extends AppCompatActivity {
         tvHolidayNote.setText(HolidayData.hasRemote()
                 ? "节假日数据已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
                 : "已内置 " + HolidayData.BUILT_IN_YEAR + " 年节假日安排（放假与调休自动优先于周休制度）");
-        int n = ScheduleManager.countScheduled(this);
-        ScheduleManager.NextAlarm nextAlarm = ScheduleManager.nextRegisteredAlarm(this);
-        String checkLine = nextAlarm != null
-                ? "\n下一个闹钟：" + nextAlarm.when.format(DateTimeFormatter.ofPattern("M月d日"))
-                        + " " + weekLabel(nextAlarm.when.toLocalDate()) + " "
-                        + String.format(Locale.getDefault(), "%02d:%02d",
-                                nextAlarm.when.getHour(), nextAlarm.when.getMinute())
-                        + " " + nextAlarm.label + " · 系统已登记 ✓"
-                : "\n系统中暂无已登记的闹钟，请打开「闹钟总开关」";
-        // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排。
-        // v1.19.9：pending 与上面的 n 是同一口径（countScheduled 已与 pendingAlarmCount 合并），
-        // 不再多跑一遍「闹钟数 × 天数」的全量循环。
-        if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
-            checkLine += "\n提醒较多，已优先排程最近的 " + ScheduleManager.MAX_REGISTERED_ALARMS
-                    + " 个，更久的会随闹钟响铃自动补上";
+        // v1.28：三处统计共用刚读好的 alarms，不再各读一遍 Prefs
+        int n = ScheduleManager.countScheduled(this, alarms);
+        ScheduleManager.NextAlarm nextAlarm = ScheduleManager.nextRegisteredAlarm(this, alarms);
+        int horizon = Prefs.getHorizonDays(this);
+        // 标题行的一句话摘要：默认收起时，用户只看得见这一行
+        tvRunSummary.setText(masterOn ? "已开启 · " + n + " 个提醒" : "已关闭");
+        String checkLine;
+        if (!masterOn) {
+            checkLine = "尚未开启 · 打开「闹钟总开关」即自动排程";
+        } else {
+            checkLine = "未来 " + horizon + " 天共 " + n + " 个提醒";
+            checkLine += nextAlarm != null
+                    ? "\n下一个闹钟：" + nextAlarm.when.format(DateTimeFormatter.ofPattern("M月d日"))
+                            + " " + weekLabel(nextAlarm.when.toLocalDate()) + " "
+                            + String.format(Locale.getDefault(), "%02d:%02d",
+                                    nextAlarm.when.getHour(), nextAlarm.when.getMinute())
+                            + " " + nextAlarm.label + " · 系统已登记 ✓"
+                    : "\n系统中暂无已登记的闹钟，请检查排班设置";
+            // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
+            if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
+                checkLine += "\n提醒较多，已优先排程最近的 " + ScheduleManager.MAX_REGISTERED_ALARMS
+                        + " 个，更久的会随闹钟响铃自动补上";
+            }
         }
-        tvStatus.setText(Prefs.isEnabled(this)
-                ? "闹钟已开启 · 未来 " + Prefs.getHorizonDays(this) + " 天共 " + n + " 个提醒" + checkLine
-                : "尚未开启 · 打开「闹钟总开关」即自动排程");
+        tvStatus.setText(checkLine);
         // 开关位置同步启用态（swAttaching 防止回写触发用户操作逻辑）
         swAttaching = true;
         swAlarm.setChecked(Prefs.isEnabled(this));

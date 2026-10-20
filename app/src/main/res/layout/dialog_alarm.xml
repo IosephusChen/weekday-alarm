@@ -104,7 +104,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="仅一次（临时闹钟，响完自动删）" />
+            android:text="仅一次（临时闹钟，响过自动关闭）" />
     </RadioGroup>
 
     <!-- v1.27：只有选中「仅一次」才出现的那一天。默认隐藏，
@@ -148,7 +148,7 @@
         android:gravity="center"
         android:padding="11dp"
         android:text="删除这个闹钟"
-        android:textColor="#DC2626"
+        android:textColor="@color/danger"
         android:textSize="14sp"
         android:textStyle="bold" />
 </LinearLayout>

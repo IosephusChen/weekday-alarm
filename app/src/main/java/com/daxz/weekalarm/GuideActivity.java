@@ -1,8 +1,6 @@
 package com.daxz.weekalarm;
 
-import android.app.TimePickerDialog;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -225,8 +223,11 @@ public class GuideActivity extends AppCompatActivity {
     // ================= 第 2 页：第一个闹钟 =================
 
     private void bindTime() {
-        View.OnClickListener pick = v -> new TimePickerDialog(this,
-                (view, h, m) -> setTime(h, m), hour, minute, true).show();
+        // v1.28：改用自绘「时 / 分」滚轮，与主界面、睡前提醒同一套。
+        // 原来这里还是框架的 TimePickerDialog——澎湃 OS 会无视主题把 spinner 渲染成表盘拨轮，
+        // 于是同一个 App 里选时间出现两种完全不同的交互，引导页反而最花哨。
+        View.OnClickListener pick = v -> TimeWheelDialog.show(this, "第一个闹钟", hour, minute,
+                (h, m) -> setTime(h, m));
         tvTime.setOnClickListener(pick);
         findViewById(R.id.btn_pick_time).setOnClickListener(pick);
     }
@@ -395,8 +396,8 @@ public class GuideActivity extends AppCompatActivity {
     private void setPermState(TextView tv, boolean ok) {
         if (tv == null) return;
         tv.setText(ok ? "已开启" : "去开启");
-        tv.setTextColor(ok ? Color.parseColor("#16A34A")
-                : ContextCompat.getColor(this, R.color.indigo));
+        // v1.28：改读资源，深色模式下用更亮的绿（写死 #16A34A 在深卡片上只有 3:1）
+        tv.setTextColor(ContextCompat.getColor(this, ok ? R.color.success : R.color.indigo));
     }
 
     private boolean isIgnoringBattery() {

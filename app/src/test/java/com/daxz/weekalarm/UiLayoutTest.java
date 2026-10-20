@@ -318,4 +318,41 @@ public class UiLayoutTest {
         assertTrue("时间列宽度要放得下 5 个数字",
                 t.getPaint().measureText("88:88") <= time0.getLayoutParams().width);
     }
+
+    /**
+     * 运行状态默认收起（v1.28）。
+     *
+     * <p>这里以前常驻三行小字（提醒总数、大周基准、节假日数据来源），占了主界面最底部
+     * 近 100dp。收进折叠卡后，用户默认只看到「已开启 · N 个提醒」一行，
+     * 想核对细节再展开——不能默认展开，否则等于没改。
+     */
+    @Test
+    public void runStatus_collapsedByDefault_withOneLineSummary() {
+        MainActivity a = launch();
+        assertEquals("运行状态默认应收起", View.GONE,
+                a.findViewById(R.id.run_body).getVisibility());
+        TextView summary = a.findViewById(R.id.tv_run_summary);
+        assertNotNull(summary);
+        String text = summary.getText().toString();
+        assertTrue("摘要要能看出开关状态，实际：" + text,
+                text.startsWith("已开启") || text.startsWith("已关闭"));
+        // 详情仍要在展开区里，别把信息删了
+        assertNotNull(a.findViewById(R.id.tv_status));
+        assertEquals("收起时按钮写「展开」", "展开",
+                ((TextView) a.findViewById(R.id.tv_run_toggle)).getText().toString());
+    }
+
+    /** 请假 / 加班两个入口并排一行（v1.28）：原来是两座通栏「小山」。 */
+    @Test
+    public void vacationAndOvertime_shareOneRow() {
+        MainActivity a = launch();
+        View vacation = a.findViewById(R.id.tv_vacation);
+        View overtime = a.findViewById(R.id.tv_overtime);
+        assertTrue("两者应在同一个横向容器里", vacation.getParent() == overtime.getParent());
+        LinearLayout row = (LinearLayout) vacation.getParent();
+        assertEquals(LinearLayout.HORIZONTAL, row.getOrientation());
+        assertEquals("等宽两列", 2, row.getChildCount());
+        assertEquals(((LinearLayout.LayoutParams) vacation.getLayoutParams()).weight,
+                ((LinearLayout.LayoutParams) overtime.getLayoutParams()).weight, 0.001f);
+    }
 }

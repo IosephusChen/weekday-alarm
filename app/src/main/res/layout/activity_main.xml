@@ -503,35 +503,49 @@
                 android:layout_marginTop="12dp"
                 android:background="@color/line" />
 
-            <TextView
-                android:id="@+id/tv_vacation"
+            <!-- 请假 / 加班（v1.28）：原来是两个通栏按钮，各占 44dp 高、上下还各留 10dp，
+                 在日历卡底部堆成两座「小山」，而它们大多数时候只显示「无」。
+                 改成一行两个等宽按钮：无标记时只有四个字，有标记时写「N 天 · 清除」，
+                 高度省一半，也更容易和上面的图例连成一组。 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:background="@drawable/bg_time_outline"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:padding="11dp"
-                android:text="请假标记：无"
-                android:textColor="@color/ink"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tv_overtime"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/bg_time_outline"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:padding="11dp"
-                android:text="加班标记：无"
-                android:textColor="@color/ink"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tv_vacation"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="请假标记"
+                    android:textColor="@color/ink"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_overtime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="加班标记"
+                    android:textColor="@color/ink"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ===== ④ 使用说明（v1.19.8）=====
@@ -603,7 +617,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 操作与自检 -->
+        <!-- 测试响铃（次要操作，v1.28 从「整屏大按钮 + 三行状态」里拆出来） -->
         <TextView
             android:id="@+id/btn_test"
             android:layout_width="match_parent"
@@ -618,30 +632,104 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tv_status"
-            style="@style/FieldHint"
+        <!-- ===== ⑤ 运行状态（v1.28）=====
+             以前这里是三行常驻小字：提醒总数 + 下一个已登记闹钟、大周基准、节假日数据来源。
+             三行都是「核对用」的信息，却占了主界面最底部近 100dp，而且「系统已登记 ✓」
+             这种自检文案天天摆在用户面前，像没做完的调试页。
+             现在收进一张默认收起的卡片：标题行右侧一句话说清「开着没、几个提醒」，
+             想看细节再展开。 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:text="—" />
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_anchor"
-            style="@style/FieldHint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:text="当前基准（大周周六）：" />
-        <TextView
-            android:id="@+id/tv_holiday_note"
-            style="@style/FieldHint"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:text="已内置 2026 年节假日安排（放假与调休优先于周休制度）" />
+            <LinearLayout
+                android:id="@+id/row_run_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="46dp"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="运行状态"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tv_run_summary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="—"
+                    android:textColor="@color/ink"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_run_toggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="展开"
+                    android:textColor="@color/indigo"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/run_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="12dp"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@color/line" />
+
+                <TextView
+                    android:id="@+id/tv_status"
+                    style="@style/FieldHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="—" />
+
+                <TextView
+                    android:id="@+id/tv_anchor"
+                    style="@style/FieldHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="当前基准（大周周六）：" />
+
+                <TextView
+                    android:id="@+id/tv_holiday_note"
+                    style="@style/FieldHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="已内置 2026 年节假日安排（放假与调休优先于周休制度）" />
+            </LinearLayout>
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

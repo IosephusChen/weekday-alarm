@@ -171,7 +171,7 @@ public class VacationTest {
         setupSingleDailyAlarm();
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         TextView tv = activity.findViewById(R.id.tv_vacation);
-        assertEquals("请假标记：无", tv.getText().toString());
+        assertEquals("请假标记", tv.getText().toString());
 
         Prefs.addVacation(ctx(), LocalDate.now().plusDays(2));
         java.lang.reflect.Method refreshAll =
@@ -179,10 +179,10 @@ public class VacationTest {
         refreshAll.setAccessible(true);
         refreshAll.invoke(activity);
 
-        assertEquals("请假标记：1 天（点击清除）", tv.getText().toString());
+        assertEquals("请假 1 天 · 清除", tv.getText().toString());
 
         Prefs.removeVacation(ctx(), LocalDate.now().plusDays(2));
         refreshAll.invoke(activity);
-        assertEquals("请假标记：无", tv.getText().toString());
+        assertEquals("请假标记", tv.getText().toString());
     }
 }

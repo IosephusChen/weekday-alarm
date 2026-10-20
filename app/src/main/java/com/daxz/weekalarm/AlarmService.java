@@ -283,7 +283,6 @@ public class AlarmService extends Service {
         String text = (dateStr != null ? dateStr + " " : "")
                 + (test ? "这是测试，正式提醒一样响" : "点此停止或小睡");
         // 测试响铃用低优先级渠道：界面已经由「测试响铃」按钮打开了，再来一条横幅就是重复
-        // 测试响铃用低优先级渠道：界面已经由「测试响铃」按钮打开了，再来一条横幅就是重复
         Notification.Builder nb = new Notification.Builder(this,
                 test ? App.CHANNEL_TEST : App.CHANNEL_ALARM)
                 .setSmallIcon(R.drawable.ic_notification)

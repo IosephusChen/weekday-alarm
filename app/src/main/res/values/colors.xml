@@ -10,6 +10,11 @@
     <color name="line">#E7E9F3</color>
     <color name="section_bg">#F7F8FD</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。
+         以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，
+         深色模式下 #DC2626 / #16A34A 压在 #1C1F35 卡片上对比度只有 3:1 左右。 -->
+    <color name="danger">#DC2626</color>
+    <color name="success">#16A34A</color>
 
     <!-- ===== 日历格子与图例语义色（日间）=====
          底色与 bg_day_*.xml 的 solid 一致；描边为同色系淡边（今天为 indigo 主色）。

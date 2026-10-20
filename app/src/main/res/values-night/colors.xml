@@ -15,6 +15,9 @@
     <color name="bg">#0F1120</color>           <!-- 页面底：深靛黑 -->
     <color name="line">#2A2E47</color>         <!-- 描边/分隔线 -->
     <color name="white">#FFFFFFFF</color>
+    <!-- 语义色（夜间）：与 day_makeup_text / day_overtime_text 同一档亮度 -->
+    <color name="danger">#F87171</color>   <!-- red-400 -->
+    <color name="success">#4ADE80</color>  <!-- green-400 -->
 
     <!-- ===== 日历格子与图例语义色（夜间）===== -->
     <color name="day_work_bg">#232847</color>

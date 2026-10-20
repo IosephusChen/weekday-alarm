@@ -26,14 +26,22 @@
 
     <!-- 实时时刻：整页最大的字。只到分钟，每分钟跳一次——
          定格不动会让人以为是张静态图。 -->
+    <!-- v1.28：76sp 定死在大字体（系统字体 1.5×）或窄屏上会折成两行——
+         「00:0」和「0」上下叠着，是全屏页最难看的一种坏法。
+         这里加单行 + 自动缩放：放得下就是 76sp，放不下按比例缩到 48sp，永不折行。 -->
     <TextView
         android:id="@+id/tv_clock"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
+        android:autoSizeMaxTextSize="76sp"
+        android:autoSizeMinTextSize="48sp"
+        android:autoSizeStepGranularity="2sp"
+        android:autoSizeTextType="uniform"
         android:fontFamily="sans-serif-light"
         android:gravity="center"
         android:letterSpacing="-0.02"
+        android:maxLines="1"
         android:textColor="@color/white"
         android:textSize="76sp" />
 

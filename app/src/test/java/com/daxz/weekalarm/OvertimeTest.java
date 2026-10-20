@@ -172,7 +172,7 @@ public class OvertimeTest {
         // setup 覆盖 onCreate+onResume（含升级重排）；加班日不应导致任何异常
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         TextView tvOvertime = activity.findViewById(R.id.tv_overtime);
-        assertEquals("加班标记：1 天（点击清除）", tvOvertime.getText().toString());
+        assertEquals("加班 1 天 · 清除", tvOvertime.getText().toString());
     }
 
     /**

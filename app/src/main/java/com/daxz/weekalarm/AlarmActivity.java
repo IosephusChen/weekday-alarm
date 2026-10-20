@@ -2,6 +2,8 @@ package com.daxz.weekalarm;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.widget.TextView;
@@ -10,6 +12,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 /** 全屏闹钟页：锁屏上弹出，停止 / 小睡；支持音量键 / 电源键自定义作用（v1.16）。 */
@@ -19,6 +22,17 @@ public class AlarmActivity extends AppCompatActivity {
     public static final String EXTRA_TEST = "test";
     public static final String EXTRA_ALARM_ID = AlarmReceiver.EXTRA_ALARM_ID;
     public static final String EXTRA_LABEL = AlarmReceiver.EXTRA_LABEL;
+
+    /** v1.26.5：让大字号时刻实时走动。只到分钟，但每秒对一次表，
+     *  这样「00:30 → 00:31」是连贯的，不会跳着变。 */
+    private final Handler ticker = new Handler(Looper.getMainLooper());
+    private final Runnable tick = new Runnable() {
+        @Override
+        public void run() {
+            refreshClock();
+            ticker.postDelayed(this, 1000L);
+        }
+    };
 
     private boolean test;
     private int alarmId;
@@ -35,6 +49,19 @@ public class AlarmActivity extends AppCompatActivity {
         applyIntent();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ticker.post(tick);
+    }
+
+    @Override
+    protected void onPause() {
+        // 必须摘掉：响铃页可能整个上午都停在后台，留着每秒一次的回调在空转
+        ticker.removeCallbacks(tick);
+        super.onPause();
+    }
+
     /** 按当前 intent 刷新界面（onCreate 与 singleInstance 复用时都走这里）。 */
     private void applyIntent() {
         String dateStr = getIntent().getStringExtra(EXTRA_DATE);
@@ -48,27 +75,21 @@ public class AlarmActivity extends AppCompatActivity {
             date = LocalDate.now();
         }
 
-        TextView tvTitle = findViewById(R.id.tv_title);
+        TextView tvDate = findViewById(R.id.tv_date);
         TextView tvSub = findViewById(R.id.tv_sub);
-        TextView tvTime = findViewById(R.id.tv_time);
 
-        tvTitle.setText(test ? "测试闹钟" : label + "时间到了");
-        if (dateStr != null) {
-            try {
-                LocalDate d = LocalDate.parse(dateStr);
-                tvSub.setText(d.format(DateTimeFormatter.ofPattern("M月d日"))
-                        + " " + weekLabel(d) + " · " + label);
-            } catch (Exception e) {
-                tvSub.setText("今天是" + label + "时间");
-            }
-        } else {
-            tvSub.setText(test ? "测试模式，不会影响正式排班" : label + "响铃中");
-        }
-        tvTime.setText(test ? "试听中" : "闹钟响铃中");
+        // v1.26.5：日期退到时刻上方，闹钟名落到下面；大字让给「现在几点」。
+        // 原来这里是「起床时间到了」+ 13sp 的「闹钟响铃中」——后者是废话（整页都是响铃中），
+        // 前者把最显眼的位置用来回答「这是什么闹钟」，而刚被叫醒的人不关心这个。
+        tvDate.setText(dateLine(date));
+        refreshClock();
+        tvSub.setText(test ? "测试闹钟 · 不影响正式排班" : label);
 
         SlideToStopView btnStop = findViewById(R.id.btn_stop);
         TextView btnSnooze = findViewById(R.id.btn_snooze);
         btnStop.setLabel(test ? "滑动结束测试" : "滑动停止响铃");
+        btnSnooze.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                R.drawable.ic_snooze_pill, 0, 0, 0);
 
         // v1.17：稍后提醒可自定义间隔与次数；次数用尽后只留「停止」
         int snoozeMinutes = Math.max(1, Prefs.getSnoozeMinutes(this));
@@ -115,9 +136,29 @@ public class AlarmActivity extends AppCompatActivity {
                 : "滑到底才会停 · " + minutes + " 分钟后自动停止";
     }
 
-    private String weekLabel(LocalDate d) {
+    private static String weekLabel(LocalDate d) {
         String[] names = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
         return names[d.getDayOfWeek().getValue() - 1];
+    }
+
+    /** 日期行：「10月21日 星期三」——与澎湃一致，月日不补零。 */
+    static String dateLine(LocalDate d) {
+        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekLabel(d);
+    }
+
+    /** 大字号时刻：24 小时制、只到分钟。 */
+    static String clockText() {
+        return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    private void refreshClock() {
+        TextView tv = findViewById(R.id.tv_clock);
+        if (tv != null) tv.setText(clockText());
+    }
+
+    /** 包级可见：单测直接触发一次时刻刷新，不必去等那一秒的节拍。 */
+    void tickForTest() {
+        refreshClock();
     }
 
     private void stopAlarm() {

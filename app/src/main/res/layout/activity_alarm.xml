@@ -1,73 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v1.26.5：参考澎湃系统自带闹钟重排版式。
+
+     主视觉换成「现在几点」。半睡半醒时这是唯一真正要紧的信息——人要先知道
+     「几点了」才能判断要不要再眯五分钟。原先的时钟图标 + 32sp 大标题在回答
+     「这是什么闹钟」，可刚被叫醒的人不关心这个。
+
+     日期退到时刻上方当副标题，闹钟名放在下面；中段留白，
+     操作区（滑动停止 / 稍后提醒）沉到底部——与澎湃一致：看的一眼在最上，动的手在最下。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_hero"
-    android:gravity="center"
     android:orientation="vertical"
     android:padding="32dp">
 
-    <ImageView
-        android:layout_width="84dp"
-        android:layout_height="84dp"
-        android:src="@drawable/ic_clock_white" />
-
     <TextView
-        android:id="@+id/tv_title"
-        android:layout_width="wrap_content"
+        android:id="@+id/tv_date"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
-        android:text="该起床上班了"
-        android:textColor="@color/white"
-        android:textSize="32sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tv_sub"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="今天是上班日"
+        android:layout_marginTop="36dp"
+        android:gravity="center"
         android:textColor="#E6E4FF"
         android:textSize="15sp" />
 
+    <!-- 实时时刻：整页最大的字。只到分钟，每分钟跳一次——
+         定格不动会让人以为是张静态图。 -->
     <TextView
-        android:id="@+id/tv_time"
-        android:layout_width="wrap_content"
+        android:id="@+id/tv_clock"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="闹钟响铃中"
-        android:textColor="#CFCBFF"
-        android:textSize="13sp" />
+        android:layout_marginTop="2dp"
+        android:fontFamily="sans-serif-light"
+        android:gravity="center"
+        android:letterSpacing="-0.02"
+        android:textColor="@color/white"
+        android:textSize="76sp" />
 
-    <!-- v1.26.0：从「点一下就停」改成滑动。半睡半醒时一个占满屏宽的大按钮就是陷阱：
-         手一碰就关了，人还没醒。滑动要求一段有方向的位移，误触概率低一个量级。 -->
+    <TextView
+        android:id="@+id/tv_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:textColor="#CFCBFF"
+        android:textSize="15sp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 滑动停止：保留 v1.26.0 的滑块而不改成澎湃那种「上滑关闭」的手势提示。
+         滑块要求按住才能拖，误触概率低一个量级；手势式上滑虽然更省地方，
+         但整片区域都变成可触发区，半睡半醒时反而更容易误停。 -->
     <com.daxz.weekalarm.SlideToStopView
         android:id="@+id/btn_stop"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_marginTop="44dp" />
+        android:layout_height="64dp" />
 
     <TextView
         android:id="@+id/btn_snooze"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_btn_ghost"
+        android:layout_height="52dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_snooze_pill"
         android:clickable="true"
+        android:drawablePadding="8dp"
         android:focusable="true"
         android:gravity="center"
-        android:text="5分钟后再响"
         android:textColor="@color/white"
         android:textSize="15sp" />
 
-    <!-- v1.26.4：文案由代码按「响铃时长」设置生成。以前写死「铃声会一直响」，
-         而 v1.26.2 起默认已是 10 分钟——界面在说谎，且没人知道还有多久会停。 -->
     <TextView
         android:id="@+id/tv_hint"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
         android:textColor="#CFCBFF"
         android:textSize="12sp" />
 </LinearLayout>

@@ -11,6 +11,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -47,6 +50,7 @@ public class AlarmActivity extends AppCompatActivity {
         setTurnScreenOn(true);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_alarm);
+        insetForSystemBars();
         applyIntent();
     }
 
@@ -61,6 +65,38 @@ public class AlarmActivity extends AppCompatActivity {
         // 必须摘掉：响铃页可能整个上午都停在后台，留着每秒一次的回调在空转
         ticker.removeCallbacks(tick);
         super.onPause();
+    }
+
+    /**
+     * 让背景铺到系统栏底下，但把内容挪回来。
+     *
+     * <p>v1.26.7：以前状态栏和导航条那两条是白边。原因是背景画在内容区的
+     * LinearLayout 上，而那两条归窗口与系统管——主题的 statusBarColor 是浅色
+     * {@code @color/bg}，windowBackground 又是 Material3 的白。
+     *
+     * <p>修法是让内容延伸进系统栏（窗口背景给整屏渐变，系统栏区域透出它），
+     * 同时按真实 inset 把内容压回来。所以这里只在布局原有的 32dp 内边距之外
+     * <b>追加</b> inset，不改布局本身的值。
+     *
+     * <p>为什么不在 XML 里写死 paddingTop：状态栏高度因机型而异（刘海、挖孔、
+     * 灵动岛各不相同），写死必然在某些机型上被切。
+     */
+    private void insetForSystemBars() {
+        final View root = findViewById(R.id.alarm_root);
+        // 用 androidx.core 而不是平台 API：省掉 Build.VERSION 分支，
+        // API 26（minSdk）到 34 行为一致，也让单测能直接喂一份 inset 进来
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(bars.left + dp(32), bars.top + dp(32),
+                    bars.right + dp(32), bars.bottom + dp(32));
+            return insets;
+        });
+        root.requestApplyInsets();
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     /** 按当前 intent 刷新界面（onCreate 与 singleInstance 复用时都走这里）。 */

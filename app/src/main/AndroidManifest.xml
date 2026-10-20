@@ -43,6 +43,7 @@
             android:launchMode="singleInstance"
             android:showWhenLocked="true"
             android:taskAffinity=""
+            android:theme="@style/Theme.DaxiaoWeekAlarm.Ringing"
             android:turnScreenOn="true" />
 
         <!-- 提前提醒弹窗（v1.23）：由全屏 intent 拉起，只显示「还有多久」+ 关闭入口，

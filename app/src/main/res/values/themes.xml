@@ -9,6 +9,26 @@
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
+    <!-- v1.26.7：响铃页专用主题（AlarmActivity 单独挂上）。
+
+         为什么不用主主题：主主题 statusBarColor 是浅色 @color/bg、windowBackground
+         是 Material3 的白，而背景只画在内容区的 LinearLayout 上——于是状态栏和导航条
+         那两条落在白底上，锁屏时就是两块白边夹着紫屏。
+
+         这里的做法是让内容画到系统栏底下（windowBackground 直接给渐变，
+         系统栏区域取不到内容视图，就透出窗口背景），而不是去给系统栏「填色」：
+         填色只能让那两条变成纯色，渐变在顶/底会断成两截；铺窗口背景整屏只有一份，
+         没有任何接缝。
+
+         windowLightStatusBar 关掉：紫底上必须用浅色图标，继承主主题的 true 会是黑字。 -->
+    <style name="Theme.DaxiaoWeekAlarm.Ringing" parent="Theme.DaxiaoWeekAlarm">
+        <item name="android:windowBackground">@drawable/bg_hero_full</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
     <!-- 「时 / 分」滚轮选择器的文字样式：居中大字，选中值加粗主色 -->
     <style name="WheelPickerText">
         <item name="android:textColorPrimary">@color/ink</item>

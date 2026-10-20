@@ -8,9 +8,10 @@
      日期退到时刻上方当副标题，闹钟名放在下面；中段留白，
      操作区（滑动停止 / 稍后提醒）沉到底部——与澎湃一致：看的一眼在最上，动的手在最下。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/alarm_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_hero"
+    android:background="@drawable/bg_hero_full"
     android:orientation="vertical"
     android:padding="32dp">
 

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 新手引导页（v1.19.9）：首次安装启动时展示，3 页横向切换，看完一次性不再出现。
-     结构：顶部「跳过」→ 中间 ViewFlipper（3 页图文）→ 底部圆点 + 主按钮。
-     每页 = 渐变圆底图标 + 标题 + 一句说明 + 3 条要点，不依赖任何图片资源。 -->
+<!-- 新手引导页（v1.25.0 重做：从「看三页说明」改成「顺手把配置做完」）。
+     结构：顶部「上一步 / 跳过」→ 中间 ViewFlipper 三页 →
+           ① 选周休制度（写入设置）② 设第一个闹钟（默认 7:30）③ 权限清单（实时状态、可点击跳转）
+           底部圆点 + 主按钮。
+     不引任何图片资源，图标复用 res/drawable/ic_guide_*。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,13 +11,27 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- 顶部：跳过（最后一页隐藏） -->
+    <!-- 顶部：上一步（第一页隐藏）+ 跳过（最后一页隐藏） -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="10dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="6dp">
+
+        <TextView
+            android:id="@+id/btn_prev"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="10dp"
+            android:text="上一步"
+            android:textColor="@color/sub"
+            android:textSize="14sp"
+            android:visibility="invisible" />
 
         <TextView
             android:id="@+id/btn_skip"
@@ -25,7 +41,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:padding="8dp"
+            android:padding="10dp"
             android:text="跳过"
             android:textColor="@color/sub"
             android:textSize="14sp" />
@@ -37,436 +53,612 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- ===== 第 1 页：大小周推算 ===== -->
-        <LinearLayout
+        <!-- ===================== 第 1 页：选周休制度 ===================== -->
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="30dp"
-            android:paddingEnd="30dp">
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <FrameLayout
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:background="@drawable/bg_guide_badge">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="日历"
-                    android:src="@drawable/ic_guide_calendar" />
-            </FrameLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
-                android:gravity="center"
-                android:text="先选周休制度，往后自动推"
-                android:textColor="@color/ink"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center"
-                android:lineSpacingMultiplier="1.45"
-                android:text="双休、单休、大小周，选一种，之后每周自动往后推。"
-                android:textColor="@color/sub"
-                android:textSize="14sp" />
+            android:fillViewport="true"
+            android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:background="@drawable/bg_guide_points"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="16dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="16dp">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="8dp">
 
-                <LinearLayout
+                <FrameLayout
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_badge">
+
+                    <ImageView
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="日历"
+                        android:src="@drawable/ic_guide_calendar" />
+                </FrameLayout>
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:text="你的班表是哪一种？"
+                    android:textColor="@color/ink"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="选一次，之后每周自动往后推；法定节假日、调休补班自动覆盖。"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
+
+                <!-- 大小周 -->
+                <LinearLayout
+                    android:id="@+id/mode_bigsmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="法定节假日、调休补班自动覆盖，不用手动调"
+                        android:text="大小周"
                         android:textColor="@color/ink"
-                        android:textSize="13sp" />
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="一周双休、一周单休，两周循环"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
+                <!-- 双休 -->
                 <LinearLayout
+                    android:id="@+id/mode_double"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="日历里「班 / 休 / 假 / 补」一眼核对排班"
+                        android:text="双休"
                         android:textColor="@color/ink"
-                        android:textSize="13sp" />
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="每周六、周日都休"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
                 </LinearLayout>
 
+                <!-- 单休 · 周日休 -->
                 <LinearLayout
+                    android:id="@+id/mode_sun"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="单休 · 周日休"
+                        android:textColor="@color/ink"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="周六上班，周日休"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 单休 · 周六休 -->
+                <LinearLayout
+                    android:id="@+id/mode_sat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="13dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="单休 · 周六休"
+                        android:textColor="@color/ink"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="周日上班，周六休"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 大小周专属：本周是大周还是小周 -->
+                <LinearLayout
+                    android:id="@+id/row_weekbig"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="换制度或临时换班，改一次，往后全部重算"
+                        android:text="本周是"
+                        android:textColor="@color/sub"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/opt_big"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_guide_option"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="16dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp"
+                        android:text="大周"
+                        android:textColor="@color/ink"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/opt_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_guide_option"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="16dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp"
+                        android:text="小周"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
+        </ScrollView>
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-        </LinearLayout>
-
-        <!-- ===== 第 2 页：系统级闹钟 ===== -->
-        <LinearLayout
+        <!-- ===================== 第 2 页：设第一个闹钟 ===================== -->
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="30dp"
-            android:paddingEnd="30dp">
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <FrameLayout
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:background="@drawable/bg_guide_badge">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="闹钟"
-                    android:src="@drawable/ic_guide_bell" />
-            </FrameLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
-                android:gravity="center"
-                android:text="上班日才响，休息日不吵"
-                android:textColor="@color/ink"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center"
-                android:lineSpacingMultiplier="1.45"
-                android:text="走系统闹钟通道，静音、勿扰也拦不住。"
-                android:textColor="@color/sub"
-                android:textSize="14sp" />
+            android:fillViewport="true"
+            android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:background="@drawable/bg_guide_points"
+                android:gravity="center_horizontal"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="16dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="16dp">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="8dp">
 
-                <LinearLayout
+                <FrameLayout
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_badge">
+
+                    <ImageView
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="闹钟"
+                        android:src="@drawable/ic_guide_bell" />
+                </FrameLayout>
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:text="先设一个起床闹钟"
+                    android:textColor="@color/ink"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="多个闹钟可各设「仅上班日 / 每天 / 仅休息日」"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="只在上班日响，休息日和法定节假日自动跳过。点时间可以改。"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                <TextView
+                    android:id="@+id/tv_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30dp"
+                    android:fontFeatureSettings="tnum"
+                    android:letterSpacing="0.02"
+                    android:text="07:30"
+                    android:textColor="@color/ink"
+                    android:textSize="54sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="临时请假：点当天 → 标记请假，闹钟全部跳过"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/btn_pick_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="18dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="18dp"
+                    android:paddingBottom="10dp"
+                    android:text="改时间"
+                    android:textColor="@color/indigo"
+                    android:textSize="14sp" />
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tv_time_hint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
-
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="休息日加班：点当天 → 标记加班，该响的照常响"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:layout_marginTop="18dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="之后可以在主界面加更多闹钟：午休、下班、只在休息日响的都行。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
             </LinearLayout>
+        </ScrollView>
 
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-        </LinearLayout>
-
-        <!-- ===== 第 3 页：三件必做的事 ===== -->
-        <LinearLayout
+        <!-- ===================== 第 3 页：权限清单 ===================== -->
+        <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:gravity="center_horizontal"
-            android:orientation="vertical"
-            android:paddingStart="30dp"
-            android:paddingEnd="30dp">
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <FrameLayout
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:background="@drawable/bg_guide_badge">
-
-                <ImageView
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="设置"
-                    android:src="@drawable/ic_guide_tune" />
-            </FrameLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
-                android:gravity="center"
-                android:text="最后三步，别让它哑掉"
-                android:textColor="@color/ink"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center"
-                android:lineSpacingMultiplier="1.45"
-                android:text="国产系统会限制后台，这三项没开，闹钟可能不响。"
-                android:textColor="@color/sub"
-                android:textSize="14sp" />
+            android:fillViewport="true"
+            android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:background="@drawable/bg_guide_points"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="16dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="16dp">
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="8dp">
 
-                <LinearLayout
+                <FrameLayout
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_badge">
+
+                    <ImageView
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="设置"
+                        android:src="@drawable/ic_guide_tune" />
+                </FrameLayout>
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:layout_marginTop="20dp"
+                    android:gravity="center"
+                    android:text="最后，别让它哑掉"
+                    android:textColor="@color/ink"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="国产系统会限制后台。点每一项去开启，回到这里会自动打勾。"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
 
-                    <TextView
+                <!-- 通知权限 -->
+                <LinearLayout
+                    android:id="@+id/perm_notif"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="进入时弹出的通知、闹钟权限，请点「允许」"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                        android:orientation="vertical">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="通知权限"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                        <TextView
+                            android:id="@+id/st_notif"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <!-- 精确闹钟 -->
+                <LinearLayout
+                    android:id="@+id/perm_exact"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="系统设置里允许自启动，并加入电池优化白名单"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                        android:orientation="vertical">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="9dp"
-                    android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="闹钟与提醒"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_guide_dot" />
+                        <TextView
+                            android:id="@+id/st_exact"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <!-- 全屏通知 -->
+                <LinearLayout
+                    android:id="@+id/perm_fsi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:lineSpacingMultiplier="1.35"
-                        android:text="音量、铃声、睡前提醒、备份都在「设置」里"
-                        android:textColor="@color/ink"
-                        android:textSize="13sp" />
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="锁屏时弹出闹钟"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/st_fsi"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
                 </LinearLayout>
+
+                <!-- 电池优化 -->
+                <LinearLayout
+                    android:id="@+id/perm_battery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="后台不被清理"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/st_battery"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="没全开也能用，只是可能不响、或者只躺在通知栏里。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
             </LinearLayout>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-        </LinearLayout>
+        </ScrollView>
     </ViewFlipper>
 
-    <!-- 底部：圆点指示 + 主按钮 -->
+    <!-- 底部：圆点 + 主按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="30dp"
-        android:paddingEnd="30dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="24dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="24dp"
+        android:paddingBottom="20dp">
 
         <LinearLayout
             android:id="@+id/dots"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
+            android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal" />
 
-        <TextView
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_next"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_btn_gradient"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_guide_btn"
+            android:minWidth="128dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:stateListAnimator="@null"
             android:text="下一步"
-            android:textColor="@color/white"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp" />
     </LinearLayout>
 </LinearLayout>

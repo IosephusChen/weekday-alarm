@@ -27,24 +27,6 @@ final class ScreenLock {
      * <p>取不到状态时返回 false（宁可不弹）：在用户做事时突然盖一层界面，
      * 比少弹一次更让人恼火；通知和声音仍然在。
      */
-    /**
-     * true = 屏幕亮着且已解锁（用户正在用手机）。
-     *
-     * <p>这个状态只用来决定「挂不挂 fullScreenIntent」：解锁时带全屏意图的通知，
-     * 系统不会拉起界面，而是降级成顶部横幅——这是 App 唯一能绕开渠道
-     * 「悬浮通知」开关的办法（那个开关归用户，代码改不动）。
-     */
-    static boolean isAwakeAndUnlocked(Context c) {
-        try {
-            PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
-            if (pm == null || !pm.isInteractive()) return false;
-            KeyguardManager km = (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
-            return km == null || !km.isKeyguardLocked();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     static boolean shouldPopup(Context c) {
         try {
             PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);

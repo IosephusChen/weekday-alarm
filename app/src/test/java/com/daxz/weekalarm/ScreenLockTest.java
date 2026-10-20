@@ -108,7 +108,9 @@ public class ScreenLockTest {
         reset();
         setScreen(true, false);
         LocalDate d = LocalDate.now();
-        ScheduleManager.setAlarm(ctx(), LocalDateTime.now().plusHours(1), 1, "起床");
+        // 用「当天 12:00」而不是 now+1h：23 点后跑测试会跨到第二天，
+        // 登记的是明天、查的是今天，这条用例就必然红（2026-10-20 晚踩到过）。
+        ScheduleManager.setAlarm(ctx(), d.atTime(12, 0), 1, "起床");
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
 
@@ -122,7 +124,9 @@ public class ScreenLockTest {
         reset();
         setScreen(true, true);
         LocalDate d = LocalDate.now();
-        ScheduleManager.setAlarm(ctx(), LocalDateTime.now().plusHours(1), 1, "起床");
+        // 用「当天 12:00」而不是 now+1h：23 点后跑测试会跨到第二天，
+        // 登记的是明天、查的是今天，这条用例就必然红（2026-10-20 晚踩到过）。
+        ScheduleManager.setAlarm(ctx(), d.atTime(12, 0), 1, "起床");
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
 

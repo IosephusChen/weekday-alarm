@@ -40,19 +40,13 @@
         android:textColor="#CFCBFF"
         android:textSize="13sp" />
 
-    <TextView
+    <!-- v1.26.0：从「点一下就停」改成滑动。半睡半醒时一个占满屏宽的大按钮就是陷阱：
+         手一碰就关了，人还没醒。滑动要求一段有方向的位移，误触概率低一个量级。 -->
+    <com.daxz.weekalarm.SlideToStopView
         android:id="@+id/btn_stop"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginTop="44dp"
-        android:background="@drawable/bg_btn_white"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:text="停止响铃"
-        android:textColor="@color/indigo"
-        android:textSize="17sp"
-        android:textStyle="bold" />
+        android:layout_height="64dp"
+        android:layout_marginTop="44dp" />
 
     <TextView
         android:id="@+id/btn_snooze"
@@ -71,7 +65,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="铃声会持续响到你做出选择"
+        android:text="滑到底才会停 · 铃声会一直响"
         android:textColor="#CFCBFF"
         android:textSize="12sp" />
 </LinearLayout>

@@ -65,9 +65,9 @@ public class AlarmActivity extends AppCompatActivity {
         }
         tvTime.setText(test ? "试听中" : "闹钟响铃中");
 
-        TextView btnStop = findViewById(R.id.btn_stop);
+        SlideToStopView btnStop = findViewById(R.id.btn_stop);
         TextView btnSnooze = findViewById(R.id.btn_snooze);
-        btnStop.setText(test ? "结束测试" : "停止响铃");
+        btnStop.setLabel(test ? "滑动结束测试" : "滑动停止响铃");
 
         // v1.17：稍后提醒可自定义间隔与次数；次数用尽后只留「停止」
         int snoozeMinutes = Math.max(1, Prefs.getSnoozeMinutes(this));
@@ -80,12 +80,12 @@ public class AlarmActivity extends AppCompatActivity {
             btnSnooze.setAlpha(0.4f);
             btnSnooze.setText("稍后提醒");
             btnSnooze.setOnClickListener(v ->
-                    Toast.makeText(this, "测试模式不支持小睡，请点「结束测试」", Toast.LENGTH_SHORT).show());
+                    Toast.makeText(this, "测试模式不支持小睡，请滑动结束", Toast.LENGTH_SHORT).show());
         } else if (exhausted) {
             btnSnooze.setAlpha(0.4f);
             btnSnooze.setText("稍后提醒已用完");
             btnSnooze.setOnClickListener(v -> Toast.makeText(this,
-                    "本次响铃的稍后提醒次数已用完，请点「停止响铃」", Toast.LENGTH_SHORT).show());
+                    "本次响铃的稍后提醒次数已用完，请滑动停止", Toast.LENGTH_SHORT).show());
         } else {
             btnSnooze.setAlpha(1f);
             btnSnooze.setText(snoozeMinutes + "分钟后再响"
@@ -93,7 +93,7 @@ public class AlarmActivity extends AppCompatActivity {
                         : "（还可" + (snoozeTimes - used) + "次）"));
             btnSnooze.setOnClickListener(v -> snoozeAlarm());
         }
-        btnStop.setOnClickListener(v -> stopAlarm());
+        btnStop.setOnSlideCompleteListener(() -> stopAlarm());
     }
 
     private String weekLabel(LocalDate d) {
@@ -113,7 +113,7 @@ public class AlarmActivity extends AppCompatActivity {
         // v1.19.9：按键（音量键设为「稍后提醒」）这条路此前绕过了次数上限——
         // 按钮变灰后按音量键仍能无限续睡。与通知栏、界面按钮统一到同一个判断。
         if (!ScheduleManager.canSnooze(this, alarmId, date)) {
-            Toast.makeText(this, "本次响铃的稍后提醒次数已用完，请点「停止响铃」",
+            Toast.makeText(this, "本次响铃的稍后提醒次数已用完，请滑动停止",
                     Toast.LENGTH_SHORT).show();
             return;
         }

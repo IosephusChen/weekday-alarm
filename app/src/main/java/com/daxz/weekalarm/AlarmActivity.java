@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.WindowManager;
@@ -94,6 +95,24 @@ public class AlarmActivity extends AppCompatActivity {
             btnSnooze.setOnClickListener(v -> snoozeAlarm());
         }
         btnStop.setOnSlideCompleteListener(() -> stopAlarm());
+        ((TextView) findViewById(R.id.tv_hint)).setText(autoStopHint(this));
+    }
+
+    /**
+     * 底部提示文案，跟着「响铃时长」走：设了 N 分钟就写「N 分钟后自动停止」，
+     * 设为「不限」才写「一直响」。
+     *
+     * <p>v1.26.2 把默认从「不限」改成 10 分钟，但响铃页这行还是写死的「铃声会一直响」——
+     * 界面说的和实际发生的不是一回事。半睡半醒的人不会去设置页核对，他只会信屏幕上这行字。
+     * 这里不显示跳秒的倒计时：那会诱导人躺着等它自己停，而滑动停止才是希望他做的动作。
+     *
+     * <p>包级可见，单测直接断言文案，不必去启动一个锁屏全屏 Activity。
+     */
+    static String autoStopHint(Context c) {
+        int minutes = Prefs.getRingMinutes(c);
+        return minutes <= 0
+                ? "滑到底才会停 · 铃声会一直响"
+                : "滑到底才会停 · " + minutes + " 分钟后自动停止";
     }
 
     private String weekLabel(LocalDate d) {

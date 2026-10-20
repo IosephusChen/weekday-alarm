@@ -203,20 +203,27 @@ public class ChangelogTest {
         LinearLayout box = new LinearLayout(ctx());
         Changelog.renderInto(ctx(), box, Changelog.all(), installedCode());
         assertEquals(Changelog.all().size(), box.getChildCount());
-        // 最新一版（v1.26.2）是第二天接着赶的，日期不再是 2026/10/20，
-        // 所以下面按「与上一张卡是否同日」来判断，不写死具体日期
+        // 按「与上一张卡是否同日」来判断，不写死具体日期，也不写死第几张——
+        // 同一天赶出来的版本会连着好几张（v1.26.2 / .3 / .4 都是 10/21），
+        // 断言「第 N 张换日」这种写法，下次再加一版同日的就红了
         Changelog.Entry newest = Changelog.all().get(0);
         assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), newest.date));
-        // 卡片第 2 行是 meta（日期 · versionCode），只看这一行，别被正文里的日期串扰
-        // 第 2 张与最新一版同一天（v1.26.2 与 v1.26.3 都是 10/21），这里该折叠
-        TextView meta = (TextView) ((ViewGroup) box.getChildAt(1)).getChildAt(1);
-        assertTrue("同一天应写「同日」，实际：" + meta.getText(),
-                meta.getText().toString().startsWith("同日"));
-        assertFalse("同一天不该重复印日期，实际：" + meta.getText(),
-                meta.getText().toString().contains(Changelog.all().get(1).date));
-        // 第 3 张换了一天（v1.26.1 是 10/20），日期要重新印出来
-        TextView older = (TextView) ((ViewGroup) box.getChildAt(2)).getChildAt(1);
-        assertTrue("换了一天就该重新印日期，实际：" + older.getText(),
-                older.getText().toString().contains(Changelog.all().get(2).date));
+        String prevDate = newest.date;
+        for (int i = 1; i < Changelog.all().size(); i++) {
+            Changelog.Entry e = Changelog.all().get(i);
+            // 卡片第 2 行是 meta（日期 · versionCode），只看这一行，别被正文里的日期串扰
+            TextView meta = (TextView) ((ViewGroup) box.getChildAt(i)).getChildAt(1);
+            String text = meta.getText().toString();
+            if (e.date.equals(prevDate)) {
+                assertTrue("与上一张同日应写「同日」：v" + e.version + " 实际：" + text,
+                        text.startsWith("同日"));
+                assertFalse("同日不该重复印日期：v" + e.version + " 实际：" + text,
+                        text.contains(e.date));
+            } else {
+                assertTrue("换了一天就该重新印日期：v" + e.version + " 实际：" + text,
+                        text.contains(e.date));
+            }
+            prevDate = e.date;
+        }
     }
 }

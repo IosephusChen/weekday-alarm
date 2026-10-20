@@ -61,11 +61,13 @@
         android:textColor="@color/white"
         android:textSize="15sp" />
 
+    <!-- v1.26.4：文案由代码按「响铃时长」设置生成。以前写死「铃声会一直响」，
+         而 v1.26.2 起默认已是 10 分钟——界面在说谎，且没人知道还有多久会停。 -->
     <TextView
+        android:id="@+id/tv_hint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="滑到底才会停 · 铃声会一直响"
         android:textColor="#CFCBFF"
         android:textSize="12sp" />
 </LinearLayout>

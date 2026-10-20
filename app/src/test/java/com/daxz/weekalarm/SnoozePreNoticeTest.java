@@ -191,7 +191,8 @@ public class SnoozePreNoticeTest {
         Prefs.setSnoozeTimes(ctx(), 3);
 
         AlarmActivity activity = launch(1, today, false);
-        TextView btnSnooze = activity.findViewById(R.id.btn_snooze);
+        // v1.26.5：按钮本体是 LinearLayout（图标 + 文字），文字在 tv_snooze_label
+        TextView btnSnooze = activity.findViewById(R.id.tv_snooze_label);
         assertTrue("应显示间隔与剩余次数",
                 btnSnooze.getText().toString().contains("10分钟后再响")
                         && btnSnooze.getText().toString().contains("还可3次"));
@@ -199,7 +200,7 @@ public class SnoozePreNoticeTest {
         // 用掉一次后剩余次数递减
         Prefs.incrementSnoozeCount(ctx(), 1, today);
         AlarmActivity again = launch(1, today, false);
-        TextView btnAgain = again.findViewById(R.id.btn_snooze);
+        TextView btnAgain = again.findViewById(R.id.tv_snooze_label);
         assertTrue(btnAgain.getText().toString().contains("还可2次"));
     }
 
@@ -212,7 +213,7 @@ public class SnoozePreNoticeTest {
 
         AlarmActivity activity = launch(1, today, false);
         assertEquals("稍后提醒已用完",
-                ((TextView) activity.findViewById(R.id.btn_snooze)).getText().toString());
+                ((TextView) activity.findViewById(R.id.tv_snooze_label)).getText().toString());
     }
 
     @Test

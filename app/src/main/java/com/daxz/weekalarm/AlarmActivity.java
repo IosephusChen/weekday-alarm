@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -86,10 +87,10 @@ public class AlarmActivity extends AppCompatActivity {
         tvSub.setText(test ? "测试闹钟 · 不影响正式排班" : label);
 
         SlideToStopView btnStop = findViewById(R.id.btn_stop);
-        TextView btnSnooze = findViewById(R.id.btn_snooze);
+        // v1.26.5：按钮本体是 LinearLayout（图标 + 文字），文字要单独取
+        View btnSnooze = findViewById(R.id.btn_snooze);
+        TextView tvSnoozeLabel = findViewById(R.id.tv_snooze_label);
         btnStop.setLabel(test ? "滑动结束测试" : "滑动停止响铃");
-        btnSnooze.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                R.drawable.ic_snooze_pill, 0, 0, 0);
 
         // v1.17：稍后提醒可自定义间隔与次数；次数用尽后只留「停止」
         int snoozeMinutes = Math.max(1, Prefs.getSnoozeMinutes(this));
@@ -100,17 +101,17 @@ public class AlarmActivity extends AppCompatActivity {
         if (test) {
             // 测试模式不支持小睡：用透明度表达禁用态，避免禁用态文字不显示
             btnSnooze.setAlpha(0.4f);
-            btnSnooze.setText("稍后提醒");
+            tvSnoozeLabel.setText("稍后提醒");
             btnSnooze.setOnClickListener(v ->
                     Toast.makeText(this, "测试模式不支持小睡，请滑动结束", Toast.LENGTH_SHORT).show());
         } else if (exhausted) {
             btnSnooze.setAlpha(0.4f);
-            btnSnooze.setText("稍后提醒已用完");
+            tvSnoozeLabel.setText("稍后提醒已用完");
             btnSnooze.setOnClickListener(v -> Toast.makeText(this,
                     "本次响铃的稍后提醒次数已用完，请滑动停止", Toast.LENGTH_SHORT).show());
         } else {
             btnSnooze.setAlpha(1f);
-            btnSnooze.setText(snoozeMinutes + "分钟后再响"
+            tvSnoozeLabel.setText(snoozeMinutes + "分钟后再响"
                         + (snoozeTimes == Prefs.SNOOZE_UNLIMITED ? ""
                         : "（还可" + (snoozeTimes - used) + "次）"));
             btnSnooze.setOnClickListener(v -> snoozeAlarm());

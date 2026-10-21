@@ -67,7 +67,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
         return new WidgetModel(true, time, sub);
     }
 
-    private static RemoteViews buildViews(Context ctx, WidgetModel m) {
+    static RemoteViews buildViews(Context ctx, WidgetModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm);
         rv.setTextViewText(R.id.widget_status, m.enabled ? "已开启" : "未开启");
         rv.setTextViewText(R.id.widget_title, m.title);

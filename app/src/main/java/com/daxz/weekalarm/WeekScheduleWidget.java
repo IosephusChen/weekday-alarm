@@ -136,7 +136,7 @@ public class WeekScheduleWidget extends AppWidgetProvider {
                 actionText(tomorrowType, tomorrowMarked));
     }
 
-    private static RemoteViews buildViews(Context ctx, WeekModel m) {
+    static RemoteViews buildViews(Context ctx, WeekModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_week_schedule);
         rv.setTextViewText(R.id.widget_week_title, m.title);
         rv.setTextViewText(R.id.widget_week_sub, m.subtitle);

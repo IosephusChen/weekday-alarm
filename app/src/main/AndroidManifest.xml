@@ -112,7 +112,8 @@
         <!-- 桌面小组件（v1.19）：展示下一个闹钟；更新由主 App 主动推送，故 exported=false。 -->
         <receiver
             android:name=".NextAlarmWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="下一个闹钟">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -124,7 +125,8 @@
         <!-- 桌面小组件（v1.20）：本周班表，一眼看清这周哪天上班。 -->
         <receiver
             android:name=".WeekScheduleWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="本周班表">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

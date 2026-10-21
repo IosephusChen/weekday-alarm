@@ -2,6 +2,9 @@
 <!-- 桌面小组件：本周班表（v1.20）。
      RemoteViews 只支持基础布局，7 个格子必须写死在 XML 里（不能动态 addView）。
      每格用 FrameLayout：底层是「今天」的半透明白底（默认 gone），上层是星期几 + 班/休；
+     v1.32：高亮层原本写的是 <View>，而 RemoteViews 的白名单里没有 android.view.View，
+     整个组件在启动器里根本 inflate 不出来（显示「载入窗口小部件时出现问题」）。
+     换成 FrameLayout——同样能承载背景，且在允许列表内。
      切换高亮只调 setViewVisibility（RemoteViews 原生支持），不用反射式
      setBackgroundResource —— 后者在部分启动器上会整块刷新失败，组件停在旧内容。
      版式：一行标题（大周/小周 + 开关状态），下面 7 个等宽格子，行高占满剩余空间。 -->
@@ -57,7 +60,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_0"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -101,7 +104,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_1"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -145,7 +148,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -189,7 +192,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_3"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -233,7 +236,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_4"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -277,7 +280,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_5"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -321,7 +324,7 @@
             android:layout_marginEnd="1dp"
             android:layout_weight="1">
 
-            <View
+            <FrameLayout
                 android:id="@+id/hl_6"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"

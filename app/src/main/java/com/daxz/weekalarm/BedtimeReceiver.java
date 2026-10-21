@@ -101,34 +101,11 @@ public class BedtimeReceiver extends BroadcastReceiver {
     /**
      * 小组件上的「今天 / 明天不上班」：按那一天的实际类型来回切（v1.31，v1.33 起支持今天）。
      *
-     * <p>语义跟主界面今日卡那个按钮完全一致：上班 / 补班日 → 请假；休息 / 法定假 →
-     * 加班。三处改的是同一份 Prefs，所以点完回 App 看，日历与列表都是新的。
+     * <p>v1.34 起语义只剩一份实现（{@link DayOffAction}），这里只负责广播场景该做的事：
+     * 先弹提示，再 goAsync 到后台重排——重排是上百次 IPC，不能占着广播主线程。
      */
     private void toggleDay(Context ctx, int dayOffset) {
-        int offset = dayOffset == 0 ? 0 : 1;   // 只认今天 / 明天，脏数据按明天处理
-        LocalDate day = LocalDate.now().plusDays(offset);
-        String label = offset == 0 ? "今天" : "明天";
-        WeekSchedule.DayType type = WeekSchedule.dayType(day, Prefs.getRule(ctx));
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
-        String msg;
-        if (work) {
-            if (Prefs.isVacation(ctx, day)) {
-                Prefs.removeVacation(ctx, day);
-                msg = label + "恢复上班，闹钟照常";
-            } else {
-                Prefs.addVacation(ctx, day);
-                msg = "已把" + label + "标记为请假，闹钟不会响";
-            }
-        } else {
-            if (Prefs.isOvertime(ctx, day)) {
-                Prefs.removeOvertime(ctx, day);
-                msg = label + "恢复休息，不响闹钟";
-            } else {
-                Prefs.addOvertime(ctx, day);
-                msg = "已把" + label + "标记为加班，「仅上班日」闹钟照响";
-            }
-        }
+        String msg = DayOffAction.toggle(ctx, dayOffset);
         try {
             Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {

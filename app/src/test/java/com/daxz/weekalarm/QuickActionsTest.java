@@ -31,9 +31,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 闹钟行快捷操作 + 「接下来三次响铃」（v1.29.0）。
+ * 闹钟行快捷操作（v1.29.0）：长按复制 / 删除。
  *
- * <p>两条都是「少点几下」的改动，很容易在后续重构里被无声破坏——比如长按监听被
+ * <p>「接下来三次响铃」那一组随功能一起在 v1.34.0 删掉了——倒计时不再可点，
+ * 也就没有「点开看三次」这条链路可测。
+ *
+ * <p>这两条都是「少点几下」的改动，很容易在后续重构里被无声破坏——比如长按监听被
  * 覆盖、菜单项顺序换了。这里钉住行为本身，不钉实现。
  */
 @RunWith(RobolectricTestRunner.class)
@@ -177,89 +180,5 @@ public class QuickActionsTest {
         a.removeAlarm(Prefs.getAlarms(ctx()).get(0));
         ShadowLooper.idleMainLooper();
         assertTrue("删完列表应为空", Prefs.getAlarms(ctx()).isEmpty());
-    }
-
-    // ---------- 接下来三次响铃 ----------
-
-    @Test
-    public void relativeDayText_todayTomorrowThenDate() {
-        LocalDate today = LocalDate.now();
-        assertEquals("今天", MainActivity.relativeDayText(today));
-        assertEquals("明天", MainActivity.relativeDayText(today.plusDays(1)));
-        assertEquals("后天", MainActivity.relativeDayText(today.plusDays(2)));
-        String far = MainActivity.relativeDayText(today.plusDays(5));
-        assertTrue("更远的日子应写月日，实际：" + far,
-                far.contains("月") && far.contains("日"));
-    }
-
-    /**
-     * 点倒计时弹出三次，按时间升序、编号 1/2/3。
-     *
-     * <p>闹钟故意乱序塞进列表（先 08:00 再 06:00），确认输出是按时刻排的，
-     * 而不是按列表顺序——后者会让人以为时间算错了。
-     */
-    @Test
-    public void countdownTap_listsNextThreeInOrder() {
-        resetPrefs();
-        LocalDateTime now = LocalDateTime.now();
-        List<Alarm> list = new ArrayList<>();
-        // 三条「每天」，时刻取 now 之后 1/2/3 小时（跨天也无所谓，规则命中即可）
-        for (int i = 3; i >= 1; i--) {
-            LocalDateTime t = now.plusHours(i);
-            list.add(new Alarm(10 + i, t.getHour(), t.getMinute(), "闹钟" + i,
-                    Alarm.Mode.DAILY, true));
-        }
-        Prefs.setAlarms(ctx(), list);
-        Prefs.setEnabled(ctx(), true);
-
-        MainActivity a = launch();
-        a.findViewById(R.id.box_countdown).performClick();
-        ShadowLooper.idleMainLooper();
-
-        String msg = dialogMessage();
-        assertTrue("应有三行，实际：" + msg, msg.contains("1.") && msg.contains("2.")
-                && msg.contains("3."));
-        assertFalse("不该有第四行", msg.contains("4."));
-        // 编号 1 的那行应是三条里最早的时刻
-        int i1 = msg.indexOf("1.");
-        int i2 = msg.indexOf("2.");
-        assertTrue("编号应在正文里按顺序出现", i1 >= 0 && i2 > i1);
-    }
-
-    /**
-     * 一条能响的闹钟都没有时，不该弹一个空的「接下来三次」。
-     *
-     * <p>注意「列表为空」这个状态到不了：{@code reloadAlarms} 会在列表被删空时兜底
-     * 恢复一条「起床」。所以这里用「全部关掉」来构造同样的结果。
-     */
-    @Test
-    public void countdownTap_withoutEnabledAlarms_onlyToasts() {
-        resetPrefs();
-        List<Alarm> off = new ArrayList<>();
-        off.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false));
-        Prefs.setAlarms(ctx(), off);
-        Prefs.setEnabled(ctx(), true);
-        MainActivity a = launch();
-        ShadowAlertDialog.reset();
-        a.findViewById(R.id.box_countdown).performClick();
-        ShadowLooper.idleMainLooper();
-        assertNull("没有可响的闹钟时不该弹对话框", ShadowAlertDialog.getLatestDialog());
-    }
-
-    /** 总开关关着时，列表照算但必须说清「不会响」，不能让人以为还有效。 */
-    @Test
-    public void countdownTap_masterOff_saysItWontRing() {
-        resetPrefs();
-        LocalDateTime t = LocalDateTime.now().plusHours(2);
-        List<Alarm> list = new ArrayList<>();
-        list.add(new Alarm(1, t.getHour(), t.getMinute(), "起床", Alarm.Mode.DAILY, true));
-        Prefs.setAlarms(ctx(), list);
-        Prefs.setEnabled(ctx(), false);
-
-        MainActivity a = launch();
-        a.findViewById(R.id.box_countdown).performClick();
-        ShadowLooper.idleMainLooper();
-        String msg = dialogMessage();
-        assertTrue("应提示总开关关着，实际：" + msg, msg.contains("总开关"));
     }
 }

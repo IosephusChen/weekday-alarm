@@ -144,16 +144,15 @@
 
             <!-- 距下次响铃倒计时（v1.22.5）：
                  左边一句说明，右边等宽数字每秒跳。总开关关掉时整条变灰并写明原因，
-                 避免用户盯着一个不动的「下一个 13:40」以为闹钟还会响。 -->
+                 避免用户盯着一个不动的「下一个 13:40」以为闹钟还会响。
+                 v1.34：不再可点——「点看后三次」要多点一步才看到本来就能算出的信息，
+                 用户原话「有点脱裤子放屁」。倒计时回归纯展示。 -->
             <LinearLayout
                 android:id="@+id/box_countdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:background="@drawable/bg_hero_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="12dp"
@@ -168,7 +167,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:text="距下次响铃 · 点看后三次"
+                    android:text="距下次响铃"
                     android:textColor="#D9D8FF"
                     android:textSize="12sp" />
 
@@ -183,25 +182,53 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- 今天不上班 / 今天要加班（v1.28.1）：
+            <!-- 今天 / 明天不上班（v1.28.1，v1.34 起并排两个）：
                  以前标一天假要滚到日历、找到今天、点一下、再确认——四步。
                  而「今天临时有事」恰恰是最常发生、也最急着操作的那一种。
-                 按钮放在今日卡里，一次点击完成，再点一次撤销，日历里同步显示。 -->
-            <TextView
-                android:id="@+id/btn_day_off"
+                 v1.34 把「明天」也挪到旁边：睡前想起来明早要请假，不用等到明天再点。
+                 两个按钮等宽、同一套配色，语义都由当天 / 次日的实际班休决定。 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:background="@drawable/bg_hero_pill"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:text="今天不上班"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btn_day_off"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_hero_pill"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="今天不上班"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_day_off_tomorrow"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_hero_pill"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="明天不上班"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -375,50 +402,252 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ===== ③ 排班日历入口（v1.28.1）=====
-             日历原本整张卡塞在这里，占 460dp。主界面内容约 1250dp，为了改个闹钟时间
-             得先滚过一整个月的格子。而它的真实用法是「偶尔核对、临时标个请假」，
-             不是每天必看。现在独立成页，这里只留一行入口 + 一句话摘要。 -->
+        <!-- ===== ③ 排班日历（v1.34.0 搬回首页，默认展开）=====
+             v1.28.1 曾把它独立成页，理由是不想让它占主界面 460dp。用下来发现
+             「收起来还得手动点一下」——核对班表、临时标请假本来就是顺手的事，
+             多一次跳转就多一次放弃。现在整张卡回到首页，不折叠、不隐藏；
+             渲染与单日标记都在 CalendarPanel 里，主界面只提供容器。 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="排班日历" />
+
         <LinearLayout
-            android:id="@+id/row_calendar_entry"
+            android:id="@+id/calendar_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
             android:background="@drawable/bg_card"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="14dp"
-            android:paddingTop="14dp"
-            android:paddingBottom="14dp">
+            android:orientation="vertical"
+            android:padding="14dp">
 
+            <!-- 翻月：‹ 月份 ›，右侧「回本月」翻了几个月后一键归位 -->
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="排班日历"
+                    android:id="@+id/btn_prev"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:contentDescription="上个月"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="‹"
                     android:textColor="@color/ink"
-                    android:textSize="15sp"
+                    android:textSize="18sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_cal_entry_sub"
+                    android:id="@+id/tv_cal_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="—"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_today"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="—"
-                    android:textColor="@color/sub"
-                    android:textSize="12sp" />
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:text="回本月"
+                    android:textColor="@color/indigo"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_next"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:contentDescription="下个月"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="›"
+                    android:textColor="@color/ink"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- 星期表头：顺序跟着「一周开始日」设置旋转，由 CalendarPanel 填字 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/cal_dow_0"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="一" />
+
+                <TextView
+                    android:id="@+id/cal_dow_1"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="二" />
+
+                <TextView
+                    android:id="@+id/cal_dow_2"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="三" />
+
+                <TextView
+                    android:id="@+id/cal_dow_3"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="四" />
+
+                <TextView
+                    android:id="@+id/cal_dow_4"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="五" />
+
+                <TextView
+                    android:id="@+id/cal_dow_5"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="六" />
+
+                <TextView
+                    android:id="@+id/cal_dow_6"
+                    style="@style/FieldHint"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="日" />
+            </LinearLayout>
+
+            <!-- 6×7 格子：CalendarPanel.renderCalendar() 动态生成 -->
+            <LinearLayout
+                android:id="@+id/cal_rows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- 图例：色块由 CalendarPanel.setupLegend() 动态生成（与格子同款底色/描边） -->
+            <LinearLayout
+                android:id="@+id/legend_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:background="@color/line" />
+
+            <!-- 请假 / 加班：单日标记在格子上点对应日期，这里显示总数并支持一键清除 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_vacation"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="请假标记"
+                    android:textColor="@color/ink"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_overtime"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_time_outline"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp"
+                    android:text="加班标记"
+                    android:textColor="@color/ink"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== ④ 使用说明（v1.19.8 折叠卡 → v1.34.0 一行入口）=====
+             9 条长文首次安装展开约 400dp，和设置页「重看新手引导」讲的还是同一件事。
+             现在只留一行，点进去是引导页：那里一页一件事，比一整屏小字好读。 -->
+        <LinearLayout
+            android:id="@+id/row_guide_entry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_card"
+            android:clickable="true"
+            android:clipToOutline="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="52dp"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="14dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="使用说明"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -427,75 +656,6 @@
                 android:text="›"
                 android:textColor="@color/sub"
                 android:textSize="20sp" />
-        </LinearLayout>
-
-        <!-- ===== ④ 使用说明（v1.19.8）=====
-             从设置页搬回主界面底部，做成折叠卡片：收起时只占一行，不挤占闹钟与日历；
-             首次安装自动展开一次，之后记住收起状态。 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_card"
-            android:clipToOutline="true"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/row_guide_header"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:minHeight="52dp"
-                android:orientation="horizontal"
-                android:paddingStart="16dp"
-                android:paddingEnd="14dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="使用说明"
-                    android:textColor="@color/ink"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_guide_toggle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="展开"
-                    android:textColor="@color/indigo"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/guide_body"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="14dp"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginBottom="10dp"
-                    android:background="@color/line" />
-
-                <TextView
-                    android:id="@+id/tv_guide"
-                    style="@style/FieldHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingMultiplier="1.3"
-                    android:text="1. 先在「排班」里选周休制度（双休 / 单休 / 大小周），之后每周自动推算，点「排班日历」可整月核对。\n2. 「+ 添加闹钟」可加多个闹钟，各自选「仅上班日 / 每天 / 仅休息日」；点已有闹钟可改时间、名称、规则或删除。\n3. 今天不上班：点今日卡底部的「今天不上班」，一次点完，再点一次恢复。\n4. 其他某天请假 / 加班：进「排班日历」点那天 →「标记为请假 / 加班」，当天闹钟按标记跳过或照响。\n5. 打开「闹钟总开关」即开始排程，首页会显示距下次响铃的倒计时；开启状态下改任何设置都即时生效。\n6. 音量、铃声、稍后提醒、睡前提醒、备份，都在右上角「设置」里。\n7. 日历里日期下方的「班 / 休 / 假 / 补」是当天状态；农历节日、基督教节日可在设置里开关。\n8. 桌面长按空白处可添加「下一个闹钟」「本周班表」两个小组件。\n9. 换手机用「导出配置 / 导入配置」；若被杀后台漏响，请允许自启动并加入电池白名单。" />
-            </LinearLayout>
         </LinearLayout>
 
         <!-- 测试响铃（次要操作，v1.28 从「整屏大按钮 + 三行状态」里拆出来） -->

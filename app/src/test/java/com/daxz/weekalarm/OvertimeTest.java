@@ -170,7 +170,9 @@ public class OvertimeTest {
         LocalDate restDay = findRestDay();
         Prefs.addOvertime(ctx(), restDay);
         // setup 覆盖 onCreate+onResume（含升级重排）；加班日不应导致任何异常
-        CalendarActivity activity = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        // v1.34：日历回到首页，统计行也在首页
+        Prefs.setOnboardDone(ctx(), true);
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         TextView tvOvertime = activity.findViewById(R.id.tv_overtime);
         assertEquals("加班 1 天 · 清除", tvOvertime.getText().toString());
     }
@@ -183,7 +185,8 @@ public class OvertimeTest {
     @Test
     public void legend_twoRows_allItemsVisible() {
         setupSingleWorkdayAlarm();
-        CalendarActivity activity = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        Prefs.setOnboardDone(ctx(), true);
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         LinearLayout legend = activity.findViewById(R.id.legend_row);
 
         assertEquals("图例应为两行", 2, legend.getChildCount());

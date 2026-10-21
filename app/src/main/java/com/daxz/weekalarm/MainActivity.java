@@ -48,10 +48,12 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvAnchor, tvHolidayNote, tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
     private TextView tvWeekMode, tvWeekBig;
-    private TextView tvWeekChip, tvCalTitle, tvStatus;
+    private TextView tvWeekChip, tvStatus;
     private TextView tvSmallRest, tvSwitchHint;
-    /** 排班日历入口行摘要 + 今日卡里的「今天不上班」按钮（v1.28.1）。 */
-    private TextView tvCalEntrySub, btnDayOff;
+    /** 今日卡里的「今天 / 明天不上班」两个按钮（v1.28.1 起，v1.34 起并排）。 */
+    private TextView btnDayOff, btnDayOffTomorrow;
+    /** 首页内嵌的排班日历（v1.34.0）：渲染与单日标记都在它里面。 */
+    private CalendarPanel calendarPanel;
     /** 距下次响铃倒计时（v1.22.5）：每秒跳一次；没有下一次时显示「--:--:--」。 */
     private TextView tvCountdown;
     /** 下一次真正会响的时刻；null = 没有启用的闹钟。由 refreshStatus 算好，tick 只读。 */
@@ -59,10 +61,6 @@ public class MainActivity extends AppCompatActivity {
     /** tick 里用来发现「跨天」的日期锚点。 */
     private LocalDate tickDay;
     private final Handler ticker = new Handler(Looper.getMainLooper());
-    /** 使用说明折叠卡（v1.19.8）：收起时只占一行。 */
-    private View guideBody;
-    private TextView tvGuideToggle;
-    private boolean guideExpanded;
     /** 运行状态折叠卡（v1.28）：自检信息默认收起，标题行只留一句摘要。 */
     private View runBody;
     private TextView tvRunSummary, tvRunToggle;
@@ -74,8 +72,6 @@ public class MainActivity extends AppCompatActivity {
     private SwitchCompat swAlarm;
     /** 开关同步保护：refreshStatus 里回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
-    private LinearLayout calRows;
-    /** 日历表头 7 个星期字：一周开始日可切，顺序要跟着改（v1.22.2）。 */
     private LinearLayout alarmList;
     private TextView btnTest;
 
@@ -106,21 +102,19 @@ public class MainActivity extends AppCompatActivity {
         tvSmallRest = findViewById(R.id.tv_small_rest);
         tvWeekMode = findViewById(R.id.tv_week_mode);
         tvSwitchHint = findViewById(R.id.tv_switch_hint);
-        tvCalEntrySub = findViewById(R.id.tv_cal_entry_sub);
         btnDayOff = findViewById(R.id.btn_day_off);
+        btnDayOffTomorrow = findViewById(R.id.btn_day_off_tomorrow);
         alarmList = findViewById(R.id.alarm_list);
         btnTest = findViewById(R.id.btn_test);
         swAlarm = findViewById(R.id.switch_alarm);
-        guideBody = findViewById(R.id.guide_body);
-        tvGuideToggle = findViewById(R.id.tv_guide_toggle);
         runBody = findViewById(R.id.run_body);
         tvRunSummary = findViewById(R.id.tv_run_summary);
         tvRunToggle = findViewById(R.id.tv_run_toggle);
 
-        // 使用说明：首次安装自动展开一次，让新用户先看到用法；之后记住收起状态
-        guideExpanded = !Prefs.isGuideSeen(this);
-        Prefs.setGuideSeen(this, true);
-        applyGuideState();
+        // v1.34：日历回到首页、默认展开。面板自己找容器里的子 View，主界面只提供
+        // 「改完标记之后要我干什么」——重排 + 刷新首页（面板也会跟着重画）。
+        calendarPanel = new CalendarPanel(this, findViewById(R.id.calendar_card),
+                this::applySettingsIfEnabled);
 
         loadPrefs();
 
@@ -133,21 +127,16 @@ public class MainActivity extends AppCompatActivity {
         // 设置与使用说明整体独立成页（v1.19.7）：主界面只保留入口，不再内嵌设置卡片
         findViewById(R.id.btn_settings_entry).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
-        findViewById(R.id.row_guide_header).setOnClickListener(v -> {
-            guideExpanded = !guideExpanded;
-            applyGuideState();
-        });
+        // v1.34：9 条长文收成一行，点进去是引导页（与设置页「重看新手引导」同一个入口）
+        findViewById(R.id.row_guide_entry).setOnClickListener(v ->
+                startActivity(new Intent(this, GuideActivity.class)));
         findViewById(R.id.row_run_header).setOnClickListener(v -> {
             runExpanded = !runExpanded;
             applyRunState();
         });
-        // v1.28.1：日历独立成页，主界面只留入口；「今天不上班」留在今日卡里一键点掉
-        findViewById(R.id.row_calendar_entry).setOnClickListener(v ->
-                startActivity(new Intent(this, CalendarActivity.class)));
-        btnDayOff.setOnClickListener(v -> toggleTodayOff());
-        // v1.29.0：点倒计时看「接下来三次」，比只看下一次更有用——
-        // 睡前想知道「明早几点响、响几条」，不用一条条点开闹钟看
-        findViewById(R.id.box_countdown).setOnClickListener(v -> showUpcomingDialog());
+        // v1.34：今天 / 明天并排，语义都由 DayOffAction 按当天实际班休决定
+        btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
+        btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
 
         btnTest.setOnClickListener(v -> testAlarm());
 
@@ -233,12 +222,6 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** 使用说明展开 / 收起：只改可见性与按钮文案，不重建视图。 */
-    private void applyGuideState() {
-        guideBody.setVisibility(guideExpanded ? View.VISIBLE : View.GONE);
-        tvGuideToggle.setText(guideExpanded ? "收起" : "展开");
-    }
-
     /** 运行状态展开 / 收起（v1.28）：同上，默认收起，不记忆。 */
     private void applyRunState() {
         runBody.setVisibility(runExpanded ? View.VISIBLE : View.GONE);
@@ -275,20 +258,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ================= 个人请假（v1.14）=================
-
-    /**
-     * 只统计「今天及以后」的标记数。
-     * v1.19.9：请假 / 加班记录不会自动过期，攒了半年后这里会显示「请假标记：37 天」，
-     * 而这些日子早就过去了，看着像统计出错。
-     */
-    private static int countUpcoming(java.util.Set<LocalDate> dates) {
-        LocalDate today = LocalDate.now();
-        int n = 0;
-        for (LocalDate d : dates) {
-            if (!d.isBefore(today)) n++;
-        }
-        return n;
-    }
+    // v1.34：标记统计与单日标记都搬到 CalendarPanel；这里只留「今天 / 明天」两个快按钮。
 
     @Override
     protected void onResume() {
@@ -763,52 +733,6 @@ public class MainActivity extends AppCompatActivity {
         applySettingsIfEnabled();
     }
 
-    /**
-     * 「接下来三次响铃」（v1.29.0）。
-     *
-     * <p>用纯计算的 {@link ScheduleManager#nextRings} 而不是逐条探测系统登记状态：
-     * 用户问的是「接下来会响什么」，不是「系统里登记了几条」。真要漏排了，
-     * 运行状态卡里那行「系统已登记 ✓」本来就会说实话。
-     */
-    private void showUpcomingDialog() {
-        List<ScheduleManager.NextAlarm> next = ScheduleManager.nextRings(
-                this, alarms, LocalDateTime.now(), 3);
-        if (next.isEmpty()) {
-            Toast.makeText(this, Prefs.isEnabled(this)
-                            ? "未来 " + Prefs.getHorizonDays(this) + " 天没有可排的闹钟"
-                            : "闹钟总开关关着，先打开才会响",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < next.size(); i++) {
-            ScheduleManager.NextAlarm n = next.get(i);
-            if (i > 0) sb.append("\n");
-            sb.append(i + 1).append(". ")
-                    .append(relativeDayText(n.when.toLocalDate())).append(" ")
-                    .append(String.format(Locale.getDefault(), "%02d:%02d",
-                            n.when.getHour(), n.when.getMinute()))
-                    .append("  ").append(n.label);
-        }
-        if (!Prefs.isEnabled(this)) {
-            sb.append("\n\n闹钟总开关关着，以上时间不会响。");
-        }
-        new RoundedDialog.Builder(this)
-                .setTitle("接下来三次响铃")
-                .setMessage(sb.toString())
-                .setPositiveButton("知道了", null)
-                .show();
-    }
-
-    /** 今天 / 明天 / 后天，更远的写「M月d日 周三」。 */
-    static String relativeDayText(LocalDate d) {
-        long days = ChronoUnit.DAYS.between(LocalDate.now(), d);
-        if (days == 0) return "今天";
-        if (days == 1) return "明天";
-        if (days == 2) return "后天";
-        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekdayOf(d);
-    }
-
     /** 切换单个闹钟的启停：停用即从系统取消该闹钟已排程的实例；启用则重排全部。 */
     private void toggleAlarm(Alarm a, boolean checked) {
         for (Alarm x : alarms) {
@@ -1216,102 +1140,56 @@ public class MainActivity extends AppCompatActivity {
     private void refreshAll() {
         refreshStatus();
         renderAlarmList();
-        updateCalendarEntry();
+        // v1.34：日历回到首页，全局刷新时一起重画（跨天、改设置、标完标记都要重算）
+        calendarPanel.refresh();
         updateDayOffButton();
     }
 
-    /** 排班日历入口行：一句话说清今天班休，以及还有几天标记没生效完。 */
-    private void updateCalendarEntry() {
-        LocalDate today = LocalDate.now();
-        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
-        String state;
-        switch (type) {
-            case MAKEUP_WORK:
-                state = "今天补班";
-                break;
-            case HOLIDAY:
-                state = "今天法定假";
-                break;
-            case WORK:
-                state = "今天上班";
-                break;
-            default:
-                state = "今天休息";
-                break;
-        }
-        int v = countUpcoming(Prefs.getVacationDates(this));
-        int o = countUpcoming(Prefs.getOvertimeDates(this));
-        String marks;
-        if (v == 0 && o == 0) {
-            marks = "无标记";
-        } else if (v == 0) {
-            marks = "加班 " + o + " 天";
-        } else if (o == 0) {
-            marks = "请假 " + v + " 天";
-        } else {
-            marks = "请假 " + v + " 天、加班 " + o + " 天";
-        }
-        tvCalEntrySub.setText(state + " · " + marks);
-    }
-
     /**
-     * 「今天不上班」按钮的文案（v1.28.1）。
+     * 今日卡两个按钮的文案（v1.28.1，v1.34 泛化到「今天 / 明天」）。
      *
-     * <p>今天是上班日 / 补班日 → 按钮是「今天不上班」，点了标请假；
-     * 今天是休息日 / 法定假 → 同一个位置换成「今天要加班」，点了标加班。
-     * 两种情形都是「今天和排班不一样」，用同一个按钮比藏起来更好找。
+     * <p>那天是上班日 / 补班日 → 按钮写「不上班」，点了标请假；
+     * 是休息日 / 法定假 → 写「要加班」，点了标加班。
+     * 两种情形都是「那天和排班不一样」，用同一个按钮比藏起来更好找。
+     *
+     * <p>只写「今天不上班」不再加「（点击恢复）」：两个按钮并排后一行放不下，
+     * 而标记上之后尾巴的 ✓ 已经说明「再点一次就是撤销」。
      */
     private void updateDayOffButton() {
-        LocalDate today = LocalDate.now();
-        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
-        boolean marked = isWorkDayType(type) ? Prefs.isVacation(this, today)
-                : Prefs.isOvertime(this, today);
-        String text = dayOffButtonText(type, marked);
-        btnDayOff.setText(text);
-        btnDayOff.setContentDescription(text);
+        setDayOffButton(btnDayOff, DayOffAction.TODAY);
+        setDayOffButton(btnDayOffTomorrow, DayOffAction.TOMORROW);
+    }
+
+    private void setDayOffButton(TextView btn, int offset) {
+        LocalDate day = DayOffAction.dateOf(offset);
+        WeekSchedule.DayType type = DayOffAction.typeOf(this, day);
+        boolean marked = DayOffAction.isMarked(this, day);
+        String text = dayOffButtonText(offset, type, marked);
+        btn.setText(text);
+        btn.setContentDescription(text);
     }
 
     /** 上班日与调休补班日都算「今天要上班」，休息日与法定节假日不算。 */
     static boolean isWorkDayType(WeekSchedule.DayType type) {
-        return type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        return DayOffAction.isWorkDay(type);
     }
 
     /**
-     * 「今天不上班 / 今天要加班」按钮的文案。
+     * 「今天 / 明天不上班 / 要加班」按钮的文案。
      *
      * <p>抽成纯函数是为了两种日子都能被直接测到——真机上「今天」是星期几由不得测试决定，
      * 写成方法内部的分支就只能测到跑测试那天的那一半。
      */
-    static String dayOffButtonText(WeekSchedule.DayType type, boolean marked) {
-        if (isWorkDayType(type)) {
-            return marked ? "今天不上班 ✓（点击恢复）" : "今天不上班";
-        }
-        return marked ? "今天要加班 ✓（点击恢复）" : "今天要加班";
+    static String dayOffButtonText(int dayOffset, WeekSchedule.DayType type, boolean marked) {
+        String label = DayOffAction.clampOffset(dayOffset) == DayOffAction.TODAY ? "今天" : "明天";
+        String base = isWorkDayType(type) ? label + "不上班" : label + "要加班";
+        return marked ? base + " ✓" : base;
     }
 
-    /** 一键把今天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。 */
-    private void toggleTodayOff() {
-        LocalDate today = LocalDate.now();
-        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
-        if (isWorkDayType(type)) {
-            if (Prefs.isVacation(this, today)) {
-                Prefs.removeVacation(this, today);
-                Toast.makeText(this, "今天恢复上班，闹钟照常", Toast.LENGTH_SHORT).show();
-            } else {
-                Prefs.addVacation(this, today);
-                Toast.makeText(this, "今天已标记请假，全部闹钟跳过", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            if (Prefs.isOvertime(this, today)) {
-                Prefs.removeOvertime(this, today);
-                Toast.makeText(this, "今天恢复休息，不响闹钟", Toast.LENGTH_SHORT).show();
-            } else {
-                Prefs.addOvertime(this, today);
-                Toast.makeText(this, "今天已标记加班，「仅上班日」闹钟照响",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
+    /** 一键把今天 / 明天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。 */
+    private void toggleDayOff(int dayOffset) {
+        String msg = DayOffAction.toggle(this, dayOffset);
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         applySettingsIfEnabled();
     }
 

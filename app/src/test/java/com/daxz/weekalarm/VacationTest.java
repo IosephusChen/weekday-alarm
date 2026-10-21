@@ -169,13 +169,14 @@ public class VacationTest {
     @Test
     public void vacationRow_refreshesAfterMarking() throws Exception {
         setupSingleDailyAlarm();
-        CalendarActivity activity = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        // v1.34：日历回到首页，统计行也在首页
+        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         TextView tv = activity.findViewById(R.id.tv_vacation);
         assertEquals("请假标记", tv.getText().toString());
 
         Prefs.addVacation(ctx(), LocalDate.now().plusDays(2));
         java.lang.reflect.Method refreshAll =
-                CalendarActivity.class.getDeclaredMethod("refreshAll");
+                MainActivity.class.getDeclaredMethod("refreshAll");
         refreshAll.setAccessible(true);
         refreshAll.invoke(activity);
 

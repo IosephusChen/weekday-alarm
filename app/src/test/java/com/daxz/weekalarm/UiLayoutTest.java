@@ -205,8 +205,8 @@ public class UiLayoutTest {
     /** 点日历里的灰字日期（上 / 下月）应该翻到那个月，而不是给一个看不见的日子打标记。 */
     @Test
     public void clickingOutOfMonthCell_jumpsToThatMonth() {
-        // v1.28.1：日历独立成页，这条改在 CalendarActivity 上验证
-        CalendarActivity a = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        // v1.34：日历回到首页，直接在主界面视图树里验
+        MainActivity a = launch();
         ShadowLooper.idleMainLooper();
         ViewGroup rows = a.findViewById(R.id.cal_rows);
         ViewGroup lastRow = (ViewGroup) rows.getChildAt(rows.getChildCount() - 1);
@@ -347,7 +347,7 @@ public class UiLayoutTest {
     /** 请假 / 加班两个入口并排一行（v1.28）：原来是两座通栏「小山」。 */
     @Test
     public void vacationAndOvertime_shareOneRow() {
-        CalendarActivity a = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        MainActivity a = launch();
         ShadowLooper.idleMainLooper();
         View vacation = a.findViewById(R.id.tv_vacation);
         View overtime = a.findViewById(R.id.tv_overtime);

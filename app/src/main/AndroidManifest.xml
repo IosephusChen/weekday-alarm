@@ -56,13 +56,6 @@
             android:showWhenLocked="true"
             android:taskAffinity="" />
 
-        <!-- 排班日历（v1.28.1）：从主界面独立出来的核对页，点某天标请假 / 加班 -->
-        <activity
-            android:name=".CalendarActivity"
-            android:exported="false"
-            android:label="排班日历"
-            android:parentActivityName=".MainActivity" />
-
         <!-- 设置页（v1.19.8）：设置项一级平铺；使用说明已移回主界面底部折叠卡 -->
         <activity
             android:name=".SettingsActivity"

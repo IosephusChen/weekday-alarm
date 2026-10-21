@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -9,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -255,28 +257,24 @@ public class SnoozePreNoticeTest {
                         .contains(" 年"));
     }
 
+    /**
+     * 使用说明收成一行入口（v1.34.0）：9 条长文首次安装展开约 400dp，
+     * 和设置页「重看新手引导」讲的是同一件事，没必要在主界面再铺一遍。
+     */
     @Test
-    public void mainActivity_guideCard_collapsedByDefault_afterFirstRun() {
-        Prefs.setGuideSeen(ctx(), true);   // 模拟已看过一次
+    public void mainActivity_guideIsOneLineEntry_opensGuide() {
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);   // 别让启动时的引导页抢走「下一个 Activity」
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        assertEquals(View.GONE, activity.findViewById(R.id.guide_body).getVisibility());
-        assertEquals("展开",
-                ((TextView) activity.findViewById(R.id.tv_guide_toggle)).getText().toString());
 
-        activity.findViewById(R.id.row_guide_header).performClick();
-        assertEquals(View.VISIBLE, activity.findViewById(R.id.guide_body).getVisibility());
-        assertEquals("收起",
-                ((TextView) activity.findViewById(R.id.tv_guide_toggle)).getText().toString());
-        String guide = ((TextView) activity.findViewById(R.id.tv_guide)).getText().toString();
-        assertTrue("使用说明应保留全部条目", guide.contains("1. ") && guide.contains("8. "));
-    }
+        View row = activity.findViewById(R.id.row_guide_entry);
+        assertNotNull("首页应保留使用说明入口", row);
+        assertEquals("入口只占一行：标题 + 箭头", 2, ((LinearLayout) row).getChildCount());
 
-    @Test
-    public void mainActivity_guideCard_expandedOnFirstRun() {
-        // 全新安装（没有 guide_seen）：首次进入自动展开，新用户一眼看到用法
-        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        assertEquals(View.VISIBLE, activity.findViewById(R.id.guide_body).getVisibility());
-        assertTrue(Prefs.isGuideSeen(ctx()));
+        row.performClick();
+        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
+        assertNotNull("点入口应打开引导页", next);
+        assertEquals(GuideActivity.class.getName(), next.getComponent().getClassName());
     }
 
     @Test

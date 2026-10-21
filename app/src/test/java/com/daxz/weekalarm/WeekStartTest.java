@@ -112,13 +112,14 @@ public class WeekStartTest {
     @Test
     public void calendarHeader_followsSetting() {
         Prefs.setWeekStart(ctx(), Prefs.WEEK_START_SUNDAY);
-        CalendarActivity a = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        Prefs.setOnboardDone(ctx(), true);   // v1.34：日历在首页，别让新手引导页插进来
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
         ShadowLooper.idleMainLooper();
         assertEquals("日", ((TextView) a.findViewById(R.id.cal_dow_0)).getText().toString());
         assertEquals("六", ((TextView) a.findViewById(R.id.cal_dow_6)).getText().toString());
 
         sp().edit().putInt(Prefs.KEY_WEEK_START, Prefs.WEEK_START_MONDAY).commit();
-        CalendarActivity b = Robolectric.buildActivity(CalendarActivity.class).setup().get();
+        MainActivity b = Robolectric.buildActivity(MainActivity.class).setup().get();
         ShadowLooper.idleMainLooper();
         assertEquals("一", ((TextView) b.findViewById(R.id.cal_dow_0)).getText().toString());
     }

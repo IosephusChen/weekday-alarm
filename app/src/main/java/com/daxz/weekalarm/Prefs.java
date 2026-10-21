@@ -388,35 +388,46 @@ public final class Prefs {
     }
 
     /**
-     * 清掉「今天之前」的请假 / 加班标记，返回清掉的条数（v1.34.3）。
+     * 清掉「今天及以后」的请假 / 加班标记，返回清掉的条数（v1.35.0）。
      *
-     * <p>标记的唯一作用是影响闹钟，而过去那些日子的闹钟早就响过了，留着只制造矛盾：
-     * 日历格子上还印着「假」，下方统计（只算今天及以后）却不计入，
-     * 用户点「清除 N 天」时实际清掉的比 N 多。三处说的不是同一件事。
+     * <p>方向与 v1.34.3 的 {@code prunePastMarks} 正好相反：那次清过去，这次清未来。
      *
-     * <p>所以每次回到前台清一次，让存储、格子、统计对齐。不清今天——今天还没过完，
-     * 今晚标了「明天不上班」，明天它就变成今天，仍然有效。
+     * <p>理由变了。v1.34.3 认为「过去的标记不影响闹钟，留着只会让格子与统计打架」，
+     * 于是每次回前台清一次——代价是日历翻回上个月一片空白，用户想「看看这个月哪几天
+     * 请了假」时，恰恰看不到。现在把标记分成两段来理解：
+     *
+     * <ul>
+     *   <li><b>今天及以后 = 排程开关</b>：改它会影响闹钟，所以「清除」清的是这一段；</li>
+     *   <li><b>今天之前 = 记录</b>：闹钟早响过了，改它不影响任何事，但它记录着
+     *       「那天我请了假 / 加了班」，翻日历时应该看得见。</li>
+     * </ul>
+     *
+     * <p>两段各管各的，就不再打架：清除清的是「还有排程意义的标记」，数字与动作一致；
+     * 过去那段只读、不计入统计、也不被批量清除，想删某天就在日历上点那一天。
      */
-    public static int prunePastMarks(Context c) {
+    public static int clearUpcomingMarks(Context c, boolean vacation) {
         LocalDate today = LocalDate.now();
-        int removed = 0;
-
-        Set<LocalDate> vacations = getVacationDates(c);
-        int beforeV = vacations.size();
-        vacations.removeIf(d -> d.isBefore(today));
-        if (vacations.size() != beforeV) {
-            setVacationDates(c, vacations);
-            removed += beforeV - vacations.size();
-        }
-
-        Set<LocalDate> overtimes = getOvertimeDates(c);
-        int beforeO = overtimes.size();
-        overtimes.removeIf(d -> d.isBefore(today));
-        if (overtimes.size() != beforeO) {
-            setOvertimeDates(c, overtimes);
-            removed += beforeO - overtimes.size();
+        Set<LocalDate> cur = vacation ? getVacationDates(c) : getOvertimeDates(c);
+        int before = cur.size();
+        // 只留过去：今天及以后的都算「还有排程意义」，一并清掉
+        cur.removeIf(d -> !d.isBefore(today));
+        int removed = before - cur.size();
+        if (removed > 0) {
+            if (vacation) {
+                setVacationDates(c, cur);
+            } else {
+                setOvertimeDates(c, cur);
+            }
         }
         return removed;
+    }
+
+    /** 清掉某一天的请假 / 加班记录（日历上点过去的格子用），返回是否删掉了东西。 */
+    public static boolean removeMark(Context c, LocalDate d) {
+        boolean had = isVacation(c, d) || isOvertime(c, d);
+        if (isVacation(c, d)) removeVacation(c, d);
+        if (isOvertime(c, d)) removeOvertime(c, d);
+        return had;
     }
 
     // ================= 响铃设置（v1.16 起）=================

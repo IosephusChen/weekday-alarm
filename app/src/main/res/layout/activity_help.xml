@@ -78,7 +78,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 日历就在首页，默认展开。日期下方那个字是当天状态：班＝上班，休＝休息，假＝法定假，补＝调休补班。" />
+                android:text="· 日历就在首页，默认展开。日期下方那个字是当天状态：班＝上班，休＝休息，假＝法定假，补＝调休补班；「请假」「加班」是你自己标的（底色不同），两个都标时写「假加」。" />
 
             <TextView
                 style="@style/HelpItem"
@@ -161,7 +161,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 其他日子：在首页日历里点那一天，选「标记为请假 / 加班」。日历下方有请假、加班天数统计，点它可一键清除。" />
+                android:text="· 其他日子：在首页日历里点那一天，选「标记为请假 / 加班」。上班日也能标加班（白天上班、晚上补工），同一天两个都能标，格子上会印「假加」。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 过去的日子留着当记录：格子上仍印着「假」「加」，点它可以删掉。想知道这个月哪几天请了假、加了班，翻日历看就行。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 日历下方的「请假 N 天 · 清除」只算今天及以后，点清除也只清这一段——过去的记录不会被一起删掉。" />
         </LinearLayout>
 
         <!-- ===== ④ 桌面小组件 ===== -->

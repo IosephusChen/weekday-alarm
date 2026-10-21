@@ -16,6 +16,12 @@
     <color name="line">#2A2E47</color>         <!-- 描边/分隔线 -->
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（夜间）：与 day_makeup_text / day_overtime_text 同一档亮度 -->
+    <!-- 闹钟配色（夜间）：与 day_*_text 同一档亮度，深底上才看得清 -->
+    <color name="alarm_color_0">#F1F3FE</color>
+    <color name="alarm_color_1">#FB923C</color>   <!-- orange-400 -->
+    <color name="alarm_color_2">#4ADE80</color>   <!-- green-400 -->
+    <color name="alarm_color_3">#A78BFA</color>   <!-- violet-400 -->
+
     <color name="danger">#F87171</color>   <!-- red-400 -->
     <color name="success">#4ADE80</color>  <!-- green-400 -->
 

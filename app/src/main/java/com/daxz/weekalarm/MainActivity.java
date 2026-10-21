@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -560,7 +561,10 @@ public class MainActivity extends AppCompatActivity {
             // 用 sans-serif-medium 而不是 BOLD：粗体在小字号上糊成一团，中等字重反而更清晰。
             TextView time = new TextView(this);
             time.setText(a.timeText());
-            time.setTextColor(titleColor);
+            // v1.30：有配色就用配色，关掉的仍然走灰字——「颜色」表达用途，
+            // 「灰不灰」表达有没有开，两个维度不能互相盖掉
+            time.setTextColor(a.enabled ? ContextCompat.getColor(this, alarmColorRes(a.color))
+                    : titleColor);
             time.setTextSize(26);
             time.setTypeface(TYPEFACE_MEDIUM);
             // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准
@@ -640,6 +644,46 @@ public class MainActivity extends AppCompatActivity {
         div.setLayoutParams(lp);
     }
 
+    /** 配色下标 → 颜色资源。越界兜 0，跟 {@link Alarm#clampColor} 同一套口径。 */
+    static int alarmColorRes(int idx) {
+        switch (Alarm.clampColor(idx)) {
+            case 1:
+                return R.color.alarm_color_1;
+            case 2:
+                return R.color.alarm_color_2;
+            case 3:
+                return R.color.alarm_color_3;
+            default:
+                return R.color.alarm_color_0;
+        }
+    }
+
+    /**
+     * 画四个配色圆点，选中的加一圈描边。
+     *
+     * <p>用代码画而不是四张图：颜色要跟深色模式联动，做成 drawable 就得写两份，
+     * 而这里只是一圈描边的差别。描边用 ink 而不是格子自身颜色——深色底上同色描边
+     * 等于没描，选中与否看不出来。
+     */
+    private void renderColorDots(LinearLayout row, int selected) {
+        float d = getResources().getDisplayMetrics().density;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View dot = row.getChildAt(i);
+            GradientDrawable g = new GradientDrawable();
+            g.setShape(GradientDrawable.OVAL);
+            g.setColor(ContextCompat.getColor(this, alarmColorRes(i)));
+            if (i == selected) {
+                g.setStroke((int) (2 * d), ContextCompat.getColor(this, R.color.ink));
+            } else {
+                g.setStroke((int) (1 * d), ContextCompat.getColor(this, R.color.line));
+            }
+            dot.setBackground(g);
+            dot.setContentDescription(i == selected
+                    ? dot.getContentDescription() + "，已选中"
+                    : String.valueOf(dot.getContentDescription()).replace("，已选中", ""));
+        }
+    }
+
     /**
      * 长按闹钟行弹出的两项菜单（v1.29.0）。
      *
@@ -685,8 +729,10 @@ public class MainActivity extends AppCompatActivity {
             LocalDate base = src.parseOnceDate() != null ? src.parseOnceDate() : now.toLocalDate();
             onceDate = onceDayAfter(base, src.hour, src.minute, now).toString();
         }
-        return new Alarm(newId, src.hour, src.minute, src.label + " 副本",
+        Alarm copy = new Alarm(newId, src.hour, src.minute, src.label + " 副本",
                 src.mode, true, onceDate);
+        copy.color = src.color;   // 复制出来的用途一样，颜色跟着走
+        return copy;
     }
 
     /** 长按菜单里的删除：确认一次再删（删除不可撤销，值得多问一句）。 */
@@ -806,6 +852,17 @@ public class MainActivity extends AppCompatActivity {
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
+        // 配色（v1.30）：点圆点即刻预览，保存时才落库
+        final int[] color = {target != null ? Alarm.clampColor(target.color) : 0};
+        LinearLayout rowColor = view.findViewById(R.id.row_alarm_color);
+        for (int i = 0; i < rowColor.getChildCount(); i++) {
+            final int idx = i;
+            rowColor.getChildAt(i).setOnClickListener(v -> {
+                color[0] = idx;
+                renderColorDots(rowColor, idx);
+            });
+        }
+        renderColorDots(rowColor, color[0]);
         if (target != null) {
             etLabel.setText(target.label);
             switch (target.mode) {
@@ -898,13 +955,17 @@ public class MainActivity extends AppCompatActivity {
                     String onceStr = mode == Alarm.Mode.ONCE ? onceDay.toString() : null;
                     if (target == null) {
                         int id = Prefs.nextAlarmId(this);
-                        alarms.add(new Alarm(id, hour[0], minute[0], label, mode, true, onceStr));
+                        Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
+                                true, onceStr);
+                        created.color = color[0];
+                        alarms.add(created);
                     } else {
                         target.hour = hour[0];
                         target.minute = minute[0];
                         target.label = label;
                         target.mode = mode;
                         target.onceDate = onceStr;
+                        target.color = color[0];
                     }
                     Prefs.setAlarms(this, alarms);
                     applySettingsIfEnabled();

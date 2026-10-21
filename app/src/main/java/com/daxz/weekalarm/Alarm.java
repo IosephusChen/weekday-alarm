@@ -70,6 +70,23 @@ public final class Alarm {
      */
     public String onceDate;
 
+    /**
+     * 用途配色（v1.30）：0 = 默认，1 橙 / 2 绿 / 3 紫。
+     *
+     * <p>只影响列表里时间大字的颜色，不影响响铃、排程与任何判定——换句话说，
+     * 这个字段坏掉最多是「颜色不对」，绝不会让人漏响。因此越界值一律兜回 0，
+     * 不像 mode 那样需要额外的迁移处理。
+     */
+    public int color;
+
+    /** 可选配色的数量（含默认色）。 */
+    public static final int COLOR_COUNT = 4;
+
+    /** 把任意整数收敛到合法的配色下标。 */
+    public static int clampColor(int c) {
+        return c < 0 || c >= COLOR_COUNT ? 0 : c;
+    }
+
     public Alarm(int id, int hour, int minute, String label, Mode mode, boolean enabled) {
         this(id, hour, minute, label, mode, enabled, null);
     }
@@ -236,6 +253,9 @@ public final class Alarm {
                 o.put("mode", a.mode.ordinal());
                 o.put("enabled", a.enabled);
                 if (a.onceDate != null) o.put("onceDate", a.onceDate);
+                // 默认色不落盘：老版本的 JSON 里没有这个键，读的时候也按 0 处理，
+                // 两边保持一致，备份文件才不会被一堆 "color":0 撑大
+                if (a.color != 0) o.put("color", a.color);
                 arr.put(o);
             } catch (Exception ignore) {
             }
@@ -251,7 +271,7 @@ public final class Alarm {
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
-                out.add(new Alarm(
+                Alarm a = new Alarm(
                         o.optInt("id", i + 1),
                         o.optInt("hour", 7),
                         o.optInt("minute", 30),
@@ -260,7 +280,9 @@ public final class Alarm {
                         o.optBoolean("enabled", true),
                         // 老版本没有这个键：optString 默认给 null，
                         // ONCE 遇到 null 就视为不响（见字段注释）
-                        o.optString("onceDate", null)));
+                        o.optString("onceDate", null));
+                a.color = clampColor(o.optInt("color", 0));
+                out.add(a);
             }
         } catch (Exception e) {
             return new ArrayList<>();

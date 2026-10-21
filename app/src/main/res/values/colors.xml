@@ -13,6 +13,13 @@
     <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。
          以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，
          深色模式下 #DC2626 / #16A34A 压在 #1C1F35 卡片上对比度只有 3:1 左右。 -->
+    <!-- 闹钟配色（v1.30）：列表里给时间大字染色，多条闹钟一眼分清「哪条是起床」。
+         0 是默认（不染色，用主文字色），其余三个是可选色。 -->
+    <color name="alarm_color_0">#1E2235</color>   <!-- 默认：与 ink 同色 -->
+    <color name="alarm_color_1">#C2410C</color>   <!-- 橙 -->
+    <color name="alarm_color_2">#15803D</color>   <!-- 绿 -->
+    <color name="alarm_color_3">#6D28D9</color>   <!-- 紫 -->
+
     <color name="danger">#DC2626</color>
     <color name="success">#16A34A</color>
 

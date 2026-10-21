@@ -137,6 +137,51 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- 配色（v1.30）：四个圆点，点一下给这条闹钟换颜色。
+         只有 4 个，是因为它的作用只是「在列表里一眼认出哪条」——
+         再多就变成让人挑花眼的调色板，而闹钟列表最多也就三五条。 -->
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="颜色（列表里区分用）" />
+
+    <LinearLayout
+        android:id="@+id/row_alarm_color"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <View
+            android:id="@+id/alarm_color_0"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="默认颜色" />
+
+        <View
+            android:id="@+id/alarm_color_1"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="橙色" />
+
+        <View
+            android:id="@+id/alarm_color_2"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="16dp"
+            android:contentDescription="绿色" />
+
+        <View
+            android:id="@+id/alarm_color_3"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:contentDescription="紫色" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/btn_alarm_delete"
         android:layout_width="match_parent"

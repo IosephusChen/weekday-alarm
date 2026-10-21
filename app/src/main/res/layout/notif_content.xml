@@ -22,7 +22,7 @@
         android:id="@+id/nc_icon"
         android:layout_width="34dp"
         android:layout_height="34dp"
-        android:padding="7dp"
+        android:padding="6dp"
         android:src="@drawable/ic_notification"
         android:background="@drawable/bg_notif_icon"
         android:contentDescription="@null" />

@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -28,6 +29,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -387,5 +389,101 @@ public class PreNoticeTest {
         ScheduleManager.dropStalePreNotices(ctx());
 
         assertNull("升级后旧通知应被清掉，重排才会重发带图标的", preNoticeNotification());
+    }
+
+    // ================= v1.37.0：时间不能是死的 =================
+
+    /**
+     * 通知栏那行字必须是绝对时间（v1.37.0）。
+     *
+     * <p>原来写「1 小时后 · 14:10 响铃」，而通知发出去就不再刷新——躺到只剩 10 分钟时，
+     * 它还在说「1 小时后」。相对时间只在发出那一刻成立，长期挂着只能写绝对时间。
+     * 「还剩多久」交给头部的系统倒计时（下一条测）。
+     */
+    @Test
+    public void preNotice_bodyIsAbsoluteTime_notRelative() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedAlarm(30);
+        ScheduleManager.rescheduleAll(ctx());
+
+        Notification n = preNoticeNotification();
+        assertNotNull(n);
+        String body = String.valueOf(n.extras.getCharSequence(Notification.EXTRA_TEXT));
+        assertTrue("正文要写清几点响，实际：" + body, body.endsWith("响铃"));
+        assertFalse("不能再写「N 小时后」——它会随时间失真，实际：" + body,
+                body.contains("小时后") || body.contains("分钟后"));
+    }
+
+    /**
+     * 通知头部要挂系统倒计时（v1.37.0）。
+     *
+     * <p>setUsesChronometer + countDown 之后，SystemUI 每秒自己刷新「1:00:00」，
+     * 不占我们的 CPU。这是唯一能真正「随时间变化」的做法——自己起服务刷新通知
+     * 既费电，又会被国产 ROM 的后台限制掐掉。
+     */
+    @Test
+    public void preNotice_usesSystemCountdown() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedAlarm(30);
+        ScheduleManager.rescheduleAll(ctx());
+
+        Notification n = preNoticeNotification();
+        assertNotNull(n);
+        assertTrue("要开倒计时", n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
+        assertTrue("倒计时方向应是「还剩」而不是「已过」",
+                n.extras.getBoolean("android.chronometerCountDown"));
+        assertTrue("when 应是触发时刻（未来），实际：" + n.when,
+                n.when > System.currentTimeMillis());
+    }
+
+    /** 品牌紫：通知强调色要跟着 App 主色，不能是系统默认灰。 */
+    @Test
+    public void preNotice_usesBrandColor() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedAlarm(30);
+        ScheduleManager.rescheduleAll(ctx());
+
+        Notification n = preNoticeNotification();
+        assertNotNull(n);
+        assertEquals("强调色应为品牌紫", ctx().getColor(R.color.indigo), n.color);
+    }
+
+    /** 「今天」不写日期，「明天 / 后天」写出来，更远补月日——和弹窗副标题同一套措辞。 */
+    @Test
+    public void whenText_readsLikeHuman() {
+        LocalDate today = LocalDate.now();
+        assertEquals("14:10 响铃", PreNoticeReceiver.whenText(today, "14:10"));
+        assertEquals("明天 14:10 响铃", PreNoticeReceiver.whenText(today.plusDays(1), "14:10"));
+        assertEquals("后天 14:10 响铃", PreNoticeReceiver.whenText(today.plusDays(2), "14:10"));
+        LocalDate far = today.plusDays(10);
+        assertEquals(far.getMonthValue() + "月" + far.getDayOfMonth() + "日 14:10 响铃",
+                PreNoticeReceiver.whenText(far, "14:10"));
+        // 老数据没有时间文本时，宁可只说「即将响铃」，也别拼出「 响铃」
+        assertEquals("即将响铃", PreNoticeReceiver.whenText(today, ""));
+    }
+
+    /** 横幅只出现几秒，可以写相对时间——「还有 10 分钟」比「14:10」更催人。 */
+    @Test
+    public void headsUpText_keepsRelativeTime() {
+        assertEquals("1 小时后 · 14:10", PreNoticeReceiver.headsUpText(60, "14:10"));
+        assertEquals("10 分钟后 · 09:30", PreNoticeReceiver.headsUpText(10, "09:30"));
+        assertEquals("5 分钟后响铃", PreNoticeReceiver.headsUpText(5, ""));
+    }
+
+    /** 时间戳解析：正常值算对，脏数据一律返回 0（调用方据此跳过倒计时）。 */
+    @Test
+    public void triggerAt_parsesOrGivesUp() {
+        LocalDate d = LocalDate.of(2026, 10, 22);
+        long ms = PreNoticeReceiver.triggerAt(d, "14:10");
+        assertEquals(d.atTime(14, 10).atZone(java.time.ZoneId.systemDefault())
+                .toInstant().toEpochMilli(), ms);
+
+        assertEquals("空串", 0, PreNoticeReceiver.triggerAt(d, ""));
+        assertEquals("格式不对", 0, PreNoticeReceiver.triggerAt(d, "14:10:00"));
+        assertEquals("非数字", 0, PreNoticeReceiver.triggerAt(d, "ab:cd"));
+        assertEquals("null 日期", 0, PreNoticeReceiver.triggerAt(null, "14:10"));
     }
 }

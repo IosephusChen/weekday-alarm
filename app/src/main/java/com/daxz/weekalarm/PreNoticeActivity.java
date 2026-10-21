@@ -65,13 +65,9 @@ public class PreNoticeActivity extends AppCompatActivity {
         });
     }
 
-    /** 「今天」不写，「明天 / 后天」写出来，更远才补日期——一句话说清是哪一趟。 */
+    /** 措辞与通知栏共用一份（v1.37.0 挪到 {@link PreNoticeReceiver}），两边不会说出两种日期。 */
     private String dayWord(LocalDate d) {
-        LocalDate today = LocalDate.now();
-        if (d.equals(today)) return "";
-        if (d.equals(today.plusDays(1))) return "明天 ";
-        if (d.equals(today.plusDays(2))) return "后天 ";
-        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 ";
+        return PreNoticeReceiver.dayWord(d);
     }
 
     @Override

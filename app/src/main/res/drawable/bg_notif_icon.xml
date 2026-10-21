@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 横幅左侧图标底：浅灰圆形（浅色卡片用） -->
+<!--
+  通知左侧图标底（v1.37.0）：品牌紫渐变圆。
+
+  原来是一层 8% 黑（深色模式 15% 白）的透明蒙层，和系统通知里的灰色圆毫无区别——
+  用户反馈「好看但没有特色，容易和系统闹钟混淆」。现在直接用首页 hero 的同一套渐变
+  （indigo → violet，135°），通知栏里一眼能认出是本应用。
+
+  品牌色不随明暗模式变：深色卡片上紫底白图标同样成立，所以不再需要 _dark 变体。
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="#14000000" />
+    <gradient
+        android:angle="135"
+        android:startColor="@color/indigo"
+        android:endColor="@color/violet" />
 </shape>

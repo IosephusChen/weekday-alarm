@@ -78,6 +78,8 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setContentTitle(m.title)
                 .setContentText(m.text)
                 .setContentIntent(contentPi)
+                // v1.37.0：强调色统一成品牌紫，和「即将响铃」那条看起来是一家的
+                .setColor(ctx.getColor(R.color.indigo))
                 .setAutoCancel(true)
                 .setPriority(Notification.PRIORITY_DEFAULT);
 

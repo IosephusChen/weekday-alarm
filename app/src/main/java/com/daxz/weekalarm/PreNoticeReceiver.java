@@ -12,8 +12,10 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 /**
  * 响铃前的通知栏提醒（v1.17）。
@@ -116,15 +118,23 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 preNoticeRequestCode(alarmId, d), cancel,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // v1.23.6：正文不再写「点此查看」，改为「还有多久 · 几点响」——
-        // 折叠卡片上的那行字只有一行的位置，说清楚时间比说「点这里」有用。
-        String sub = minutesText(minutes) + "后"
-                + (timeText.isEmpty() ? "" : " · " + timeText) + " 响铃";
+        // v1.37.0：正文改成绝对时间。
+        //
+        // 原来写「1 小时后 · 14:10 响铃」——通知发出去之后不再刷新，这句「1 小时后」
+        // 会一直停在原处：等到只剩 10 分钟，它还是「1 小时后」，比不写更误导。
+        // 相对时间只在「发出那一刻」成立，而通知要在栏里躺满整个提前量，所以只能写绝对时间。
+        //
+        // 「还剩多久」交给通知头部的系统倒计时（setUsesChronometer + countDown）：
+        // 那是 SystemUI 自己每秒刷新的，既不会失真，也不用我们额外唤醒设备。
+        String sub = whenText(d, timeText);
         Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_PRE_NOTICE)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(label + " 即将响铃")
                 .setContentText(sub)
                 .setContentIntent(popupPi)
+                // v1.37.0：通知的强调色（头部应用名、系统着色）改用品牌紫，
+                // 和下面自绘的紫底图标、紫底按钮连成一套。
+                .setColor(ContextCompat.getColor(ctx, R.color.indigo))
                 // v1.23.2：点进详情页后通知不消失，只有闹钟响过或被关掉才撤（对标系统闹钟）。
                 // ongoing 让它无法被划掉——这条通知就是这次响铃的「挂账」。
                 .setAutoCancel(false)
@@ -141,6 +151,21 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 .addAction(new Notification.Action.Builder(
                         Icon.createWithResource(ctx, R.drawable.ic_notif_close),
                         "关闭闹钟", cancelPi).build());
+        // v1.37.0：让系统替我们倒计时。
+        //
+        // setWhen(触发时刻) + setUsesChronometer(true) + setChronometerCountDown(true) 之后，
+        // 通知头部的时间位会显示「1:00:00」并每秒递减——这是 SystemUI 画的，不占我们的 CPU。
+        // 正文仍是绝对时间（14:10 响铃），两者不冲突：一个说「什么时候」，一个说「还剩多久」。
+        //
+        // 时间文本解析不出来（老数据 / 空串）就退回普通时间戳，不硬凑一个错的倒计时。
+        long triggerAt = triggerAt(d, timeText);
+        if (triggerAt > 0) {
+            nb.setWhen(triggerAt)
+                    .setShowWhen(true)
+                    .setUsesChronometer(true)
+                    .setChronometerCountDown(true);
+        }
+
         // v1.23.6：把按钮画进**折叠态**布局。锁屏卡片和下拉后未展开的卡片渲染的都是折叠态，
         // 而折叠态由系统模板生成，只放小图标 + 标题 + 一行正文，addAction 的按钮要展开才出现——
         // 所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
@@ -148,8 +173,10 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         nb.setCustomContentView(
                 buildCard(ctx, label + " 即将响铃", sub, cancelPi, popupPi));
         // v1.23.4：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
+        // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，
+        // 而「还有 10 分钟」比「14:10」更能让人马上起身。
         nb.setCustomHeadsUpContentView(
-                buildHeadsUp(ctx, label + " 即将响铃", minutesText(minutes) + "后响铃",
+                buildHeadsUp(ctx, label + " 即将响铃", headsUpText(minutes, timeText),
                         cancelPi, popupPi));
         // 只有息屏 / 锁屏才挂全屏 intent；解锁时让系统只弹横幅，避免两套界面同时出现
         if (popupNow) {
@@ -165,6 +192,56 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     /** 「还有多久」的统一写法：60 分钟写成「1 小时」，别让用户读「60 分钟后」。 */
     static String minutesText(int minutes) {
         return minutes >= 60 ? (minutes / 60) + " 小时" : minutes + " 分钟";
+    }
+
+    /**
+     * 折叠卡片上的那行字（v1.37.0）：只有绝对时间，永远正确。
+     *
+     * <p>「今天」不写，「明天 / 后天」写出来，更远才补日期——一句话说清是哪一趟。
+     * 和 {@link PreNoticeActivity} 的弹窗副标题共用同一份措辞。
+     */
+    static String whenText(LocalDate d, String timeText) {
+        if (timeText == null || timeText.isEmpty()) return "即将响铃";
+        return dayWord(d) + timeText + " 响铃";
+    }
+
+    /**
+     * 横幅上的那行字：相对时间 + 绝对时间。
+     *
+     * <p>横幅只出现几秒，相对时间不会失真；而「还有 10 分钟」比「14:10」更有紧迫感，
+     * 两种信息各取所长。锁屏和通知栏用的是折叠卡片，那边只写绝对时间。
+     */
+    static String headsUpText(int minutes, String timeText) {
+        if (timeText == null || timeText.isEmpty()) return minutesText(minutes) + "后响铃";
+        return minutesText(minutes) + "后 · " + timeText;
+    }
+
+    /** 「今天」不写，「明天 / 后天」写出来，更远才补日期——一句话说清是哪一趟。 */
+    static String dayWord(LocalDate d) {
+        LocalDate today = LocalDate.now();
+        if (d.equals(today)) return "";
+        if (d.equals(today.plusDays(1))) return "明天 ";
+        if (d.equals(today.plusDays(2))) return "后天 ";
+        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 ";
+    }
+
+    /**
+     * 把「日期 + HH:mm」换成时间戳，供通知头部倒计时用。
+     *
+     * <p>解析不出来返回 0——调用方据此跳过倒计时，退回普通时间戳。
+     * 宁可少一个动态效果，也不要显示一个错的剩余时间。
+     */
+    static long triggerAt(LocalDate d, String timeText) {
+        if (d == null || timeText == null || timeText.length() != 5 || timeText.charAt(2) != ':') {
+            return 0;
+        }
+        try {
+            int h = Integer.parseInt(timeText.substring(0, 2));
+            int m = Integer.parseInt(timeText.substring(3, 5));
+            return d.atTime(h, m).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     /**
@@ -204,23 +281,22 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      * 按明暗模式给自绘卡片上色（两套布局共用）。
      *
      * <p>RemoteViews 拿不到当前主题的文字色，只能自己读 uiMode：
-     * 浅色卡片用近黑字，深色卡片用白字，按钮底和图标底也各配一份 drawable。
-     * 图标本身是白色描边，画在浅灰圆底上等于看不见，所以还要一层 colorFilter。
+     * 浅色卡片用近黑字，深色卡片用白字。
+     *
+     * <p>v1.37.0 起图标底与按钮底固定为品牌紫渐变（见 {@code bg_notif_icon} /
+     * {@code bg_notif_action}），所以这两个位置一律白字 / 白图标，不再按明暗切换背景。
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,
                               int textId, int actionId) {
         boolean night = (ctx.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        int titleColor = night ? 0xFFFFFFFF : 0xFF1A1A1A;
-        int subColor = night ? 0xB3FFFFFF : 0xFF6E6E73;
+        int titleColor = night ? 0xFFFFFFFF : 0xFF1E2235;
+        int subColor = night ? 0xB3FFFFFF : 0xFF6B7189;
         rv.setTextColor(titleId, titleColor);
         rv.setTextColor(textId, subColor);
-        rv.setTextColor(actionId, titleColor);
-        rv.setInt(iconId, "setColorFilter", titleColor);
-        rv.setInt(actionId, "setBackgroundResource",
-                night ? R.drawable.bg_notif_action_dark : R.drawable.bg_notif_action);
-        rv.setInt(iconId, "setBackgroundResource",
-                night ? R.drawable.bg_notif_icon_dark : R.drawable.bg_notif_icon);
+        // 紫底上只能放白字、白图标
+        rv.setTextColor(actionId, 0xFFFFFFFF);
+        rv.setInt(iconId, "setColorFilter", 0xFFFFFFFF);
     }
 
     /** 提前关闭这次响铃：取消主闹钟 + 提前通知闹钟 + 待触发的小睡。 */

@@ -361,20 +361,82 @@
         </FrameLayout>
     </LinearLayout>
 
-    <!-- 明天请假（v1.31）：睡前看一眼「明天要上班」，顺手就能说「明天不上班」。
-         放整行而不是塞进标题行：标题行已经被「大周 · 休2天 / 闹钟已开启」占满，
-         再挤一个按钮会两者都放不下。整行按钮还有个好处——点起来不容易误触到别的格子。 -->
-    <TextView
-        android:id="@+id/widget_week_action"
+    <!-- 今天 / 明天请假（v1.33）：睡前想的是「明早能不能不去」，早上想的是「今天能不能不去」，
+         两个都放在手边。并排一行而不是上下两行——4×2 的高度经不起再加一行，
+         而两个按钮各占一半宽度仍然放得下「今天已请假」这五个字。 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="22dp"
         android:layout_marginTop="4dp"
-        android:background="@drawable/bg_widget_action"
-        android:gravity="center"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:text="明天不上班"
-        android:textColor="#FFFFFF"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/wrap_today_action"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/widget_today_action"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_widget_action"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="今天不上班"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_today_action_on"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_widget_action_on"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="今天已请假"
+                android:textColor="@color/indigo_dark"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/wrap_tomorrow_action"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/widget_tomorrow_action"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_widget_action"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="明天不上班"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_tomorrow_action_on"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_widget_action_on"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="明天已请假"
+                android:textColor="@color/indigo_dark"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>

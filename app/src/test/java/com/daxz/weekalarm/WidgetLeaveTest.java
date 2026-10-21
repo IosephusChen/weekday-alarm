@@ -43,7 +43,7 @@ public class WidgetLeaveTest {
     @Test
     public void actionText_workDay_offersLeave() {
         assertEquals("明天不上班", WeekScheduleWidget.actionText(WeekSchedule.DayType.WORK, false));
-        assertEquals("明天已请假 · 点此恢复",
+        assertEquals("明天已请假",
                 WeekScheduleWidget.actionText(WeekSchedule.DayType.WORK, true));
     }
 
@@ -58,7 +58,7 @@ public class WidgetLeaveTest {
     public void actionText_restDay_offersOvertime() {
         assertEquals("明天要加班",
                 WeekScheduleWidget.actionText(WeekSchedule.DayType.REST, false));
-        assertEquals("明天已加班 · 点此恢复",
+        assertEquals("明天已加班",
                 WeekScheduleWidget.actionText(WeekSchedule.DayType.REST, true));
     }
 
@@ -68,25 +68,61 @@ public class WidgetLeaveTest {
                 WeekScheduleWidget.actionText(WeekSchedule.DayType.HOLIDAY, false));
     }
 
-    /** 模型里的文案必须和当前标记一致，否则点完看到的还是旧字。 */
+    /** 今天 / 明天两个按钮的文案都要和当前标记一致，否则点完看到的还是旧字。 */
     @Test
-    public void model_actionMatchesTomorrowState() {
+    public void model_actionsMatchCurrentState() {
         resetPrefs();
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        WeekSchedule.DayType type = WeekSchedule.dayType(tomorrow, Prefs.getRule(ctx()));
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+        WeekSchedule.Rule rule = Prefs.getRule(ctx());
+        WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
+        WeekSchedule.DayType tomorrowType = WeekSchedule.dayType(tomorrow, rule);
+        boolean todayWork = todayType == WeekSchedule.DayType.WORK
+                || todayType == WeekSchedule.DayType.MAKEUP_WORK;
+        boolean tomorrowWork = tomorrowType == WeekSchedule.DayType.WORK
+                || tomorrowType == WeekSchedule.DayType.MAKEUP_WORK;
 
-        assertEquals(WeekScheduleWidget.actionText(type, false),
-                WeekScheduleWidget.computeModel(ctx()).action);
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        assertEquals(WeekScheduleWidget.actionText("今天", todayType, false), m.todayAction);
+        assertEquals(WeekScheduleWidget.actionText("明天", tomorrowType, false), m.tomorrowAction);
+        assertFalse(m.todayMarked);
+        assertFalse(m.tomorrowMarked);
 
-        if (work) {
+        if (todayWork) {
+            Prefs.addVacation(ctx(), today);
+        } else {
+            Prefs.addOvertime(ctx(), today);
+        }
+        if (tomorrowWork) {
             Prefs.addVacation(ctx(), tomorrow);
         } else {
             Prefs.addOvertime(ctx(), tomorrow);
         }
-        assertEquals("标记之后文案要跟着变", WeekScheduleWidget.actionText(type, true),
-                WeekScheduleWidget.computeModel(ctx()).action);
+        m = WeekScheduleWidget.computeModel(ctx());
+        assertEquals("今天标记后文案要变", WeekScheduleWidget.actionText("今天", todayType, true),
+                m.todayAction);
+        assertEquals("明天标记后文案要变",
+                WeekScheduleWidget.actionText("明天", tomorrowType, true), m.tomorrowAction);
+        assertTrue(m.todayMarked);
+        assertTrue(m.tomorrowMarked);
+    }
+
+    /** 今天和明天互不影响：标了今天，明天的按钮不能跟着变成「已请假」。 */
+    @Test
+    public void markingToday_doesNotAffectTomorrowButton() {
+        resetPrefs();
+        LocalDate today = LocalDate.now();
+        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(ctx()));
+        boolean work = type == WeekSchedule.DayType.WORK
+                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        if (work) {
+            Prefs.addVacation(ctx(), today);
+        } else {
+            Prefs.addOvertime(ctx(), today);
+        }
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        assertTrue(m.todayMarked);
+        assertFalse("明天不该被连带标记", m.tomorrowMarked);
     }
 
     // ---------- 广播：点一下标记，再点一下撤销 ----------
@@ -94,6 +130,13 @@ public class WidgetLeaveTest {
     private void sendToggle() {
         Intent i = new Intent(ctx(), BedtimeReceiver.class)
                 .setAction(BedtimeReceiver.ACTION_TOGGLE_TOMORROW);
+        new BedtimeReceiver().onReceive(ctx(), i);
+    }
+
+    private void sendToggle(int dayOffset) {
+        Intent i = new Intent(ctx(), BedtimeReceiver.class)
+                .setAction(BedtimeReceiver.ACTION_TOGGLE_DAY)
+                .putExtra(BedtimeReceiver.EXTRA_DAY_OFFSET, dayOffset);
         new BedtimeReceiver().onReceive(ctx(), i);
     }
 
@@ -124,6 +167,50 @@ public class WidgetLeaveTest {
         } else {
             assertFalse("再点一下应撤销加班", Prefs.isOvertime(ctx(), tomorrow));
         }
+    }
+
+    /** 带 offset 的通用动作：0 = 今天，1 = 明天，各改各的。 */
+    @Test
+    public void toggleDay_byOffset_hitsTheRightDay() {
+        resetPrefs();
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+        WeekSchedule.Rule rule = Prefs.getRule(ctx());
+
+        sendToggle(0);
+        if (isWork(today, rule)) {
+            assertTrue("offset 0 应标今天", Prefs.isVacation(ctx(), today));
+            assertFalse("不该动明天", Prefs.isVacation(ctx(), tomorrow));
+        } else {
+            assertTrue(Prefs.isOvertime(ctx(), today));
+            assertFalse(Prefs.isOvertime(ctx(), tomorrow));
+        }
+
+        sendToggle(1);
+        if (isWork(tomorrow, rule)) {
+            assertTrue("offset 1 应标明天", Prefs.isVacation(ctx(), tomorrow));
+        } else {
+            assertTrue(Prefs.isOvertime(ctx(), tomorrow));
+        }
+    }
+
+    /** 脏 offset（比如 5）按明天处理，不会去标一个莫名其妙的日期。 */
+    @Test
+    public void toggleDay_bogusOffset_fallsBackToTomorrow() {
+        resetPrefs();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        WeekSchedule.Rule rule = Prefs.getRule(ctx());
+        sendToggle(5);
+        if (isWork(tomorrow, rule)) {
+            assertTrue(Prefs.isVacation(ctx(), tomorrow));
+        } else {
+            assertTrue(Prefs.isOvertime(ctx(), tomorrow));
+        }
+    }
+
+    private static boolean isWork(LocalDate d, WeekSchedule.Rule rule) {
+        WeekSchedule.DayType t = WeekSchedule.dayType(d, rule);
+        return t == WeekSchedule.DayType.WORK || t == WeekSchedule.DayType.MAKEUP_WORK;
     }
 
     /** 只动「明天」，别把别的日子的标记顺手清了。 */

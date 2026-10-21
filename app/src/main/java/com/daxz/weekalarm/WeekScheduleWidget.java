@@ -69,16 +69,23 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         final String title;      // 大周 · 休2天
         final String subtitle;   // 已开启 / 未开启
         final List<DayCell> days;
-        /** 底部按钮的文案（v1.31）：明天不上班 / 明天已请假 · 点此恢复 / … */
-        final String action;
+        /** 底部两个按钮（v1.33）：文案 + 是否已生效（已生效时换成实底白字那一层）。 */
+        final String todayAction;
+        final boolean todayMarked;
+        final String tomorrowAction;
+        final boolean tomorrowMarked;
 
         WeekModel(boolean enabled, String title, String subtitle, List<DayCell> days,
-                  String action) {
+                  String todayAction, boolean todayMarked,
+                  String tomorrowAction, boolean tomorrowMarked) {
             this.enabled = enabled;
             this.title = title;
             this.subtitle = subtitle;
             this.days = days;
-            this.action = action;
+            this.todayAction = todayAction;
+            this.todayMarked = todayMarked;
+            this.tomorrowAction = tomorrowAction;
+            this.tomorrowMarked = tomorrowMarked;
         }
     }
 
@@ -88,13 +95,18 @@ public class WeekScheduleWidget extends AppWidgetProvider {
      * <p>抽成静态纯函数：真机上「明天」是星期几由不得测试决定，写成方法内部的分支
      * 就只能测到跑测试那天的那一半。
      */
-    static String actionText(WeekSchedule.DayType type, boolean marked) {
+    static String actionText(String prefix, WeekSchedule.DayType type, boolean marked) {
         boolean work = type == WeekSchedule.DayType.WORK
                 || type == WeekSchedule.DayType.MAKEUP_WORK;
         if (work) {
-            return marked ? "明天已请假 · 点此恢复" : "明天不上班";
+            return marked ? prefix + "已请假" : prefix + "不上班";
         }
-        return marked ? "明天已加班 · 点此恢复" : "明天要加班";
+        return marked ? prefix + "已加班" : prefix + "要加班";
+    }
+
+    /** 明天那一格的文案，保留旧签名给测试与调用方用。 */
+    static String actionText(WeekSchedule.DayType type, boolean marked) {
+        return actionText("明天", type, marked);
     }
 
     /** 计算本周 7 天的展示内容（按设置的一周开始日排列，v1.22.2）。 */
@@ -125,15 +137,24 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         String title = WeekSchedule.describe(rule, start.plusDays(6));
         String sub = enabled ? "闹钟已开启" : "闹钟未开启";
 
-        // 底部按钮看的是「明天」，不是「本周」：用户此刻关心的是明早要不要早起
+        // 底部两个按钮：今天和明天各一个。早上关心「今天能不能不去」，
+        // 睡前关心「明早能不能不去」——同一件事的两个时间点，都放在手边
         LocalDate tomorrow = today.plusDays(1);
+        WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
         WeekSchedule.DayType tomorrowType = WeekSchedule.dayType(tomorrow, rule);
-        boolean tomorrowWork = tomorrowType == WeekSchedule.DayType.WORK
-                || tomorrowType == WeekSchedule.DayType.MAKEUP_WORK;
-        boolean tomorrowMarked = tomorrowWork
-                ? vacations.contains(tomorrow) : overtimes.contains(tomorrow);
+        boolean todayMarked = isMarked(todayType, today, vacations, overtimes);
+        boolean tomorrowMarked = isMarked(tomorrowType, tomorrow, vacations, overtimes);
         return new WeekModel(enabled, title, sub, cells,
-                actionText(tomorrowType, tomorrowMarked));
+                actionText("今天", todayType, todayMarked), todayMarked,
+                actionText("明天", tomorrowType, tomorrowMarked), tomorrowMarked);
+    }
+
+    /** 上班 / 补班日看请假集合，休息 / 法定假看加班集合——与日历格子同一套口径。 */
+    private static boolean isMarked(WeekSchedule.DayType type, LocalDate d,
+                                    Set<LocalDate> vacations, Set<LocalDate> overtimes) {
+        boolean work = type == WeekSchedule.DayType.WORK
+                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        return work ? vacations.contains(d) : overtimes.contains(d);
     }
 
     static RemoteViews buildViews(Context ctx, WeekModel m) {
@@ -161,16 +182,36 @@ public class WeekScheduleWidget extends AppWidgetProvider {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.widget_week_root, pi);
 
-        // v1.31：底部「明天不上班 / 明天要加班」按钮。显式组件 + 自定义 action，
-        // 由 BedtimeReceiver 处理——它已经有一套「改标记 → 后台重排 → 刷组件」的流程
-        rv.setTextViewText(R.id.widget_week_action, m.action);
-        Intent toggle = new Intent(ctx, BedtimeReceiver.class)
-                .setAction(BedtimeReceiver.ACTION_TOGGLE_TOMORROW)
-                .setData(android.net.Uri.parse("daxz://widget/toggle-tomorrow"));
-        PendingIntent togglePi = PendingIntent.getBroadcast(ctx, 22, toggle,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        rv.setOnClickPendingIntent(R.id.widget_week_action, togglePi);
+        // v1.33：底部两个按钮（今天 / 明天）。文案两层都写，靠 visibility 切换
+        // 「半透明白底」和「实白底紫字」——不换背景资源，避免反射式调用在部分启动器上炸掉
+        bindAction(rv, ctx, m.todayAction, m.todayMarked, 0,
+                R.id.widget_today_action, R.id.widget_today_action_on, R.id.wrap_today_action, 22);
+        bindAction(rv, ctx, m.tomorrowAction, m.tomorrowMarked, 1,
+                R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
+                R.id.wrap_tomorrow_action, 23);
         return rv;
+    }
+
+    /**
+     * 绑定一个「今天 / 明天不上班」按钮。
+     *
+     * <p>点击挂在最外层的 FrameLayout 上，而不是内层 TextView：两层叠着，只有外层
+     * 能保证点哪儿都响应。
+     */
+    private static void bindAction(RemoteViews rv, Context ctx, String text, boolean marked,
+                                   int dayOffset, int offId, int onId, int wrapId, int reqCode) {
+        rv.setTextViewText(offId, text);
+        rv.setTextViewText(onId, text);
+        rv.setViewVisibility(offId, marked ? android.view.View.GONE : android.view.View.VISIBLE);
+        rv.setViewVisibility(onId, marked ? android.view.View.VISIBLE : android.view.View.GONE);
+
+        Intent toggle = new Intent(ctx, BedtimeReceiver.class)
+                .setAction(BedtimeReceiver.ACTION_TOGGLE_DAY)
+                .putExtra(BedtimeReceiver.EXTRA_DAY_OFFSET, dayOffset)
+                .setData(android.net.Uri.parse("daxz://widget/toggle-day/" + dayOffset));
+        PendingIntent pi = PendingIntent.getBroadcast(ctx, reqCode, toggle,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        rv.setOnClickPendingIntent(wrapId, pi);
     }
 
     /** 标签颜色：在紫色渐变底上取同色系的浅色，保证对比度又不刺眼。 */

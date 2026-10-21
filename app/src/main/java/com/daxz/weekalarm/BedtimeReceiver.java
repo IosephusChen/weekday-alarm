@@ -31,6 +31,16 @@ public class BedtimeReceiver extends BroadcastReceiver {
      */
     public static final String ACTION_TOGGLE_TOMORROW = "com.daxz.weekalarm.TOGGLE_TOMORROW";
 
+    /**
+     * 小组件按钮的通用版（v1.33）：带一个 {@link #EXTRA_DAY_OFFSET}（0 = 今天，1 = 明天）。
+     *
+     * <p>为什么不再加一个 ACTION_TOGGLE_TODAY：两个按钮的逻辑一模一样，只有日期差一天；
+     * 复制一份等于给以后埋一个「改了一处忘了另一处」的坑。旧 action 保留，是因为
+     * 1.31 那版组件实例的 PendingIntent 里还烧着它——升级后不认，用户点旧组件就没反应。
+     */
+    public static final String ACTION_TOGGLE_DAY = "com.daxz.weekalarm.TOGGLE_DAY";
+    public static final String EXTRA_DAY_OFFSET = "day_offset";
+
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent != null ? intent.getAction() : null;
@@ -39,7 +49,11 @@ public class BedtimeReceiver extends BroadcastReceiver {
             return;
         }
         if (ACTION_TOGGLE_TOMORROW.equals(action)) {
-            toggleTomorrow(context);
+            toggleDay(context, 1);
+            return;
+        }
+        if (ACTION_TOGGLE_DAY.equals(action)) {
+            toggleDay(context, intent.getIntExtra(EXTRA_DAY_OFFSET, 1));
             return;
         }
         if (!ACTION_BEDTIME.equals(action)) return;
@@ -85,32 +99,34 @@ public class BedtimeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 小组件上的「明天不上班 / 明天要加班」：按明天的实际类型来回切（v1.31）。
+     * 小组件上的「今天 / 明天不上班」：按那一天的实际类型来回切（v1.31，v1.33 起支持今天）。
      *
      * <p>语义跟主界面今日卡那个按钮完全一致：上班 / 补班日 → 请假；休息 / 法定假 →
-     * 加班。两边改的是同一份 Prefs，所以点完回 App 看，日历与列表都是新的。
+     * 加班。三处改的是同一份 Prefs，所以点完回 App 看，日历与列表都是新的。
      */
-    private void toggleTomorrow(Context ctx) {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        WeekSchedule.DayType type = WeekSchedule.dayType(tomorrow, Prefs.getRule(ctx));
+    private void toggleDay(Context ctx, int dayOffset) {
+        int offset = dayOffset == 0 ? 0 : 1;   // 只认今天 / 明天，脏数据按明天处理
+        LocalDate day = LocalDate.now().plusDays(offset);
+        String label = offset == 0 ? "今天" : "明天";
+        WeekSchedule.DayType type = WeekSchedule.dayType(day, Prefs.getRule(ctx));
         boolean work = type == WeekSchedule.DayType.WORK
                 || type == WeekSchedule.DayType.MAKEUP_WORK;
         String msg;
         if (work) {
-            if (Prefs.isVacation(ctx, tomorrow)) {
-                Prefs.removeVacation(ctx, tomorrow);
-                msg = "明天恢复上班，闹钟照常";
+            if (Prefs.isVacation(ctx, day)) {
+                Prefs.removeVacation(ctx, day);
+                msg = label + "恢复上班，闹钟照常";
             } else {
-                Prefs.addVacation(ctx, tomorrow);
-                msg = "已把明天标记为请假，闹钟不会响";
+                Prefs.addVacation(ctx, day);
+                msg = "已把" + label + "标记为请假，闹钟不会响";
             }
         } else {
-            if (Prefs.isOvertime(ctx, tomorrow)) {
-                Prefs.removeOvertime(ctx, tomorrow);
-                msg = "明天恢复休息，不响闹钟";
+            if (Prefs.isOvertime(ctx, day)) {
+                Prefs.removeOvertime(ctx, day);
+                msg = label + "恢复休息，不响闹钟";
             } else {
-                Prefs.addOvertime(ctx, tomorrow);
-                msg = "已把明天标记为加班，「仅上班日」闹钟照响";
+                Prefs.addOvertime(ctx, day);
+                msg = "已把" + label + "标记为加班，「仅上班日」闹钟照响";
             }
         }
         try {
@@ -128,7 +144,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
             } finally {
                 pending.finish();
             }
-        }, "widget-toggle-tomorrow").start();
+        }, "widget-toggle-day").start();
     }
 
     /**

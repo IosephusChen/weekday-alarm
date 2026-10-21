@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 小组件按钮的「已生效」态（v1.33）：实白底 + 紫字。
+     为什么不用换背景色：RemoteViews 换背景只能走反射式 setInt(setBackgroundResource)，
+     部分启动器上会让整次更新失败、组件停在旧内容。这里用两层 TextView 叠着、
+     只切 visibility——和「今天」高亮层同一个思路，稳定且不依赖反射。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F5F4FF" />
+    <corners android:radius="10dp" />
+</shape>

@@ -69,17 +69,48 @@ public class WidgetRemoteViewsTest {
         assertEquals(m.title, ((TextView) root.findViewById(R.id.widget_title)).getText().toString());
     }
 
-    /** 按钮文案要真的写进 RemoteViews，而不是只存在于模型里。 */
+    /** 两个按钮的文案要真的写进 RemoteViews，而不是只存在于模型里。 */
     @Test
-    public void weekWidget_actionButtonShowsText() {
+    public void weekWidget_actionButtonsShowText() {
         resetPrefs();
         WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
         View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
-        TextView action = root.findViewById(R.id.widget_week_action);
-        assertNotNull("应有「明天不上班」按钮", action);
-        assertEquals(m.action, action.getText().toString());
-        assertTrue("按钮文案要说明天，实际：" + action.getText(),
-                action.getText().toString().startsWith("明天"));
+
+        TextView today = root.findViewById(R.id.widget_today_action);
+        TextView tomorrow = root.findViewById(R.id.widget_tomorrow_action);
+        assertNotNull("应有「今天不上班」按钮", today);
+        assertNotNull("应有「明天不上班」按钮", tomorrow);
+        assertEquals(m.todayAction, today.getText().toString());
+        assertEquals(m.tomorrowAction, tomorrow.getText().toString());
+        assertTrue("今天按钮要写今天，实际：" + today.getText(),
+                today.getText().toString().startsWith("今天"));
+        assertTrue("明天按钮要写明天，实际：" + tomorrow.getText(),
+                tomorrow.getText().toString().startsWith("明天"));
+    }
+
+    /** 未标记时显示半透明层、藏起实底层；标记后反过来。 */
+    @Test
+    public void weekWidget_markedSwitchesLayer() {
+        resetPrefs();
+        LocalDate today = LocalDate.now();
+        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(ctx()));
+        boolean work = type == WeekSchedule.DayType.WORK
+                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        if (work) {
+            Prefs.addVacation(ctx(), today);
+        } else {
+            Prefs.addOvertime(ctx(), today);
+        }
+
+        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        assertEquals("今天已标记：实底层可见", View.VISIBLE,
+                root.findViewById(R.id.widget_today_action_on).getVisibility());
+        assertEquals("半透明层应隐藏", View.GONE,
+                root.findViewById(R.id.widget_today_action).getVisibility());
+        assertEquals("明天没标记：仍是半透明层", View.VISIBLE,
+                root.findViewById(R.id.widget_tomorrow_action).getVisibility());
+        assertEquals(View.GONE, root.findViewById(R.id.widget_tomorrow_action_on).getVisibility());
     }
 
     /** 今天那一格的高亮层可见，其余六格不可见——高亮靠的就是这几个 View 的 visibility。 */
@@ -119,12 +150,15 @@ public class WidgetRemoteViewsTest {
         }
     }
 
-    /** 明天请假按钮点击后要发到 BedtimeReceiver 的切换动作上。 */
+    /** 两个按钮都要可点（点击挂在最外层容器上，内层只负责显示）。 */
     @Test
-    public void weekWidget_actionClickTargetsReceiver() {
+    public void weekWidget_actionWrappersAreClickable() {
         resetPrefs();
         WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
         View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
-        assertTrue("按钮必须可点", root.findViewById(R.id.widget_week_action).isClickable());
+        assertTrue("今天按钮必须可点",
+                root.findViewById(R.id.wrap_today_action).isClickable());
+        assertTrue("明天按钮必须可点",
+                root.findViewById(R.id.wrap_tomorrow_action).isClickable());
     }
 }

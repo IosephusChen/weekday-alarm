@@ -387,6 +387,38 @@ public final class Prefs {
         if (cur.remove(d)) setOvertimeDates(c, cur);
     }
 
+    /**
+     * 清掉「今天之前」的请假 / 加班标记，返回清掉的条数（v1.34.3）。
+     *
+     * <p>标记的唯一作用是影响闹钟，而过去那些日子的闹钟早就响过了，留着只制造矛盾：
+     * 日历格子上还印着「假」，下方统计（只算今天及以后）却不计入，
+     * 用户点「清除 N 天」时实际清掉的比 N 多。三处说的不是同一件事。
+     *
+     * <p>所以每次回到前台清一次，让存储、格子、统计对齐。不清今天——今天还没过完，
+     * 今晚标了「明天不上班」，明天它就变成今天，仍然有效。
+     */
+    public static int prunePastMarks(Context c) {
+        LocalDate today = LocalDate.now();
+        int removed = 0;
+
+        Set<LocalDate> vacations = getVacationDates(c);
+        int beforeV = vacations.size();
+        vacations.removeIf(d -> d.isBefore(today));
+        if (vacations.size() != beforeV) {
+            setVacationDates(c, vacations);
+            removed += beforeV - vacations.size();
+        }
+
+        Set<LocalDate> overtimes = getOvertimeDates(c);
+        int beforeO = overtimes.size();
+        overtimes.removeIf(d -> d.isBefore(today));
+        if (overtimes.size() != beforeO) {
+            setOvertimeDates(c, overtimes);
+            removed += beforeO - overtimes.size();
+        }
+        return removed;
+    }
+
     // ================= 响铃设置（v1.16 起）=================
 
     /** 闹钟音量 0-100；0 = 静音（仅震动）。默认 80。 */

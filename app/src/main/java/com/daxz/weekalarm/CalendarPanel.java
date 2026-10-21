@@ -336,6 +336,22 @@ final class CalendarPanel {
         String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
         String kind = work ? "请假" : "加班";
 
+        // 过去的日子（v1.34.3）：那天闹钟早响过了，标记不影响任何事，
+        // 却会让格子印着「假」、下方统计（只算今天及以后）不认——两处对不上。
+        // 存量标记允许点掉（否则用户看着一个清不掉的「假」字），新标记一律不收。
+        if (d.isBefore(LocalDate.now())) {
+            if (marked) {
+                DayOffAction.toggle(host, d);
+                onChanged.run();
+                Toast.makeText(host, dateText + " 已恢复" + (work ? "上班" : "休息"),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(host, dateText + " 已经过去，不用再标" + kind,
+                        Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+
         String title = marked
                 ? "取消「" + dateText + "」的" + kind + "标记？"
                 : "把「" + dateText + "」标记为" + kind + "？";
@@ -381,6 +397,9 @@ final class CalendarPanel {
      * @param vacation true = 请假，false = 加班
      */
     private void showClearDialog(boolean vacation) {
+        // 兜底：万一有存量的过去标记没被 onResume 清掉，先清一次，
+        // 保证对话框里说的「N 天」就是接下来真的会清掉的条数
+        Prefs.prunePastMarks(host);
         int n = countUpcoming(vacation
                 ? Prefs.getVacationDates(host) : Prefs.getOvertimeDates(host));
         String kind = vacation ? "请假" : "加班";

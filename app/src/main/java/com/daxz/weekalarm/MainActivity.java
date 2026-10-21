@@ -299,6 +299,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "节假日数据已更新至 " + HolidayData.effectiveYear()
                     + " 年安排", Toast.LENGTH_LONG).show();
         }
+        // v1.34.3：先清掉今天之前的请假 / 加班标记。它们不影响任何闹钟，
+        // 却会让日历格子印着「假」而下方统计不算——顺手清掉，存储与界面才对得上。
+        // 只清过去，不动今天：今晚标「明天不上班」，明天它就变成今天，仍然有效。
+        Prefs.prunePastMarks(this);
+
         // v1.19.7：设置与说明已独立成页，从那一页返回时状态可能已变
         // （提醒范围 / 音量 / 稍后提醒等），这里统一刷新一次概览与列表
         refreshAll();

@@ -166,10 +166,15 @@ public class PreNoticeTest {
     }
 
     /**
-     * 弹窗页：标题写「还有 1 小时」，副标题带名称与时刻。
+     * 弹窗页：标题写「还有 X」，副标题带名称与时刻。
      *
      * <p>v1.40.0 起标题按「现在到响铃时刻」现算，所以这里的时间必须相对 now 生成；
      * 写死 07:00 的话，凌晨跑测试会得到「还有 2 小时」——那是正确行为，测试错。
+     *
+     * <p>断言只能给一个范围：extras 里的时刻精确到分钟（HH:mm），「现在 + 60 分钟」
+     * 截断到分钟之后，真实剩余落在 59:00～60:00 之间，向上取整就是 59 或 60。
+     * 两个都算对——这条测的是「按真实时间算、且说人话」，不是测取整函数
+     * （取整由 {@code actualMinutes_usesRealRemainingTime} 单独钉）。
      */
     @Test
     public void popup_showsRemainingTimeAndAlarm() {
@@ -189,7 +194,9 @@ public class PreNoticeTest {
 
         TextView title = ctl.get().findViewById(R.id.tv_pre_title);
         TextView sub = ctl.get().findViewById(R.id.tv_pre_sub);
-        assertEquals("还有 1 小时", title.getText().toString());
+        String titleText = title.getText().toString();
+        assertTrue("标题应是「还有 X」的形式，实际：" + titleText,
+                titleText.equals("还有 1 小时") || titleText.equals("还有 59 分钟"));
         assertTrue("副标题应带名称与时刻，实际：" + sub.getText(),
                 sub.getText().toString().startsWith("起床 · ")
                         && sub.getText().toString().endsWith(" 响铃"));

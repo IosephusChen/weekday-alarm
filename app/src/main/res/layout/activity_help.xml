@@ -130,7 +130,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 响铃时直接把响铃页弹到最前面，正在用手机也一样（v1.39.0 起）。锁屏时只亮屏、解锁后才看到界面，那是系统里的「锁屏显示」没开：设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示。" />
+                android:text="· 响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：稍后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v1.41.0 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 锁屏响铃时只亮屏、解锁后才看到界面？那是系统里的「锁屏显示」没开：设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示。" />
         </LinearLayout>
 
         <!-- ===== ③ 临时请假 / 加班 ===== -->

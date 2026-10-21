@@ -14,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -101,7 +102,7 @@ public class OnceAlarmTest {
                 new Alarm(3, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
         Prefs.setAlarms(ctx(), all);
 
-        List<Alarm> got = Prefs.getAlarms(ctx());
+        List<Alarm> got = Prefs.getAlarmsSettled(ctx());
         assertEquals("v1.27.2：过期的那条要留着，不再从列表里删掉", 3, got.size());
         Alarm yesterday = got.get(0);
         assertEquals("昨天那条应被自动关闭", false, yesterday.enabled);
@@ -118,7 +119,7 @@ public class OnceAlarmTest {
         LocalDate today = LocalDate.now();
         Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(2))));
         for (int i = 0; i < 3; i++) {
-            List<Alarm> got = Prefs.getAlarms(ctx());
+            List<Alarm> got = Prefs.getAlarmsSettled(ctx());
             assertEquals(1, got.size());
             assertFalse(got.get(0).enabled);
         }
@@ -189,7 +190,7 @@ public class OnceAlarmTest {
         Alarm rang = new Alarm(9, past.getHour(), past.getMinute(), "赶车",
                 Alarm.Mode.ONCE, true, past.toLocalDate().toString());
         Prefs.setAlarms(ctx(), java.util.Collections.singletonList(rang));
-        List<Alarm> got = Prefs.getAlarms(ctx());
+        List<Alarm> got = Prefs.getAlarmsSettled(ctx());
         assertEquals("响完之后条目还在", 1, got.size());
         assertFalse("但要自动关闭", got.get(0).enabled);
         assertEquals("时间与名称原样保留，用户能照着再设一次", "赶车", got.get(0).label);
@@ -262,5 +263,54 @@ public class OnceAlarmTest {
         String far = MainActivity.onceDateText(today.plusDays(5));
         assertTrue("远期应显示月日，实际：" + far,
                 far.matches(".*\\d+月\\d+日.*"));
+    }
+
+    /**
+     * 读就是读，不能顺手改数据（v1.28.1）。
+     *
+     * <p>以前 {@code Prefs.getAlarms} 会在读的时候把过期的「仅一次」关掉并写盘。
+     * 出发点（收在唯一入口、三条路径自动一致）没问题，代价是一个叫 {@code get}
+     * 的方法有副作用：导出备份、生成新 id、小组件刷新这些纯查询也在悄悄写盘。
+     * 现在读归读、结算归结算，这条钉住「读」这一半。
+     */
+    @Test
+    public void getAlarms_isPureRead_noSideEffect() {
+        LocalDate today = LocalDate.now();
+        Prefs.setAlarms(ctx(), new ArrayList<>(Arrays.asList(
+                once(today.minusDays(1)),
+                new Alarm(3, 7, 30, "起床", Alarm.Mode.WORKDAY, true))));
+
+        // 连读两次都不该改任何东西
+        assertEquals(true, Prefs.getAlarms(ctx()).get(0).enabled);
+        assertEquals(true, Prefs.getAlarms(ctx()).get(0).enabled);
+
+        assertTrue("显式结算才会关掉它", Prefs.settleExpiredOnce(ctx()));
+        assertFalse(Prefs.getAlarms(ctx()).get(0).enabled);
+        assertFalse("没有可结算的时候返回 false，调用方据此判断要不要重排",
+                Prefs.settleExpiredOnce(ctx()));
+    }
+
+    /**
+     * 三条消费路径仍然各自结算，不用调用方记得先手动调一次（v1.28.1）。
+     *
+     * <p>拆开副作用最大的风险就是「某条路径忘了结算」，于是列表上又出现
+     * 一条显示已开启、实际永远不会响的闹钟。这三条各钉一次。
+     */
+    @Test
+    public void consumingPaths_settleBeforeUse() {
+        LocalDate today = LocalDate.now();
+
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(1))));
+        Prefs.setEnabled(ctx(), true);
+        ScheduleManager.rescheduleAll(ctx());
+        assertFalse("排程路径要结算", Prefs.getAlarms(ctx()).get(0).enabled);
+
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(1))));
+        BedtimeReminder.computeModel(ctx(), today.plusDays(1));
+        assertFalse("睡前提醒路径要结算", Prefs.getAlarms(ctx()).get(0).enabled);
+
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(1))));
+        Robolectric.buildActivity(MainActivity.class).setup().close();
+        assertFalse("主界面加载后要结算", Prefs.getAlarms(ctx()).get(0).enabled);
     }
 }

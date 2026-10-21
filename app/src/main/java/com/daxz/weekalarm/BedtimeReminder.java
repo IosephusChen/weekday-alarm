@@ -80,7 +80,7 @@ public final class BedtimeReminder {
         boolean enabled = Prefs.isEnabled(ctx);
 
         // 明天的第一个闹钟：只算启用的、且当天适用的
-        List<Alarm> alarms = Prefs.getAlarms(ctx);
+        List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         boolean overtime = Prefs.isOvertime(ctx, tomorrow);
         Alarm first = null;

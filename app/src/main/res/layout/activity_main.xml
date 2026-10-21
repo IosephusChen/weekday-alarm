@@ -180,6 +180,26 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- 今天不上班 / 今天要加班（v1.28.1）：
+                 以前标一天假要滚到日历、找到今天、点一下、再确认——四步。
+                 而「今天临时有事」恰恰是最常发生、也最急着操作的那一种。
+                 按钮放在今日卡里，一次点击完成，再点一次撤销，日历里同步显示。 -->
+            <TextView
+                android:id="@+id/btn_day_off"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_hero_pill"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:text="今天不上班"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
         </LinearLayout>
 
         <!-- ===== ① 排班 =====
@@ -352,200 +372,58 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ===== ③ 日历区 ===== -->
-        <TextView
-            style="@style/SectionTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="排班日历" />
-
+        <!-- ===== ③ 排班日历入口（v1.28.1）=====
+             日历原本整张卡塞在这里，占 460dp。主界面内容约 1250dp，为了改个闹钟时间
+             得先滚过一整个月的格子。而它的真实用法是「偶尔核对、临时标个请假」，
+             不是每天必看。现在独立成页，这里只留一行入口 + 一句话摘要。 -->
         <LinearLayout
+            android:id="@+id/row_calendar_entry"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
+            android:layout_marginTop="14dp"
             android:background="@drawable/bg_card"
-            android:padding="14dp">
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/btn_prev"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:background="@drawable/bg_time_outline"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="‹"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="排班日历"
                     android:textColor="@color/ink"
-                    android:textSize="18sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tv_cal_title"
-                    android:layout_width="0dp"
+                    android:id="@+id/tv_cal_entry_sub"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
+                    android:layout_marginTop="3dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     android:text="—"
-                    android:textColor="@color/ink"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/btn_next"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:background="@drawable/bg_time_outline"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="›"
-                    android:textColor="@color/ink"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/cal_dow_0"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="一" />
-
-                <TextView
-                    android:id="@+id/cal_dow_1"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="二" />
-
-                <TextView
-                    android:id="@+id/cal_dow_2"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="三" />
-
-                <TextView
-                    android:id="@+id/cal_dow_3"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="四" />
-
-                <TextView
-                    android:id="@+id/cal_dow_4"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="五" />
-
-                <TextView
-                    android:id="@+id/cal_dow_5"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="六" />
-
-                <TextView
-                    android:id="@+id/cal_dow_6"
-                    style="@style/FieldHint"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="日" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/cal_rows"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-            <!-- 图例：色块由 MainActivity.setupLegend() 动态生成（与日历格子同款底色/描边） -->
-            <LinearLayout
-                android:id="@+id/legend_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="vertical" />
-
-            <!-- 请假 / 加班：单日标记在日历上点对应日期，这里显示总数并支持一键清除 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="12dp"
-                android:background="@color/line" />
-
-            <!-- 请假 / 加班（v1.28）：原来是两个通栏按钮，各占 44dp 高、上下还各留 10dp，
-                 在日历卡底部堆成两座「小山」，而它们大多数时候只显示「无」。
-                 改成一行两个等宽按钮：无标记时只有四个字，有标记时写「N 天 · 清除」，
-                 高度省一半，也更容易和上面的图例连成一组。 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tv_vacation"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_time_outline"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:text="请假标记"
-                    android:textColor="@color/ink"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_overtime"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/bg_time_outline"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:text="加班标记"
-                    android:textColor="@color/ink"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                android:layout_marginStart="8dp"
+                android:text="›"
+                android:textColor="@color/sub"
+                android:textSize="20sp" />
         </LinearLayout>
 
         <!-- ===== ④ 使用说明（v1.19.8）=====

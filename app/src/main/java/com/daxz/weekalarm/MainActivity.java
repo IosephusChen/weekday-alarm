@@ -49,7 +49,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvAnchor, tvHolidayNote, tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
     private TextView tvWeekMode, tvWeekBig;
     private TextView tvWeekChip, tvCalTitle, tvStatus;
-    private TextView tvSmallRest, tvSwitchHint, tvVacation, tvOvertime;
+    private TextView tvSmallRest, tvSwitchHint;
+    /** 排班日历入口行摘要 + 今日卡里的「今天不上班」按钮（v1.28.1）。 */
+    private TextView tvCalEntrySub, btnDayOff;
     /** 距下次响铃倒计时（v1.22.5）：每秒跳一次；没有下一次时显示「--:--:--」。 */
     private TextView tvCountdown;
     /** 下一次真正会响的时刻；null = 没有启用的闹钟。由 refreshStatus 算好，tick 只读。 */
@@ -74,15 +76,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean swAttaching = false;
     private LinearLayout calRows;
     /** 日历表头 7 个星期字：一周开始日可切，顺序要跟着改（v1.22.2）。 */
-    private static final int[] CAL_DOW_IDS = {
-            R.id.cal_dow_0, R.id.cal_dow_1, R.id.cal_dow_2, R.id.cal_dow_3,
-            R.id.cal_dow_4, R.id.cal_dow_5, R.id.cal_dow_6
-    };
-    private final TextView[] calDow = new TextView[CAL_DOW_IDS.length];
     private LinearLayout alarmList;
     private TextView btnTest;
 
-    private int calYear, calMonth;
     /** 多闹钟列表（v1.13）：每个闹钟独立的 时间/名称/规则/启停。 */
     private List<Alarm> alarms;
 
@@ -106,17 +102,12 @@ public class MainActivity extends AppCompatActivity {
         tvTodaySub = findViewById(R.id.tv_today_sub);
         tvCountdown = findViewById(R.id.tv_countdown);
         tvWeekChip = findViewById(R.id.tv_week_chip);
-        tvCalTitle = findViewById(R.id.tv_cal_title);
-        for (int i = 0; i < calDow.length; i++) {
-            calDow[i] = findViewById(CAL_DOW_IDS[i]);
-        }
         tvStatus = findViewById(R.id.tv_status);
         tvSmallRest = findViewById(R.id.tv_small_rest);
         tvWeekMode = findViewById(R.id.tv_week_mode);
         tvSwitchHint = findViewById(R.id.tv_switch_hint);
-        tvVacation = findViewById(R.id.tv_vacation);
-        tvOvertime = findViewById(R.id.tv_overtime);
-        calRows = findViewById(R.id.cal_rows);
+        tvCalEntrySub = findViewById(R.id.tv_cal_entry_sub);
+        btnDayOff = findViewById(R.id.btn_day_off);
         alarmList = findViewById(R.id.alarm_list);
         btnTest = findViewById(R.id.btn_test);
         swAlarm = findViewById(R.id.switch_alarm);
@@ -150,11 +141,10 @@ public class MainActivity extends AppCompatActivity {
             runExpanded = !runExpanded;
             applyRunState();
         });
-        tvVacation.setOnClickListener(v -> showVacationClearDialog());
-        tvOvertime.setOnClickListener(v -> showOvertimeClearDialog());
-
-        findViewById(R.id.btn_prev).setOnClickListener(v -> shiftMonth(-1));
-        findViewById(R.id.btn_next).setOnClickListener(v -> shiftMonth(1));
+        // v1.28.1：日历独立成页，主界面只留入口；「今天不上班」留在今日卡里一键点掉
+        findViewById(R.id.row_calendar_entry).setOnClickListener(v ->
+                startActivity(new Intent(this, CalendarActivity.class)));
+        btnDayOff.setOnClickListener(v -> toggleTodayOff());
 
         btnTest.setOnClickListener(v -> testAlarm());
 
@@ -174,11 +164,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        LocalDate today = LocalDate.now();
-        calYear = today.getYear();
-        calMonth = today.getMonthValue();
         refreshAll();
-        setupLegend();
 
         // v1.19.9：首次安装先看 3 页新手引导。通知权限请求刻意推迟到引导关闭之后
         // （见 onResume），否则系统权限对话框会盖在引导页上，两套引导互相打架。
@@ -192,112 +178,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 图例：每项 = 缩小版日历格子色块 + 文字。
-     * 色块底色与日历格子用的 drawable 完全一致（bg_day_work / bg_day_rest / bg_day_holiday /
-     * bg_day_makeup / bg_day_vacation / bg_day_overtime / bg_day_today），
-     * 做到「图例色块什么颜色，格子就是什么背景」。
-     * 小色块尺寸只有 12dp，淡底色在白卡片上会糊成一片，因此加一圈同色系 1dp 淡描边保证可见
-     * （描边仅辅助呈现，颜色感知仍以格子底色为准）；「今天」按格子同款用 indigo 描边。
-     *
-     * v1.15.1：语义项增至 7 个（v1.15 新增「加班」），单行横向排列在窄屏上会把最后几项的
-     * 文字挤出屏幕（实测「加班」只剩色块、「今天」整项不可见）。改为两行：
-     * 第一行 = 排班类型（上班 / 休息 / 节假日 / 调休补班），
-     * 第二行 = 个人标记与今天（请假 / 加班 / 今天）。
-     *
-     * v1.19.9：两行改成统一的 4 列网格（第二行第 4 格留空占位）。旧版第一行 4 项、第二行
-     * 3 项，各自按 weight=1 均分，列宽 1/4 与 1/3 不一致，第二行的「请假」落在第一行
-     * 「上班/休息」中间，色块和文字全部错位。固定列数后两行的列宽、行高、色块左边缘
-     * 完全对齐。
-     */
-    private void setupLegend() {
-        LinearLayout container = findViewById(R.id.legend_row);
-        container.removeAllViews();
-        container.setOrientation(LinearLayout.VERTICAL);
-        float density = getResources().getDisplayMetrics().density;
-
-        // 底色 = 各 bg_day_*.xml 的 solid 色（同一套 day_* 资源，夜间自动切换），
-        // 描边为同色系淡边（今天为 day_today_stroke）；经资源引用读取，图例与格子永远同源
-        LinearLayout row1 = newLegendRow(container, density, false);
-        addLegendItem(row1, density, R.color.day_work_bg, R.color.day_work_stroke, 1, "上班");
-        addLegendItem(row1, density, R.color.day_rest_bg, R.color.day_rest_stroke, 1, "休息");
-        addLegendItem(row1, density, R.color.day_holiday_bg, R.color.day_holiday_stroke, 1, "节假日");
-        addLegendItem(row1, density, R.color.day_makeup_bg, R.color.day_makeup_stroke, 1, "调休补班");
-        LinearLayout row2 = newLegendRow(container, density, true);
-        addLegendItem(row2, density, R.color.day_vacation_bg, R.color.day_vacation_stroke, 1, "请假");
-        addLegendItem(row2, density, R.color.day_overtime_bg, R.color.day_overtime_stroke, 1, "加班");
-        addLegendItem(row2, density, R.color.day_today_bg, R.color.day_today_stroke, 2, "今天");
-        addLegendSpacer(row2);   // 第 4 格留空，保证两行 4 列严格对齐
-    }
-
-    /** 图例的一行：横向容器，固定 4 列、每列 weight=1 均分，防止窄屏溢出。 */
-    private LinearLayout newLegendRow(LinearLayout container, float density, boolean secondRow) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        if (secondRow) lp.topMargin = (int) (7 * density);   // 行间距，比旧版略收紧
-        row.setLayoutParams(lp);
-        container.addView(row);
-        return row;
-    }
-
-    /** 占位格：不可见但参与 weight 均分，让第二行只有 3 项时列宽仍与第一行一致。 */
-    private void addLegendSpacer(LinearLayout row) {
-        View spacer = new View(this);
-        spacer.setLayoutParams(new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        row.addView(spacer);
-    }
-
-    /**
-     * 向图例行添加一项：左侧色块（格子同款底色/描边）+ 右侧文字（FieldHint 样式）。
-     * 项宽按 weight=1 均分并整体居中——两行布局下无需外边距，也不会被挤出屏幕。
-     */
-    private void addLegendItem(LinearLayout row, float density,
-                               int bgColorRes, int strokeColorRes,
-                               float strokeWidthDp, String text) {
-        int block = (int) (12 * density);          // 色块尺寸（格子等比缩小）
-        int radius = (int) (3 * density);          // 圆角（格子 10dp @ 46dp 高，等比约 3dp）
-
-        GradientDrawable swatch = new GradientDrawable();
-        swatch.setShape(GradientDrawable.RECTANGLE);
-        swatch.setColor(ContextCompat.getColor(this, bgColorRes));
-        swatch.setCornerRadius(radius);
-        swatch.setStroke((int) (strokeWidthDp * density + 0.5f),
-                ContextCompat.getColor(this, strokeColorRes));
-
-        View blockView = new View(this);
-        blockView.setLayoutParams(new LinearLayout.LayoutParams(block, block));
-        blockView.setBackground(swatch);
-
-        TextView label = new TextView(this, null, 0, R.style.FieldHint);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        tlp.setMarginStart((int) (4 * density));
-        label.setLayoutParams(tlp);
-        label.setText(text);
-
-        // v1.19.9：整格左对齐（旧版 CENTER 让短项漂在列中间，长项又顶到列左缘，
-        // 两行并排时色块左右摇摆）——统一 START 后每列色块左边缘是一条直线
-        label.setSingleLine(true);
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.HORIZONTAL);
-        item.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);   // 固定 4 列均分，防溢出
-        item.setLayoutParams(ilp);
-        item.addView(blockView);
-        item.addView(label);
-        row.addView(item);
-    }
-
     private void loadPrefs() {
         reloadAlarms();
         updateSmallRestText();
-        updateVacationText();
-        updateOvertimeText();
         updateWeekBigText();
         updateWeekModeUi();
     }
@@ -311,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
      * 现在列表和倒计时共用这一份，每次全局刷新都重读。
      */
     private void reloadAlarms() {
-        alarms = Prefs.getAlarms(this);
+        alarms = Prefs.getAlarmsSettled(this);
         // 兜底：列表为空（用户删空或数据异常）时恢复一个默认「起床」闹钟，避免无闹钟可用
         if (alarms.isEmpty()) {
             int h = Prefs.getAlarmHour(this);
@@ -393,41 +276,6 @@ public class MainActivity extends AppCompatActivity {
 
     // ================= 个人请假（v1.14）=================
 
-    /** 请假标记行文案：已标记天数；点击弹清除确认。 */
-    private void updateVacationText() {
-        int n = countUpcoming(Prefs.getVacationDates(this));
-        // v1.28：两个按钮并排后只有半屏宽，文案要短到一行放得下
-        tvVacation.setText(n == 0 ? "请假标记" : "请假 " + n + " 天 · 清除");
-    }
-
-    /** 设置区「请假标记」行：一键清除全部请假（单日标记在排班日历上点对应日期）。 */
-    private void showVacationClearDialog() {
-        int n = countUpcoming(Prefs.getVacationDates(this));
-        if (n == 0) {
-            Toast.makeText(this, "还没有请假标记。在排班日历里点某一天即可标记",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        new RoundedDialog.Builder(this)
-                .setTitle("清除全部请假标记？")
-                .setMessage("将清除已标记的 " + n + " 天请假，这些日子的闹钟会恢复。")
-                .setPositiveButton("清除", (d, w) -> {
-                    Prefs.setVacationDates(this, new java.util.HashSet<>());
-                    applySettingsIfEnabled();
-                    Toast.makeText(this, "已清除全部请假标记", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    // ================= 个人加班（v1.15）=================
-
-    /** 加班标记行文案：已标记天数；点击弹清除确认。 */
-    private void updateOvertimeText() {
-        int n = countUpcoming(Prefs.getOvertimeDates(this));
-        tvOvertime.setText(n == 0 ? "加班标记" : "加班 " + n + " 天 · 清除");
-    }
-
     /**
      * 只统计「今天及以后」的标记数。
      * v1.19.9：请假 / 加班记录不会自动过期，攒了半年后这里会显示「请假标记：37 天」，
@@ -440,102 +288,6 @@ public class MainActivity extends AppCompatActivity {
             if (!d.isBefore(today)) n++;
         }
         return n;
-    }
-
-    /** 设置区「加班标记」行：一键清除全部加班（单日标记在排班日历上点对应日期）。 */
-    private void showOvertimeClearDialog() {
-        int n = countUpcoming(Prefs.getOvertimeDates(this));
-        if (n == 0) {
-            Toast.makeText(this, "还没有加班标记。在排班日历里点某一天即可标记",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        new RoundedDialog.Builder(this)
-                .setTitle("清除全部加班标记？")
-                .setMessage("将清除已标记的 " + n + " 天加班，这些日子恢复休息、不响闹钟。")
-                .setPositiveButton("清除", (d, w) -> {
-                    Prefs.setOvertimeDates(this, new java.util.HashSet<>());
-                    applySettingsIfEnabled();
-                    Toast.makeText(this, "已清除全部加班标记", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    /**
-     * 点击日历某一天：
-     * - 上班日 / 调休补班日 → 标记或取消「个人请假」，当天全部闹钟不响；
-     * - 休息日 / 法定节假日 → 标记或取消「个人加班」，当天「仅上班日」闹钟照响
-     *   （「每天」「仅休息日」闹钟不受影响——它们本来就会响）。
-     */
-    private void onCalendarDayClick(LocalDate d) {
-        WeekSchedule.DayType type = WeekSchedule.dayType(d, Prefs.getRule(this));
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
-        String dateText = d.format(DateTimeFormatter.ofPattern("M月d日"))
-                + " " + weekLabel(d);
-        if (work) {
-            showVacationDialog(d, dateText);
-        } else {
-            showOvertimeDialog(d, dateText);
-        }
-    }
-
-    /** 上班日 / 补班日：标记或取消请假（请假日当天全部闹钟不响）。 */
-    private void showVacationDialog(LocalDate d, String dateText) {
-        if (Prefs.isVacation(this, d)) {
-            new RoundedDialog.Builder(this)
-                    .setTitle("取消「" + dateText + "」的请假标记？")
-                    .setMessage("取消后当天的闹钟恢复正常。")
-                    .setPositiveButton("取消请假", (dialog, w) -> {
-                        Prefs.removeVacation(this, d);
-                        applySettingsIfEnabled();
-                        Toast.makeText(this, dateText + " 闹钟已恢复", Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("返回", null)
-                    .show();
-        } else {
-            new RoundedDialog.Builder(this)
-                    .setTitle("把「" + dateText + "」标记为请假？")
-                    .setMessage("标记后当天的全部闹钟都不响（含午休等），已排程的会自动取消。")
-                    .setPositiveButton("标记请假", (dialog, w) -> {
-                        Prefs.addVacation(this, d);
-                        applySettingsIfEnabled();
-                        Toast.makeText(this, dateText + " 已标记请假，当天闹钟跳过",
-                                Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-        }
-    }
-
-    /** 休息日 / 法定节假日：标记或取消加班（加班日「仅上班日」闹钟照响）。 */
-    private void showOvertimeDialog(LocalDate d, String dateText) {
-        if (Prefs.isOvertime(this, d)) {
-            new RoundedDialog.Builder(this)
-                    .setTitle("取消「" + dateText + "」的加班标记？")
-                    .setMessage("取消后当天恢复休息，不响闹钟。")
-                    .setPositiveButton("取消加班", (dialog, w) -> {
-                        Prefs.removeOvertime(this, d);
-                        applySettingsIfEnabled();
-                        Toast.makeText(this, dateText + " 已恢复休息", Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("返回", null)
-                    .show();
-        } else {
-            new RoundedDialog.Builder(this)
-                    .setTitle("把「" + dateText + "」标记为加班？")
-                    .setMessage("标记后当天的「仅上班日」闹钟会按时响（如起床闹钟）；"
-                            + "「每天」「仅休息日」闹钟不受影响。")
-                    .setPositiveButton("标记加班", (dialog, w) -> {
-                        Prefs.addOvertime(this, d);
-                        applySettingsIfEnabled();
-                        Toast.makeText(this, dateText + " 已标记加班，当天按上班日响铃",
-                                Toast.LENGTH_SHORT).show();
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-        }
     }
 
     @Override
@@ -1161,18 +913,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void shiftMonth(int delta) {
-        calMonth += delta;
-        if (calMonth > 12) {
-            calMonth = 1;
-            calYear++;
-        } else if (calMonth < 1) {
-            calMonth = 12;
-            calYear--;
-        }
-        refreshAll();
-    }
-
     private void save() {
         Prefs.setEnabled(this, true);
         boolean exact = ScheduleManager.canScheduleExactAlarms(this);
@@ -1285,11 +1025,103 @@ public class MainActivity extends AppCompatActivity {
     private void refreshAll() {
         refreshStatus();
         renderAlarmList();
-        renderCalendar();
-        // v1.18.2 修复：请假 / 加班标记行此前只在 onCreate 更新一次，
-        // 日历上标记 / 清除后统计行一直显示旧值（如「无」），这里随全局刷新同步
-        updateVacationText();
-        updateOvertimeText();
+        updateCalendarEntry();
+        updateDayOffButton();
+    }
+
+    /** 排班日历入口行：一句话说清今天班休，以及还有几天标记没生效完。 */
+    private void updateCalendarEntry() {
+        LocalDate today = LocalDate.now();
+        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
+        String state;
+        switch (type) {
+            case MAKEUP_WORK:
+                state = "今天补班";
+                break;
+            case HOLIDAY:
+                state = "今天法定假";
+                break;
+            case WORK:
+                state = "今天上班";
+                break;
+            default:
+                state = "今天休息";
+                break;
+        }
+        int v = countUpcoming(Prefs.getVacationDates(this));
+        int o = countUpcoming(Prefs.getOvertimeDates(this));
+        String marks;
+        if (v == 0 && o == 0) {
+            marks = "无标记";
+        } else if (v == 0) {
+            marks = "加班 " + o + " 天";
+        } else if (o == 0) {
+            marks = "请假 " + v + " 天";
+        } else {
+            marks = "请假 " + v + " 天、加班 " + o + " 天";
+        }
+        tvCalEntrySub.setText(state + " · " + marks);
+    }
+
+    /**
+     * 「今天不上班」按钮的文案（v1.28.1）。
+     *
+     * <p>今天是上班日 / 补班日 → 按钮是「今天不上班」，点了标请假；
+     * 今天是休息日 / 法定假 → 同一个位置换成「今天要加班」，点了标加班。
+     * 两种情形都是「今天和排班不一样」，用同一个按钮比藏起来更好找。
+     */
+    private void updateDayOffButton() {
+        LocalDate today = LocalDate.now();
+        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
+        boolean marked = isWorkDayType(type) ? Prefs.isVacation(this, today)
+                : Prefs.isOvertime(this, today);
+        String text = dayOffButtonText(type, marked);
+        btnDayOff.setText(text);
+        btnDayOff.setContentDescription(text);
+    }
+
+    /** 上班日与调休补班日都算「今天要上班」，休息日与法定节假日不算。 */
+    static boolean isWorkDayType(WeekSchedule.DayType type) {
+        return type == WeekSchedule.DayType.WORK
+                || type == WeekSchedule.DayType.MAKEUP_WORK;
+    }
+
+    /**
+     * 「今天不上班 / 今天要加班」按钮的文案。
+     *
+     * <p>抽成纯函数是为了两种日子都能被直接测到——真机上「今天」是星期几由不得测试决定，
+     * 写成方法内部的分支就只能测到跑测试那天的那一半。
+     */
+    static String dayOffButtonText(WeekSchedule.DayType type, boolean marked) {
+        if (isWorkDayType(type)) {
+            return marked ? "今天不上班 ✓（点击恢复）" : "今天不上班";
+        }
+        return marked ? "今天要加班 ✓（点击恢复）" : "今天要加班";
+    }
+
+    /** 一键把今天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。 */
+    private void toggleTodayOff() {
+        LocalDate today = LocalDate.now();
+        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(this));
+        if (isWorkDayType(type)) {
+            if (Prefs.isVacation(this, today)) {
+                Prefs.removeVacation(this, today);
+                Toast.makeText(this, "今天恢复上班，闹钟照常", Toast.LENGTH_SHORT).show();
+            } else {
+                Prefs.addVacation(this, today);
+                Toast.makeText(this, "今天已标记请假，全部闹钟跳过", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            if (Prefs.isOvertime(this, today)) {
+                Prefs.removeOvertime(this, today);
+                Toast.makeText(this, "今天恢复休息，不响闹钟", Toast.LENGTH_SHORT).show();
+            } else {
+                Prefs.addOvertime(this, today);
+                Toast.makeText(this, "今天已标记加班，「仅上班日」闹钟照响",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+        applySettingsIfEnabled();
     }
 
     private void refreshStatus() {
@@ -1446,166 +1278,4 @@ public class MainActivity extends AppCompatActivity {
         return DOW[d.getDayOfWeek().getValue() - 1];
     }
 
-    private void renderCalendar() {
-        WeekSchedule.Rule rule = Prefs.getRule(this);
-        LocalDate today = LocalDate.now();
-        // 请假 / 加班集合各读一次：42 个格子逐个调 Prefs.isVacation 会重复拷贝整个 StringSet
-        java.util.Set<LocalDate> vacations = Prefs.getVacationDates(this);
-        java.util.Set<LocalDate> overtimes = Prefs.getOvertimeDates(this);
-        // v1.20：农历节日开关只读一次（42 个格子逐个读 SharedPreferences 会白花 42 次跨进程读）
-        boolean lunar = Prefs.isLunarFestivals(this);
-        // v1.21：基督教节日（默认关）
-        boolean christian = Prefs.isChristianFestivals(this);
-        LocalDate first = LocalDate.of(calYear, calMonth, 1);
-        // v1.22.2：一周开始日可设为周一或周日，网格首列与表头一起旋转。
-        // 只影响显示：班 / 休判定仍是「固定星期 + 大小周按周六切换」，与这个设置无关。
-        boolean sundayFirst = Prefs.isSundayFirst(this);
-        LocalDate start = WeekSchedule.startOfWeek(first, sundayFirst);
-
-        tvCalTitle.setText(calYear + "年" + calMonth + "月");
-        String[] letters = WeekSchedule.weekLetters(sundayFirst);
-        for (int i = 0; i < calDow.length; i++) {
-            calDow[i].setText(letters[i]);
-        }
-        calRows.removeAllViews();
-
-        float density = getResources().getDisplayMetrics().density;
-        int cellHeight = (int) (46 * density);
-        int margin = (int) (2 * density);
-        int labelGap = (int) (2 * density);
-
-        for (int r = 0; r < 6; r++) {
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setLayoutParams(new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
-            for (int c = 0; c < 7; c++) {
-                LocalDate d = start.plusDays(r * 7L + c);
-                boolean inMonth = d.getMonthValue() == calMonth && d.getYear() == calYear;
-                WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-                boolean baseWork = type == WeekSchedule.DayType.WORK
-                        || type == WeekSchedule.DayType.MAKEUP_WORK;
-                // 个人标记只覆盖对应类型：请假只标上班 / 补班日，加班只标休息日 / 法定节假日
-                boolean vacation = inMonth && baseWork && vacations.contains(d);
-                boolean overtime = inMonth && !baseWork && overtimes.contains(d);
-
-                int bgRes;
-                int textColorRes;
-                String label;
-                if (vacation) {
-                    bgRes = R.drawable.bg_day_vacation;
-                    textColorRes = R.color.day_vacation_text;
-                    label = "请假";
-                } else if (overtime) {
-                    bgRes = R.drawable.bg_day_overtime;
-                    textColorRes = R.color.day_overtime_text;
-                    label = "加班";
-                } else {
-                    // v1.20.1：法定节假日优先显示节日名（「国庆」而不是笼统的「假」），
-                    // 其次才是农历节日（「中秋」「除夕」），最后才是「班/休/假」。
-                    // 都是 2 字，正好占同一格；底色仍表达上班/休息，信息不丢。
-                    // 调休补班日一律不覆盖——「补」比节日名更要紧，用户得知道那天要上班。
-                    String legal = (type == WeekSchedule.DayType.HOLIDAY)
-                            ? HolidayData.holidayName(d) : null;
-                    String fest = (lunar && type != WeekSchedule.DayType.MAKEUP_WORK)
-                            ? LunarCalendar.festival(d) : null;
-                    String christ = (christian && type != WeekSchedule.DayType.MAKEUP_WORK)
-                            ? ChristianCalendar.festival(d) : null;
-                    if (legal != null) {
-                        label = legal;
-                    } else if (fest != null) {
-                        label = fest;
-                    } else if (christ != null) {
-                        label = christ;
-                    } else {
-                        label = type.label;
-                    }
-                    switch (type) {
-                        case MAKEUP_WORK:
-                            bgRes = R.drawable.bg_day_makeup;
-                            textColorRes = R.color.day_makeup_text;
-                            break;
-                        case HOLIDAY:
-                            bgRes = R.drawable.bg_day_holiday;
-                            textColorRes = R.color.day_holiday_text;
-                            break;
-                        case WORK:
-                            bgRes = R.drawable.bg_day_work;
-                            textColorRes = R.color.day_work_text;
-                            break;
-                        default:
-                            bgRes = R.drawable.bg_day_rest;
-                            textColorRes = R.color.day_rest_text;   // 深灰，保证浅灰底上的可读性
-                            break;
-                    }
-                }
-
-                // v1.22.2：格子改成「数字 + 标签」两个 TextView 竖排。
-                // 原来是一个 TextView 里塞「数字\n标签」+ AbsoluteSizeSpan：两行共用行高，
-                // 13sp 数字的下缘和 9.5sp 标签的上缘几乎贴在一起，看起来像叠字。
-                LinearLayout cell = new LinearLayout(this);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, cellHeight, 1f);
-                lp.setMargins(margin, margin, margin, margin);
-                cell.setLayoutParams(lp);
-                cell.setOrientation(LinearLayout.VERTICAL);
-                cell.setGravity(Gravity.CENTER);
-                cell.setClickable(true);
-                cell.setFocusable(true);
-                // v1.22.5：灰字格子是上 / 下月的日期。原来点它会弹出「把 9月28日 标记为请假」，
-                // 而那一格在当前月里根本不显示标签，标记完什么也看不见。现在点灰字直接翻到那个月。
-                cell.setOnClickListener(v -> {
-                    if (!inMonth) {
-                        calYear = d.getYear();
-                        calMonth = d.getMonthValue();
-                        refreshAll();
-                    } else {
-                        onCalendarDayClick(d);
-                    }
-                });
-
-                int color;
-                if (!inMonth) {
-                    cell.setBackgroundResource(R.drawable.bg_day_none);
-                    color = ContextCompat.getColor(this, R.color.day_dim_text);
-                } else {
-                    cell.setBackgroundResource(bgRes);
-                    color = ContextCompat.getColor(this, textColorRes);
-                }
-                if (d.equals(today)) {
-                    cell.setBackgroundResource(R.drawable.bg_day_today);
-                    color = ContextCompat.getColor(this, R.color.day_today_text);
-                }
-
-                TextView num = new TextView(this);
-                num.setGravity(Gravity.CENTER);
-                num.setText(String.valueOf(d.getDayOfMonth()));
-                num.setTextColor(color);
-                num.setTextSize(TypedValue.COMPLEX_UNIT_SP, inMonth ? 13f : 11f);
-                num.setTypeface(null, inMonth ? android.graphics.Typeface.BOLD
-                        : android.graphics.Typeface.NORMAL);
-                // 去掉字体自带上下留白，行距才由我们自己控制（否则两行之间会忽宽忽窄）
-                num.setIncludeFontPadding(false);
-                cell.addView(num);
-
-                if (inMonth) {
-                    TextView lab = new TextView(this);
-                    lab.setGravity(Gravity.CENTER);
-                    lab.setText(label);
-                    lab.setTextColor(color);
-                    lab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
-                    lab.setIncludeFontPadding(false);
-                    lab.setSingleLine(true);
-                    lab.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                    LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT);
-                    llp.topMargin = labelGap;
-                    cell.addView(lab, llp);
-                }
-                row.addView(cell);
-            }
-            calRows.addView(row);
-        }
-    }
 }

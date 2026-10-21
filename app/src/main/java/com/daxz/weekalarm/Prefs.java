@@ -176,23 +176,32 @@ public final class Prefs {
     }
 
     /**
-     * 读取闹钟列表，并顺手把已经过期的一次性闹钟关掉（v1.27，v1.27.2 起改为「关闭」）。
+     * 读取闹钟列表。<b>纯读</b>，不修改任何状态、不落盘（v1.28.1）。
      *
-     * <p>为什么放在这里而不是调用方各自处理：一次性闹钟有三条独立的消费路径
-     * ——排程（{@link ScheduleManager}）、列表渲染（{@link MainActivity}）、
-     * 睡前提醒（{@link BedtimeReminder}）。任何一条忘了处理，用户就会看到一个
-     * 「昨天就该响、之后再也不会响」却仍显示开启的闹钟。收在唯一的读取入口，
-     * 三条路径自动都对。
-     *
-     * <p>v1.27.2：过期后只置 {@code enabled = false}，不再从列表里删除。
-     * 用户反馈「响过就消失」比「留着但关掉」更难接受——他会怀疑自己是不是
-     * 建错了、或者想照着这条再设一次却找不到参照。留着一条关掉的记录，
-     * 既能说明「这条已经响过了」，也能一键再打开（见 {@link Alarm#reviveOnce}）。
-     *
-     * <p>写回只在真的改动了什么时才做，避免每次读都落一次盘。
+     * <p>这里曾经挂着一层副作用：读的时候顺手把已经过期的一次性闹钟置为关闭。
+     * 「收在唯一读取入口，三条消费路径自动都对」这个出发点是对的，代价是
+     * 一个叫 {@code get} 的方法会改数据——于是导出备份、生成新 id、小组件刷新
+     * 这些纯查询场景也在悄悄写盘。现在拆开：本方法只负责读，结算走
+     * {@link #settleExpiredOnce} / {@link #getAlarmsSettled}。
      */
     public static List<Alarm> getAlarms(Context c) {
-        List<Alarm> all = getAlarmsRaw(c);
+        return getAlarmsRaw(c);
+    }
+
+    /**
+     * 把已经响过的一次性闹钟置为关闭，并落盘。返回是否真的关掉了什么。
+     *
+     * <p>只置 {@code enabled = false}，不删除（v1.27.2）。用户反馈「响过就消失」
+     * 比「留着但关掉」更难接受——他会怀疑自己是不是建错了、或者想照着这条
+     * 再设一次却找不到参照。留着一条关掉的记录，既能说明「这条已经响过了」，
+     * 也能一键再打开（见 {@link Alarm#reviveOnce}）。
+     */
+    public static boolean settleExpiredOnce(Context c) {
+        return settleExpiredOnce(c, getAlarmsRaw(c));
+    }
+
+    /** 同上，作用在调用方已读好的列表上；顺带把这份列表里对象的状态改对。 */
+    private static boolean settleExpiredOnce(Context c, List<Alarm> all) {
         LocalDateTime now = LocalDateTime.now();
         boolean changed = false;
         for (Alarm a : all) {
@@ -205,6 +214,21 @@ public final class Prefs {
         if (changed) {
             sp(c).edit().putString(KEY_ALARMS, Alarm.toJson(all)).apply();
         }
+        return changed;
+    }
+
+    /**
+     * 结算过期一次性闹钟后读取，供「读完就要立刻用、且必须反映最新状态」的路径使用：
+     * 列表渲染（{@link MainActivity}）、排程（{@link ScheduleManager#rescheduleAll}）、
+     * 睡前提醒（{@link BedtimeReminder}）。
+     *
+     * <p>为什么这三处必须结算，其余地方用纯读就够了：过期的 ONCE 闹钟不会被排到未来
+     * （它的适用日期已经过去），所以它不会漏响也不会多响。不结算的唯一后果是列表上
+     * 显示「已开启」而实际永远不会响——那正是要修的表现。排程与展示前结算一次即可。
+     */
+    public static List<Alarm> getAlarmsSettled(Context c) {
+        List<Alarm> all = getAlarmsRaw(c);
+        settleExpiredOnce(c, all);
         return all;
     }
 

@@ -466,7 +466,9 @@ public final class ScheduleManager {
             return 0;
         }
 
-        List<Alarm> alarms = Prefs.getAlarms(ctx);
+        // v1.28.1：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
+        // 排程表里虽然排不到它，但列表与统计口径会一直当它有效
+        List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
         if (alarms.isEmpty()) return 0;
 
         int horizon = Prefs.getHorizonDays(ctx);

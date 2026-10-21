@@ -86,9 +86,11 @@ final class FloatingAlarm {
 
             String name = label == null || label.isEmpty() ? "闹钟" : label;
             title.setText(name + " 时间到了");
-            // 按钮只剩图标，所以这两句要把「哪个按钮干什么」说清
+            // 按钮只剩图标，所以这两句要把「哪个按钮干什么」说清。
+            // 宽度算过：360dp 屏上横幅可用约 344dp，减图标 42 + 两个圆钮 98 + 内边距，
+            // 文字只剩约 171dp —— 12sp 一行放得下 14 个汉字，再长就被省略号吃掉。
             sub.setText(canSnooze
-                    ? "稍后再响 " + snoozeMins + " 分钟，或点右侧停止"
+                    ? "点右侧停止，或 " + snoozeMins + " 分钟后再响"
                     : "点右侧按钮停止响铃");
 
             stop.setContentDescription("停止");

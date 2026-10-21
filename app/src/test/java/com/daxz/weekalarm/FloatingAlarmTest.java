@@ -84,8 +84,8 @@ public class FloatingAlarmTest {
         View v = FloatingAlarm.viewForTest();
         assertNotNull("窗口应已挂上", v);
         assertEquals("起床 时间到了", ((TextView) v.findViewById(R.id.fa_title)).getText().toString());
-        assertEquals("副标题应说清「几 分钟后能再响」",
-                "稍后再响 5 分钟，或点右侧停止",
+        assertEquals("副标题应说清「哪个按钮干什么」",
+                "点右侧停止，或 5 分钟后再响",
                 ((TextView) v.findViewById(R.id.fa_sub)).getText().toString());
         assertEquals(View.VISIBLE, v.findViewById(R.id.fa_snooze).getVisibility());
         assertEquals("5 分钟后再响",

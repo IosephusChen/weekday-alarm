@@ -94,14 +94,12 @@ public class WeekScheduleWidget extends AppWidgetProvider {
      *
      * <p>抽成静态纯函数：真机上「明天」是星期几由不得测试决定，写成方法内部的分支
      * 就只能测到跑测试那天的那一半。
+     *
+     * <p>v1.34.1 起实现搬到 {@link DayOffAction#actionText}：首页也要显示「已请假 / 已加班」，
+     * 同一句话没必要存在两份。这里保留签名，测试与调用方不用动。
      */
     static String actionText(String prefix, WeekSchedule.DayType type, boolean marked) {
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
-        if (work) {
-            return marked ? prefix + "已请假" : prefix + "不上班";
-        }
-        return marked ? prefix + "已加班" : prefix + "要加班";
+        return DayOffAction.actionText(prefix, type, marked);
     }
 
     /** 明天那一格的文案，保留旧签名给测试与调用方用。 */

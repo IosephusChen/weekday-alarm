@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -11,6 +12,7 @@ import android.content.SharedPreferences;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -55,7 +57,8 @@ public class DayOffButtonTest {
     public void text_onWorkDay_offersDayOff() {
         assertEquals("今天不上班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.WORK, false));
-        assertEquals("今天不上班 ✓",
+        assertEquals("标记后改说「已请假」",
+                "今天已请假",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.WORK, true));
     }
 
@@ -64,7 +67,7 @@ public class DayOffButtonTest {
         assertEquals("明天不上班",
                 MainActivity.dayOffButtonText(DayOffAction.TOMORROW,
                         WeekSchedule.DayType.WORK, false));
-        assertEquals("明天要加班 ✓",
+        assertEquals("明天已加班",
                 MainActivity.dayOffButtonText(DayOffAction.TOMORROW,
                         WeekSchedule.DayType.REST, true));
     }
@@ -81,7 +84,7 @@ public class DayOffButtonTest {
     public void text_onRestDay_offersOvertime() {
         assertEquals("今天要加班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.REST, false));
-        assertEquals("今天要加班 ✓",
+        assertEquals("今天已加班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.REST, true));
     }
 
@@ -132,18 +135,48 @@ public class DayOffButtonTest {
         btn.performClick();
         if (work) {
             assertTrue("上班日点一下应标成请假", Prefs.isVacation(ctx(), today));
+            assertTrue("标记后文案应说「已请假」", btn.getText().toString().contains("已请假"));
         } else {
             assertTrue("休息日点一下应标成加班", Prefs.isOvertime(ctx(), today));
+            assertTrue("标记后文案应说「已加班」", btn.getText().toString().contains("已加班"));
         }
-        assertTrue("标记后按钮文案要带 ✓", btn.getText().toString().contains("✓"));
+        assertTrue("标记后按钮应处于 selected 态", btn.isSelected());
 
         btn.performClick();
         if (work) {
             assertFalse("再点一下应撤销请假", Prefs.isVacation(ctx(), today));
+            assertTrue("撤销后文案应回到「不上班」", btn.getText().toString().endsWith("不上班"));
         } else {
             assertFalse("再点一下应撤销加班", Prefs.isOvertime(ctx(), today));
+            assertTrue("撤销后文案应回到「要加班」", btn.getText().toString().endsWith("要加班"));
         }
-        assertFalse("撤销后文案不该还带 ✓", btn.getText().toString().contains("✓"));
+        assertFalse("撤销后不该还是 selected 态", btn.isSelected());
+    }
+
+    /**
+     * 标记后背景要换（v1.34.1）。
+     *
+     * <p>只改文案不够：原来「今天不上班 ✓」压在紫色渐变上，✓ 太小，用户点完不确定生效没有。
+     * 现在跟桌面小组件一样换成实白底 + 紫字，一整个按钮亮起来，比一个符号清楚得多。
+     */
+    @Test
+    public void markingButton_switchesBackgroundAndTextColor() {
+        resetPrefs();
+        MainActivity a = launch();
+        TextView btn = a.findViewById(R.id.btn_day_off);
+        int white = ContextCompat.getColor(ctx(), R.color.white);
+        int indigoDark = ContextCompat.getColor(ctx(), R.color.indigo_dark);
+
+        assertEquals("未标记时是白字", white, btn.getCurrentTextColor());
+        Object idleBg = btn.getBackground();
+
+        btn.performClick();
+        assertNotSame("标记后背景应换成「已生效」那一张", idleBg, btn.getBackground());
+        assertEquals("标记后是紫字（实白底上才读得清）", indigoDark, btn.getCurrentTextColor());
+
+        btn.performClick();
+        assertEquals("撤销后字色要回到白", white, btn.getCurrentTextColor());
+        assertNotSame("撤销后背景也要换回来", idleBg, btn.getBackground());
     }
 
     /** 「明天」按钮动的是明天，不能顺手把今天也标了。 */
@@ -163,11 +196,12 @@ public class DayOffButtonTest {
         if (work) {
             assertTrue("上班日点一下应把明天标成请假", Prefs.isVacation(ctx(), tomorrow));
             assertFalse("今天不该被标", Prefs.isVacation(ctx(), today));
+            assertTrue("标记后文案应说「明天已请假」", btn.getText().toString().equals("明天已请假"));
         } else {
             assertTrue("休息日点一下应把明天标成加班", Prefs.isOvertime(ctx(), tomorrow));
             assertFalse("今天不该被标", Prefs.isOvertime(ctx(), today));
+            assertTrue("标记后文案应说「明天已加班」", btn.getText().toString().equals("明天已加班"));
         }
-        assertTrue("标记后文案要带 ✓", btn.getText().toString().contains("✓"));
         assertTrue("文案要说是明天", btn.getText().toString().startsWith("明天"));
 
         btn.performClick();

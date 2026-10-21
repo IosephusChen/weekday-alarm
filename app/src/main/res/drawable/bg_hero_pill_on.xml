@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页今日卡按钮的「已生效」态（v1.34.1）：实白底 + 紫字，与桌面小组件
+     bg_widget_action_on 同一套视觉——用户在两处看到的是同一个状态，不该有两种表达。
+     圆角沿用 bg_hero_pill 的 11dp：同一行里两个按钮，圆角一变就看得出拼错。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F5F4FF" />
+    <corners android:radius="11dp" />
+</shape>

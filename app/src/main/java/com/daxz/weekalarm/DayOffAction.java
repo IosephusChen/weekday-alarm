@@ -49,6 +49,28 @@ final class DayOffAction {
                 || type == WeekSchedule.DayType.MAKEUP_WORK;
     }
 
+    /**
+     * 按钮文案：未标记说「要做什么」，标记后说「已经是什么」（v1.34.1）。
+     *
+     * <p>原来是「今天不上班 ✓」——✓ 挂在动词短语尾巴上，读起来像「已经点过了」但仍是待办口吻。
+     * 改成「今天已请假」后，<b>文案本身就是一个状态陈述</b>，配上实白底，一眼能看出这天的标记生效了。
+     *
+     * <p>这套文案原来只存在于小组件（{@code WeekScheduleWidget.actionText}），首页自己写了一份
+     * 带 ✓ 的。同一个状态在两处说两种话，用户来回看会以为不是一件事——现在只有这里一份，
+     * 小组件那个静态方法也委托过来。
+     */
+    static String actionText(String prefix, WeekSchedule.DayType type, boolean marked) {
+        if (isWorkDay(type)) {
+            return marked ? prefix + "已请假" : prefix + "不上班";
+        }
+        return marked ? prefix + "已加班" : prefix + "要加班";
+    }
+
+    /** 按 offset 取「今天 / 明天」前缀的按钮文案。 */
+    static String buttonText(int dayOffset, WeekSchedule.DayType type, boolean marked) {
+        return actionText(clampOffset(dayOffset) == TODAY ? "今天" : "明天", type, marked);
+    }
+
     /** 那天是否已被标成「和排班不一样」：上班日标了请假 / 休息日标了加班。 */
     static boolean isMarked(Context ctx, LocalDate day) {
         return isWorkDay(typeOf(ctx, day))

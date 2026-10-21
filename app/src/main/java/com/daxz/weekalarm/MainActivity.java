@@ -1148,12 +1148,12 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 今日卡两个按钮的文案（v1.28.1，v1.34 泛化到「今天 / 明天」）。
      *
-     * <p>那天是上班日 / 补班日 → 按钮写「不上班」，点了标请假；
-     * 是休息日 / 法定假 → 写「要加班」，点了标加班。
+     * <p>那天是上班日 / 补班日 → 未标记写「不上班」，标记后写「已请假」；
+     * 是休息日 / 法定假 → 未标记写「要加班」，标记后写「已加班」。
      * 两种情形都是「那天和排班不一样」，用同一个按钮比藏起来更好找。
      *
-     * <p>只写「今天不上班」不再加「（点击恢复）」：两个按钮并排后一行放不下，
-     * 而标记上之后尾巴的 ✓ 已经说明「再点一次就是撤销」。
+     * <p>v1.34.1 去掉尾巴上的 ✓，改说「已请假 / 已加班」，实现委托给
+     * {@link DayOffAction#buttonText}——与桌面小组件共用同一句话。
      */
     private void updateDayOffButton() {
         setDayOffButton(btnDayOff, DayOffAction.TODAY);
@@ -1167,6 +1167,13 @@ public class MainActivity extends AppCompatActivity {
         String text = dayOffButtonText(offset, type, marked);
         btn.setText(text);
         btn.setContentDescription(text);
+        // v1.34.1：标记生效后换「实白底 + 紫字」，跟桌面小组件同一个状态同一套视觉。
+        // 之前只有文案尾巴多个 ✓，压在紫色渐变上几乎看不出来——用户点完不确定到底生效没有。
+        // 两处都显式设置，不靠布局默认值：撤销时必须能换回来。
+        btn.setBackgroundResource(marked ? R.drawable.bg_hero_pill_on : R.drawable.bg_hero_pill);
+        btn.setTextColor(ContextCompat.getColor(this, marked ? R.color.indigo_dark : R.color.white));
+        // selected 只是语义标记（供无障碍与以后接 selector 用），真正生效的是上面两行
+        btn.setSelected(marked);
     }
 
     /** 上班日与调休补班日都算「今天要上班」，休息日与法定节假日不算。 */
@@ -1181,9 +1188,7 @@ public class MainActivity extends AppCompatActivity {
      * 写成方法内部的分支就只能测到跑测试那天的那一半。
      */
     static String dayOffButtonText(int dayOffset, WeekSchedule.DayType type, boolean marked) {
-        String label = DayOffAction.clampOffset(dayOffset) == DayOffAction.TODAY ? "今天" : "明天";
-        String base = isWorkDayType(type) ? label + "不上班" : label + "要加班";
-        return marked ? base + " ✓" : base;
+        return DayOffAction.buttonText(dayOffset, type, marked);
     }
 
     /** 一键把今天 / 明天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。 */

@@ -388,35 +388,26 @@ public final class Prefs {
     }
 
     /**
-     * 清掉「今天及以后」的请假 / 加班标记，返回清掉的条数（v1.35.0）。
+     * 清掉全部请假 / 加班标记，返回清掉的条数（v1.35.1）。
      *
-     * <p>方向与 v1.34.3 的 {@code prunePastMarks} 正好相反：那次清过去，这次清未来。
-     *
-     * <p>理由变了。v1.34.3 认为「过去的标记不影响闹钟，留着只会让格子与统计打架」，
-     * 于是每次回前台清一次——代价是日历翻回上个月一片空白，用户想「看看这个月哪几天
-     * 请了假」时，恰恰看不到。现在把标记分成两段来理解：
-     *
+     * <p>这个方法的范围改过三次，每次都是跟着「过去能不能标记」走的：
      * <ul>
-     *   <li><b>今天及以后 = 排程开关</b>：改它会影响闹钟，所以「清除」清的是这一段；</li>
-     *   <li><b>今天之前 = 记录</b>：闹钟早响过了，改它不影响任何事，但它记录着
-     *       「那天我请了假 / 加了班」，翻日历时应该看得见。</li>
+     *   <li>v1.34.3 之前清全部，但统计只算今天及以后——数字与动作对不上；</li>
+     *   <li>v1.35.0 改成只清今天及以后，把过去留作只读记录；</li>
+     *   <li>v1.35.1 过去重新可以标记，标记不再分「开关 / 记录」，统计与清除都回到全部。</li>
      * </ul>
      *
-     * <p>两段各管各的，就不再打架：清除清的是「还有排程意义的标记」，数字与动作一致；
-     * 过去那段只读、不计入统计、也不被批量清除，想删某天就在日历上点那一天。
+     * <p>过去标记不会影响闹钟排程——排程从今天往后逐日算，过去的日子不参与。
+     * 所以清掉它们只是删记录，不会让任何闹钟「恢复」或「消失」。
      */
-    public static int clearUpcomingMarks(Context c, boolean vacation) {
-        LocalDate today = LocalDate.now();
+    public static int clearMarks(Context c, boolean vacation) {
         Set<LocalDate> cur = vacation ? getVacationDates(c) : getOvertimeDates(c);
-        int before = cur.size();
-        // 只留过去：今天及以后的都算「还有排程意义」，一并清掉
-        cur.removeIf(d -> !d.isBefore(today));
-        int removed = before - cur.size();
+        int removed = cur.size();
         if (removed > 0) {
             if (vacation) {
-                setVacationDates(c, cur);
+                setVacationDates(c, Collections.emptySet());
             } else {
-                setOvertimeDates(c, cur);
+                setOvertimeDates(c, Collections.emptySet());
             }
         }
         return removed;

@@ -3,7 +3,6 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -32,18 +31,19 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 
 /**
- * 过去日期的请假 / 加班记录（v1.35.0，接替 v1.34.3 的同一组用例）。
+ * 日历上的请假 / 加班标记（v1.35.1）。
  *
- * <p>行为在 v1.35.0 反过来了，理由也反了：
+ * <p>这一组用例随语义改过三轮：
  *
  * <ul>
- *   <li>v1.34.3：过去不影响闹钟，留着只会让格子与统计打架 → <b>每次回前台清掉</b>。</li>
- *   <li>v1.35.0：用户想「看看这个月哪几天请了假」，清掉就看不见了 → <b>留着当记录</b>，
- *       只读、可删、不计入统计、不被批量清除。</li>
+ *   <li>v1.34.3：过去不影响闹钟，留着只会让格子与统计打架 → <b>拒绝新标记</b>；</li>
+ *   <li>v1.35.0：用户想回看，改成「过去只读、可删」；</li>
+ *   <li>v1.35.1：用户要补记「上周三请了假」→ <b>过去也能标</b>，与未来同一套菜单，
+ *       只是标题标「已过去」、Toast 说「补记」。</li>
  * </ul>
  *
- * <p>分界线是「今天」：今天及以后是<b>排程开关</b>（改它闹钟会变，所以「清除」清这一段），
- * 今天之前是<b>记录</b>（闹钟早响过了，改它不影响任何事，但翻日历该看得见）。
+ * <p>现在标记没有时效之分：统计算全部、清除清全部，过去标记不参与闹钟排程
+ * （排程从今天往后逐日算）。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -99,90 +99,120 @@ public class PastMarkTest {
         return out;
     }
 
-    /** 往后找第一个上班日 / 休息日，避免测试结果取决于跑测试那天是星期几。 */
-    private LocalDate nextDayOf(boolean work) {
-        LocalDate d = LocalDate.now();
-        for (int i = 0; i < 21; i++) {
-            LocalDate x = d.plusDays(i);
+    /** 取对话框标题文本（AppCompat 的标题 TextView 用 alertTitle 这个 id）。 */
+    private CharSequence titleOf(AlertDialog d) {
+        View t = d.findViewById(androidx.appcompat.R.id.alertTitle);
+        return t instanceof TextView ? ((TextView) t).getText() : null;
+    }
+
+    /** 往前 / 往后找第一个上班日或休息日，避免测试结果取决于跑测试那天是星期几。 */
+    private LocalDate dayOf(boolean work, boolean past) {
+        LocalDate base = LocalDate.now();
+        for (int i = 1; i <= 21; i++) {
+            LocalDate x = past ? base.minusDays(i) : base.plusDays(i);
             if (DayOffAction.isWorkDay(DayOffAction.typeOf(ctx(), x)) == work) return x;
         }
         throw new AssertionError("三周内找不到符合条件的日子");
     }
 
-    // ---------- 过去：只读、可删 ----------
+    // ---------- 过去：可以补记 ----------
 
-    /** 点昨天：不弹对话框、不写入，只提示「已经过去」。 */
+    /** 点昨天的上班日：正常弹出「请假 / 加班」两项，不再被「已经过去」挡回去。 */
     @Test
-    public void pastDay_rejectsNewMark() throws Exception {
+    public void pastWorkday_offersBothOptions() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate past = dayOf(true, true);
 
-        clickDay(panelOf(a), yesterday);
-
-        assertFalse("过去的日子不该被标上请假", Prefs.isVacation(ctx(), yesterday));
-        assertFalse("也不该被标上加班", Prefs.isOvertime(ctx(), yesterday));
-        assertNull("过去且没标记的日子不该弹对话框", latestDialog());
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertNotNull("应给一句说明，而不是静默失败", toast);
-        assertTrue("提示要说清是日期已过，实际：" + toast, toast.contains("已经过去"));
-    }
-
-    /** 过去已有的记录仍可删除——标错了要能改，否则看着一个清不掉的「假」字。 */
-    @Test
-    public void pastDay_existingMarkCanBeDeleted() throws Exception {
-        resetPrefs();
-        MainActivity a = launch();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        Prefs.addVacation(ctx(), yesterday);
-
-        clickDay(panelOf(a), yesterday);
+        clickDay(panelOf(a), past);
 
         AlertDialog d = latestDialog();
-        assertNotNull("过去有记录时应弹出删除确认", d);
-        assertEquals("只该列出请假一项", 1, itemsOf(d).length);
-        assertEquals("删除请假记录", itemsOf(d)[0]);
-
-        clickItem(d, 0);
-        assertFalse("点一下应能删掉存量记录", Prefs.isVacation(ctx(), yesterday));
+        assertNotNull("过去的日子也该弹出选项", d);
+        String[] items = itemsOf(d);
+        assertEquals("上班日给两项", 2, items.length);
+        assertEquals("标记为请假", items[0]);
+        assertEquals("标记为加班", items[1]);
+        CharSequence title = titleOf(d);
+        assertNotNull("对话框应有标题", title);
+        assertTrue("标题应标明已过去，实际：" + title, title.toString().contains("已过去"));
     }
 
-    /** 同一天既有请假又有加班时，两个删除项都要列出来，分别删。 */
+    /** 补记昨天的请假：真的写进 Prefs，Toast 用「补记」而不是「当天闹钟跳过」。 */
     @Test
-    public void pastDay_bothMarks_listedSeparately() throws Exception {
+    public void pastDay_canBeMarkedAsVacation() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        Prefs.addVacation(ctx(), yesterday);
-        Prefs.addOvertime(ctx(), yesterday);
+        LocalDate past = dayOf(true, true);
 
-        clickDay(panelOf(a), yesterday);
+        clickDay(panelOf(a), past);
+        clickItem(latestDialog(), 0);   // 「标记为请假」
 
+        assertTrue("过去的日子应能补记请假", Prefs.isVacation(ctx(), past));
+        String toast = ShadowToast.getTextOfLatestToast();
+        assertNotNull(toast);
+        assertTrue("应说明是补记，实际：" + toast, toast.contains("补记"));
+        assertFalse("不该承诺过去的闹钟会跳过，实际：" + toast, toast.contains("跳过"));
+    }
+
+    /** 补记过去休息日的加班。 */
+    @Test
+    public void pastRestDay_canBeMarkedAsOvertime() throws Exception {
+        resetPrefs();
+        MainActivity a = launch();
+        LocalDate past = dayOf(false, true);
+
+        clickDay(panelOf(a), past);
         AlertDialog d = latestDialog();
         assertNotNull(d);
-        String[] items = itemsOf(d);
-        assertEquals("两项：请假 + 加班", 2, items.length);
-        assertEquals("删除请假记录", items[0]);
-        assertEquals("删除加班记录", items[1]);
+        assertEquals("休息日只给加班", 1, itemsOf(d).length);
 
         clickItem(d, 0);
-        assertFalse("请假删掉了", Prefs.isVacation(ctx(), yesterday));
-        assertTrue("加班应还在——一次只删一项", Prefs.isOvertime(ctx(), yesterday));
+        assertTrue("过去的休息日应能补记加班", Prefs.isOvertime(ctx(), past));
     }
 
-    // ---------- 今天及以后：两个选项都给 ----------
+    /** 补记后再点同一天，选项变成「取消请假」，点一下能删掉。 */
+    @Test
+    public void pastMarkedDay_showsCancelAndCanBeRemoved() throws Exception {
+        resetPrefs();
+        MainActivity a = launch();
+        LocalDate past = dayOf(true, true);
 
-    /**
-     * 上班日给「请假」「加班」两项。
-     *
-     * <p>这是 v1.35.0 的核心修复：以前按班休二选一，工作日的加班根本没有入口，
-     * 用户想记「白天上班、晚上补工」时无处可点。
-     */
+        clickDay(panelOf(a), past);
+        clickItem(latestDialog(), 0);
+        assertTrue(Prefs.isVacation(ctx(), past));
+
+        clickDay(panelOf(a), past);
+        String[] items = itemsOf(latestDialog());
+        assertEquals("取消请假", items[0]);
+
+        clickItem(latestDialog(), 0);
+        assertFalse("再点一下应删掉补记", Prefs.isVacation(ctx(), past));
+    }
+
+    /** 过去的日子也能同时补记请假与加班，格子上印「假加」。 */
+    @Test
+    public void pastDay_bothMarksAllowed() throws Exception {
+        resetPrefs();
+        LocalDate past = dayOf(true, true);
+        Prefs.addVacation(ctx(), past);
+
+        MainActivity a = launch();
+        clickDay(panelOf(a), past);
+        clickItem(latestDialog(), 1);   // 上班日第二项「标记为加班」
+
+        assertTrue("请假还在", Prefs.isVacation(ctx(), past));
+        assertTrue("加班也补上了", Prefs.isOvertime(ctx(), past));
+        assertTrue("格子上应出现「假加」", hasLabel(a, "假加"));
+    }
+
+    // ---------- 今天及以后：照旧 ----------
+
+    /** 上班日给「请假」「加班」两项（v1.35.0 的核心修复，不能被这次改动带回去）。 */
     @Test
     public void workday_offersBothOptions() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate work = nextDayOf(true);
+        LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
 
@@ -199,7 +229,7 @@ public class PastMarkTest {
     public void restDay_offersOnlyOvertime() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate rest = nextDayOf(false);
+        LocalDate rest = dayOf(false, false);
 
         clickDay(panelOf(a), rest);
 
@@ -215,7 +245,7 @@ public class PastMarkTest {
     public void workdayOvertime_canBeMarked_withoutAffectingDayOffButton() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate work = nextDayOf(true);
+        LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
         clickItem(latestDialog(), 1);   // 「标记为加班」
@@ -229,7 +259,7 @@ public class PastMarkTest {
     public void markedDay_showsCancelOption() throws Exception {
         resetPrefs();
         MainActivity a = launch();
-        LocalDate work = nextDayOf(true);
+        LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
         clickItem(latestDialog(), 0);   // 「标记为请假」
@@ -241,7 +271,7 @@ public class PastMarkTest {
         assertEquals("加班项照旧", "标记为加班", items[1]);
     }
 
-    /** 今天和明天照常能标——拦的只是「已经过完」的日子。 */
+    /** 今天和明天照常能标。 */
     @Test
     public void todayAndTomorrow_stillMarkable() throws Exception {
         resetPrefs();
@@ -259,40 +289,73 @@ public class PastMarkTest {
         assertNotNull("明天也应弹出选项", latestDialog());
     }
 
-    // ---------- 清除范围：只清今天及以后 ----------
+    // ---------- 统计与清除：都算全部 ----------
 
-    /** 清除只动今天及以后，过去一个不动。 */
+    /** 统计算全部，包括补记的过去。 */
     @Test
-    public void clearUpcoming_onlyRemovesUpcoming() {
+    public void stats_countPastAndFuture() {
         resetPrefs();
         LocalDate today = LocalDate.now();
-        LocalDate past = today.minusDays(2);
-        LocalDate future = today.plusDays(3);
+        Prefs.addVacation(ctx(), today.minusDays(2));
+        Prefs.addVacation(ctx(), today.plusDays(3));
 
-        Prefs.addVacation(ctx(), past);
-        Prefs.addVacation(ctx(), today);
-        Prefs.addVacation(ctx(), future);
+        MainActivity a = launch();
+        TextView tv = a.findViewById(R.id.tv_vacation);
 
-        int removed = Prefs.clearUpcomingMarks(ctx(), true);
-
-        assertEquals("应清掉今天 + 未来共 2 天", 2, removed);
-        assertTrue("过去的记录必须留着", Prefs.isVacation(ctx(), past));
-        assertFalse("今天的应被清掉", Prefs.isVacation(ctx(), today));
-        assertFalse("未来的应被清掉", Prefs.isVacation(ctx(), future));
+        assertEquals("过去 + 未来共 2 天", "请假 2 天 · 清除", tv.getText().toString());
     }
 
+    /** 清除清全部：统计说几天，就清掉几天，包括补记的过去。 */
     @Test
-    public void clearUpcoming_isIdempotent() {
+    public void clear_removesAllMarks_countMatches() {
         resetPrefs();
-        Prefs.addVacation(ctx(), LocalDate.now().minusDays(1));
-        assertEquals("第一次没东西可清", 0, Prefs.clearUpcomingMarks(ctx(), true));
-        assertEquals("再清一次仍是 0", 0, Prefs.clearUpcomingMarks(ctx(), true));
-        assertTrue("过去记录还在", Prefs.isVacation(ctx(), LocalDate.now().minusDays(1)));
+        LocalDate today = LocalDate.now();
+        Prefs.addVacation(ctx(), today.minusDays(1));
+        Prefs.addVacation(ctx(), today.plusDays(1));
+        Prefs.addVacation(ctx(), today.plusDays(2));
+
+        MainActivity a = launch();
+        TextView tv = a.findViewById(R.id.tv_vacation);
+        assertEquals("统计算全部", "请假 3 天 · 清除", tv.getText().toString());
+
+        tv.performClick();
+        AlertDialog d = latestDialog();
+        assertNotNull("应弹出清除确认", d);
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertFalse("过去的补记也清掉了", Prefs.isVacation(ctx(), today.minusDays(1)));
+        assertFalse("未来两天清掉了", Prefs.isVacation(ctx(), today.plusDays(1)));
+        assertFalse(Prefs.isVacation(ctx(), today.plusDays(2)));
+        assertEquals("统计归零后回到占位文案", "请假标记",
+                ((TextView) a.findViewById(R.id.tv_vacation)).getText().toString());
     }
 
-    /** 打开 App 不再清过去——这是 v1.34.3 的行为，v1.35.0 明确回退。 */
+    /** 请假与加班分开清，互不影响。 */
     @Test
-    public void openingApp_keepsPastMarks() {
+    public void clear_isSeparatedByKind() {
+        resetPrefs();
+        LocalDate today = LocalDate.now();
+        Prefs.addVacation(ctx(), today.minusDays(1));
+        Prefs.addOvertime(ctx(), today.minusDays(1));
+
+        assertEquals(1, Prefs.clearMarks(ctx(), true));
+
+        assertFalse("请假清掉了", Prefs.isVacation(ctx(), today.minusDays(1)));
+        assertTrue("加班不受影响", Prefs.isOvertime(ctx(), today.minusDays(1)));
+    }
+
+    /** 清除幂等：没东西可清时返回 0，不炸。 */
+    @Test
+    public void clear_isIdempotent() {
+        resetPrefs();
+        assertEquals("空集合清 0 条", 0, Prefs.clearMarks(ctx(), true));
+        assertEquals("再清一次仍是 0", 0, Prefs.clearMarks(ctx(), true));
+    }
+
+    /** 打开 App 不清任何标记——过去与未来都保留。 */
+    @Test
+    public void openingApp_keepsAllMarks() {
         resetPrefs();
         LocalDate yesterday = LocalDate.now().minusDays(1);
         Prefs.addVacation(ctx(), yesterday);
@@ -302,37 +365,6 @@ public class PastMarkTest {
 
         assertTrue("打开 App 后过去的请假记录应还在", Prefs.isVacation(ctx(), yesterday));
         assertTrue("打开 App 后过去的加班记录应还在", Prefs.isOvertime(ctx(), yesterday));
-    }
-
-    /**
-     * 统计说几天，就清掉几天。
-     *
-     * <p>v1.34.3 之前这里会多清（过去的看不见的也被清）。现在统计只算今天及以后、
-     * 清除也只清今天及以后，两个数字天然相等，过去的记录不受影响。
-     */
-    @Test
-    public void clearButton_countMatchesWhatGetsCleared() {
-        resetPrefs();
-        LocalDate today = LocalDate.now();
-        Prefs.addVacation(ctx(), today.minusDays(1));   // 过去：记录
-        Prefs.addVacation(ctx(), today.plusDays(1));
-        Prefs.addVacation(ctx(), today.plusDays(2));
-
-        MainActivity a = launch();
-        TextView tv = a.findViewById(R.id.tv_vacation);
-        assertEquals("统计只算今天及以后", "请假 2 天 · 清除", tv.getText().toString());
-
-        tv.performClick();
-        AlertDialog d = latestDialog();
-        assertNotNull("应弹出清除确认", d);
-        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-
-        assertFalse("未来两天清掉了", Prefs.isVacation(ctx(), today.plusDays(1)));
-        assertFalse(Prefs.isVacation(ctx(), today.plusDays(2)));
-        assertTrue("过去的记录不该被一起清掉", Prefs.isVacation(ctx(), today.minusDays(1)));
-        assertEquals("统计归零后回到占位文案", "请假标记",
-                ((TextView) a.findViewById(R.id.tv_vacation)).getText().toString());
     }
 
     // ---------- 渲染 ----------
@@ -354,7 +386,7 @@ public class PastMarkTest {
     @Test
     public void workdayOvertime_rendersOvertimeLabel() throws Exception {
         resetPrefs();
-        LocalDate work = nextDayOf(true);
+        LocalDate work = dayOf(true, false);
         Prefs.addOvertime(ctx(), work);
 
         MainActivity a = launch();

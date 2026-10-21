@@ -337,16 +337,15 @@ final class CalendarPanel {
     // ================= 单日标记 =================
 
     /**
-     * 点日历某一天（v1.35.0 重写）。
+     * 点日历某一天（v1.35.1 起过去也能标）。
      *
-     * <p>两段语义，分开处理：
-     * <ul>
-     *   <li><b>今天及以后 = 排程开关</b>。上班日给「请假 / 加班」两项——工作日的加班
-     *       以前没有入口（旧逻辑按班休二选一），用户想记「白天上班、晚上补工」时无处可点；
-     *       休息日只给「加班」（休息日本来就不上班，标请假没有意义）。</li>
-     *   <li><b>今天之前 = 记录</b>。闹钟早响过了，改它不影响任何事，但它记着「那天请了假」，
-     *       翻日历该看得见。所以只读、可删、不收新增。</li>
-     * </ul>
+     * <p>菜单只有一套：上班日给「请假 / 加班」，休息日只给「加班」（休息日本来就不上班，
+     * 标请假没有意义）。过去的日子用同一套菜单——用户补记「上周三请了假」时，不该被一句
+     * 「已经过去，不用再标」挡回去，那是记录，不是开关。
+     *
+     * <p>过去与未来的差别只在两处措辞：标题多一个「· 已过去」，Toast 说「补记」而不是
+     * 「当天闹钟跳过」——闹钟早响过了，承诺跳过是假话。数据上两者完全一样，所以日历格子、
+     * 统计、清除都不再分时段。
      *
      * <p>用列表式（{@code setItems}）而不是并排三个按钮：文案一长（「取消请假 / 标记为加班 /
      * 关闭」）就会折行成两截，一行一项反而更好点，也不受屏幕宽度影响。
@@ -358,70 +357,40 @@ final class CalendarPanel {
         boolean hasO = Prefs.isOvertime(host, d);
         String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
 
-        if (past) {
-            if (!hasV && !hasO) {
-                Toast.makeText(host, dateText + " 已经过去，不用再标",
-                        Toast.LENGTH_SHORT).show();
-                return;
-            }
-            List<String> items = new ArrayList<>();
-            List<Runnable> actions = new ArrayList<>();
-            if (hasV) {
-                items.add("删除请假记录");
-                actions.add(() -> {
-                    Prefs.removeVacation(host, d);
-                    onChanged.run();
-                    Toast.makeText(host, dateText + " 的请假记录已删除",
-                            Toast.LENGTH_SHORT).show();
-                });
-            }
-            if (hasO) {
-                items.add("删除加班记录");
-                actions.add(() -> {
-                    Prefs.removeOvertime(host, d);
-                    onChanged.run();
-                    Toast.makeText(host, dateText + " 的加班记录已删除",
-                            Toast.LENGTH_SHORT).show();
-                });
-            }
-            new RoundedDialog.Builder(host)
-                    .setTitle(dateText + " · 已过去")
-                    .setItems(items.toArray(new String[0]), (dialog, i) -> actions.get(i).run())
-                    .setNegativeButton("关闭", null)
-                    .show();
-            return;
-        }
-
         List<String> items = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
         // 请假项：上班日给；已有标记时也给，用来取消（老数据可能在休息日上留了请假）
         if (work || hasV) {
             items.add(hasV ? "取消请假" : "标记为请假");
-            actions.add(() -> toggleVacation(d, work));
+            actions.add(() -> toggleVacation(d, work, past));
         }
         // 加班项：任何日子都给。工作日的加班不影响闹钟，只是一条记录
         items.add(hasO ? "取消加班" : "标记为加班");
-        actions.add(() -> toggleOvertime(d, work));
+        actions.add(() -> toggleOvertime(d, work, past));
 
         new RoundedDialog.Builder(host)
-                .setTitle(dateText + " · " + (work ? "上班日" : "休息日"))
+                .setTitle(dateText + " · " + (work ? "上班日" : "休息日")
+                        + (past ? " · 已过去" : ""))
                 .setItems(items.toArray(new String[0]), (dialog, i) -> actions.get(i).run())
                 .setNegativeButton("关闭", null)
                 .show();
     }
 
     /** 切换某天的请假标记。上班日标了才影响闹钟，休息日上的老数据只做清理。 */
-    private void toggleVacation(LocalDate d, boolean work) {
+    private void toggleVacation(LocalDate d, boolean work, boolean past) {
         String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
         if (Prefs.isVacation(host, d)) {
             Prefs.removeVacation(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + " 已恢复上班，闹钟照常", Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, dateText + (past ? " 已取消请假记录"
+                    : " 已恢复上班，闹钟照常"), Toast.LENGTH_SHORT).show();
         } else {
             Prefs.addVacation(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + " 已标记请假"
-                    + (work ? "，当天闹钟跳过" : ""), Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, dateText + (past
+                            ? " 已补记请假（那天已过去，不影响闹钟）"
+                            : " 已标记请假" + (work ? "，当天闹钟跳过" : "")),
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -431,8 +400,10 @@ final class CalendarPanel {
      * <p>对闹钟的影响分两种，Toast 必须说清楚——用户很容易以为「标了加班闹钟就不响」：
      * 休息日标加班 → 那天按上班日排程，「仅上班日」的闹钟照响；
      * 工作日标加班 → 本来就在上班，排程不变，这条纯属记录。
+     *
+     * <p>过去的日子只补记，不提闹钟——那天已经过完了。
      */
-    private void toggleOvertime(LocalDate d, boolean work) {
+    private void toggleOvertime(LocalDate d, boolean work, boolean past) {
         String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
         if (Prefs.isOvertime(host, d)) {
             Prefs.removeOvertime(host, d);
@@ -441,46 +412,53 @@ final class CalendarPanel {
         } else {
             Prefs.addOvertime(host, d);
             onChanged.run();
-            Toast.makeText(host, work
-                            ? dateText + " 已记录加班（当天闹钟不受影响）"
-                            : dateText + " 已标记加班，当天按上班日响铃",
-                    Toast.LENGTH_SHORT).show();
+            if (past) {
+                Toast.makeText(host, dateText + " 已补记加班（那天已过去，不影响闹钟）",
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(host, work
+                                ? dateText + " 已记录加班（当天闹钟不受影响）"
+                                : dateText + " 已标记加班，当天按上班日响铃",
+                        Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
     /** 两个标记统计按钮的文案：已标记天数；点一下弹清除确认。 */
     private void updateMarkTexts() {
-        int v = countUpcoming(Prefs.getVacationDates(host));
-        int o = countUpcoming(Prefs.getOvertimeDates(host));
+        int v = countMarks(Prefs.getVacationDates(host));
+        int o = countMarks(Prefs.getOvertimeDates(host));
         tvVacation.setText(v == 0 ? "请假标记" : "请假 " + v + " 天 · 清除");
         tvOvertime.setText(o == 0 ? "加班标记" : "加班 " + o + " 天 · 清除");
     }
 
     /**
-     * 一键清除「今天及以后」的标记（单日标记在日历上点对应日期）。
+     * 一键清除全部请假 / 加班标记（单日标记在日历上点对应日期）。
      *
-     * <p>范围收窄过（v1.35.0）：以前清全部，包括过去的记录。现在过去那段是「记录」，
-     * 清掉等于删掉用户的历史，而按钮上写的「这些日子的闹钟会恢复」对过去也不成立
-     * ——它们的闹钟早就响完了。所以只清还有排程意义的那部分，数字与动作才对得上。
+     * <p>范围又改回「全部」（v1.35.1）。v1.35.0 曾把过去那段排除在外，前提是过去只读；
+     * 现在过去也能补记，标记就只是一条「那天请假 / 加班」的事实，没有时效之分。
+     * 统计既然算全部，清除也必须清全部——否则按钮上写「请假 5 天」，点完还剩 3 天，
+     * 又是 v1.34.3 修掉的那个矛盾。
+     *
+     * <p>想只删某一天，就在日历上点那一天取消，不必走这里。
      *
      * @param vacation true = 请假，false = 加班
      */
     private void showClearDialog(boolean vacation) {
-        int n = countUpcoming(vacation
+        int n = countMarks(vacation
                 ? Prefs.getVacationDates(host) : Prefs.getOvertimeDates(host));
         String kind = vacation ? "请假" : "加班";
         if (n == 0) {
-            Toast.makeText(host, "没有待生效的" + kind + "标记。在日历里点某一天即可标记",
+            Toast.makeText(host, "没有" + kind + "标记。在日历里点某一天即可标记",
                     Toast.LENGTH_SHORT).show();
             return;
         }
         new RoundedDialog.Builder(host)
-                .setTitle("清除今天及以后的" + kind + "标记？")
-                .setMessage("将清除 " + n + " 天" + kind
-                        + (vacation ? "，这些日子的闹钟会恢复。" : "，这些日子恢复休息。")
-                        + "已经过去的" + kind + "记录会保留，翻日历时仍看得见。")
+                .setTitle("清除全部" + kind + "标记？")
+                .setMessage("将删除 " + n + " 天" + kind + "标记。今天及以后的闹钟会恢复排班，"
+                        + "过去补记的记录也会一起删掉。只想删某一天，就在日历里点那一天取消。")
                 .setPositiveButton("清除", (d, w) -> {
-                    Prefs.clearUpcomingMarks(host, vacation);
+                    Prefs.clearMarks(host, vacation);
                     onChanged.run();
                     Toast.makeText(host, "已清除 " + n + " 天" + kind + "标记",
                             Toast.LENGTH_SHORT).show();
@@ -489,18 +467,9 @@ final class CalendarPanel {
                 .show();
     }
 
-    /**
-     * 只统计「今天及以后」的标记数。
-     * 请假 / 加班记录不会自动过期，攒了半年后若全算上会显示「请假标记：37 天」，
-     * 而这些日子早就过去了，看着像统计出错。
-     */
-    private static int countUpcoming(Set<LocalDate> dates) {
-        LocalDate today = LocalDate.now();
-        int n = 0;
-        for (LocalDate d : dates) {
-            if (!d.isBefore(today)) n++;
-        }
-        return n;
+    /** 统计全部标记数：过去与未来都算，与「清除」的范围一致。 */
+    private static int countMarks(Set<LocalDate> dates) {
+        return dates.size();
     }
 
     // ================= 图例 =================

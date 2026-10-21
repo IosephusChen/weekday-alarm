@@ -168,14 +168,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 过去的日子留着当记录：格子上仍印着「假」「加」，点它可以删掉。想知道这个月哪几天请了假、加了班，翻日历看就行。" />
+                android:text="· 过去的日子也能补记：翻到那一天点一下，选「标记为请假 / 加班」，格子上照样印「假」「加」。补记只作记录，不影响已经过完的那些天的闹钟。" />
 
             <TextView
                 style="@style/HelpItem"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 日历下方的「请假 N 天 · 清除」只算今天及以后，点清除也只清这一段——过去的记录不会被一起删掉。" />
+                android:text="· 日历下方的「请假 N 天 · 清除」算的是全部标记（过去 + 今天以后），点清除就全清掉；只想删某一天，在日历里点那一天取消。" />
         </LinearLayout>
 
         <!-- ===== ④ 桌面小组件 ===== -->

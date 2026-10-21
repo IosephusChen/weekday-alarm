@@ -10,6 +10,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -342,5 +343,43 @@ public class UiLayoutTest {
         assertNotNull(a.findViewById(R.id.tv_status));
         assertEquals("收起时按钮写「展开」", "展开",
                 ((TextView) a.findViewById(R.id.tv_run_toggle)).getText().toString());
+    }
+
+    /**
+     * 日历格子的标签必须比数字小（v1.36.1 回归）。
+     *
+     * <p>v1.36.0 把格子改成复用时漏了 {@code setTextSize}，标签用了默认 14sp，
+     * 而格子高度仍按 9.5sp 算——「国庆」「请假」直接顶满整格，整个日历像被放大了一圈。
+     * 这条钉住两行字的字号，改骨架时漏设就会失败。
+     */
+    @Test
+    public void calendarCell_labelsStaySmallerThanNumbers() {
+        MainActivity a = launch();
+        LinearLayout rows = a.findViewById(R.id.cal_rows);
+        float numPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 13f,
+                a.getResources().getDisplayMetrics());
+        float labPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 9.5f,
+                a.getResources().getDisplayMetrics());
+        float dimPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11f,
+                a.getResources().getDisplayMetrics());
+        int checked = 0;
+        for (int r = 0; r < rows.getChildCount(); r++) {
+            ViewGroup row = (ViewGroup) rows.getChildAt(r);
+            for (int c = 0; c < row.getChildCount(); c++) {
+                LinearLayout cell = (LinearLayout) row.getChildAt(c);
+                TextView num = (TextView) cell.getChildAt(0);
+                TextView lab = (TextView) cell.getChildAt(1);
+                // 本月 13sp、上下月的灰字 11sp（原本就有的区分，不是这次改的）
+                boolean inMonth = num.getTypeface() != null
+                        && (num.getTypeface().getStyle() & android.graphics.Typeface.BOLD) != 0;
+                assertEquals(inMonth ? "本月数字 13sp" : "上下月数字 11sp",
+                        inMonth ? numPx : dimPx, num.getTextSize(), 0.5f);
+                if (lab.getVisibility() != View.VISIBLE) continue;
+                assertEquals("标签字号 9.5sp", labPx, lab.getTextSize(), 0.5f);
+                assertTrue("标签必须比数字小", lab.getTextSize() < num.getTextSize());
+                checked++;
+            }
+        }
+        assertTrue("本月至少应有一格带标签", checked > 0);
     }
 }

@@ -55,6 +55,17 @@ final class CalendarPanel {
     private int year, month;
 
     /**
+     * 格子里两行字的字号（v1.36.1 提为常量）。
+     *
+     * <p>提出来是因为踩过一次：{@link #cellHeightPx(float)} 按 9.5sp 量标签高度，
+     * 但重建骨架时漏了 {@code setTextSize}，标签实际用默认 14sp 画——字比格子算出来的
+     * 空间大一倍，「国庆」「请假」直接顶满整格，日历看着像被放大了。
+     * 两个数放一起，改一个忘另一个的可能性小很多。
+     */
+    private static final float NUM_SP = 13f;
+    private static final float LABEL_SP = 9.5f;
+
+    /**
      * 6×7 格子骨架（v1.36.0）：第一次渲染时建好，之后只改文字、颜色与背景。
      *
      * <p>原来每次 {@link #refresh()} 都 removeAllViews 再新建 84 个 View——
@@ -244,7 +255,7 @@ final class CalendarPanel {
 
                 num.setText(String.valueOf(d.getDayOfMonth()));
                 num.setTextColor(color);
-                num.setTextSize(TypedValue.COMPLEX_UNIT_SP, inMonth ? 13f : 11f);
+                num.setTextSize(TypedValue.COMPLEX_UNIT_SP, inMonth ? NUM_SP : 11f);
                 num.setTypeface(null, inMonth ? Typeface.BOLD : Typeface.NORMAL);
 
                 // 上 / 下月的格子不显示标签：隐藏 + 清空文本。
@@ -299,6 +310,7 @@ final class CalendarPanel {
 
                 TextView lab = new TextView(host);
                 lab.setGravity(Gravity.CENTER);
+                lab.setTextSize(TypedValue.COMPLEX_UNIT_SP, LABEL_SP);
                 lab.setIncludeFontPadding(false);
                 lab.setSingleLine(true);
                 lab.setEllipsize(TextUtils.TruncateAt.END);
@@ -327,8 +339,8 @@ final class CalendarPanel {
      */
     private int cellHeightPx(float density) {
         int fallback = (int) (46 * density);
-        int numH = textLineHeight(13f);
-        int labH = textLineHeight(9.5f);
+        int numH = textLineHeight(NUM_SP);
+        int labH = textLineHeight(LABEL_SP);
         if (numH <= 0 || labH <= 0) return fallback;
         int gap = (int) (2 * density);        // 数字与标签之间
         int pad = (int) (5 * density);        // 格子上下各留一点，别顶到描边

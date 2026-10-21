@@ -23,22 +23,22 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (intent.getData() != null) {
             dateStr = intent.getData().getLastPathSegment();
         }
-        // v1.23.1 的规则是「解锁使用中只发通知，不抢屏幕」，理由是「整屏盖上来会打断手里的事」。
-        // v1.39.0 改回来：闹钟不是消息，它就是要打断你。用户反馈「解锁状态下响铃，
-        // 屏幕上什么都不弹」——按旧规则这确实是设计行为，但对一个闹钟 App 来说就是坏了。
-        // 现在不管锁没锁屏都直接把响铃页拉到前面（系统限制后台启动 Activity，
-        // 悬浮窗权限是官方认可的豁免项，所以这一步在授权后是能成功的）；
-        // 被系统拦下时静默失败，由通道二的全屏 intent / 横幅兜底。
+        // 锁屏 / 息屏：直接拉整屏（那时候通知和小窗都没人看得见）。
+        // 解锁使用中：不在这里拉界面，交给 AlarmService 弹一个 300dp 的小悬浮窗——
+        // v1.39.0 试过「解锁也整屏」，用户反馈太粗暴：正在用手机时被整屏盖住，
+        // 要的是「小窗提醒一下」。挂不上悬浮窗时服务自己退回整屏。
         final boolean popup = ScreenLock.shouldPopup(context);
-        try {
-            Intent full = new Intent(context, AlarmActivity.class);
-            full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
-            full.putExtra(AlarmActivity.EXTRA_TEST, false);
-            full.putExtra(AlarmActivity.EXTRA_ALARM_ID, alarmId);
-            full.putExtra(AlarmActivity.EXTRA_LABEL, label);
-            full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(full);
-        } catch (Exception ignore) {
+        if (popup) {
+            try {
+                Intent full = new Intent(context, AlarmActivity.class);
+                full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
+                full.putExtra(AlarmActivity.EXTRA_TEST, false);
+                full.putExtra(AlarmActivity.EXTRA_ALARM_ID, alarmId);
+                full.putExtra(AlarmActivity.EXTRA_LABEL, label);
+                full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(full);
+            } catch (Exception ignore) {
+            }
         }
         // 已经响铃了，提前提醒的「即将响铃」通知就没用了——顺手撤掉，
         // 否则它会在通知栏一直挂到用户手动清理（v1.23 修）

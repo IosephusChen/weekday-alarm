@@ -250,8 +250,8 @@ public class NotifCardTest {
 
         for (int id : new int[]{R.id.nc_action, R.id.nc_action2}) {
             TextView b = root.findViewById(id);
-            assertEquals("按钮高度应写死 32dp（id=" + id + "）",
-                    dp(32), b.getLayoutParams().height);
+            assertEquals("按钮高度应写死 30dp（id=" + id + "）",
+                    dp(30), b.getLayoutParams().height);
             assertEquals("按钮文字应居中（id=" + id + "）", Gravity.CENTER, b.getGravity());
         }
     }
@@ -275,12 +275,26 @@ public class NotifCardTest {
                 LinearLayout.HORIZONTAL, ((LinearLayout) chrono.getParent()).getOrientation());
     }
 
-    /** 整张卡只有两行：内容行 + 按钮行。多一行就会顶到折叠态上限。 */
+    /**
+     * 整张卡是**一行**：图标、文字、药丸并排（v1.40.0 回到 v1.37.0 的紧凑样子）。
+     *
+     * <p>v1.38.0 为了塞下倒计时改成「图标 + 三行文字」再加一行按钮，用户直接说
+     * 「不如之前紧凑」，而且高度顶到折叠态上限、按钮被压扁。现在倒计时挤在正文右边，
+     * 高度不变。
+     */
     @Test
-    public void card_hasExactlyTwoRows() {
+    public void card_isSingleRow() {
         enableDailyAlarm();
+        Prefs.setSnoozeMinutes(ctx(), 5);
         View root = card(shadowOf(startRinging()).getLastForegroundNotification());
-        assertEquals("卡片应只有「内容 + 按钮」两行", 2,
-                ((LinearLayout) root).getChildCount());
+
+        LinearLayout row = (LinearLayout) root;
+        assertEquals("卡片根布局应是横向的一行",
+                LinearLayout.HORIZONTAL, row.getOrientation());
+        // 图标 / 文字块 / 次按钮 / 主按钮，四个都在同一行
+        assertEquals("图标、文字、两个药丸应并排在同一行", 4, row.getChildCount());
+        assertSame("标题与正文应同属一个纵向文字块",
+                root.findViewById(R.id.nc_title).getParent(),
+                root.findViewById(R.id.nc_text).getParent().getParent());
     }
 }

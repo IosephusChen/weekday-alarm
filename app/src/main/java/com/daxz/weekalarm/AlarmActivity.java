@@ -48,6 +48,9 @@ public class AlarmActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setShowWhenLocked(true);
         setTurnScreenOn(true);
+        // v1.40.0：小悬浮窗是独立窗口，会盖在 Activity 上面。用户点小窗进来看详情时，
+        // 得先把小窗撤掉，否则整屏页上还浮着一张卡片。
+        FloatingAlarm.hide();
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_alarm);
         insetForSystemBars();

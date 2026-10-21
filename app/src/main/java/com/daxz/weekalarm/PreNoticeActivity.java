@@ -52,7 +52,12 @@ public class PreNoticeActivity extends AppCompatActivity {
 
         TextView title = findViewById(R.id.tv_pre_title);
         TextView sub = findViewById(R.id.tv_pre_sub);
-        title.setText("还有 " + PreNoticeReceiver.minutesText(minutes));
+        // v1.40.0：打开这一刻现算剩余时间。extra 里的 minutes 是「排程时的提前量」，
+        // 补发路径下已经过时（4:23 说「还有 1 小时」，闹钟 4:24 就响）；
+        // 而且从通知栏点进来时可能已经过了几分钟，重新算才对得上。
+        minutes = PreNoticeReceiver.actualMinutes(date, timeText, minutes);
+        title.setText(minutes <= 0 ? "马上响铃"
+                : "还有 " + PreNoticeReceiver.minutesText(minutes));
         sub.setText(timeText.isEmpty()
                 ? label + " 即将响铃"
                 : label + " · " + dayWord(date) + timeText + " 响铃");

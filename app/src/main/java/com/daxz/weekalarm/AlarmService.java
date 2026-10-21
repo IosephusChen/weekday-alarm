@@ -120,7 +120,29 @@ public class AlarmService extends Service {
                 android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
         startRinging();
         scheduleAutoStop();   // v1.18：设定了响铃时长时，到点自动停
+        // v1.40.0：解锁使用中不整屏，弹一个 300dp 的小悬浮窗；挂不上去（没给悬浮窗权限）
+        // 才退回整屏。锁屏 / 息屏仍由 AlarmReceiver 直接拉整屏，这里不再重复。
+        if (!popup && !test) {
+            int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
+            boolean canSnooze = ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
+            if (!FloatingAlarm.show(this, currentAlarmId, label, dateStr, mins, canSnooze)) {
+                openAlarmPage(dateStr, label);
+            }
+        }
         return START_NOT_STICKY;
+    }
+
+    /** 兜底：把整屏响铃页拉到前面（悬浮窗挂不上、或锁屏时用）。 */
+    private void openAlarmPage(String dateStr, String label) {
+        try {
+            Intent full = new Intent(this, AlarmActivity.class);
+            full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
+            full.putExtra(AlarmActivity.EXTRA_ALARM_ID, currentAlarmId);
+            full.putExtra(AlarmActivity.EXTRA_LABEL, label);
+            full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(full);
+        } catch (Exception ignore) {
+        }
     }
 
 
@@ -237,6 +259,8 @@ public class AlarmService extends Service {
     }
 
     private void stopRinging() {
+        // v1.40.0：小悬浮窗是独立窗口，不随通知一起消失，必须自己撤
+        FloatingAlarm.hide();
         fading = false;
         fadeHandler.removeCallbacks(fadeRunnable);
         // 取消尚未触发的「自动停止」闹钟，避免它在停止之后又来一次（v1.18）。
@@ -287,8 +311,8 @@ public class AlarmService extends Service {
                 PendingIntent.FLAG_IMMUTABLE);
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
-        String text = (dateStr != null ? dateStr + " " : "")
-                + (test ? "这是测试，正式提醒一样响" : "点此停止或小睡");
+        // v1.40.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
+        String text = test ? "这是测试，正式提醒一样响" : "点此停止或小睡";
         // 测试响铃用低优先级渠道：界面已经由「测试响铃」按钮打开了，再来一条横幅就是重复
         Notification.Builder nb = new Notification.Builder(this,
                 test ? App.CHANNEL_TEST : App.CHANNEL_ALARM)
@@ -305,9 +329,11 @@ public class AlarmService extends Service {
                 .addAction(new Notification.Action.Builder(
                         Icon.createWithResource(this, R.drawable.ic_notif_close),
                         test ? "结束测试" : "停止", stopPi).build());
-        // 只有息屏 / 锁屏才挂全屏 intent：解锁使用中让系统只弹横幅，
-        // 避免「通知 + 整屏弹窗」同时出现（v1.23.1）
-        if (popup && !test) {
+        // 全屏 intent 只在「确实要整屏」时挂：锁屏 / 息屏（popup），
+        // 或者解锁但挂不了悬浮窗（没给权限）——那时候整屏是唯一的兜底。
+        // 能挂悬浮窗就不挂 FSI，否则解锁时会先弹一条横幅、再出现小窗，两层重复。
+        boolean willFloat = !popup && !test && FloatingAlarm.canFloat(this);
+        if (!test && (popup || !willFloat)) {
             nb.setFullScreenIntent(fpi, true);
         }
         // 小睡按钮：次数用尽时不再提供，避免通知栏无限续睡（v1.18.2）。

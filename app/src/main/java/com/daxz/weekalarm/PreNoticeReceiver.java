@@ -14,8 +14,12 @@ import android.widget.Toast;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 响铃前的通知栏提醒（v1.17）。
@@ -85,6 +89,12 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         if (timeText == null) timeText = "";
         // 主闹钟仍在登记才提醒：已手动关闭 / 已过期的不打扰
         if (!ScheduleManager.isAlarmRegistered(ctx, alarmId, d)) return;
+        // v1.40.0：用「日期 + HH:mm」现算真实剩余分钟。
+        // 以前直接把排程时的提前量写进文案：4:23 补发一条、闹钟 4:24 就响，
+        // 标题却写「还有 1 小时」——数字完全对不上。
+        int real = actualMinutes(d, timeText, minutes);
+        if (real <= 0) return;   // 已经到点：交给响铃那条通知，别再补一条过期的预告
+        minutes = real;
 
         Intent popup = new Intent(ctx, PreNoticeActivity.class)
                 .putExtra(EXTRA_ALARM_ID, alarmId)
@@ -192,9 +202,42 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         }
     }
 
-    /** 「还有多久」的统一写法：60 分钟写成「1 小时」，别让用户读「60 分钟后」。 */
+    /**
+     * 「还有多久」的统一写法：60 分钟写成「1 小时」，别让用户读「60 分钟后」。
+     *
+     * <p>v1.40.0 补两档：不足 1 分钟写「不到 1 分钟」（原来会写「0 分钟」），
+     * 90 分钟写「1 小时 30 分」（原来一律截成「1 小时」）。
+     */
     static String minutesText(int minutes) {
-        return minutes >= 60 ? (minutes / 60) + " 小时" : minutes + " 分钟";
+        if (minutes < 1) return "不到 1 分钟";
+        if (minutes < 60) return minutes + " 分钟";
+        int h = minutes / 60;
+        int m = minutes % 60;
+        return m == 0 ? h + " 小时" : h + " 小时 " + m + " 分";
+    }
+
+    /**
+     * 真正还剩多少分钟（v1.40.0）。
+     *
+     * <p>不能信排程时记下的「提前量」：闹钟如果是在提前量窗口内才设的，
+     * {@link ScheduleManager#rescheduleAll} 会立刻补发一条，那时候提前量已经过时了。
+     * 用户就撞上过这个：4:23 弹出「还有 1 小时」，而闹钟 4:24 就响。
+     *
+     * <p>这里按「日期 + HH:mm」现算，向上取整（还剩 61 秒算 2 分钟，不写「1 分钟」骗人）。
+     *
+     * @param fallback 时间文案缺失或格式不对时的兜底值（沿用排程时的提前量）
+     * @return 剩余分钟；已到点返回 0
+     */
+    static int actualMinutes(LocalDate d, String timeText, int fallback) {
+        if (d == null || timeText == null || timeText.isEmpty()) return fallback;
+        try {
+            LocalTime t = LocalTime.parse(timeText, DateTimeFormatter.ofPattern("HH:mm"));
+            long sec = Duration.between(LocalDateTime.now(), d.atTime(t)).getSeconds();
+            if (sec <= 0) return 0;
+            return (int) Math.max(1, (sec + 59) / 60);
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     /**

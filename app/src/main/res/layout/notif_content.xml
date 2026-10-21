@@ -1,19 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  通知卡片的折叠态自绘布局（v1.23.6 引入，v1.38.0 改成两行 + 可选倒计时，
-  v1.39.0 压扁一档——见下）。
+  通知卡片的折叠态自绘布局（v1.23.6 引入；v1.40.0 回到单行，见下）。
 
   为什么必须自绘：锁屏卡片和「下拉但没展开」渲染的都是折叠态，系统模板里只有
   小图标 + 标题 + 一行正文，**不渲染 addAction 的按钮**。所以「关闭闹钟」「明天请假」
   这些操作如果只靠 addAction，锁屏上永远看不到。设了 customContentView，折叠态才由我们说了算。
 
-  v1.39.0（用户反馈「按钮文字显示不全」）：
-  折叠态有高度上限，内容超了不是整体缩小，而是**把最后一行压扁**——按钮那行首当其冲，
-  于是药丸被压到 22dp 左右，13sp 的字上下各切掉一截。v1.38.0 的卡片是
-  「标题 / 正文 / 倒计时」三行文字 + 一行按钮，正好超了。
-
-  修法不是调字号，而是**少一行**：倒计时挪到正文右边（同一行，正文让出位置给倒计时），
-  再把按钮固定成 32dp 高、文字居中。现在整张卡约 76dp，离上限还有三十多 dp 的余量。
+  为什么又回到单行（v1.40.0）：v1.38.0 为了塞下倒计时，把卡片改成「图标 + 三行文字」
+  再加一行按钮，用户直接说「不如之前紧凑」。而且折叠态有高度上限，内容超了系统不是
+  整体缩小，而是**把最后一行压扁**——按钮那行首当其冲，字被切成两半（v1.38.0 的 bug）。
+  现在回到 v1.37.0 的结构：图标在左、标题与正文在中间、药丸在右，一行说完。
+  倒计时没有单独占一行，而是挤在正文右边（正文让出位置），高度不变。
 
   四个使用方共用这一个布局，靠 setViewVisibility 决定显示几个按钮：
   提前提醒（关闭闹钟）、响铃（停止 / N 分钟后再响）、睡前提醒（明天请假）、
@@ -22,112 +19,98 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <ImageView
+        android:id="@+id/nc_icon"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_notification"
+        android:background="@drawable/bg_notif_icon"
+        android:contentDescription="@null" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/nc_icon"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:padding="5dp"
-            android:src="@drawable/ic_notification"
-            android:background="@drawable/bg_notif_icon"
-            android:contentDescription="@null" />
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/nc_title"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="10dp"
-            android:orientation="vertical">
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <!-- 正文与倒计时同一行：卡片只有一行，倒计时挤在右边 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/nc_title"
-                android:layout_width="match_parent"
+                android:id="@+id/nc_text"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:includeFontPadding="false"
-                android:textSize="15sp"
-                android:textStyle="bold" />
+                android:textSize="12sp" />
 
-            <!-- 正文与倒计时同一行：折叠态高度吃紧，省一行是一行 -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <Chronometer
+                android:id="@+id/nc_chrono"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/nc_text"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:maxLines="1"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:textSize="12sp" />
-
-                <Chronometer
-                    android:id="@+id/nc_chrono"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:includeFontPadding="false"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
-            </LinearLayout>
+                android:layout_marginStart="6dp"
+                android:includeFontPadding="false"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 按钮行：次要操作在左、主要操作在右，和系统操作区的习惯一致。
-         高度写死 32dp + 文字居中：wrap_content 一旦被上限压扁，
+    <!-- 药丸在右侧，和 v1.37.0 一致：一次只露出一个主操作时最紧凑。
+         高度写死 30dp + 文字居中：wrap_content 一旦被折叠态上限压扁，
          字就会从上下两头被切掉（v1.38.0 的 bug）。 -->
-    <LinearLayout
-        android:id="@+id/nc_actions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:gravity="end"
-        android:orientation="horizontal">
+    <TextView
+        android:id="@+id/nc_action2"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="8dp"
+        android:background="@drawable/bg_notif_action_outline"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:minWidth="44dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/nc_action2"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_notif_action_outline"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:minWidth="56dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/nc_action"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_notif_action"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:minWidth="56dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+    <TextView
+        android:id="@+id/nc_action"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_notif_action"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:minWidth="44dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:textSize="13sp"
+        android:textStyle="bold" />
 </LinearLayout>

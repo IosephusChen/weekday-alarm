@@ -26,10 +26,14 @@ import java.time.LocalDateTime;
 /**
  * 「什么时候该把界面推到最前面」。
  *
- * <p>v1.23.1 的规则是「解锁只发通知、锁屏才弹窗」，理由是别打断手里的事。
- * v1.39.0 对<b>正式响铃</b>改成无条件弹：用户反馈「解锁状态下响铃，屏幕上什么都不弹」——
- * 对闹钟来说这不是体贴，是坏了。提前提醒仍按旧规则（它只是个预告，横幅够用），
- * 判断点仍然是 {@link ScreenLock#shouldPopup}。
+ * <p>规则改过两轮，值得记一下：
+ * <ul>
+ *   <li>v1.23.1：解锁只发通知，锁屏才整屏——「别打断手里的事」</li>
+ *   <li>v1.39.0：改成解锁也整屏——用户说「响铃什么都不弹」</li>
+ *   <li>v1.40.0：解锁改弹<b>小悬浮窗</b>（{@link FloatingAlarm}），整屏只留给锁屏 / 息屏</li>
+ * </ul>
+ * 所以现在 {@code AlarmReceiver} 只在锁屏 / 息屏时拉 Activity，解锁时由 AlarmService
+ * 负责弹小窗（挂不上再退回整屏）。判断点仍然是 {@link ScreenLock#shouldPopup}。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -73,25 +77,22 @@ public class ScreenLockTest {
     }
 
     /**
-     * 正式响铃：解锁使用中也要把响铃页拉到前面（v1.39.0）。
+     * 正式响铃 + 解锁使用中：不拉整屏，交给服务弹小悬浮窗（v1.40.0）。
      *
-     * <p>旧版这里断言的是「不拉」，正是用户报的那个 bug：解锁时响铃，屏幕上只剩一条
-     * 通知，什么都不弹。闹钟该打断人，所以现在无条件拉起。
+     * <p>v1.39.0 在这里断言过「解锁也拉起整屏」，用户反馈太粗暴：正在用手机时
+     * 整屏盖上来。现在解锁只弹 300dp 的小窗，整屏留给锁屏 / 息屏。
      */
     @Test
-    public void alarmReceiver_unlocked_alsoOpensAlarmPage() {
+    public void alarmReceiver_unlocked_doesNotOpenFullScreen() {
         reset();
         setScreen(true, false);
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
 
         new AlarmReceiver().onReceive(ctx(), alarmIntent());
-        Intent started = shadowOf(app).getNextStartedActivity();
-        assertNotNull("解锁使用中也该直接拉起响铃页", started);
-        assertTrue("拉起的应是 AlarmActivity，实际：" + started.getComponent(),
-                started.getComponent() != null
-                        && started.getComponent().getClassName().endsWith("AlarmActivity"));
-        assertNotNull("响铃服务必须照常启动（声音 + 通知）",
+        assertNull("解锁时不该拉整屏（由服务弹小悬浮窗）",
+                shadowOf(app).getNextStartedActivity());
+        assertNotNull("响铃服务必须照常启动（声音 + 通知 + 小窗）",
                 shadowOf(app).getNextStartedService());
     }
 

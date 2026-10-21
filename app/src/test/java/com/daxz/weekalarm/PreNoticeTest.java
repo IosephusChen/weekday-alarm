@@ -31,6 +31,8 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +64,34 @@ public class PreNoticeTest {
         assertEquals("30 分钟", PreNoticeReceiver.minutesText(30));
         assertEquals("1 小时", PreNoticeReceiver.minutesText(60));
         assertEquals("2 小时", PreNoticeReceiver.minutesText(120));
+    }
+
+    /** v1.40.0：不足 1 分钟不能写「0 分钟」，90 分钟不能截成「1 小时」。 */
+    @Test
+    public void minutesText_handlesSubMinuteAndRemainder() {
+        assertEquals("不到 1 分钟", PreNoticeReceiver.minutesText(0));
+        assertEquals("1 小时 30 分", PreNoticeReceiver.minutesText(90));
+    }
+
+    /**
+     * 「还有多久」必须按真实时间算，不能照抄排程时的提前量。
+     *
+     * <p>用户撞上过：4:23 弹出「还有 1 小时」，闹钟 4:24 就响。原因是闹钟在提前量窗口内
+     * 才设，重排时立刻补发一条，而文案里的分钟数还是配置的 60。
+     */
+    @Test
+    public void actualMinutes_usesRealRemainingTime() {
+        LocalDate d = LocalDate.now();
+        String in5 = LocalTime.now().plusMinutes(5).format(DateTimeFormatter.ofPattern("HH:mm"));
+        int m = PreNoticeReceiver.actualMinutes(d, in5, 60);
+        assertTrue("还剩约 5 分钟，不能报 60（实际 " + m + "）", m >= 4 && m <= 6);
+
+        // 已经到点 / 过点：返回 0，调用方据此不再补发过期的预告
+        String past = LocalTime.now().minusMinutes(3).format(DateTimeFormatter.ofPattern("HH:mm"));
+        assertEquals(0, PreNoticeReceiver.actualMinutes(d, past, 60));
+
+        // 文案缺失时回退到配置值
+        assertEquals(60, PreNoticeReceiver.actualMinutes(d, "", 60));
     }
 
     /** 设置页的提前提醒对话框要有「提前 1 小时」，且存进去的是 60。 */
@@ -135,15 +165,24 @@ public class PreNoticeTest {
         ctl.pause().stop().destroy();
     }
 
-    /** 弹窗页：标题写「还有 1 小时」，副标题带名称与时刻。 */
+    /**
+     * 弹窗页：标题写「还有 1 小时」，副标题带名称与时刻。
+     *
+     * <p>v1.40.0 起标题按「现在到响铃时刻」现算，所以这里的时间必须相对 now 生成；
+     * 写死 07:00 的话，凌晨跑测试会得到「还有 2 小时」——那是正确行为，测试错。
+     */
     @Test
     public void popup_showsRemainingTimeAndAlarm() {
         reset();
+        java.time.LocalDateTime target = java.time.LocalDateTime.now()
+                .plusMinutes(60).withSecond(0).withNano(0);
         Intent i = new Intent(ctx(), PreNoticeActivity.class)
                 .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1)
                 .putExtra(PreNoticeReceiver.EXTRA_LABEL, "起床")
                 .putExtra(PreNoticeReceiver.EXTRA_MINUTES, 60)
-                .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT, "07:00");
+                .putExtra(PreNoticeReceiver.EXTRA_DATE, target.toLocalDate().toString())
+                .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT,
+                        target.format(DateTimeFormatter.ofPattern("HH:mm")));
         ActivityController<PreNoticeActivity> ctl =
                 Robolectric.buildActivity(PreNoticeActivity.class, i).setup();
         ShadowLooper.idleMainLooper();
@@ -151,7 +190,9 @@ public class PreNoticeTest {
         TextView title = ctl.get().findViewById(R.id.tv_pre_title);
         TextView sub = ctl.get().findViewById(R.id.tv_pre_sub);
         assertEquals("还有 1 小时", title.getText().toString());
-        assertEquals("起床 · 07:00 响铃", sub.getText().toString());
+        assertTrue("副标题应带名称与时刻，实际：" + sub.getText(),
+                sub.getText().toString().startsWith("起床 · ")
+                        && sub.getText().toString().endsWith(" 响铃"));
 
         ctl.get().findViewById(R.id.btn_pre_ok).performClick();
         assertTrue("点「知道了」应关闭弹窗", ctl.get().isFinishing());

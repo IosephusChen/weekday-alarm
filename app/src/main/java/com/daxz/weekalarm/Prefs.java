@@ -236,10 +236,14 @@ public final class Prefs {
         // 必须同时置「已迁移」：否则「先写列表、后读列表」会被迁移逻辑当成首次启动，
         // 用预置的起床/午休把刚写的整份列表覆盖掉。真机上的触发条件是
         // 「装好后还没读过列表就写」——比如恢复备份、或引导页在首次读取前落库。
+        // 用 commit 而不是 apply（v1.29.0）：写完之后紧接着就会读——rescheduleAll 要拿列表
+        // 排程、refreshAll 要重画列表。apply 的落盘是异步的，读回旧值时迁移逻辑会以为
+        // 「这台机器还没初始化」，把预置的起床 / 午休塞回来，用户刚删掉的闹钟就复活了。
+        // 这份 JSON 只有几百字节，同步写一次的代价远小于这种错乱。
         sp(c).edit()
                 .putString(KEY_ALARMS, Alarm.toJson(alarms))
                 .putBoolean(KEY_ALARMS_MIGRATED, true)
-                .apply();
+                .commit();
     }
 
     /** 生成不会碰撞的新闹钟 id（现有最大 id + 1）。 */

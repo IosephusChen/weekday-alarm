@@ -41,8 +41,20 @@ public class NextAlarmWidget extends AppWidgetProvider {
         if (!Prefs.isEnabled(ctx)) {
             return new WidgetModel(false, "尚未开启", "打开「闹钟总开关」即自动排程");
         }
-        ScheduleManager.NextAlarm next = ScheduleManager.nextRegisteredAlarm(ctx);
-        int count = ScheduleManager.countScheduled(ctx);
+        return computeModel(ctx, ScheduleManager.nextRegisteredAlarm(ctx),
+                ScheduleManager.countScheduled(ctx));
+    }
+
+    /**
+     * 同上，但用调用方算好的结果（v1.29.0）。
+     *
+     * <p>主界面刷新时已经算过「下一个已登记闹钟」和「提醒总数」，这里再算一遍纯属重复；
+     * 而 {@code nextRegisteredAlarm} 每次都要逐候选探测 PendingIntent，是跨进程调用。
+     */
+    static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next, int count) {
+        if (!Prefs.isEnabled(ctx)) {
+            return new WidgetModel(false, "尚未开启", "打开「闹钟总开关」即自动排程");
+        }
         if (next == null) {
             return new WidgetModel(true, "暂无提醒",
                     "未来 " + Prefs.getHorizonDays(ctx) + " 天没有可排的闹钟");
@@ -80,6 +92,17 @@ public class NextAlarmWidget extends AppWidgetProvider {
         int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, NextAlarmWidget.class));
         if (ids == null) return;
         for (int id : ids) updateAppWidget(ctx, mgr, id);
+    }
+
+    /** 同上，复用调用方已算好的结果，省掉一次「下一个已登记闹钟」的探测（v1.29.0）。 */
+    public static void updateAll(Context ctx, ScheduleManager.NextAlarm next, int count) {
+        AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
+        if (mgr == null) return;
+        int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, NextAlarmWidget.class));
+        if (ids == null || ids.length == 0) return;   // 桌面没放小组件：一次模型都不算
+        WidgetModel m = computeModel(ctx, next, count);
+        RemoteViews rv = buildViews(ctx, m);
+        for (int id : ids) mgr.updateAppWidget(id, rv);
     }
 
     @Override

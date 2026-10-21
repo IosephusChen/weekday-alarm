@@ -769,6 +769,50 @@ public final class ScheduleManager {
         return best;
     }
 
+    /**
+     * 接下来 N 次该响的时刻（v1.29.0），供「点倒计时看后三次」用。
+     *
+     * <p>与 {@link #nextRegisteredAlarm} 的区别：那个要逐候选做 PendingIntent 探测（跨进程），
+     * 一次就够贵了，问三次会卡；这个纯按规则算，不碰系统。列表只用于展示「接下来会响什么」，
+     * 不需要自检系统登记状态——真漏排了，首页那行摘要本来就会写出来。
+     */
+    public static List<NextAlarm> nextRings(Context ctx, List<Alarm> alarms,
+                                            LocalDateTime from, int limit) {
+        return nextRings(alarms, Prefs.getRule(ctx), Prefs.getVacationDates(ctx),
+                Prefs.getOvertimeDates(ctx), from, Prefs.getHorizonDays(ctx), limit);
+    }
+
+    /** 见 {@link #nextRings(Context, List, LocalDateTime, int)}。抽成静态便于单测固定「现在」。 */
+    static List<NextAlarm> nextRings(List<Alarm> alarms, WeekSchedule.Rule rule,
+                                     Set<LocalDate> vacations, Set<LocalDate> overtimes,
+                                     LocalDateTime from, int days, int limit) {
+        List<NextAlarm> out = new ArrayList<>();
+        if (limit <= 0 || alarms == null) return out;
+        LocalDate start = from.toLocalDate();
+        for (int i = 0; i < days && out.size() < limit; i++) {
+            LocalDate d = start.plusDays(i);
+            boolean vacation = vacations.contains(d);
+            boolean overtime = overtimes.contains(d);
+            // 同一天内可能有多个闹钟，先按时刻排好再并入结果，否则「08:00 起床 / 07:00 早班」
+            // 会按列表顺序输出，看着像时间乱了
+            List<NextAlarm> sameDay = new ArrayList<>();
+            for (Alarm a : alarms) {
+                if (!a.enabled) continue;
+                if (vacation && !a.ignoresVacation()) continue;
+                if (!a.appliesTo(d, rule, overtime)) continue;
+                LocalDateTime when = LocalDateTime.of(d, LocalTime.of(a.hour, a.minute));
+                if (!when.isAfter(from)) continue;
+                sameDay.add(new NextAlarm(when, a.label, a.id));
+            }
+            sameDay.sort((x, y) -> x.when.compareTo(y.when));
+            for (NextAlarm n : sameDay) {
+                if (out.size() >= limit) break;
+                out.add(n);
+            }
+        }
+        return out;
+    }
+
     /** 下一个已登记闹钟的信息（时间 + 名称），供 UI 自检展示。 */
     public static class NextAlarm {
         public final LocalDateTime when;

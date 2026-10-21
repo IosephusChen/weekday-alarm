@@ -401,10 +401,16 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    /** 按键设置行摘要：显示两个键的当前作用。 */
+    /**
+     * 按键设置行摘要：两个键的作用各占一行（v1.29.0）。
+     *
+     * <p>原来挤在一行：「音量键：稍后提醒 · 电源键：关闭」13sp 约 200dp，
+     * 右侧还有箭头，360dp 屏余量很小，字号一调大就折成「…电源 / 键：关闭」这种
+     * 断在词中间的怪样子。拆成两行后每行都短，字号多大都不会断词。
+     */
     private void updateKeysText() {
-        tvKeys.setText("音量键：" + keyActionText(Prefs.getVolKeyAction(this))
-                + " · 电源键：" + keyActionText(Prefs.getPowerKeyAction(this)));
+        tvKeys.setText("音量键 · " + keyActionText(Prefs.getVolKeyAction(this))
+                + "\n电源键 · " + keyActionText(Prefs.getPowerKeyAction(this)));
     }
 
     private String keyActionText(int action) {

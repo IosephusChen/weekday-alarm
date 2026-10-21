@@ -291,9 +291,10 @@ public class SnoozePreNoticeTest {
                 ((TextView) activity.findViewById(R.id.tv_snooze)).getText().toString());
         assertEquals("提前 15 分钟提醒",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
-        assertTrue("按键行应摘要显示两个键的作用",
-                ((TextView) activity.findViewById(R.id.tv_keys)).getText().toString()
-                        .contains("音量键：关闭"));
+        // v1.29.0：两个键各占一行（原来挤在一行，窄屏 + 大字号会断在词中间）
+        String keys = ((TextView) activity.findViewById(R.id.tv_keys)).getText().toString();
+        assertTrue("按键行应摘要显示音量键的作用，实际：" + keys, keys.contains("音量键 · 关闭"));
+        assertTrue("两个键应各占一行，实际：" + keys, keys.contains("\n电源键 · "));
     }
 
     @Test

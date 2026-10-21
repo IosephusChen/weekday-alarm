@@ -144,6 +144,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.row_calendar_entry).setOnClickListener(v ->
                 startActivity(new Intent(this, CalendarActivity.class)));
         btnDayOff.setOnClickListener(v -> toggleTodayOff());
+        // v1.29.0：点倒计时看「接下来三次」，比只看下一次更有用——
+        // 睡前想知道「明早几点响、响几条」，不用一条条点开闹钟看
+        findViewById(R.id.box_countdown).setOnClickListener(v -> showUpcomingDialog());
 
         btnTest.setOnClickListener(v -> testAlarm());
 
@@ -193,14 +196,11 @@ public class MainActivity extends AppCompatActivity {
      * 现在列表和倒计时共用这一份，每次全局刷新都重读。
      */
     private void reloadAlarms() {
+        // v1.29.0：去掉了「列表为空就恢复一条默认起床闹钟」的兜底。
+        // 它本来是为了避免「一条都没有」的空白页，可列表本身就有「还没有闹钟」的空状态；
+        // 而这段兜底会在用户删掉最后一条的瞬间把一条「起床 7:30」塞回来——
+        // 用户以为自己删干净了，转头看见它又在那儿，只会怀疑删除没生效。
         alarms = Prefs.getAlarmsSettled(this);
-        // 兜底：列表为空（用户删空或数据异常）时恢复一个默认「起床」闹钟，避免无闹钟可用
-        if (alarms.isEmpty()) {
-            int h = Prefs.getAlarmHour(this);
-            int m = Prefs.getAlarmMin(this);
-            alarms.add(new Alarm(Prefs.nextAlarmId(this), h, m, "起床", Alarm.Mode.WORKDAY, true));
-            Prefs.setAlarms(this, alarms);
-        }
     }
 
     /** 周休制度：刷新右侧文字，并只在「大小周」下显示本周是大周/小周、小周休哪天。 */
@@ -547,6 +547,12 @@ public class MainActivity extends AppCompatActivity {
             row.setClickable(true);
             row.setFocusable(true);
             row.setOnClickListener(v -> showAlarmEditDialog(a));
+            // v1.29.0：长按弹「复制 / 删除」。删一条原本要点开对话框再点删除（四步），
+            // 而「照这条再来一个」比删除更常用——以前只能新建一遍再填一遍
+            row.setOnLongClickListener(v -> {
+                showAlarmRowMenu(a);
+                return true;
+            });
 
             int titleColor = ContextCompat.getColor(this, a.enabled ? R.color.ink : R.color.sub);
 
@@ -605,6 +611,8 @@ public class MainActivity extends AppCompatActivity {
             sw.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             sw.setTag(a.id);
+            // 无障碍（v1.29.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条
+            sw.setContentDescription(a.timeText() + " " + a.label + " 闹钟开关");
             // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
             sw.setChecked(a.enabled);
             sw.setOnCheckedChangeListener((v, checked) -> {
@@ -630,6 +638,129 @@ public class MainActivity extends AppCompatActivity {
         lp.setMarginStart((int) (16 * getResources().getDisplayMetrics().density)
                 + timeW + timeGap);
         div.setLayoutParams(lp);
+    }
+
+    /**
+     * 长按闹钟行弹出的两项菜单（v1.29.0）。
+     *
+     * <p>只放两项：复制、删除。改时间 / 改规则仍然走点击行打开编辑框——那是「调整」，
+     * 需要一个能看全当前值的界面；而复制和删除是「一步就能定」的操作，不该让人先进编辑框。
+     */
+    private void showAlarmRowMenu(Alarm a) {
+        new RoundedDialog.Builder(this)
+                .setTitle(a.timeText() + "  " + a.label)
+                .setItems(new String[]{"复制这个闹钟", "删除这个闹钟"}, (d, which) -> {
+                    if (which == 0) {
+                        duplicateAlarm(a);
+                    } else {
+                        confirmDeleteAlarm(a);
+                    }
+                })
+                .show();
+    }
+
+    /**
+     * 复制一条闹钟（v1.29.0）：时间与规则照搬，名称加「副本」，默认开启。
+     *
+     * <p>一次性闹钟不能照抄日期——原条多半已经响过或就在今天，抄过来就是一条哑弹。
+     * 用 {@link #onceDayAfter} 顺延到下一个同一时刻，跟新建时的处理一致。
+     */
+    private void duplicateAlarm(Alarm src) {
+        Alarm copy = copyOf(src, Prefs.nextAlarmId(this), LocalDateTime.now());
+        alarms.add(copy);
+        Prefs.setAlarms(this, alarms);
+        applySettingsIfEnabled();
+        Toast.makeText(this, "已复制「" + copy.label + "」", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 复制一条闹钟的内容（纯函数，便于单测）。
+     *
+     * <p>一次性闹钟不能照抄日期——原条多半已经响过或就在今天，抄过来就是一条哑弹。
+     * 这里顺延到下一个同一时刻，跟新建时的处理一致。
+     */
+    static Alarm copyOf(Alarm src, int newId, LocalDateTime now) {
+        String onceDate = null;
+        if (src.mode == Alarm.Mode.ONCE) {
+            LocalDate base = src.parseOnceDate() != null ? src.parseOnceDate() : now.toLocalDate();
+            onceDate = onceDayAfter(base, src.hour, src.minute, now).toString();
+        }
+        return new Alarm(newId, src.hour, src.minute, src.label + " 副本",
+                src.mode, true, onceDate);
+    }
+
+    /** 长按菜单里的删除：确认一次再删（删除不可撤销，值得多问一句）。 */
+    private void confirmDeleteAlarm(Alarm a) {
+        new RoundedDialog.Builder(this)
+                .setTitle("删除「" + a.label + "」？")
+                .setMessage("删除后该闹钟不再提醒，已排程的实例会一并取消。")
+                .setPositiveButton("删除", (d, w) -> removeAlarm(a))
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /**
+     * 真正把一条闹钟删掉并重排（v1.29.0）。
+     *
+     * <p>从对话框回调里拆出来，一是单测能直接验「删完真的没了」而不必模拟按钮点击，
+     * 二是以后从别处（比如编辑框里的删除）也能复用同一段，不会各写一遍漏掉重排。
+     */
+    void removeAlarm(Alarm a) {
+        // 按 id 删而不是按对象引用：列表每次刷新都会从 Prefs 重新解析出一批新对象，
+        // 调用方手里那条多半已经不是列表里的同一个实例，remove(Object) 会静默失败
+        for (int i = alarms.size() - 1; i >= 0; i--) {
+            if (alarms.get(i).id == a.id) {
+                alarms.remove(i);
+            }
+        }
+        Prefs.setAlarms(this, alarms);
+        applySettingsIfEnabled();
+    }
+
+    /**
+     * 「接下来三次响铃」（v1.29.0）。
+     *
+     * <p>用纯计算的 {@link ScheduleManager#nextRings} 而不是逐条探测系统登记状态：
+     * 用户问的是「接下来会响什么」，不是「系统里登记了几条」。真要漏排了，
+     * 运行状态卡里那行「系统已登记 ✓」本来就会说实话。
+     */
+    private void showUpcomingDialog() {
+        List<ScheduleManager.NextAlarm> next = ScheduleManager.nextRings(
+                this, alarms, LocalDateTime.now(), 3);
+        if (next.isEmpty()) {
+            Toast.makeText(this, Prefs.isEnabled(this)
+                            ? "未来 " + Prefs.getHorizonDays(this) + " 天没有可排的闹钟"
+                            : "闹钟总开关关着，先打开才会响",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < next.size(); i++) {
+            ScheduleManager.NextAlarm n = next.get(i);
+            if (i > 0) sb.append("\n");
+            sb.append(i + 1).append(". ")
+                    .append(relativeDayText(n.when.toLocalDate())).append(" ")
+                    .append(String.format(Locale.getDefault(), "%02d:%02d",
+                            n.when.getHour(), n.when.getMinute()))
+                    .append("  ").append(n.label);
+        }
+        if (!Prefs.isEnabled(this)) {
+            sb.append("\n\n闹钟总开关关着，以上时间不会响。");
+        }
+        new RoundedDialog.Builder(this)
+                .setTitle("接下来三次响铃")
+                .setMessage(sb.toString())
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    /** 今天 / 明天 / 后天，更远的写「M月d日 周三」。 */
+    static String relativeDayText(LocalDate d) {
+        long days = ChronoUnit.DAYS.between(LocalDate.now(), d);
+        if (days == 0) return "今天";
+        if (days == 1) return "明天";
+        if (days == 2) return "后天";
+        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekdayOf(d);
     }
 
     /** 切换单个闹钟的启停：停用即从系统取消该闹钟已排程的实例；启用则重排全部。 */
@@ -1255,7 +1386,8 @@ public class MainActivity extends AppCompatActivity {
         tvSwitchHint.setText(Prefs.isEnabled(this)
                 ? "已开启 · 改动设置即时生效" : "开启后按当前设置自动排程");
         // 主界面状态刷新后，同步刷新桌面小组件（v1.19 起；v1.20 起含「本周班表」）
-        Widgets.updateAll(this);
+        // v1.29.0：把刚算好的 nextAlarm / n 传进去，小组件不必再做一次 PendingIntent 探测
+        Widgets.updateAll(this, nextAlarm, n);
     }
 
     /**

@@ -357,4 +357,21 @@
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
+
+    <!-- 明天请假（v1.31）：睡前看一眼「明天要上班」，顺手就能说「明天不上班」。
+         放整行而不是塞进标题行：标题行已经被「大周 · 休2天 / 闹钟已开启」占满，
+         再挤一个按钮会两者都放不下。整行按钮还有个好处——点起来不容易误触到别的格子。 -->
+    <TextView
+        android:id="@+id/widget_week_action"
+        android:layout_width="match_parent"
+        android:layout_height="22dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_widget_action"
+        android:gravity="center"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="明天不上班"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp"
+        android:textStyle="bold" />
 </LinearLayout>

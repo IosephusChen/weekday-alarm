@@ -69,13 +69,32 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         final String title;      // 大周 · 休2天
         final String subtitle;   // 已开启 / 未开启
         final List<DayCell> days;
+        /** 底部按钮的文案（v1.31）：明天不上班 / 明天已请假 · 点此恢复 / … */
+        final String action;
 
-        WeekModel(boolean enabled, String title, String subtitle, List<DayCell> days) {
+        WeekModel(boolean enabled, String title, String subtitle, List<DayCell> days,
+                  String action) {
             this.enabled = enabled;
             this.title = title;
             this.subtitle = subtitle;
             this.days = days;
+            this.action = action;
         }
+    }
+
+    /**
+     * 底部按钮文案（v1.31）。跟主界面今日卡的按钮同一套语义，只是把「今天」换成「明天」。
+     *
+     * <p>抽成静态纯函数：真机上「明天」是星期几由不得测试决定，写成方法内部的分支
+     * 就只能测到跑测试那天的那一半。
+     */
+    static String actionText(WeekSchedule.DayType type, boolean marked) {
+        boolean work = type == WeekSchedule.DayType.WORK
+                || type == WeekSchedule.DayType.MAKEUP_WORK;
+        if (work) {
+            return marked ? "明天已请假 · 点此恢复" : "明天不上班";
+        }
+        return marked ? "明天已加班 · 点此恢复" : "明天要加班";
     }
 
     /** 计算本周 7 天的展示内容（按设置的一周开始日排列，v1.22.2）。 */
@@ -105,7 +124,16 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         // 标题取显示周的最后一天（周六）：周一 / 周日起始下都落在同一周，不会差一周
         String title = WeekSchedule.describe(rule, start.plusDays(6));
         String sub = enabled ? "闹钟已开启" : "闹钟未开启";
-        return new WeekModel(enabled, title, sub, cells);
+
+        // 底部按钮看的是「明天」，不是「本周」：用户此刻关心的是明早要不要早起
+        LocalDate tomorrow = today.plusDays(1);
+        WeekSchedule.DayType tomorrowType = WeekSchedule.dayType(tomorrow, rule);
+        boolean tomorrowWork = tomorrowType == WeekSchedule.DayType.WORK
+                || tomorrowType == WeekSchedule.DayType.MAKEUP_WORK;
+        boolean tomorrowMarked = tomorrowWork
+                ? vacations.contains(tomorrow) : overtimes.contains(tomorrow);
+        return new WeekModel(enabled, title, sub, cells,
+                actionText(tomorrowType, tomorrowMarked));
     }
 
     private static RemoteViews buildViews(Context ctx, WeekModel m) {
@@ -132,6 +160,16 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.widget_week_root, pi);
+
+        // v1.31：底部「明天不上班 / 明天要加班」按钮。显式组件 + 自定义 action，
+        // 由 BedtimeReceiver 处理——它已经有一套「改标记 → 后台重排 → 刷组件」的流程
+        rv.setTextViewText(R.id.widget_week_action, m.action);
+        Intent toggle = new Intent(ctx, BedtimeReceiver.class)
+                .setAction(BedtimeReceiver.ACTION_TOGGLE_TOMORROW)
+                .setData(android.net.Uri.parse("daxz://widget/toggle-tomorrow"));
+        PendingIntent togglePi = PendingIntent.getBroadcast(ctx, 22, toggle,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        rv.setOnClickPendingIntent(R.id.widget_week_action, togglePi);
         return rv;
     }
 

@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -331,6 +332,30 @@ public class PastMarkTest {
         MainActivity a = launch();
 
         assertTrue("工作日加班也应显示「加班」", hasLabel(a, "加班"));
+    }
+
+    /**
+     * 刷新复用同一批格子（v1.36.0）。
+     *
+     * <p>以前每次 refresh 都重建 42 个格子，首页回到前台、改设置、跨天各来一遍。
+     * 改成复用后，View 实例必须还是原来那批——若哪天又被改回 removeAllViews，
+     * 这条会失败，提醒改的人「这不是等价重构，是性能回退」。
+     */
+    @Test
+    public void calendarGrid_isReusedOnRefresh() throws Exception {
+        resetPrefs();
+        MainActivity a = launch();
+        LinearLayout rows = a.findViewById(R.id.cal_rows);
+        assertEquals("固定 6 行", 6, rows.getChildCount());
+        View first = ((ViewGroup) rows.getChildAt(0)).getChildAt(0);
+
+        Method m = MainActivity.class.getDeclaredMethod("refreshAll");
+        m.setAccessible(true);
+        m.invoke(a);
+        ShadowLooper.idleMainLooper();
+
+        assertSame("刷新应复用同一批格子", first, ((ViewGroup) rows.getChildAt(0)).getChildAt(0));
+        assertEquals("行数不变", 6, rows.getChildCount());
     }
 
     /** 遍历日历格子，看有没有某个标签文本。 */

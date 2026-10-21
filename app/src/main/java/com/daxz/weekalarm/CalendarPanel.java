@@ -54,6 +54,17 @@ final class CalendarPanel {
 
     private int year, month;
 
+    /**
+     * 6×7 格子骨架（v1.36.0）：第一次渲染时建好，之后只改文字、颜色与背景。
+     *
+     * <p>原来每次 {@link #refresh()} 都 removeAllViews 再新建 84 个 View——
+     * 首页每次回到前台、改设置、跨天都会走一遍。内容确实要变，但 View 结构不变，
+     * 重建纯属浪费；复用后每次刷新只做 42 次属性赋值。
+     */
+    private LinearLayout[][] cells;
+    private TextView[][] cellNums;
+    private TextView[][] cellLabels;
+
     CalendarPanel(Activity host, View root, Runnable onChanged) {
         this.host = host;
         this.onChanged = onChanged;
@@ -120,19 +131,14 @@ final class CalendarPanel {
         for (int i = 0; i < dow.length; i++) {
             dow[i].setText(letters[i]);
         }
-        calRows.removeAllViews();
 
         float density = host.getResources().getDisplayMetrics().density;
         int cellHeight = cellHeightPx(density);
         int margin = (int) (2 * density);
         int labelGap = (int) (2 * density);
+        ensureGrid(density, cellHeight, margin, labelGap);
 
         for (int r = 0; r < 6; r++) {
-            LinearLayout row = new LinearLayout(host);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setLayoutParams(new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
             for (int c = 0; c < 7; c++) {
                 LocalDate d = start.plusDays(r * 7L + c);
                 boolean inMonth = d.getMonthValue() == month && d.getYear() == year;
@@ -199,17 +205,16 @@ final class CalendarPanel {
                     }
                 }
 
-                // 格子 = 「数字 + 标签」两个 TextView 竖排。
-                // 一个 TextView 里塞「数字\n标签」+ AbsoluteSizeSpan 会让两行共用行高，
-                // 13sp 数字的下缘和 9.5sp 标签的上缘几乎贴在一起，看起来像叠字。
-                LinearLayout cell = new LinearLayout(host);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, cellHeight, 1f);
-                lp.setMargins(margin, margin, margin, margin);
-                cell.setLayoutParams(lp);
-                cell.setOrientation(LinearLayout.VERTICAL);
-                cell.setGravity(Gravity.CENTER);
-                cell.setClickable(true);
-                cell.setFocusable(true);
+                LinearLayout cell = cells[r][c];
+                TextView num = cellNums[r][c];
+                TextView lab = cellLabels[r][c];
+
+                // 字号变大（系统字体 2.0×）时格子要跟着长高，否则两行会被裁掉
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) cell.getLayoutParams();
+                if (lp.height != cellHeight) {
+                    lp.height = cellHeight;
+                    cell.setLayoutParams(lp);
+                }
                 // 灰字格子是上 / 下月的日期。点它会弹出「把 9月28日 标记为请假」，
                 // 而那一格在当前月里根本不显示标签，标记完什么也看不见。点灰字直接翻到那个月。
                 cell.setOnClickListener(v -> {
@@ -237,31 +242,75 @@ final class CalendarPanel {
                 // 无障碍：TalkBack 读到的是「17」这种光秃秃的数字，无法判断当天班休
                 cell.setContentDescription(describeDay(d, type, vacation, overtime));
 
-                TextView num = new TextView(host);
-                num.setGravity(Gravity.CENTER);
                 num.setText(String.valueOf(d.getDayOfMonth()));
                 num.setTextColor(color);
                 num.setTextSize(TypedValue.COMPLEX_UNIT_SP, inMonth ? 13f : 11f);
                 num.setTypeface(null, inMonth ? Typeface.BOLD : Typeface.NORMAL);
+
+                // 上 / 下月的格子不显示标签：隐藏 + 清空文本。
+                // 只隐藏不清空的话，复用时会留着上个月那一格的字（比如「假加」），
+                // 无障碍与测试都会读到已经不属于这一格的标签。
+                if (inMonth) {
+                    lab.setVisibility(View.VISIBLE);
+                    lab.setText(label);
+                    lab.setTextColor(color);
+                } else {
+                    lab.setVisibility(View.GONE);
+                    lab.setText("");
+                }
+            }
+        }
+    }
+
+    /**
+     * 建一次 6×7 骨架（v1.36.0）。结构固定，之后 {@link #renderCalendar()} 只改内容。
+     *
+     * <p>格子 = 「数字 + 标签」两个 TextView 竖排。一个 TextView 里塞「数字\n标签」+
+     * AbsoluteSizeSpan 会让两行共用行高，13sp 数字的下缘和 9.5sp 标签的上缘几乎贴在一起，
+     * 看起来像叠字。
+     */
+    private void ensureGrid(float density, int cellHeight, int margin, int labelGap) {
+        if (cells != null) return;
+        cells = new LinearLayout[6][7];
+        cellNums = new TextView[6][7];
+        cellLabels = new TextView[6][7];
+
+        for (int r = 0; r < 6; r++) {
+            LinearLayout row = new LinearLayout(host);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            for (int c = 0; c < 7; c++) {
+                LinearLayout cell = new LinearLayout(host);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, cellHeight, 1f);
+                lp.setMargins(margin, margin, margin, margin);
+                cell.setLayoutParams(lp);
+                cell.setOrientation(LinearLayout.VERTICAL);
+                cell.setGravity(Gravity.CENTER);
+                cell.setClickable(true);
+                cell.setFocusable(true);
+
+                TextView num = new TextView(host);
+                num.setGravity(Gravity.CENTER);
                 // 去掉字体自带上下留白，行距才由我们自己控制（否则两行之间会忽宽忽窄）
                 num.setIncludeFontPadding(false);
                 cell.addView(num);
 
-                if (inMonth) {
-                    TextView lab = new TextView(host);
-                    lab.setGravity(Gravity.CENTER);
-                    lab.setText(label);
-                    lab.setTextColor(color);
-                    lab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
-                    lab.setIncludeFontPadding(false);
-                    lab.setSingleLine(true);
-                    lab.setEllipsize(TextUtils.TruncateAt.END);
-                    LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT);
-                    llp.topMargin = labelGap;
-                    cell.addView(lab, llp);
-                }
+                TextView lab = new TextView(host);
+                lab.setGravity(Gravity.CENTER);
+                lab.setIncludeFontPadding(false);
+                lab.setSingleLine(true);
+                lab.setEllipsize(TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                llp.topMargin = labelGap;
+                cell.addView(lab, llp);
+
+                cells[r][c] = cell;
+                cellNums[r][c] = num;
+                cellLabels[r][c] = lab;
                 row.addView(cell);
             }
             calRows.addView(row);

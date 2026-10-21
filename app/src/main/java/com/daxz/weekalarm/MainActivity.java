@@ -41,10 +41,6 @@ import java.util.Locale;
 
 /** 主界面：排班设置 + 多闹钟管理 + 月历 + 今日状态 + 闹钟总开关。 */
 public class MainActivity extends AppCompatActivity {
-    /** 中等字重：比 BOLD 清爽，比常规重，用于时间与闹钟名。 */
-    private static final android.graphics.Typeface TYPEFACE_MEDIUM =
-            android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL);
-
 
     private TextView tvAnchor, tvHolidayNote, tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
     private TextView tvWeekMode, tvWeekBig;
@@ -73,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
     /** 开关同步保护：refreshStatus 里回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
     private LinearLayout alarmList;
+    /** 闹钟行渲染（v1.36.0 从本类拆出），只画界面，改动仍回本类处理。 */
+    private AlarmRowRenderer alarmRowRenderer;
     private TextView btnTest;
 
     /** 多闹钟列表（v1.13）：每个闹钟独立的 时间/名称/规则/启停。 */
@@ -105,6 +103,23 @@ public class MainActivity extends AppCompatActivity {
         btnDayOff = findViewById(R.id.btn_day_off);
         btnDayOffTomorrow = findViewById(R.id.btn_day_off_tomorrow);
         alarmList = findViewById(R.id.alarm_list);
+        alarmRowRenderer = new AlarmRowRenderer(this, alarmList, new AlarmRowRenderer.Host() {
+            @Override
+            public void onEdit(Alarm a) {
+                showAlarmEditDialog(a);
+            }
+
+            @Override
+            public void onLongPress(Alarm a) {
+                showAlarmRowMenu(a);
+            }
+
+            @Override
+            public void onToggle(Alarm a, boolean checked) {
+                if (swAttaching) return;   // 界面回写，非用户操作
+                toggleAlarm(a, checked);
+            }
+        });
         btnTest = findViewById(R.id.btn_test);
         swAlarm = findViewById(R.id.switch_alarm);
         runBody = findViewById(R.id.run_body);
@@ -168,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
             firstRunGuideShown = true;
             startActivity(new Intent(this, GuideActivity.class));
         } else {
-            requestNotificationPermissionIfNeeded();
+            PermissionGuides.requestNotification(this);
         }
     }
 
@@ -315,7 +330,7 @@ public class MainActivity extends AppCompatActivity {
         // resumedOnce 用来跳过 onCreate 之后紧接着的那一次 onResume——那时引导页还没起来。
         if (firstRunGuideShown && resumedOnce) {
             firstRunGuideShown = false;
-            requestNotificationPermissionIfNeeded();
+            PermissionGuides.requestNotification(this);
         }
         resumedOnce = true;
 
@@ -451,213 +466,13 @@ public class MainActivity extends AppCompatActivity {
      * 渲染闹钟列表：每行 = 时间（大字）+ 名称/规则（两行小字）+ 右侧独立启停开关。
      * 点行主体（非开关区域）打开编辑对话框；开关仅切换该闹钟的启停，不打开对话框。
      */
-    private void renderAlarmList() {
-        alarmList.removeAllViews();
-        float density = getResources().getDisplayMetrics().density;
-        int padV = (int) (13 * density);
-
-        // v1.23.9：时间列定宽。宽度按 26sp 的「00:00」量一次，行内时间、行间分隔线、
-        // 卡头分隔线三处共用同一个值，所有竖线才会落在同一条线上。
-        // tnum（表格数字）让 0-9 等宽，换数字时列宽不跳。
-        TextView probe = new TextView(this);
-        probe.setTextSize(26);
-        probe.setTypeface(TYPEFACE_MEDIUM);
-        probe.setFontFeatureSettings("tnum");
-        int timeW = (int) Math.ceil(Math.max(probe.getPaint().measureText("00:00"),
-                probe.getPaint().measureText("88:88"))) + 1;
-        int timeGap = (int) (14 * density);
-
-        if (alarms.isEmpty()) {
-            LinearLayout box = new LinearLayout(this);
-            box.setOrientation(LinearLayout.VERTICAL);
-            box.setGravity(Gravity.CENTER);
-            box.setPadding(0, (int) (26 * density), 0, (int) (26 * density));
-
-            TextView t1 = new TextView(this);
-            t1.setText("还没有闹钟");
-            t1.setTextColor(ContextCompat.getColor(this, R.color.ink));
-            t1.setTextSize(14);
-            t1.setTypeface(TYPEFACE_MEDIUM);
-            t1.setGravity(Gravity.CENTER);
-
-            TextView t2 = new TextView(this);
-            t2.setText("点下面「+ 添加闹钟」建一个");
-            t2.setTextColor(ContextCompat.getColor(this, R.color.sub));
-            t2.setTextSize(12);
-            t2.setGravity(Gravity.CENTER);
-            t2.setPadding(0, (int) (5 * density), 0, 0);
-
-            box.addView(t1);
-            box.addView(t2);
-            alarmList.addView(box);
-            alignTopDivider(timeW, timeGap);
-            return;
-        }
-
-        // 行点击的水波纹用主题里的 selectableItemBackground：卡片内是白底，
-        // 原来每行自己套一层浅灰描边小卡，两层圆角叠着像「卡里还有卡」，也压掉了行与行的连续感。
-        TypedValue ripple = new TypedValue();
-        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true);
-
-        for (int i = 0; i < alarms.size(); i++) {
-            final Alarm a = alarms.get(i);
-
-            if (i > 0) {
-                View div = new View(this);
-                div.setBackgroundColor(ContextCompat.getColor(this, R.color.line));
-                LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, Math.max(1, (int) density));
-                // 缩进到名称左边缘：像 iOS 那种分隔线，比通栏更像「同一组里的两条」
-                dlp.setMarginStart(timeW + timeGap);
-                alarmList.addView(div, dlp);
-            }
-
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            // v1.23.9：贴顶。26sp 的时间块（约 35dp）比「名称 + 规则」两行块（约 38dp）矮一点点，
-            // 贴顶时两者字形上沿齐平，时间下沿比规则略高，是「大字 + 两行小字」最自然的排法。
-            // 居中反而会让时间整体下沉 3dp 左右，看着像「时间没跟名称站上一条线」。
-            row.setGravity(Gravity.TOP);
-            row.setMinimumHeight((int) (66 * density));
-            row.setPadding(0, padV, 0, padV);
-            row.setBackgroundResource(ripple.resourceId);
-            row.setClickable(true);
-            row.setFocusable(true);
-            row.setOnClickListener(v -> showAlarmEditDialog(a));
-            // v1.29.0：长按弹「复制 / 删除」。删一条原本要点开对话框再点删除（四步），
-            // 而「照这条再来一个」比删除更常用——以前只能新建一遍再填一遍
-            row.setOnLongClickListener(v -> {
-                showAlarmRowMenu(a);
-                return true;
-            });
-
-            int titleColor = ContextCompat.getColor(this, a.enabled ? R.color.ink : R.color.sub);
-
-            // 左侧：时间大字，是这一行的主视觉。
-            // 用 sans-serif-medium 而不是 BOLD：粗体在小字号上糊成一团，中等字重反而更清晰。
-            TextView time = new TextView(this);
-            time.setText(a.timeText());
-            // v1.30：有配色就用配色，关掉的仍然走灰字——「颜色」表达用途，
-            // 「灰不灰」表达有没有开，两个维度不能互相盖掉
-            time.setTextColor(a.enabled ? ContextCompat.getColor(this, alarmColorRes(a.color))
-                    : titleColor);
-            time.setTextSize(26);
-            time.setTypeface(TYPEFACE_MEDIUM);
-            // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准
-            time.setIncludeFontPadding(false);
-            time.setFontFeatureSettings("tnum");
-            time.setLayoutParams(new LinearLayout.LayoutParams(
-                    timeW, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-            // 中间：名称 + 规则
-            LinearLayout mid = new LinearLayout(this);
-            mid.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            mlp.setMarginStart(timeGap);
-            mid.setLayoutParams(mlp);
-
-            TextView name = new TextView(this);
-            name.setText(a.label);
-            name.setTextColor(titleColor);
-            name.setTextSize(15);
-            name.setTypeface(TYPEFACE_MEDIUM);
-            name.setIncludeFontPadding(false);
-
-            TextView rule = new TextView(this);
-            // v1.27.2：一次性闹钟响过会自动关闭。此时写「已停用」像是用户自己关的，
-            // 「已响过」才说明白它为什么是关着的
-            if (!a.enabled && a.mode == Alarm.Mode.ONCE
-                    && a.isExpiredAt(LocalDateTime.now())) {
-                String day = a.onceDayText();
-                rule.setText("已响过 · " + (day == null ? "仅一次" : day));
-            } else {
-                rule.setText(a.enabled ? a.modeTextWithDate() : "已停用 · " + a.modeTextWithDate());
-            }
-            rule.setTextColor(ContextCompat.getColor(this, R.color.sub));
-            rule.setTextSize(12);
-            rule.setIncludeFontPadding(false);
-            rule.setPadding(0, (int) (1 * density), 0, 0);
-
-            mid.addView(name);
-            mid.addView(rule);
-
-            // 右侧：该闹钟的独立开关。
-            // 注意：开关必须可点击（clickable=true）——Android 事件分发中，可点击子 View
-            // 会自己消费触摸事件、不冒泡给父容器；若像总开关那样设 clickable=false，
-            // 点开关区域会被整行的 OnClickListener（编辑对话框）吃掉，导致「按开关
-            // 却弹出编辑框、切不动」。整行的点击仍然负责打开编辑对话框。
-            SwitchCompat sw = new SwitchCompat(this);
-            sw.setLayoutParams(new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-            sw.setTag(a.id);
-            // 无障碍（v1.29.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条
-            sw.setContentDescription(a.timeText() + " " + a.label + " 闹钟开关");
-            // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
-            sw.setChecked(a.enabled);
-            sw.setOnCheckedChangeListener((v, checked) -> {
-                if (swAttaching) return;
-                toggleAlarm(a, checked);
-            });
-
-            row.addView(time);
-            row.addView(mid);
-            row.addView(sw);
-            alarmList.addView(row);
-        }
-
-        alignTopDivider(timeW, timeGap);
-    }
-
-    /** 卡头那条分隔线的起点对齐到名称左边缘，跟行与行之间的线落在同一条竖线上。 */
-    private void alignTopDivider(int timeW, int timeGap) {
-        View div = findViewById(R.id.div_alarm_top);
-        if (div == null) return;
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) div.getLayoutParams();
-        // alarmList 自己有 16dp paddingStart，卡片里的线要补上这一段
-        lp.setMarginStart((int) (16 * getResources().getDisplayMetrics().density)
-                + timeW + timeGap);
-        div.setLayoutParams(lp);
-    }
-
-    /** 配色下标 → 颜色资源。越界兜 0，跟 {@link Alarm#clampColor} 同一套口径。 */
-    static int alarmColorRes(int idx) {
-        switch (Alarm.clampColor(idx)) {
-            case 1:
-                return R.color.alarm_color_1;
-            case 2:
-                return R.color.alarm_color_2;
-            case 3:
-                return R.color.alarm_color_3;
-            default:
-                return R.color.alarm_color_0;
-        }
-    }
-
     /**
-     * 画四个配色圆点，选中的加一圈描边。
+     * 列表渲染交给 {@link AlarmRowRenderer}（v1.36.0 拆分）。
      *
-     * <p>用代码画而不是四张图：颜色要跟深色模式联动，做成 drawable 就得写两份，
-     * 而这里只是一圈描边的差别。描边用 ink 而不是格子自身颜色——深色底上同色描边
-     * 等于没描，选中与否看不出来。
+     * <p>保留这个方法名：首页刷新、测试的反射调用都从这里进，拆类不该改调用方。
      */
-    private void renderColorDots(LinearLayout row, int selected) {
-        float d = getResources().getDisplayMetrics().density;
-        for (int i = 0; i < row.getChildCount(); i++) {
-            View dot = row.getChildAt(i);
-            GradientDrawable g = new GradientDrawable();
-            g.setShape(GradientDrawable.OVAL);
-            g.setColor(ContextCompat.getColor(this, alarmColorRes(i)));
-            if (i == selected) {
-                g.setStroke((int) (2 * d), ContextCompat.getColor(this, R.color.ink));
-            } else {
-                g.setStroke((int) (1 * d), ContextCompat.getColor(this, R.color.line));
-            }
-            dot.setBackground(g);
-            dot.setContentDescription(i == selected
-                    ? dot.getContentDescription() + "，已选中"
-                    : String.valueOf(dot.getContentDescription()).replace("，已选中", ""));
-        }
+    private void renderAlarmList() {
+        alarmRowRenderer.render(alarms);
     }
 
     /**
@@ -683,7 +498,7 @@ public class MainActivity extends AppCompatActivity {
      * 复制一条闹钟（v1.29.0）：时间与规则照搬，名称加「副本」，默认开启。
      *
      * <p>一次性闹钟不能照抄日期——原条多半已经响过或就在今天，抄过来就是一条哑弹。
-     * 用 {@link #onceDayAfter} 顺延到下一个同一时刻，跟新建时的处理一致。
+     * 用 {@link AlarmEditor#onceDayAfter} 顺延到下一个同一时刻，跟新建时的处理一致。
      */
     private void duplicateAlarm(Alarm src) {
         Alarm copy = copyOf(src, Prefs.nextAlarmId(this), LocalDateTime.now());
@@ -703,7 +518,7 @@ public class MainActivity extends AppCompatActivity {
         String onceDate = null;
         if (src.mode == Alarm.Mode.ONCE) {
             LocalDate base = src.parseOnceDate() != null ? src.parseOnceDate() : now.toLocalDate();
-            onceDate = onceDayAfter(base, src.hour, src.minute, now).toString();
+            onceDate = AlarmEditor.onceDayAfter(base, src.hour, src.minute, now).toString();
         }
         Alarm copy = new Alarm(newId, src.hour, src.minute, src.label + " 副本",
                 src.mode, true, onceDate);
@@ -749,7 +564,7 @@ public class MainActivity extends AppCompatActivity {
                 // 顺手把日期顺延到下一个该时刻，并当面说清
                 if (checked && x.reviveOnce(LocalDateTime.now())) {
                     LocalDate d = x.parseOnceDate();
-                    Toast.makeText(this, "这个时间已经过了，已改到" + onceDateText(d),
+                    Toast.makeText(this, "这个时间已经过了，已改到" + AlarmEditor.onceDateText(d),
                             Toast.LENGTH_LONG).show();
                 }
             }
@@ -767,271 +582,9 @@ public class MainActivity extends AppCompatActivity {
      * 新建 / 编辑闹钟对话框（自定义布局：名称 + 时间 + 规则 + 删除）。
      * target == null 表示新建。
      */
+    /** 添加 / 编辑闹钟的对话框交给 {@link AlarmEditor}（v1.36.0 拆分）。 */
     private void showAlarmEditDialog(Alarm target) {
-        View view = getLayoutInflater().inflate(R.layout.dialog_alarm, null);
-        EditText etLabel = view.findViewById(R.id.et_alarm_label);
-        TextView tvTime = view.findViewById(R.id.tv_alarm_pick_time);
-        RadioGroup group = view.findViewById(R.id.rg_alarm_mode);
-        TextView btnDelete = view.findViewById(R.id.btn_alarm_delete);
-        View rowOnceDate = view.findViewById(R.id.row_once_date);
-        TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
-
-        // v1.27：一次性闹钟的那一天。新建默认给「明天」而不是今天——
-        // 此刻多半已经过了今天的起床时间，建一个今天的一次性闹钟几乎必然不响。
-        final LocalDate[] once = {LocalDate.now().plusDays(1)};
-
-        final int[] hour = {target != null ? target.hour : 7};
-        final int[] minute = {target != null ? target.minute : 30};
-        // 配色（v1.30）：点圆点即刻预览，保存时才落库
-        final int[] color = {target != null ? Alarm.clampColor(target.color) : 0};
-        LinearLayout rowColor = view.findViewById(R.id.row_alarm_color);
-        for (int i = 0; i < rowColor.getChildCount(); i++) {
-            final int idx = i;
-            rowColor.getChildAt(i).setOnClickListener(v -> {
-                color[0] = idx;
-                renderColorDots(rowColor, idx);
-            });
-        }
-        renderColorDots(rowColor, color[0]);
-        if (target != null) {
-            etLabel.setText(target.label);
-            switch (target.mode) {
-                case DAILY:
-                    group.check(R.id.rb_mode_daily);
-                    break;
-                case WEEKEND:
-                    group.check(R.id.rb_mode_weekend);
-                    break;
-                case ONCE:
-                    group.check(R.id.rb_mode_once);
-                    break;
-                default:
-                    group.check(R.id.rb_mode_workday);
-                    break;
-            }
-            LocalDate saved = target.parseOnceDate();
-            if (saved != null) once[0] = saved;
-        } else {
-            // 新建默认：跟随已有第一个「仅上班日」闹钟的时间，或 07:30
-            Alarm primary = primaryAlarm();
-            if (primary != null) {
-                hour[0] = primary.hour;
-                minute[0] = primary.minute;
-            }
-            group.check(R.id.rb_mode_workday);
-        }
-        if (target == null) {
-            btnDelete.setVisibility(View.GONE);
-        }
-        tvTime.setText(String.format(Locale.getDefault(), "%02d:%02d", hour[0], minute[0]));
-        // 自绘「时 / 分」双列滚轮选择器：澎湃 OS 会无视框架 TimePicker 的 spinner
-        // 主题设置、强制渲染成表盘拨轮，因此不再依赖 TimePickerDialog
-        tvTime.setOnClickListener(v -> showTimeWheelDialog(hour[0], minute[0], (h, m) -> {
-            hour[0] = h;
-            minute[0] = m;
-            tvTime.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m));
-        }));
-
-        // 日期行：勾上「仅一次」才出现
-        tvOnceDate.setText(onceDateText(once[0]));
-        group.setOnCheckedChangeListener((g, checkedId) ->
-                rowOnceDate.setVisibility(checkedId == R.id.rb_mode_once ? View.VISIBLE : View.GONE));
-        rowOnceDate.setVisibility(group.getCheckedRadioButtonId() == R.id.rb_mode_once
-                ? View.VISIBLE : View.GONE);
-        rowOnceDate.setOnClickListener(v -> pickOnceDate(once[0], picked -> {
-            once[0] = picked;
-            tvOnceDate.setText(onceDateText(picked));
-        }));
-
-        final boolean[] handled = {false};
-        AlertDialog dialog = new RoundedDialog.Builder(this)
-                .setView(view)
-                .setTitle(target == null ? "添加闹钟" : "编辑闹钟")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("保存", (d, w) -> {
-                    if (handled[0]) return;
-                    handled[0] = true;
-                    // 先关对话框再执行业务逻辑（与其它对话框回调时序保持一致）
-                    d.dismiss();
-                    String label = etLabel.getText().toString().trim();
-                    if (label.isEmpty()) label = "闹钟";
-                    Alarm.Mode mode;
-                    int mid = group.getCheckedRadioButtonId();
-                    if (mid == R.id.rb_mode_daily) {
-                        mode = Alarm.Mode.DAILY;
-                    } else if (mid == R.id.rb_mode_weekend) {
-                        mode = Alarm.Mode.WEEKEND;
-                    } else if (mid == R.id.rb_mode_once) {
-                        mode = Alarm.Mode.ONCE;
-                    } else {
-                        mode = Alarm.Mode.WORKDAY;
-                    }
-                    // only ONCE 存日期。换成别的模式时把 onceDate 清掉，
-                    // 否则以后再切回 ONCE 会读到一条陈旧的日期，用户会莫名被吵醒。
-                    LocalDate onceDay = once[0];
-                    if (mode == Alarm.Mode.ONCE) {
-                        // 「今天 6:30」而现在已经 9 点：这条闹钟永远不会响，
-                        // 只会在下次读列表时被自动关掉。用户要的是「响一次」，
-                        // 那个意思就是明天的 6:30——顺延并当面说清，别留个哑弹
-                        LocalDate fixed = onceDayAfter(onceDay, hour[0], minute[0],
-                                LocalDateTime.now());
-                        if (!fixed.equals(onceDay)) {
-                            onceDay = fixed;
-                            Toast.makeText(this,
-                                    "这个时间已经过了，已改到" + onceDateText(fixed),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    }
-                    String onceStr = mode == Alarm.Mode.ONCE ? onceDay.toString() : null;
-                    if (target == null) {
-                        int id = Prefs.nextAlarmId(this);
-                        Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
-                                true, onceStr);
-                        created.color = color[0];
-                        alarms.add(created);
-                    } else {
-                        target.hour = hour[0];
-                        target.minute = minute[0];
-                        target.label = label;
-                        target.mode = mode;
-                        target.onceDate = onceStr;
-                        target.color = color[0];
-                    }
-                    Prefs.setAlarms(this, alarms);
-                    applySettingsIfEnabled();
-                })
-                .create();
-
-        btnDelete.setOnClickListener(v -> {
-            if (handled[0]) return;
-            handled[0] = true;
-            new RoundedDialog.Builder(this)
-                    .setTitle("删除「" + target.label + "」？")
-                    .setMessage("删除后该闹钟不再提醒，已排程的实例会一并取消。")
-                    .setPositiveButton("删除", (d2, w2) -> {
-                        alarms.remove(target);
-                        Prefs.setAlarms(this, alarms);
-                        applySettingsIfEnabled();
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
-            dialog.dismiss();
-        });
-        dialog.show();
-    }
-
-    /**
-     * 「时 / 分」双列滚轮时间选择对话框（与系统闹钟同款交互）。
-     * v1.20 起实现抽到 {@link TimeWheelDialog}，设置页的睡前提醒也用同一套，
-     * 避免两处各写一份滚轮代码逐渐走样。
-     */
-    private void showTimeWheelDialog(int initHour, int initMinute, TimeWheelDialog.OnPicked cb) {
-        TimeWheelDialog.show(this, initHour, initMinute, cb);
-    }
-
-    /**
-     * 一次性闹钟的生效日：若给定的「日 + 时:分」已经过去，就顺延到之后最近的那一天。
-     *
-     * <p>只对 ONCE 用。普通闹钟时间过了就是「明天同一时间」，本来就是日复一日；
-     * 而一次性闹钟时间一过就是个哑弹——不会响，只会被自动关掉。
-     *
-     * <p>循环而不是只加一天：用户可能手动挑了个旧日期（改过系统时间、或者从
-     * 备份里恢复），一次加法补不回来。
-     */
-    static LocalDate onceDayAfter(LocalDate day, int hour, int minute, LocalDateTime now) {
-        LocalDate d = day;
-        while (!LocalDateTime.of(d, LocalTime.of(hour, minute)).isAfter(now)) {
-            d = d.plusDays(1);
-        }
-        return d;
-    }
-
-    /** 一次性闹钟的日期行文案：「明天 · 10月22日 周四」。 */
-    static String onceDateText(LocalDate d) {
-        LocalDate today = LocalDate.now();
-        // 只保留「今天 / 明天 / 后天」这三种绝不会说错的相对说法。
-        // 曾经还有一档「本周末」（周六日），但五天后的周日并不是「本周末」——
-        // 与其判断周次，不如不给相对词：绝对日期本来就在后面写着
-        String rel = d.equals(today) ? "今天"
-                : d.equals(today.plusDays(1)) ? "明天"
-                : d.equals(today.plusDays(2)) ? "后天"
-                : "";
-        String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
-        return rel.isEmpty() ? abs : rel + " · " + abs;
-    }
-
-    /**
-     * 选「哪一天」（v1.27）。不用框架 DatePickerDialog：同 TimePicker 一样，
-     * 部分系统（澎湃实测）会无视主题强制换一套皮肤；而且这里要的只是
-     * 「今天到一周内某天」，一个七项列表比日历更直接——临时闹钟本来就是近事。
-     *
-     * <p>没有接受「取消」以外的返回通道：点完立刻关闭，走回调回填即可。
-     */
-    private void pickOnceDate(LocalDate current, java.util.function.Consumer<LocalDate> cb) {
-        LocalDate today = LocalDate.now();
-        final int count = 7;
-        String[] names = new String[count];
-        final LocalDate[] dates = new LocalDate[count];
-        String[] rel = {"今天", "明天", "后天"};
-        for (int i = 0; i < count; i++) {
-            LocalDate d = today.plusDays(i);
-            dates[i] = d;
-            String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
-            String head = i < rel.length ? rel[i] : weekdayOf(d);
-            names[i] = head + " · " + abs;
-        }
-        int checked = indexOfDate(dates, current);
-        if (checked < 0) {
-            // 存的日期不在未来七天里（很旧，或用户手动改过系统日期）：不预选，
-            // 免得打开就看到一个自己没选过的项被高亮
-            new RoundedDialog.Builder(this)
-                    .setTitle("哪一天响？")
-                    .setItems(names, (d, which) -> cb.accept(dates[which]))
-                    .setNegativeButton("取消", null)
-                    .show();
-            return;
-        }
-        new RoundedDialog.Builder(this)
-                .setTitle("哪一天响？")
-                .setSingleChoiceItems(names, checked, (d, which) -> {
-                    cb.accept(dates[which]);
-                    d.dismiss();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    private static String weekdayOf(LocalDate d) {
-        String[] w = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
-        return w[d.getDayOfWeek().getValue() - 1];
-    }
-
-    private static int indexOfDate(LocalDate[] arr, LocalDate want) {
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i].equals(want)) return i;
-        }
-        return -1;
-    }
-
-    /** 主闹钟：第一个启用的「仅上班日」闹钟（没有则第一个启用的，再没有返回 null）。 */
-    private Alarm primaryAlarm() {
-        Alarm fallback = null;
-        for (Alarm a : alarms) {
-            if (!a.enabled) continue;
-            if (a.mode == Alarm.Mode.WORKDAY) return a;
-            if (fallback == null) fallback = a;
-        }
-        return fallback;
-    }
-
-    private void requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
-            }
-        }
+        AlarmEditor.show(this, alarms, target, this::applySettingsIfEnabled);
     }
 
     private void save() {
@@ -1046,21 +599,12 @@ public class MainActivity extends AppCompatActivity {
                     + " 天没有需要设置的闹钟，请检查排班设置", Toast.LENGTH_LONG).show();
         }
         if (!exact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requestExactAlarmPermission();
+            PermissionGuides.requestExactAlarm(this);
         }
-        if (Build.VERSION.SDK_INT >= 33
-                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "建议在系统设置里允许本应用发送通知，否则提醒可能不显示", Toast.LENGTH_LONG).show();
-        }
-        showPopupGuideIfNeeded();
+        PermissionGuides.warnIfNotificationOff(this);
+        PermissionGuides.showPopupGuideIfNeeded(this);
     }
 
-    /**
-     * 关闭闹钟：取消当前提醒范围内全部已登记的提醒。
-     * 停用是低频但重要的操作（明早不响的代价高），加一道确认；重启后 BootReceiver
-     * 依赖 Prefs.isEnabled，停用态下不会自动重设。
-     */
     /**
      * 设置项改动后调用：开启态即时重排（免保存，旧闹钟自动清除重设），关闭态只刷新界面。
      */
@@ -1071,66 +615,9 @@ public class MainActivity extends AppCompatActivity {
         refreshAll();
     }
 
-    /**
-     * 弹窗权限引导：全屏通知 / 悬浮窗未开启时，对话框说明需要哪些设置。
-     * 三个出口：去设置（打开应用详情页）/ 我已开启（不再提示）/ 暂不（下次保存再问）。
-     */
-    private void showPopupGuideIfNeeded() {
-        if (Prefs.isPopupGuided(this)) return;
-        boolean needFsi = !ScheduleManager.canUseFullScreenIntent(this);
-        boolean needOverlay = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && !Settings.canDrawOverlays(this);
-        if (!needFsi && !needOverlay) return;
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("要让闹钟响铃时自动弹出操作界面（包括正在使用手机时），请在系统设置里为本应用开启：\n");
-        if (needFsi) {
-            sb.append("\n· 通知 → 全屏通知");
-        }
-        sb.append("\n· 后台弹出界面（小米 / 红米 / HyperOS 必开）");
-        if (needOverlay) {
-            sb.append("\n· 显示悬浮窗（可选，开启后使用手机时也能直接弹出）");
-        }
-        sb.append("\n\n以上都不开也能响铃，只是需要下拉通知栏点通知来操作。");
-        new RoundedDialog.Builder(this)
-                .setTitle("开启自动弹出权限")
-                .setMessage(sb.toString())
-                .setPositiveButton("去设置", (d, w) -> openAppDetailsSettings())
-                .setNeutralButton("我已开启", (d, w) -> Prefs.setPopupGuided(this, true))
-                .setNegativeButton("暂不", null)
-                .show();
-    }
-
-    /** 打开本应用的系统设置详情页。 */
-    private void openAppDetailsSettings() {
-        try {
-            Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            i.setData(Uri.parse("package:" + getPackageName()));
-            startActivity(i);
-        } catch (Exception ignore) {
-        }
-    }
-
-    /** 引导用户去系统设置开启「闹钟和提醒」权限（Android 12+）。 */
-    private void requestExactAlarmPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
-        try {
-            Intent i = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-            i.setData(Uri.parse("package:" + getPackageName()));
-            startActivity(i);
-        } catch (Exception e) {
-            try {
-                Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                i.setData(Uri.parse("package:" + getPackageName()));
-                startActivity(i);
-            } catch (Exception ignore) {
-            }
-        }
-    }
-
     private void testAlarm() {
         // 测试沿用主闹钟的名称，与正式提醒的呈现完全一致
-        Alarm primary = primaryAlarm();
+        Alarm primary = AlarmEditor.primaryAlarm(alarms);
         String label = primary != null ? primary.label : "闹钟";
         Intent svc = new Intent(this, AlarmService.class);
         svc.setAction(AlarmService.ACTION_TEST);

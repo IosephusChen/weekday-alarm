@@ -242,25 +242,25 @@ public class OnceAlarmTest {
         java.time.LocalDateTime now = java.time.LocalDateTime.of(2026, 10, 21, 9, 0);
         // 今天 6:30 已过 → 明天 6:30
         assertEquals(LocalDate.of(2026, 10, 22),
-                MainActivity.onceDayAfter(today, 6, 30, now));
+                AlarmEditor.onceDayAfter(today, 6, 30, now));
         // 今天 9:01 还没到 → 就今天
-        assertEquals(today, MainActivity.onceDayAfter(today, 9, 1, now));
+        assertEquals(today, AlarmEditor.onceDayAfter(today, 9, 1, now));
         // 恰好等于此刻不算「之后」，要顺延——否则排程会把它当成已经触发
         assertEquals(LocalDate.of(2026, 10, 22),
-                MainActivity.onceDayAfter(today, 9, 0, now));
+                AlarmEditor.onceDayAfter(today, 9, 0, now));
         // 用户挑了个很旧的日期（改过系统时间 / 从备份恢复）：循环补到今天之后
         assertEquals(LocalDate.of(2026, 10, 22),
-                MainActivity.onceDayAfter(LocalDate.of(2020, 1, 1), 6, 30, now));
+                AlarmEditor.onceDayAfter(LocalDate.of(2020, 1, 1), 6, 30, now));
     }
 
     @Test
     public void dateText_prefersRelativeWords() {
         LocalDate today = LocalDate.now();
-        assertTrue(MainActivity.onceDateText(today).startsWith("今天"));
-        assertTrue(MainActivity.onceDateText(today.plusDays(1)).startsWith("明天"));
-        assertTrue(MainActivity.onceDateText(today.plusDays(2)).startsWith("后天"));
+        assertTrue(AlarmEditor.onceDateText(today).startsWith("今天"));
+        assertTrue(AlarmEditor.onceDateText(today.plusDays(1)).startsWith("明天"));
+        assertTrue(AlarmEditor.onceDateText(today.plusDays(2)).startsWith("后天"));
         // 更远的日子给绝对日期，别硬编「三天后」「四天后」这种没人这么说的词
-        String far = MainActivity.onceDateText(today.plusDays(5));
+        String far = AlarmEditor.onceDateText(today.plusDays(5));
         assertTrue("远期应显示月日，实际：" + far,
                 far.matches(".*\\d+月\\d+日.*"));
     }

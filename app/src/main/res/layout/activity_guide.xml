@@ -792,6 +792,18 @@
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 
+                <!-- v1.39.0：系统里还有一个「锁屏显示」，不在标准权限里，检测不到，
+                     只能给路径。锁屏响铃要解锁才看得到界面，就是它没开。 -->
+                <TextView
+                    android:id="@+id/tv_lock_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="锁屏时只亮屏、不弹窗？点这里看「锁屏显示」怎么开 ›"
+                    android:textColor="@color/indigo"
+                    android:textSize="12sp" />
+
                 <!-- v1.25.1：开完权限当场试一次，别等第二天早上才发现不响 -->
                 <TextView
                     android:id="@+id/btn_try"

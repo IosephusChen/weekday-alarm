@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -13,8 +14,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -226,5 +229,58 @@ public class NotifCardTest {
 
         startRinging();
         assertNull("响铃后预告应撤掉", shadowOf(nm()).getNotification(SnoozeNotice.id(1)));
+    }
+
+    // ================= 折叠态尺寸（v1.39.0） =================
+    //
+    // 用户截图里「关闭闹钟」「取消」的字被上下各切掉一截。根因不是字号，是高度：
+    // 折叠态有上限，内容超了不是整体缩小，而是**把最后一行压扁**——按钮那行首当其冲。
+    // v1.38.0 的卡片是「标题 / 正文 / 倒计时」三行字 + 一行按钮，正好超了。
+
+    private int dp(int v) {
+        return Math.round(v * ctx().getResources().getDisplayMetrics().density);
+    }
+
+    /** 按钮高度写死 + 文字居中：即使真被压，字也在中间，不会被切成两半。 */
+    @Test
+    public void actionButtons_areFixedHeightAndCentered() {
+        enableDailyAlarm();
+        Prefs.setSnoozeMinutes(ctx(), 5);
+        View root = card(shadowOf(startRinging()).getLastForegroundNotification());
+
+        for (int id : new int[]{R.id.nc_action, R.id.nc_action2}) {
+            TextView b = root.findViewById(id);
+            assertEquals("按钮高度应写死 32dp（id=" + id + "）",
+                    dp(32), b.getLayoutParams().height);
+            assertEquals("按钮文字应居中（id=" + id + "）", Gravity.CENTER, b.getGravity());
+        }
+    }
+
+    /**
+     * 倒计时和正文必须同一行。
+     *
+     * <p>这就是省下来的那一行：三行文字 + 一行按钮 = 超限，两行文字 + 一行按钮 = 有余量。
+     */
+    @Test
+    public void countdown_sitsOnSameRowAsText() {
+        enableDailyAlarm();
+        SnoozeNotice.post(ctx(), 1, "起床", 5);
+        View root = card(shadowOf(nm()).getNotification(SnoozeNotice.id(1)));
+
+        View text = root.findViewById(R.id.nc_text);
+        View chrono = root.findViewById(R.id.nc_chrono);
+        assertSame("倒计时应与正文同一行，而不是另起一行",
+                text.getParent(), chrono.getParent());
+        assertEquals("这一行应是横向的",
+                LinearLayout.HORIZONTAL, ((LinearLayout) chrono.getParent()).getOrientation());
+    }
+
+    /** 整张卡只有两行：内容行 + 按钮行。多一行就会顶到折叠态上限。 */
+    @Test
+    public void card_hasExactlyTwoRows() {
+        enableDailyAlarm();
+        View root = card(shadowOf(startRinging()).getLastForegroundNotification());
+        assertEquals("卡片应只有「内容 + 按钮」两行", 2,
+                ((LinearLayout) root).getChildCount());
     }
 }

@@ -14,6 +14,8 @@
     <color name="card">#1C1F35</color>         <!-- 卡片：深靛蓝灰 -->
     <color name="bg">#0F1120</color>           <!-- 页面底：深靛黑 -->
     <color name="line">#2A2E47</color>         <!-- 描边/分隔线 -->
+    <!-- 引导页选中项：同色相压暗，配 ink（近白）对比度约 9:1 -->
+    <color name="guide_option_selected">#2A2350</color>
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（夜间）：与 day_makeup_text / day_overtime_text 同一档亮度 -->
     <!-- 闹钟配色（夜间）：与 day_*_text 同一档亮度，深底上才看得清 -->

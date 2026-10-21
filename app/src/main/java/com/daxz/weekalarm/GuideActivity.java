@@ -361,6 +361,9 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
         findViewById(R.id.perm_fsi).setOnClickListener(v -> openFullScreenIntentSettings());
         findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
+        // v1.39.0：锁屏响铃要解锁才看得到界面 —— 系统里那个「锁屏显示」没开。
+        // 它不在标准权限体系里，没有任何 API 能读到状态，只能给路径。
+        findViewById(R.id.tv_lock_hint).setOnClickListener(v -> showLockScreenHint());
         // v1.25.1：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
         // 让用户等到第二天早上才发现不响，比什么都不做还糟。
         findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
@@ -447,6 +450,30 @@ public class GuideActivity extends AppCompatActivity {
         } catch (Exception e) {
             openAppDetails();
         }
+    }
+
+    /**
+     * 「锁屏显示」怎么开（v1.39.0）。
+     *
+     * <p>国产 ROM 在标准权限之外还有一个「锁屏显示 / 锁屏通知」开关，管的是
+     * 「这个 App 的界面能不能盖在锁屏上」。它不在 Android 的权限体系里，
+     * 既没有 API 能读，也没法申请，只能给用户指路——关着的时候表现就是
+     * 锁屏响铃只亮屏、必须解锁才看得到响铃页。
+     */
+    void showLockScreenHint() {
+        new RoundedDialog.Builder(this)
+                .setTitle("锁屏时不弹窗？")
+                .setMessage("系统里还有一个「锁屏显示」开关，管的是「这个应用的界面能不能盖在锁屏上」。"
+                        + "它不在标准权限里，App 自己读不到、也申请不了，所以只能手动开一次。\n\n"
+                        + "路径（荣耀 / 华为 / 小米 / OPPO / vivo 大同小异）：\n"
+                        + "设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示\n\n"
+                        + "另外两个一起确认更稳：\n"
+                        + "· 显示悬浮窗（允许后台把界面拉到前面）\n"
+                        + "· 后台弹出界面（小米 / 红米 / HyperOS 必开）\n\n"
+                        + "开完之后，锁屏响铃会直接铺满屏幕，不用先解锁。")
+                .setPositiveButton("去设置", (d, w) -> openAppDetails())
+                .setNegativeButton("知道了", null)
+                .show();
     }
 
     private void openAppDetails() {

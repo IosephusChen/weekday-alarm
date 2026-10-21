@@ -124,6 +124,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="· 首页那行「距下次响铃」是实时倒计时。总开关关掉时它会变灰并写明原因，不会假装还会响。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 响铃时直接把响铃页弹到最前面，正在用手机也一样（v1.39.0 起）。锁屏时只亮屏、解锁后才看到界面，那是系统里的「锁屏显示」没开：设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示。" />
         </LinearLayout>
 
         <!-- ===== ③ 临时请假 / 加班 ===== -->

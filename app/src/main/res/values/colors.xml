@@ -8,6 +8,11 @@
     <color name="card">#FFFFFF</color>
     <color name="bg">#F4F5FB</color>
     <color name="line">#E7E9F3</color>
+    <!-- 引导页「已选中」选项卡的底（v1.39.0）。
+         以前写死在 bg_guide_option.xml 里是 #EEF0FE（近白），
+         而卡片文字用的是 @color/ink —— 深色模式下 ink 变近白，
+         白字压白底，选中那一项等于消失了。 -->
+    <color name="guide_option_selected">#EEF0FE</color>
     <color name="section_bg">#F7F8FD</color>
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。

@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  通知卡片的折叠态自绘布局（v1.23.6 引入，v1.38.0 改成两行 + 可选倒计时）。
+  通知卡片的折叠态自绘布局（v1.23.6 引入，v1.38.0 改成两行 + 可选倒计时，
+  v1.39.0 压扁一档——见下）。
 
   为什么必须自绘：锁屏卡片和「下拉但没展开」渲染的都是折叠态，系统模板里只有
   小图标 + 标题 + 一行正文，**不渲染 addAction 的按钮**。所以「关闭闹钟」「明天请假」
   这些操作如果只靠 addAction，锁屏上永远看不到。设了 customContentView，折叠态才由我们说了算。
 
-  v1.38.0 的变化（用户反馈「按钮是透明的」）：
-  - 按钮从「标题右侧一个药丸」改成「正文下方一排」，两个按钮并排才放得下；
-    颜色用品牌紫渐变（bg_notif_action）与紫描边（bg_notif_action_outline），
-    不再是系统模板那种灰色透明药丸。
-  - 加了 nc_chrono（Chronometer）。倒计时以前挂在通知头部（setUsesChronometer），
-    但设了自绘布局后头部整行都不再由系统画，那个倒计时从来没显示过——
-    现在直接画在卡片里，由 SystemUI 每秒自己走。
+  v1.39.0（用户反馈「按钮文字显示不全」）：
+  折叠态有高度上限，内容超了不是整体缩小，而是**把最后一行压扁**——按钮那行首当其冲，
+  于是药丸被压到 22dp 左右，13sp 的字上下各切掉一截。v1.38.0 的卡片是
+  「标题 / 正文 / 倒计时」三行文字 + 一行按钮，正好超了。
 
-  三个使用方共用这一个布局，靠 setViewVisibility 决定显示几个按钮：
-  提前提醒（关闭闹钟）、响铃（停止 / N 分钟后再响）、睡前提醒（明天请假）。
+  修法不是调字号，而是**少一行**：倒计时挪到正文右边（同一行，正文让出位置给倒计时），
+  再把按钮固定成 32dp 高、文字居中。现在整张卡约 76dp，离上限还有三十多 dp 的余量。
+
+  四个使用方共用这一个布局，靠 setViewVisibility 决定显示几个按钮：
+  提前提醒（关闭闹钟）、响铃（停止 / N 分钟后再响）、睡前提醒（明天请假）、
+  稍后再响（取消）。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp">
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,9 +34,9 @@
 
         <ImageView
             android:id="@+id/nc_icon"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:padding="6dp"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:padding="5dp"
             android:src="@drawable/ic_notification"
             android:background="@drawable/bg_notif_icon"
             android:contentDescription="@null" />
@@ -56,48 +58,60 @@
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/nc_text"
+            <!-- 正文与倒计时同一行：折叠态高度吃紧，省一行是一行 -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:textSize="12sp" />
-
-            <Chronometer
-                android:id="@+id/nc_chrono"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:includeFontPadding="false"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/nc_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:textSize="12sp" />
+
+                <Chronometer
+                    android:id="@+id/nc_chrono"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:includeFontPadding="false"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 按钮行：次要操作在左、主要操作在右，和系统操作区的习惯一致 -->
+    <!-- 按钮行：次要操作在左、主要操作在右，和系统操作区的习惯一致。
+         高度写死 32dp + 文字居中：wrap_content 一旦被上限压扁，
+         字就会从上下两头被切掉（v1.38.0 的 bug）。 -->
     <LinearLayout
         android:id="@+id/nc_actions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:gravity="end"
         android:orientation="horizontal">
 
         <TextView
             android:id="@+id/nc_action2"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:layout_marginEnd="8dp"
             android:background="@drawable/bg_notif_action_outline"
+            android:gravity="center"
             android:includeFontPadding="false"
+            android:maxLines="1"
+            android:minWidth="56dp"
             android:paddingStart="14dp"
             android:paddingEnd="14dp"
-            android:paddingTop="7dp"
-            android:paddingBottom="7dp"
             android:textSize="13sp"
             android:textStyle="bold"
             android:visibility="gone" />
@@ -105,13 +119,14 @@
         <TextView
             android:id="@+id/nc_action"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:background="@drawable/bg_notif_action"
+            android:gravity="center"
             android:includeFontPadding="false"
+            android:maxLines="1"
+            android:minWidth="56dp"
             android:paddingStart="14dp"
             android:paddingEnd="14dp"
-            android:paddingTop="7dp"
-            android:paddingBottom="7dp"
             android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>

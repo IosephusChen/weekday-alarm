@@ -69,6 +69,21 @@
         <item name="android:textSize">12sp</item>
     </style>
 
+    <!-- ===== 使用说明页（v1.34.2）=====
+         原来这 9 条是一整块 12sp 的灰字，读起来像免责声明。改成「小节标题 + 条目」：
+         标题 15sp 加粗、条目 14sp 正文色，找「组件怎么加」能直接扫到那一节。 -->
+    <style name="HelpSection">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="HelpItem">
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+    </style>
+
     <style name="WeekRadio">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/ink</item>

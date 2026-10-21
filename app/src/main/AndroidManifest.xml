@@ -63,6 +63,14 @@
             android:label="设置"
             android:parentActivityName=".MainActivity" />
 
+        <!-- 使用说明（v1.34.2）：首页底部一行入口指向这里。
+             别再指到 GuideActivity——那是 3 页设置向导，不是随时能查的说明书。 -->
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false"
+            android:label="使用说明"
+            android:parentActivityName=".MainActivity" />
+
         <!-- 新手引导（v1.19.9）：首次启动展示 3 页图解；设置页可随时重看。
              theme 里去掉启动时的窗口预览，避免引导页出现前先闪一下主界面。 -->
         <activity

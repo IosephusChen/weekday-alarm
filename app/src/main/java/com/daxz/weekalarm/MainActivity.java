@@ -127,9 +127,11 @@ public class MainActivity extends AppCompatActivity {
         // 设置与使用说明整体独立成页（v1.19.7）：主界面只保留入口，不再内嵌设置卡片
         findViewById(R.id.btn_settings_entry).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
-        // v1.34：9 条长文收成一行，点进去是引导页（与设置页「重看新手引导」同一个入口）
+        // v1.34.2：这一行进「使用说明」页（HelpActivity）。
+        // v1.34.0 曾把它指到 GuideActivity——那是首次安装的 3 页设置向导，
+        // 用户想查「组件怎么加」却被要求重设一遍班制，等于拿教程当手册。
         findViewById(R.id.row_guide_entry).setOnClickListener(v ->
-                startActivity(new Intent(this, GuideActivity.class)));
+                startActivity(new Intent(this, HelpActivity.class)));
         findViewById(R.id.row_run_header).setOnClickListener(v -> {
             runExpanded = !runExpanded;
             applyRunState();

@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「使用说明」页（v1.34.2）。
+     上一版把首页那一行「使用说明」指向了新手引导（3 页设置向导），这是错的：
+     向导是「第一次装完带你设一遍」，走完就不再出现；说明是「随时查某一条怎么办」，要能反复翻。
+     同一个入口不该同时承担这两件事——现在这一页只讲「怎么用」，底部再给一个去向导的次入口。
+     版式：5 张卡按主题分节，卡内「标题 + 条目」，条目用「· 」开头，便于扫读。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- 顶部栏：返回 + 标题 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="‹ 返回"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="使用说明"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===== ① 排班与日历 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HelpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="排班与日历" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="· 周休制度在首页「排班」卡里选：双休、单休、大小周。选了大小周，再点「小周休哪天」定小周休周日还是周六。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 日历就在首页，默认展开。日期下方那个字是当天状态：班＝上班，休＝休息，假＝法定假，补＝调休补班。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 点灰字的上月 / 下月日期会翻到那个月；翻乱了点「回本月」一键跳回。" />
+        </LinearLayout>
+
+        <!-- ===== ② 闹钟 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HelpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="闹钟" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="· 「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」。点已有闹钟可改时间、名称、规则，或删除。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 「闹钟总开关」管全部闹钟。开着时改任何设置都即时生效，不用再点保存。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 首页那行「距下次响铃」是实时倒计时。总开关关掉时它会变灰并写明原因，不会假装还会响。" />
+        </LinearLayout>
+
+        <!-- ===== ③ 临时请假 / 加班 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HelpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="临时请假 / 加班" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="· 今日卡底部有「今天」「明天」两个按钮。那天该上班，按钮写「不上班」，点一下当天闹钟全部跳过；那天本就休息，按钮写「要加班」，点一下当天「仅上班日」闹钟照响。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 点完按钮变成实白底、文案改成「已请假 / 已加班」，一眼看得出生效了；再点一次撤销。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 其他日子：在首页日历里点那一天，选「标记为请假 / 加班」。日历下方有请假、加班天数统计，点它可一键清除。" />
+        </LinearLayout>
+
+        <!-- ===== ④ 桌面小组件 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HelpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="桌面小组件" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="· 长按桌面空白处 →「小组件」→ 找到「打工人闹钟」，可添加「下一个闹钟」和「本周班表」两个。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 「本周班表」底部也能点「今天 / 明天不上班」，不用先打开 App，点完闹钟立刻重排。" />
+        </LinearLayout>
+
+        <!-- ===== ⑤ 设置与备份 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                style="@style/HelpSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="设置与备份" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="· 音量、铃声、响铃时长、稍后提醒、睡前提醒，都在右上角「设置」里；一周开始日、提醒范围也在那。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 农历节日、基督教节日可以单独开关，不需要就关掉，日历会更清爽。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 换手机用「导出配置 / 导入配置」，闹钟和排班一起搬过去。" />
+
+            <TextView
+                style="@style/HelpItem"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="· 若被系统杀后台导致漏响：允许自启动、加入电池优化白名单，并在最近任务里锁定本应用。" />
+        </LinearLayout>
+
+        <!-- 底部次入口：说明书看完了还想被带着走一遍，再去引导 -->
+        <TextView
+            android:id="@+id/row_replay_guide"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:minHeight="52dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:text="第一次用？看 3 页新手引导 ›"
+            android:textColor="@color/indigo"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            style="@style/FieldHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="6dp"
+            android:gravity="center"
+            android:text="使用说明随版本更新，入口在首页最底部" />
+    </LinearLayout>
+</ScrollView>

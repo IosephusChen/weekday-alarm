@@ -258,11 +258,14 @@ public class SnoozePreNoticeTest {
     }
 
     /**
-     * 使用说明收成一行入口（v1.34.0）：9 条长文首次安装展开约 400dp，
-     * 和设置页「重看新手引导」讲的是同一件事，没必要在主界面再铺一遍。
+     * 使用说明收成一行入口（v1.34.0），指向说明页而不是引导页（v1.34.2）。
+     *
+     * <p>9 条长文首次安装展开约 400dp，收成一行是对的；但 v1.34.0 把入口接到了
+     * 新手引导（3 页设置向导），用户想查「组件怎么加」却被要求重设一遍班制。
+     * 现在这一行进 {@link HelpActivity}，引导只在说明页底部与设置页里出现。
      */
     @Test
-    public void mainActivity_guideIsOneLineEntry_opensGuide() {
+    public void mainActivity_guideIsOneLineEntry_opensHelp() {
         Prefs.setGuideSeen(ctx(), true);
         Prefs.setOnboardDone(ctx(), true);   // 别让启动时的引导页抢走「下一个 Activity」
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
@@ -273,8 +276,9 @@ public class SnoozePreNoticeTest {
 
         row.performClick();
         Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
-        assertNotNull("点入口应打开引导页", next);
-        assertEquals(GuideActivity.class.getName(), next.getComponent().getClassName());
+        assertNotNull("点入口应打开使用说明", next);
+        assertEquals("使用说明不该再指向新手引导",
+                HelpActivity.class.getName(), next.getComponent().getClassName());
     }
 
     @Test

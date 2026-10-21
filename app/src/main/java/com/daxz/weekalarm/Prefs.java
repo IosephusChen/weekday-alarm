@@ -387,40 +387,6 @@ public final class Prefs {
         if (cur.remove(d)) setOvertimeDates(c, cur);
     }
 
-    /**
-     * 清掉全部请假 / 加班标记，返回清掉的条数（v1.35.1）。
-     *
-     * <p>这个方法的范围改过三次，每次都是跟着「过去能不能标记」走的：
-     * <ul>
-     *   <li>v1.34.3 之前清全部，但统计只算今天及以后——数字与动作对不上；</li>
-     *   <li>v1.35.0 改成只清今天及以后，把过去留作只读记录；</li>
-     *   <li>v1.35.1 过去重新可以标记，标记不再分「开关 / 记录」，统计与清除都回到全部。</li>
-     * </ul>
-     *
-     * <p>过去标记不会影响闹钟排程——排程从今天往后逐日算，过去的日子不参与。
-     * 所以清掉它们只是删记录，不会让任何闹钟「恢复」或「消失」。
-     */
-    public static int clearMarks(Context c, boolean vacation) {
-        Set<LocalDate> cur = vacation ? getVacationDates(c) : getOvertimeDates(c);
-        int removed = cur.size();
-        if (removed > 0) {
-            if (vacation) {
-                setVacationDates(c, Collections.emptySet());
-            } else {
-                setOvertimeDates(c, Collections.emptySet());
-            }
-        }
-        return removed;
-    }
-
-    /** 清掉某一天的请假 / 加班记录（日历上点过去的格子用），返回是否删掉了东西。 */
-    public static boolean removeMark(Context c, LocalDate d) {
-        boolean had = isVacation(c, d) || isOvertime(c, d);
-        if (isVacation(c, d)) removeVacation(c, d);
-        if (isOvertime(c, d)) removeOvertime(c, d);
-        return had;
-    }
-
     // ================= 响铃设置（v1.16 起）=================
 
     /** 闹钟音量 0-100；0 = 静音（仅震动）。默认 80。 */

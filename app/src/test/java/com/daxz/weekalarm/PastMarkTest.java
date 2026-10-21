@@ -42,8 +42,11 @@ import java.time.LocalDate;
  *       只是标题标「已过去」、Toast 说「补记」。</li>
  * </ul>
  *
- * <p>现在标记没有时效之分：统计算全部、清除清全部，过去标记不参与闹钟排程
- * （排程从今天往后逐日算）。
+ * <p>现在标记没有时效之分，过去与未来共用一套菜单；改错了就点那一天取消。
+ * 过去标记不参与闹钟排程（排程从今天往后逐日算）。
+ *
+ * <p>v1.35.2 起日历下方不再有「统计 · 清除」按钮：批量清除一次性删掉全部历史，
+ * 风险远大于收益，取消统一走「点某一天 → 取消」。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -287,70 +290,6 @@ public class PastMarkTest {
 
         clickDay(panelOf(a), today.plusDays(1));
         assertNotNull("明天也应弹出选项", latestDialog());
-    }
-
-    // ---------- 统计与清除：都算全部 ----------
-
-    /** 统计算全部，包括补记的过去。 */
-    @Test
-    public void stats_countPastAndFuture() {
-        resetPrefs();
-        LocalDate today = LocalDate.now();
-        Prefs.addVacation(ctx(), today.minusDays(2));
-        Prefs.addVacation(ctx(), today.plusDays(3));
-
-        MainActivity a = launch();
-        TextView tv = a.findViewById(R.id.tv_vacation);
-
-        assertEquals("过去 + 未来共 2 天", "请假 2 天 · 清除", tv.getText().toString());
-    }
-
-    /** 清除清全部：统计说几天，就清掉几天，包括补记的过去。 */
-    @Test
-    public void clear_removesAllMarks_countMatches() {
-        resetPrefs();
-        LocalDate today = LocalDate.now();
-        Prefs.addVacation(ctx(), today.minusDays(1));
-        Prefs.addVacation(ctx(), today.plusDays(1));
-        Prefs.addVacation(ctx(), today.plusDays(2));
-
-        MainActivity a = launch();
-        TextView tv = a.findViewById(R.id.tv_vacation);
-        assertEquals("统计算全部", "请假 3 天 · 清除", tv.getText().toString());
-
-        tv.performClick();
-        AlertDialog d = latestDialog();
-        assertNotNull("应弹出清除确认", d);
-        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-
-        assertFalse("过去的补记也清掉了", Prefs.isVacation(ctx(), today.minusDays(1)));
-        assertFalse("未来两天清掉了", Prefs.isVacation(ctx(), today.plusDays(1)));
-        assertFalse(Prefs.isVacation(ctx(), today.plusDays(2)));
-        assertEquals("统计归零后回到占位文案", "请假标记",
-                ((TextView) a.findViewById(R.id.tv_vacation)).getText().toString());
-    }
-
-    /** 请假与加班分开清，互不影响。 */
-    @Test
-    public void clear_isSeparatedByKind() {
-        resetPrefs();
-        LocalDate today = LocalDate.now();
-        Prefs.addVacation(ctx(), today.minusDays(1));
-        Prefs.addOvertime(ctx(), today.minusDays(1));
-
-        assertEquals(1, Prefs.clearMarks(ctx(), true));
-
-        assertFalse("请假清掉了", Prefs.isVacation(ctx(), today.minusDays(1)));
-        assertTrue("加班不受影响", Prefs.isOvertime(ctx(), today.minusDays(1)));
-    }
-
-    /** 清除幂等：没东西可清时返回 0，不炸。 */
-    @Test
-    public void clear_isIdempotent() {
-        resetPrefs();
-        assertEquals("空集合清 0 条", 0, Prefs.clearMarks(ctx(), true));
-        assertEquals("再清一次仍是 0", 0, Prefs.clearMarks(ctx(), true));
     }
 
     /** 打开 App 不清任何标记——过去与未来都保留。 */

@@ -343,19 +343,4 @@ public class UiLayoutTest {
         assertEquals("收起时按钮写「展开」", "展开",
                 ((TextView) a.findViewById(R.id.tv_run_toggle)).getText().toString());
     }
-
-    /** 请假 / 加班两个入口并排一行（v1.28）：原来是两座通栏「小山」。 */
-    @Test
-    public void vacationAndOvertime_shareOneRow() {
-        MainActivity a = launch();
-        ShadowLooper.idleMainLooper();
-        View vacation = a.findViewById(R.id.tv_vacation);
-        View overtime = a.findViewById(R.id.tv_overtime);
-        assertTrue("两者应在同一个横向容器里", vacation.getParent() == overtime.getParent());
-        LinearLayout row = (LinearLayout) vacation.getParent();
-        assertEquals(LinearLayout.HORIZONTAL, row.getOrientation());
-        assertEquals("等宽两列", 2, row.getChildCount());
-        assertEquals(((LinearLayout.LayoutParams) vacation.getLayoutParams()).weight,
-                ((LinearLayout.LayoutParams) overtime.getLayoutParams()).weight, 0.001f);
-    }
 }

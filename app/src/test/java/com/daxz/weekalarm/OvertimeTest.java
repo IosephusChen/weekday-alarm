@@ -164,19 +164,6 @@ public class OvertimeTest {
         assertFalse("请假优先于加班", Prefs.getScheduledDates(ctx()).contains("1:" + restDay));
     }
 
-    @Test
-    public void calendarPage_withOvertime_showsCount() {
-        setupSingleWorkdayAlarm();
-        LocalDate restDay = findRestDay();
-        Prefs.addOvertime(ctx(), restDay);
-        // setup 覆盖 onCreate+onResume（含升级重排）；加班日不应导致任何异常
-        // v1.34：日历回到首页，统计行也在首页
-        Prefs.setOnboardDone(ctx(), true);
-        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        TextView tvOvertime = activity.findViewById(R.id.tv_overtime);
-        assertEquals("加班 1 天 · 清除", tvOvertime.getText().toString());
-    }
-
     /**
      * v1.15.1 图例回归：7 个语义项必须分两行，且全部可见（单行时「加班」「今天」会被挤出屏幕）。
      * v1.19.9 起两行统一为 4 列网格：第二行只有 3 项，第 4 格是不可见占位，

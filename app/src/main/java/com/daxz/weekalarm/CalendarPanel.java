@@ -48,7 +48,7 @@ final class CalendarPanel {
     private final TextView[] dow = new TextView[DOW_IDS.length];
     private final LinearLayout calRows;
     private final LinearLayout legendRow;
-    private final TextView tvTitle, tvVacation, tvOvertime;
+    private final TextView tvTitle;
     /** 标记变化后通知宿主：重排闹钟 + 刷新首页（含本面板）。 */
     private final Runnable onChanged;
 
@@ -60,8 +60,6 @@ final class CalendarPanel {
         tvTitle = root.findViewById(R.id.tv_cal_title);
         calRows = root.findViewById(R.id.cal_rows);
         legendRow = root.findViewById(R.id.legend_row);
-        tvVacation = root.findViewById(R.id.tv_vacation);
-        tvOvertime = root.findViewById(R.id.tv_overtime);
         for (int i = 0; i < dow.length; i++) {
             dow[i] = root.findViewById(DOW_IDS[i]);
         }
@@ -73,16 +71,13 @@ final class CalendarPanel {
         root.findViewById(R.id.btn_prev).setOnClickListener(v -> shiftMonth(-1));
         root.findViewById(R.id.btn_next).setOnClickListener(v -> shiftMonth(1));
         root.findViewById(R.id.btn_today).setOnClickListener(v -> goToday());
-        tvVacation.setOnClickListener(v -> showClearDialog(true));
-        tvOvertime.setOnClickListener(v -> showClearDialog(false));
 
         setupLegend();
     }
 
-    /** 重画整个面板：格子 + 两个标记统计。首页每次全局刷新都会调。 */
+    /** 重画整个面板。首页每次全局刷新都会调。 */
     void refresh() {
         renderCalendar();
-        updateMarkTexts();
     }
 
     private void shiftMonth(int delta) {
@@ -422,54 +417,6 @@ final class CalendarPanel {
                         Toast.LENGTH_SHORT).show();
             }
         }
-    }
-
-    /** 两个标记统计按钮的文案：已标记天数；点一下弹清除确认。 */
-    private void updateMarkTexts() {
-        int v = countMarks(Prefs.getVacationDates(host));
-        int o = countMarks(Prefs.getOvertimeDates(host));
-        tvVacation.setText(v == 0 ? "请假标记" : "请假 " + v + " 天 · 清除");
-        tvOvertime.setText(o == 0 ? "加班标记" : "加班 " + o + " 天 · 清除");
-    }
-
-    /**
-     * 一键清除全部请假 / 加班标记（单日标记在日历上点对应日期）。
-     *
-     * <p>范围又改回「全部」（v1.35.1）。v1.35.0 曾把过去那段排除在外，前提是过去只读；
-     * 现在过去也能补记，标记就只是一条「那天请假 / 加班」的事实，没有时效之分。
-     * 统计既然算全部，清除也必须清全部——否则按钮上写「请假 5 天」，点完还剩 3 天，
-     * 又是 v1.34.3 修掉的那个矛盾。
-     *
-     * <p>想只删某一天，就在日历上点那一天取消，不必走这里。
-     *
-     * @param vacation true = 请假，false = 加班
-     */
-    private void showClearDialog(boolean vacation) {
-        int n = countMarks(vacation
-                ? Prefs.getVacationDates(host) : Prefs.getOvertimeDates(host));
-        String kind = vacation ? "请假" : "加班";
-        if (n == 0) {
-            Toast.makeText(host, "没有" + kind + "标记。在日历里点某一天即可标记",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        new RoundedDialog.Builder(host)
-                .setTitle("清除全部" + kind + "标记？")
-                .setMessage("将删除 " + n + " 天" + kind + "标记。今天及以后的闹钟会恢复排班，"
-                        + "过去补记的记录也会一起删掉。只想删某一天，就在日历里点那一天取消。")
-                .setPositiveButton("清除", (d, w) -> {
-                    Prefs.clearMarks(host, vacation);
-                    onChanged.run();
-                    Toast.makeText(host, "已清除 " + n + " 天" + kind + "标记",
-                            Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    /** 统计全部标记数：过去与未来都算，与「清除」的范围一致。 */
-    private static int countMarks(Set<LocalDate> dates) {
-        return dates.size();
     }
 
     // ================= 图例 =================

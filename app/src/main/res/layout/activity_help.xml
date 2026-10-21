@@ -175,7 +175,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 日历下方的「请假 N 天 · 清除」算的是全部标记（过去 + 今天以后），点清除就全清掉；只想删某一天，在日历里点那一天取消。" />
+                android:text="· 标错了就点那一天，选「取消请假 / 取消加班」。没有批量清除——一次删掉全部记录太容易误伤。" />
         </LinearLayout>
 
         <!-- ===== ④ 桌面小组件 ===== -->

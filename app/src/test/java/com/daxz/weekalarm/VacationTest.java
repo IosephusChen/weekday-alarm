@@ -161,29 +161,4 @@ public class VacationTest {
         // setup 覆盖 onCreate+onResume（含升级重排）；请假日不应导致任何异常
         Robolectric.buildActivity(MainActivity.class).setup();
     }
-
-    /**
-     * v1.18.2 回归：日历上标记 / 清除请假后，「请假标记」统计行必须跟着刷新。
-     * 此前该行只在 onCreate 更新一次，标记后一直显示「无」。
-     */
-    @Test
-    public void vacationRow_refreshesAfterMarking() throws Exception {
-        setupSingleDailyAlarm();
-        // v1.34：日历回到首页，统计行也在首页
-        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        TextView tv = activity.findViewById(R.id.tv_vacation);
-        assertEquals("请假标记", tv.getText().toString());
-
-        Prefs.addVacation(ctx(), LocalDate.now().plusDays(2));
-        java.lang.reflect.Method refreshAll =
-                MainActivity.class.getDeclaredMethod("refreshAll");
-        refreshAll.setAccessible(true);
-        refreshAll.invoke(activity);
-
-        assertEquals("请假 1 天 · 清除", tv.getText().toString());
-
-        Prefs.removeVacation(ctx(), LocalDate.now().plusDays(2));
-        refreshAll.invoke(activity);
-        assertEquals("请假标记", tv.getText().toString());
-    }
 }

@@ -84,16 +84,25 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setPriority(Notification.PRIORITY_DEFAULT);
 
         // 「明天请假」只在「明天真要上班」时给：休息日/已请假时这个按钮没有意义
-        if (m.workday && !m.vacation) {
+        boolean canSkip = m.workday && !m.vacation;
+        PendingIntent skipPi = null;
+        if (canSkip) {
             Intent skip = new Intent(ctx, BedtimeReceiver.class)
                     .setAction(ACTION_SKIP_TOMORROW)
                     .setData(android.net.Uri.parse("daxz://bedtime/skip/" + m.tomorrow));
-            PendingIntent skipPi = PendingIntent.getBroadcast(ctx, 12, skip,
+            skipPi = PendingIntent.getBroadcast(ctx, 12, skip,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             nb.addAction(new Notification.Action.Builder(
                     Icon.createWithResource(ctx, R.drawable.ic_notif_calendar),
                     "明天请假", skipPi).build());
         }
+        // v1.38.0：折叠态换自绘卡片。
+        //
+        // 设置里写着「可一键标记请假」，但 addAction 的按钮只在**展开后**出现——
+        // 锁屏和刚弹出来时用户看到的是一张没有按钮的卡片，等于这句话没兑现。
+        // 和提前提醒（v1.23.6）、响铃（本版）一样把按钮画进布局里，说了就要能点。
+        nb.setCustomContentView(NotifCard.build(ctx, m.title, m.text, 0, contentPi,
+                canSkip ? NotifCard.Button.primary("明天请假", skipPi) : null));
         try {
             NotificationManagerCompat.from(ctx).notify(BedtimeReminder.NOTIF_ID, nb.build());
         } catch (Exception ignore) {

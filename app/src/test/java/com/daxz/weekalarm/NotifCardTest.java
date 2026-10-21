@@ -1,0 +1,230 @@
+package com.daxz.weekalarm;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
+
+import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.SystemClock;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 三条通知的折叠卡片（v1.38.0）。
+ *
+ * <p>用户提了三个看着不相干的问题，根因只有两个：
+ * <ul>
+ *   <li><b>按钮长什么样</b>：响铃通知还在用系统模板，addAction 渲染出来就是灰色半透明药丸，
+ *       和提前提醒那条的紫渐变放在一起，一眼不像同一款 App。</li>
+ *   <li><b>按钮在不在</b>：睡前提醒的「明天请假」只挂 addAction，而折叠态（锁屏、刚弹出来）
+ *       不渲染 action——设置里写着「可一键标记请假」，用户点不到。</li>
+ * </ul>
+ *
+ * <p>所以这一组测试统一验「把 RemoteViews 真的应用出来之后，卡片上有什么」，
+ * 而不是只看 XML 里写了什么——v1.36.1 的教训就是 XML 与运行时可能不一致。
+ */
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 34, application = Application.class)
+public class NotifCardTest {
+
+    private Context ctx() {
+        return ApplicationProvider.getApplicationContext();
+    }
+
+    private NotificationManager nm() {
+        return (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+    }
+
+    @Before
+    public void setUp() {
+        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
+        sp.edit().clear().apply();
+        // 「仅在明天上班时提醒」默认是开的；关掉它，休息日 / 请假也能发通知，
+        // 这样这组测试不必依赖「明天到底上不上班」
+        Prefs.setBedtimeWorkdayOnly(ctx(), false);
+    }
+
+    private void enableDailyAlarm() {
+        List<Alarm> list = new ArrayList<>();
+        list.add(new Alarm(1, 7, 0, "起床", Alarm.Mode.DAILY, true));
+        ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit()
+                .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
+                .putBoolean(Prefs.KEY_ENABLED, true)
+                .apply();
+    }
+
+    /** 把卡片布局真正 inflate 出来，才验得到运行时塞进去的字与可见性。 */
+    private View card(Notification n) {
+        assertNotNull("必须挂自绘折叠布局", n.contentView);
+        assertEquals("应统一使用 notif_content",
+                R.layout.notif_content, n.contentView.getLayoutId());
+        return n.contentView.apply(ctx(), new FrameLayout(ctx()));
+    }
+
+    private static String text(View root, int id) {
+        return ((TextView) root.findViewById(id)).getText().toString();
+    }
+
+    // ================= 响铃通知 =================
+
+    private AlarmService startRinging() {
+        Intent i = new Intent(ctx(), AlarmService.class)
+                .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
+                .putExtra(AlarmService.EXTRA_LABEL, "起床")
+                .putExtra(AlarmService.EXTRA_DATE, LocalDate.now().toString())
+                .putExtra(AlarmService.EXTRA_POPUP, false);
+        return Robolectric.buildService(AlarmService.class, i).startCommand(0, 0).get();
+    }
+
+    /**
+     * 响铃卡片上的两个按钮：停止（主）与 N 分钟后再响（次）。
+     *
+     * <p>这条同时钉住「不再是系统模板」：contentView 非空、且按钮文字来自我们的布局。
+     */
+    @Test
+    public void ringingCard_showsStopAndSnooze() {
+        enableDailyAlarm();
+        Prefs.setSnoozeMinutes(ctx(), 5);
+        AlarmService svc = startRinging();
+
+        Notification n = shadowOf(svc).getLastForegroundNotification();
+        assertNotNull("响铃必须发前台通知", n);
+        View root = card(n);
+        assertEquals("停止", text(root, R.id.nc_action));
+        assertEquals(View.VISIBLE, root.findViewById(R.id.nc_action2).getVisibility());
+        assertEquals("5 分钟后再响", text(root, R.id.nc_action2));
+        // 响铃不需要倒计时：它正在响，不是「还剩多久」
+        assertEquals(View.GONE, root.findViewById(R.id.nc_chrono).getVisibility());
+    }
+
+    /** 次数用尽时第二个按钮必须消失，否则点了只会弹「已用完」。 */
+    @Test
+    public void ringingCard_hidesSnoozeWhenExhausted() {
+        enableDailyAlarm();
+        Prefs.setSnoozeTimes(ctx(), 1);
+        Prefs.incrementSnoozeCount(ctx(), 1, LocalDate.now());
+        AlarmService svc = startRinging();
+
+        View root = card(shadowOf(svc).getLastForegroundNotification());
+        assertEquals("停止", text(root, R.id.nc_action));
+        assertEquals("次数用尽就不该有这个按钮",
+                View.GONE, root.findViewById(R.id.nc_action2).getVisibility());
+    }
+
+    /** 测试响铃只留「结束测试」——测试没有排班实例，小睡点了也不会响。 */
+    @Test
+    public void testRingingCard_hasOnlyStop() {
+        enableDailyAlarm();
+        Intent i = new Intent(ctx(), AlarmService.class)
+                .setAction(AlarmService.ACTION_TEST)
+                .putExtra(AlarmService.EXTRA_ALARM_ID, 0)
+                .putExtra(AlarmService.EXTRA_LABEL, "起床");
+        AlarmService svc = Robolectric.buildService(AlarmService.class, i).startCommand(0, 0).get();
+
+        View root = card(shadowOf(svc).getLastForegroundNotification());
+        assertEquals("结束测试", text(root, R.id.nc_action));
+        assertEquals(View.GONE, root.findViewById(R.id.nc_action2).getVisibility());
+    }
+
+    // ================= 睡前提醒 =================
+
+    private Notification bedtimeNotification() {
+        new BedtimeReceiver().onReceive(ctx(), new Intent(BedtimeReceiver.ACTION_BEDTIME));
+        return shadowOf(nm()).getNotification(BedtimeReminder.NOTIF_ID);
+    }
+
+    /**
+     * 「明天请假」必须画在卡片上。
+     *
+     * <p>设置页那句「可一键标记请假」就是承诺这个按钮，而它原来只在展开后出现。
+     * 这里把明天标成加班，让「明天是上班日」与运行测试的日期无关。
+     */
+    @Test
+    public void bedtimeCard_hasSkipButtonOnWorkday() {
+        enableDailyAlarm();
+        Prefs.addOvertime(ctx(), LocalDate.now().plusDays(1));
+
+        Notification n = bedtimeNotification();
+        assertNotNull(n);
+        View root = card(n);
+        assertEquals("明天请假", text(root, R.id.nc_action));
+        assertEquals(View.VISIBLE, root.findViewById(R.id.nc_action).getVisibility());
+    }
+
+    /** 明天已请假时不给按钮：那时候「请假」没有意义。 */
+    @Test
+    public void bedtimeCard_noSkipButtonWhenAlreadyOff() {
+        enableDailyAlarm();
+        Prefs.addVacation(ctx(), LocalDate.now().plusDays(1));
+
+        Notification n = bedtimeNotification();
+        assertNotNull(n);
+        View root = card(n);
+        assertEquals(View.GONE, root.findViewById(R.id.nc_action).getVisibility());
+    }
+
+    // ================= 稍后提醒期间的通知 =================
+
+    /**
+     * 点「5 分钟后再响」之后，通知栏必须留一条「稍后再响」。
+     *
+     * <p>原来服务一停、通知一撤，栏里就空了：用户看不到它到底还响不响、什么时候响。
+     */
+    @Test
+    public void snooze_leavesNoticeWithCountdown() {
+        enableDailyAlarm();
+        Prefs.setSnoozeMinutes(ctx(), 5);
+        Robolectric.buildService(AlarmService.class,
+                new Intent(ctx(), AlarmService.class)
+                        .setAction(AlarmService.ACTION_SNOOZE)
+                        .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
+                        .putExtra(AlarmService.EXTRA_LABEL, "起床")
+                        .putExtra(AlarmService.EXTRA_DATE, LocalDate.now().toString()))
+                .startCommand(0, 0);
+
+        Notification n = shadowOf(nm()).getNotification(SnoozeNotice.id(1));
+        assertNotNull("小睡之后通知栏不能空着", n);
+        View root = card(n);
+        assertTrue("标题应说清是谁、要再响", text(root, R.id.nc_title).contains("稍后再响"));
+        assertEquals("应有一个「取消」", "取消", text(root, R.id.nc_action2));
+        assertEquals("要有倒计时", View.VISIBLE, root.findViewById(R.id.nc_chrono).getVisibility());
+
+        long remaining = ((android.widget.Chronometer) root.findViewById(R.id.nc_chrono)).getBase()
+                - SystemClock.elapsedRealtime();
+        assertTrue("倒计时应在 5 分钟左右，实际 " + remaining / 1000 + " 秒",
+                remaining > 3 * 60_000L && remaining < 6 * 60_000L);
+    }
+
+    /** 真的响起来时，那条预告要撤掉，否则栏里两条同时在。 */
+    @Test
+    public void snoozeNotice_cancelledWhenRinging() {
+        enableDailyAlarm();
+        SnoozeNotice.post(ctx(), 1, "起床", 5);
+        assertNotNull("先确认已发出", shadowOf(nm()).getNotification(SnoozeNotice.id(1)));
+
+        startRinging();
+        assertNull("响铃后预告应撤掉", shadowOf(nm()).getNotification(SnoozeNotice.id(1)));
+    }
+}

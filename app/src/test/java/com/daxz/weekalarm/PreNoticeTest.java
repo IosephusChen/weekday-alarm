@@ -13,6 +13,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -268,11 +269,43 @@ public class PreNoticeTest {
         assertEquals("折叠态应使用 notif_content 自绘布局",
                 R.layout.notif_content, n.contentView.getLayoutId());
 
-        // 布局里那个药丸就是按钮，文字必须对得上
-        TextView action = LayoutInflater.from(ctx())
-                .inflate(R.layout.notif_content, null)
-                .findViewById(R.id.nc_action);
+        // v1.38.0：文案不再写死在 XML 里（同一个布局被三条通知共用），
+        // 必须真的把 RemoteViews 应用出来看，才能验到运行时塞进去的字
+        View card = n.contentView.apply(ctx(), new android.widget.FrameLayout(ctx()));
+        TextView action = card.findViewById(R.id.nc_action);
         assertEquals("关闭闹钟", action.getText().toString());
+        assertEquals("只有一个操作，第二个药丸应隐藏",
+                View.GONE, card.findViewById(R.id.nc_action2).getVisibility());
+    }
+
+    /**
+     * 倒计时必须画在卡片里（v1.38.0）。
+     *
+     * <p>v1.37.0 用 {@code setUsesChronometer} 让系统画在通知头部，但设了 customContentView 后
+     * 头部整行都不再由系统渲染——用户「找不到倒计时」就是这个原因，那几行代码从没生效过。
+     * 现在改成卡片里的 Chronometer：断言它可见、且 base 落在「还剩一小时」附近。
+     *
+     * <p>base 用 elapsedRealtime 时基，不是 wall clock。传错会显示成几十万小时，
+     * 所以这里同时把「base 与 elapsedRealtime 的差」钉在合理范围内。
+     */
+    @Test
+    public void preNotice_cardShowsLiveCountdown() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedAlarm(30);
+        ScheduleManager.rescheduleAll(ctx());
+
+        Notification n = preNoticeNotification();
+        assertNotNull(n);
+        View card = n.contentView.apply(ctx(), new android.widget.FrameLayout(ctx()));
+        View chrono = card.findViewById(R.id.nc_chrono);
+        assertEquals("有准确时间就该显示倒计时", View.VISIBLE, chrono.getVisibility());
+
+        long remaining = ((android.widget.Chronometer) chrono).getBase()
+                - android.os.SystemClock.elapsedRealtime();
+        // 提前量 60 分钟，闹钟设在 30 分钟后 → 提醒在 30 分钟后，倒计时应接近 30 分钟
+        assertTrue("倒计时剩余应接近 30 分钟，实际 " + remaining / 1000 + " 秒",
+                remaining > 25 * 60_000L && remaining < 35 * 60_000L);
     }
 
     /**

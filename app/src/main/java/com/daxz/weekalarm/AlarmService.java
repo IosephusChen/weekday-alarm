@@ -90,7 +90,11 @@ public class AlarmService extends Service {
                 return START_NOT_STICKY;
             }
             Prefs.incrementSnoozeCount(this, alarmId, d);
+            int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
             ScheduleManager.snooze(this, alarmId, label != null ? label : "闹钟");
+            // v1.38.0：小睡排好之后立刻补一条通知。原来这里只 stopSelf，通知栏随响铃通知
+            // 一起清空，用户点完「5 分钟后再响」什么反馈都看不到，不知道它到底还响不响。
+            SnoozeNotice.post(this, alarmId, label != null ? label : "闹钟", mins);
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -105,6 +109,9 @@ public class AlarmService extends Service {
         String label = intent != null ? intent.getStringExtra(EXTRA_LABEL) : null;
         if (label == null) label = "闹钟";
         currentAlarmId = intent != null ? intent.getIntExtra(EXTRA_ALARM_ID, 0) : 0;
+        // v1.38.0：真的响了，那条「N 分钟后再次响铃」的预告就该撤——留着会变成
+        // 两条同时在栏里，用户分不清哪条是现在响的
+        SnoozeNotice.cancel(this, currentAlarmId);
         ringDate = parseDate(dateStr);
         boolean test = ACTION_TEST.equals(action);
         // 缺省 true：老路径（测试响铃直接起服务）没有带这个 extra，保持原来的全屏行为
@@ -306,11 +313,21 @@ public class AlarmService extends Service {
         // 小睡按钮：次数用尽时不再提供，避免通知栏无限续睡（v1.18.2）。
         // v1.23：测试模式也不给——测试闹钟没有排班实例，点了只会静默地「什么都不发生」，
         // 用户会以为按钮坏了；现在测试通知里只留「结束测试」。
-        if (!test && ScheduleManager.canSnooze(this, currentAlarmId, ringDate)) {
+        boolean canSnooze = !test && ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
+        int snoozeMins = Math.max(1, Prefs.getSnoozeMinutes(this));
+        if (canSnooze) {
             nb.addAction(new Notification.Action.Builder(
                     Icon.createWithResource(this, R.drawable.ic_notif_snooze),
-                    Math.max(1, Prefs.getSnoozeMinutes(this)) + "分钟后再响", snoozePi).build());
+                    snoozeMins + "分钟后再响", snoozePi).build());
         }
+        // v1.38.0：折叠态换成自绘卡片。
+        //
+        // 用户看到的是「按钮是透明的」——那不是我们的样式，是系统模板给 addAction 的默认
+        // 灰色半透明药丸。和提前提醒那条（v1.23.6 起自绘）放在一起，一眼就不像同一款 App。
+        // 现在两条用同一套卡片：紫渐变图标、「停止」实色紫药丸、「N 分钟后再响」紫描边药丸。
+        nb.setCustomContentView(NotifCard.build(this, title, text, 0, fpi,
+                NotifCard.Button.primary(test ? "结束测试" : "停止", stopPi),
+                canSnooze ? NotifCard.Button.secondary(snoozeMins + " 分钟后再响", snoozePi) : null));
         return nb.build();
     }
 

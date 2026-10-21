@@ -205,6 +205,8 @@ public class AlarmActivity extends AppCompatActivity {
         // 取消尚未触发的「稍后提醒」，避免停止之后又响起来（v1.17）
         ScheduleManager.cancelSnooze(this, alarmId, date);
         Prefs.clearSnoozeCount(this, alarmId, date);
+        // v1.38.0：小睡预告也一并撤掉，否则停止之后通知栏还挂着「N 分钟后再次响铃」
+        SnoozeNotice.cancel(this, alarmId);
         stopService(new android.content.Intent(this, AlarmService.class));
         finish();
     }
@@ -220,6 +222,8 @@ public class AlarmActivity extends AppCompatActivity {
         int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
         Prefs.incrementSnoozeCount(this, alarmId, date);
         ScheduleManager.snooze(this, alarmId, label);
+        // v1.38.0：排好之后补一条通知，通知栏才不会在点了「再响」之后空掉
+        SnoozeNotice.post(this, alarmId, label, mins);
         Toast.makeText(this, mins + " 分钟后再响", Toast.LENGTH_SHORT).show();
         stopService(new android.content.Intent(this, AlarmService.class));
         finish();

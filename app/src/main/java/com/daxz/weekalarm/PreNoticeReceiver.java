@@ -153,11 +153,13 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                         "关闭闹钟", cancelPi).build());
         // v1.37.0：让系统替我们倒计时。
         //
-        // setWhen(触发时刻) + setUsesChronometer(true) + setChronometerCountDown(true) 之后，
-        // 通知头部的时间位会显示「1:00:00」并每秒递减——这是 SystemUI 画的，不占我们的 CPU。
-        // 正文仍是绝对时间（14:10 响铃），两者不冲突：一个说「什么时候」，一个说「还剩多久」。
-        //
         // 时间文本解析不出来（老数据 / 空串）就退回普通时间戳，不硬凑一个错的倒计时。
+        //
+        // v1.38.0 修正：这几个 builder 调用其实**一直没生效**。设了 customContentView 之后，
+        // 通知头部（应用名 / 时间那一行）整行都不再由系统渲染，setUsesChronometer 画在头部
+        // 的倒计时从来没有显示过——用户「找不到倒计时」就是这个原因。
+        // 真正的倒计时改由卡片里的 Chronometer 承担（见下面 NotifCard.build 的 countdownAt），
+        // 这几行保留给「ROM 忽略自绘布局」的兜底。
         long triggerAt = triggerAt(d, timeText);
         if (triggerAt > 0) {
             nb.setWhen(triggerAt)
@@ -171,7 +173,8 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
         // 设了 customContentView，折叠态就是我们的布局，按钮直接躺在卡片上。
         nb.setCustomContentView(
-                buildCard(ctx, label + " 即将响铃", sub, cancelPi, popupPi));
+                NotifCard.build(ctx, label + " 即将响铃", sub, triggerAt, popupPi,
+                        NotifCard.Button.primary("关闭闹钟", cancelPi)));
         // v1.23.4：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
         // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，
         // 而「还有 10 分钟」比「14:10」更能让人马上起身。
@@ -258,22 +261,6 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 药丸按钮只关这一次；图标区域点开详情页，和点正文的行为一致
         rv.setOnClickPendingIntent(R.id.hu_action, cancelPi);
         rv.setOnClickPendingIntent(R.id.hu_icon, contentPi);
-        return rv;
-    }
-
-    /**
-     * 拼折叠卡片的自绘布局（v1.23.6）。
-     *
-     * <p>锁屏和「下拉但没展开」都是这一态。按钮放在这里，才不用先展开才能关。
-     */
-    private static RemoteViews buildCard(Context ctx, String title, String text,
-                                         PendingIntent cancelPi, PendingIntent contentPi) {
-        RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.notif_content);
-        rv.setTextViewText(R.id.nc_title, title);
-        rv.setTextViewText(R.id.nc_text, text);
-        theme(ctx, rv, R.id.nc_icon, R.id.nc_title, R.id.nc_text, R.id.nc_action);
-        rv.setOnClickPendingIntent(R.id.nc_action, cancelPi);
-        rv.setOnClickPendingIntent(R.id.nc_icon, contentPi);
         return rv;
     }
 

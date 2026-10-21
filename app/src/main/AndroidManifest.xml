@@ -105,6 +105,11 @@
             android:name=".StopReceiver"
             android:exported="false" />
 
+        <!-- 稍后提醒期间的「取消」按钮（v1.38）：只撤掉待触发的那一次小睡。 -->
+        <receiver
+            android:name=".SnoozeReceiver"
+            android:exported="false" />
+
         <!-- 睡前提醒（v1.20）：每晚一条「明天要不要早起」，通知里的「明天请假」也走这里。 -->
         <receiver
             android:name=".BedtimeReceiver"

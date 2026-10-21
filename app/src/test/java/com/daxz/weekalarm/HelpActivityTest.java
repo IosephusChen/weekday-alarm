@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -28,6 +29,8 @@ import org.robolectric.annotation.Config;
  *
  * <p>另外钉内容：5 节主题都在，且讲的是当前版本的行为（今天 / 明天两个按钮、日历内嵌、
  * 已请假样式），不是 v1.33 之前的旧说法。
+ *
+ * <p>v1.41.0：本页底部那个「第一次用？看 3 页新手引导」的按钮撤了——引导只在设置页。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -64,15 +67,24 @@ public class HelpActivityTest {
                 HelpActivity.class.getName(), next.getComponent().getClassName());
     }
 
-    /** 说明页底部那个次入口才通向引导——两个入口各司其职。 */
+    /**
+     * 说明页不再放引导入口（v1.41.0）。
+     *
+     * <p>原来底部有个「第一次用？看 3 页新手引导」的按钮，两个问题：
+     * 文案错了——第一次用的人启动就被带进引导，根本翻不到这里；
+     * 位置也重复——设置页里本来就有一个常驻入口。
+     * 现在引导只归设置页，本页只在页脚用一句话指路。
+     */
     @Test
-    public void helpPage_bottomEntry_opensGuide() {
+    public void helpPage_hasNoDuplicateGuideEntry() {
         HelpActivity a = launch();
-        a.findViewById(R.id.row_replay_guide).performClick();
+        String all = allText(a);
 
-        Intent next = Shadows.shadowOf(a).getNextStartedActivity();
-        assertNotNull("点底部入口应启动引导页", next);
-        assertEquals(GuideActivity.class.getName(), next.getComponent().getClassName());
+        assertTrue("不该再出现「第一次用」这种会误导的文案", !all.contains("第一次用"));
+        assertTrue("应指路到设置页里的引导入口", all.contains("设置 → 新手引导与权限"));
+        // 点页面里任何地方都不该跳走：本页只有返回键一个动作
+        assertNull("说明页不该再有自己的跳转按钮",
+                Shadows.shadowOf(a).getNextStartedActivity());
     }
 
     @Test

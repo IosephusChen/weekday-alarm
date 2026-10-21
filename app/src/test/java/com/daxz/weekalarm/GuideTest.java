@@ -418,6 +418,29 @@ public class GuideTest {
     }
 
     /**
+     * 引导的唯一入口在设置页（v1.41.0）。
+     *
+     * <p>说明页底部那个「第一次用？」的按钮撤了——第一次用的人启动就被带进引导，
+     * 走不到说明页；两个按钮通向同一页也让人迷惑。这条钉住设置页那个入口还在，
+     * 否则用户想重看权限就没路可走。
+     */
+    @Test
+    public void settingsEntry_opensGuide() {
+        wipe();
+        Prefs.setOnboardDone(ctx(), true);
+
+        SettingsActivity s = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        View row = s.findViewById(R.id.row_onboard);
+        assertNotNull("设置页应保留引导入口", row);
+        shadowOf(s).clearNextStartedActivities();
+
+        row.performClick();
+        Intent next = shadowOf(s).getNextStartedActivity();
+        assertNotNull("点「新手引导与权限」应启动引导页", next);
+        assertEquals(GuideActivity.class.getName(), next.getComponent().getClassName());
+    }
+
+    /**
      * 返回键 = 中途退出，不写标记。
      * 老版本在拉起引导前就写，用户按一次返回就再也见不到引导了。
      */

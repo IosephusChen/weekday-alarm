@@ -121,8 +121,17 @@
         <item name="android:textSize">17sp</item>
     </style>
 
+    <!-- 响铃横幅的出入场动画（v1.41.0）：贴顶滑入 / 滑出。
+         挂在 WindowManager.LayoutParams.windowAnimations 上，见 FloatingAlarm。 -->
+    <style name="FloatWindowAnim">
+        <item name="android:windowEnterAnimation">@anim/float_in</item>
+        <item name="android:windowExitAnimation">@anim/float_out</item>
+    </style>
+
     <!-- 分组标题条（v1.22.1）：通栏浅色底，把 15 行设置分成四段，
-         省得「铃声」和「睡前提醒」混在一起找 -->
+         省得「铃声」和「睡前提醒」混在一起找。
+         v1.41.0：底色改走 @color/section_bg（夜间有对应值），
+         以前夜间没有覆盖，标题条是近白底 + 中灰字，等于看不见。 -->
     <style name="SettingsSection">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>

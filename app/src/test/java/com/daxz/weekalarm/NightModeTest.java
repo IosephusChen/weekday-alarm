@@ -48,6 +48,39 @@ public class NightModeTest {
                 lum(R.color.ink) > 0.6f);
     }
 
+    /**
+     * 设置页的分组标题条（v1.41.0）。
+     *
+     * <p>用户截图：深色模式下「排程与节假日」「提醒」两段是一条发白的横条，
+     * 条里的字几乎看不见。原因是 {@code @color/section_bg} 只在 values 里定义过
+     * （#F7F8FD），夜间没有对应值，于是深色页面上出现近白底 + 中灰字。
+     *
+     * <p>这里不验「哪个颜色被用上」，直接验夜间这一对必须够暗、够对比——
+     * 以后谁再往 values-night 里漏一个底色，这条会红。
+     */
+    @Test
+    @Config(qualifiers = "night")
+    public void night_settingsSectionBarIsDarkAndReadable() {
+        int bg = ContextCompat.getColor(ctx(), R.color.section_bg);
+        int fg = ContextCompat.getColor(ctx(), R.color.sub);
+        assertTrue("夜间分组条底色应压暗（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
+                ColorUtils.calculateLuminance(bg) < 0.1);
+        double ratio = ColorUtils.calculateContrast(fg, bg);
+        assertTrue("夜间分组条上的字要读得清（对比度 " + ratio + "，要求 >= 4.5）", ratio >= 4.5);
+    }
+
+    /** 日间也要够对比——修夜间不能把白天改坏。 */
+    @Test
+    @Config(qualifiers = "notnight")
+    public void day_settingsSectionBarIsReadable() {
+        int bg = ContextCompat.getColor(ctx(), R.color.section_bg);
+        int fg = ContextCompat.getColor(ctx(), R.color.sub);
+        assertTrue("日间分组条应是浅色（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
+                ColorUtils.calculateLuminance(bg) > 0.8);
+        double ratio = ColorUtils.calculateContrast(fg, bg);
+        assertTrue("日间分组条上的字要读得清（对比度 " + ratio + "，要求 >= 4.5）", ratio >= 4.5);
+    }
+
     /** 日间反过来：浅底深字。这条同时防止「为了修夜间把白天改坏」。 */
     @Test
     @Config(qualifiers = "notnight")

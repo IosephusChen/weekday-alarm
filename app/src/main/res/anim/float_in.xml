@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 横幅入场（v1.41.0）：从状态栏上方滑下来 + 淡入。
+
+     原来小卡片是「啪」地出现在屏幕中间，用户说突兀。贴顶滑入是系统通知横幅的做法，
+     既交代了「它从上面来」，也给了眼睛一点反应时间。 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_cubic">
+    <translate
+        android:duration="260"
+        android:fromYDelta="-100%"
+        android:toYDelta="0" />
+    <alpha
+        android:duration="160"
+        android:fromAlpha="0"
+        android:toAlpha="1" />
+</set>

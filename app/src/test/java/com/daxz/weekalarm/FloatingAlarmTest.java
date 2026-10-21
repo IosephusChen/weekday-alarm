@@ -8,7 +8,9 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
+import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -24,13 +26,17 @@ import org.robolectric.shadows.ShadowSettings;
 import java.time.LocalDate;
 
 /**
- * 响铃时的小悬浮窗（v1.40.0）。
+ * 响铃时的贴顶横幅（v1.40.0 起，v1.41.0 从居中小卡片改成横幅）。
  *
- * <p>用户要的是「解锁使用中弹一个小窗，别整屏盖上来」。两条底线：
+ * <p>用户先要「小窗别整屏」，拿到后又说「出现在屏幕中间太突兀，参考系统闹钟」——
+ * 所以这里除了功能，还钉住<b>位置</b>：必须贴顶（gravity=TOP、y 只让出状态栏）、
+ * 必须通栏（宽度接近屏宽），而不是浮在屏幕中间的一块 300dp 卡片。
+ *
+ * <p>功能上两条底线：
  * <ol>
  *   <li>没给悬浮窗权限时 {@link FloatingAlarm#show} 必须返回 false——
  *       调用方靠这个返回值退回整屏，否则就变成「什么都不弹」</li>
- *   <li>同一时刻只挂一个窗口，重复响铃不能叠出两张卡</li>
+ *   <li>同一时刻只挂一个窗口，重复响铃不能叠出两张横幅</li>
  * </ol>
  */
 @RunWith(RobolectricTestRunner.class)
@@ -68,9 +74,9 @@ public class FloatingAlarmTest {
         assertFalse(FloatingAlarm.isShowing());
     }
 
-    /** 有权限：挂上、文案对、两个按钮都在。 */
+    /** 有权限：挂上、文案对、两个按钮都在（按钮只剩图标，文案走 contentDescription）。 */
     @Test
-    public void withPermission_showsCardWithStopAndSnooze() {
+    public void withPermission_showsBannerWithStopAndSnooze() {
         grantOverlay(true);
         assertTrue(FloatingAlarm.canFloat(ctx()));
         assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
@@ -78,9 +84,38 @@ public class FloatingAlarmTest {
         View v = FloatingAlarm.viewForTest();
         assertNotNull("窗口应已挂上", v);
         assertEquals("起床 时间到了", ((TextView) v.findViewById(R.id.fa_title)).getText().toString());
-        assertEquals("5 分钟后再响", ((TextView) v.findViewById(R.id.fa_snooze)).getText().toString());
+        assertEquals("副标题应说清「几 分钟后能再响」",
+                "稍后再响 5 分钟，或点右侧停止",
+                ((TextView) v.findViewById(R.id.fa_sub)).getText().toString());
         assertEquals(View.VISIBLE, v.findViewById(R.id.fa_snooze).getVisibility());
-        assertEquals("停止", ((TextView) v.findViewById(R.id.fa_stop)).getText().toString());
+        assertEquals("5 分钟后再响",
+                v.findViewById(R.id.fa_snooze).getContentDescription().toString());
+        assertEquals("停止", v.findViewById(R.id.fa_stop).getContentDescription().toString());
+    }
+
+    /**
+     * 贴顶通栏（v1.41.0）。
+     *
+     * <p>这是用户这次反馈的核心：v1.40.0 的卡片是 {@code WRAP_CONTENT} + 屏幕高度 18% 的 y，
+     * 落在屏幕中间，看着像凭空冒出来的弹窗。系统闹钟的横幅是贴顶、左右只留几 dp。
+     */
+    @Test
+    public void banner_isPinnedToTopAndFullWidth() {
+        grantOverlay(true);
+        assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
+
+        WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
+        assertNotNull("应记录挂窗时用的参数", lp);
+        assertEquals("必须贴着顶边（而不是居中）",
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL, lp.gravity);
+
+        int screenH = ctx().getResources().getDisplayMetrics().heightPixels;
+        assertTrue("y 只该让出状态栏（现在 " + lp.y + "，屏高 " + screenH + "）",
+                lp.y < screenH * 0.12f);
+
+        int screenW = ctx().getResources().getDisplayMetrics().widthPixels;
+        assertTrue("宽度应接近屏宽（现在 " + lp.width + " / " + screenW + "）",
+                lp.width > screenW * 0.9f);
     }
 
     /** 次数用尽：不给「再响」，只留「停止」。 */

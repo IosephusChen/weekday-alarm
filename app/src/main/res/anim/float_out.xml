@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 横幅退场（v1.41.0）：滑回上方并淡出，和入场对称。 -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/accelerate_cubic">
+    <translate
+        android:duration="200"
+        android:fromYDelta="0"
+        android:toYDelta="-100%" />
+    <alpha
+        android:duration="200"
+        android:fromAlpha="1"
+        android:toAlpha="0" />
+</set>

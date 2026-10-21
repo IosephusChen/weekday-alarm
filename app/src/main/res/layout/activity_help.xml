@@ -261,32 +261,18 @@
                 android:text="· 若被系统杀后台导致漏响：允许自启动、加入电池优化白名单，并在最近任务里锁定本应用。" />
         </LinearLayout>
 
-        <!-- 底部次入口：说明书看完了还想被带着走一遍，再去引导 -->
-        <TextView
-            android:id="@+id/row_replay_guide"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_card"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:minHeight="52dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:text="第一次用？看 3 页新手引导 ›"
-            android:textColor="@color/indigo"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
+        <!-- 本页不再放「看新手引导」的按钮（v1.41.0）。
+             一是文案错了：写「第一次用？」——第一次用的人启动就自动进引导，根本不会翻到这里；
+             二是重复：设置页里已经有一个常驻入口，两个按钮通向同一页，用户点哪个都觉得自己走错了门。
+             引导归设置页，本页只做「随时查某一条」的手册。 -->
         <TextView
             style="@style/FieldHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="18dp"
             android:layout_marginBottom="6dp"
             android:gravity="center"
-            android:text="使用说明随版本更新，入口在首页最底部" />
+            android:lineSpacingExtra="2dp"
+            android:text="使用说明随版本更新，入口在首页最底部\n想重看新手引导或检查权限：设置 → 新手引导与权限" />
     </LinearLayout>
 </ScrollView>

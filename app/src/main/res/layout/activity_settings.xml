@@ -683,7 +683,9 @@
 
             <View style="@style/SettingsDivider" />
 
-            <!-- 新手引导（v1.19.9）：首次安装会自动展示，这里提供随时重看的入口 -->
+            <!-- 新手引导（v1.19.9）：首次安装会自动展示，这里提供随时重看的入口。
+                 v1.41.0：说明页底部那个「第一次用？」的入口撤了，引导只剩这一处；
+                 标题补上「与权限」，因为第三页就是权限清单，重看的理由往往就是查权限。 -->
             <LinearLayout
                 android:id="@+id/row_onboard"
                 android:layout_width="match_parent"
@@ -704,13 +706,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="新手引导" />
+                    android:text="新手引导与权限" />
 
                 <TextView
                     style="@style/SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="3 步配完" />
+                    android:text="重看" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>

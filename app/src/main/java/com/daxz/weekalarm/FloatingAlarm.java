@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
@@ -12,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -52,12 +55,32 @@ final class FloatingAlarm {
     /** 横幅左右各留多少：8dp，和系统通知横幅一致，再宽就顶到屏幕边缘了。 */
     private static final int SIDE_MARGIN_DP = 8;
     /**
-     * 距状态栏下沿多远：2dp。
+     * 窗口顶边落在状态栏高度的百分之多少处。
      *
-     * <p>v1.42.0 是 6dp，用户仍说「位置太靠下」。留 2dp 而不是 0：完全贴死时
-     * 圆角会和状态栏图标咬在一起，视觉上像被截断；2dp 已经是「贴顶」的观感。
+     * <p>演变：v1.41.0 是屏幕高度的 18%（浮在半空）→ v1.42.0 改成「状态栏下沿 + 6dp」
+     * → v1.43.0 收到 +2dp，用户仍说「位置还是太靠下」。对照系统闹钟的截图量了一下：
+     * 它的横幅顶边落在状态栏高度的<b>一半</b>左右，也就是压在状态栏下半部分上，
+     * 而不是排在状态栏下面。
+     *
+     * <p>要做到这一点光调 y 没用——{@code TYPE_APPLICATION_OVERLAY} 默认被系统
+     * 限制在状态栏之下，y 设成 0 也只是贴到状态栏下沿。必须同时加
+     * {@code FLAG_LAYOUT_IN_SCREEN}，窗口才被允许画进状态栏区域。
+     *
+     * <p>取一半而不是固定 dp：状态栏高度各机型不同（挖孔屏 40~55dp 都见过），
+     * 固定值在一种机型上刚好、在另一种上就压住状态栏文字了。
      */
-    private static final int TOP_GAP_DP = 2;
+    private static final float TOP_FRACTION_OF_STATUS_BAR = 0.5f;
+
+    /** 短提示停留多久：够读完「闹钟 5 分钟后再响」一行，又不至于挡着人操作。 */
+    private static final long TOAST_MS = 2400;
+
+    /**
+     * 短提示距屏幕底部多远：110dp。
+     *
+     * <p>放底部不放中间：横幅刚从上边消失，回执再出现在中间会显得「又弹了一张卡」；
+     * 110dp 大致是单手拇指的自然落点，也避开导航条。
+     */
+    private static final int TOAST_BOTTOM_DP = 110;
 
     private static View view;
     private static WindowManager windowManager;
@@ -65,6 +88,14 @@ final class FloatingAlarm {
     private static WindowManager.LayoutParams lastParams;
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+
+    // 短提示用自己的一组字段，不和横幅共用——点「稍后提醒」时横幅正在退场，
+    // 共用字段会让 hide() 把刚挂上的提示一起清掉
+    private static View toastView;
+    private static WindowManager toastWm;
+    private static WindowManager.LayoutParams toastParams;
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private static Runnable toastTimeout;
 
     private FloatingAlarm() {
     }
@@ -180,12 +211,15 @@ final class FloatingAlarm {
                     Math.max(dp(ctx, 280), dm.widthPixels - side * 2),
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    // 不抢焦点：来电话、打字、返回键都照常走下面的应用
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    // 不抢焦点：来电话、打字、返回键都照常走下面的应用。
+                    // LAYOUT_IN_SCREEN：允许窗口画进状态栏区域，否则下面的 y 会被
+                    // 系统 clamp 回状态栏下沿，等于没调（见 TOP_FRACTION_OF_STATUS_BAR）
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            // 贴顶：状态栏下沿再让 2dp。以前是屏幕高度的 18%，看着像浮在半空
-            lp.y = statusBarHeight(ctx) + dp(ctx, TOP_GAP_DP);
+            // 压在状态栏下半部分，和系统闹钟的横幅一个高度（见 TOP_FRACTION_OF_STATUS_BAR）
+            lp.y = Math.round(statusBarHeight(ctx) * TOP_FRACTION_OF_STATUS_BAR);
             lp.windowAnimations = R.style.FloatWindowAnim;
             // 不加 FLAG_BLUR_BEHIND：在 HyperOS 上会糊掉整屏，见类注释
 
@@ -224,6 +258,87 @@ final class FloatingAlarm {
         view = null;
         windowManager = null;
         lastParams = null;
+    }
+
+    /** 只给单测：短提示当前挂着的 View。 */
+    static View toastViewForTest() {
+        return toastView;
+    }
+
+    /** 只给单测：短提示的窗口参数（验「不拦触摸」「贴底」）。 */
+    static WindowManager.LayoutParams toastParamsForTest() {
+        return toastParams;
+    }
+
+    /**
+     * 弹一句短提示，2.4 秒后自己消失（v1.44.0）。
+     *
+     * <p>为什么需要：点「稍后提醒」后横幅立刻撤掉，通知栏那条也要等一两秒才出现，
+     * 中间屏幕上什么都没有。用户不确定按钮点上了没有，会再点一次——于是多排一次小睡。
+     * 这句提示就是回执。
+     *
+     * <p>没有悬浮窗权限时退回系统 Toast：样式不统一，但「点了没反应」更糟。
+     */
+    static void flash(Context ctx, String text) {
+        if (text == null || text.isEmpty()) return;
+        if (!canFloat(ctx)) {
+            Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            hideToast();
+            View v = LayoutInflater.from(ctx).inflate(R.layout.float_toast, null);
+            ((TextView) v.findViewById(R.id.ft_text)).setText(text);
+
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    // 不抢焦点、不接收触摸：它只是回执，点它不该有任何反应，
+                    // 更不能拦住下面正在操作的界面
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    PixelFormat.TRANSLUCENT);
+            lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            lp.y = dp(ctx, TOAST_BOTTOM_DP);
+            lp.windowAnimations = R.style.FloatToastAnim;
+
+            WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
+            if (wm == null) {
+                Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show();
+                return;
+            }
+            wm.addView(v, lp);
+            toastView = v;
+            toastWm = wm;
+            toastParams = lp;
+            toastTimeout = FloatingAlarm::hideToast;
+            MAIN.postDelayed(toastTimeout, TOAST_MS);
+        } catch (Exception e) {
+            // 权限被回收 / 系统拒绝：退回 Toast，别让「点了没反应」再发生一次
+            Toast.makeText(ctx, text, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** 撤掉短提示。没挂过、或已经被系统回收时静默返回。 */
+    static void hideToast() {
+        if (toastTimeout != null) {
+            MAIN.removeCallbacks(toastTimeout);
+            toastTimeout = null;
+        }
+        if (toastView == null || toastWm == null) {
+            toastView = null;
+            toastWm = null;
+            toastParams = null;
+            return;
+        }
+        try {
+            toastWm.removeView(toastView);
+        } catch (Exception ignore) {
+        }
+        toastView = null;
+        toastWm = null;
+        toastParams = null;
     }
 
     /** 状态栏高度。取不到（部分 ROM 不暴露这个 dimen）就按 24dp 估。 */

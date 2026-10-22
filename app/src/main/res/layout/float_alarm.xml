@@ -13,6 +13,9 @@
   结构（单行，和系统闹钟的 heads-up 一致）：
     左侧大图标 · 大号响铃时刻 + 小字闹钟名 · 右侧两个圆钮（稍后提醒描边 / 停止实色紫）
 
+  v1.44.0：左侧图标从「时钟」换成「闹钟」（加两个铃铛角），稍后提醒从「钟面」
+  换成「三个 Z」——原来两个图标都是圆环 + 两根指针，肉眼几乎一样。
+
   宽度不在这里写死：FloatingAlarm 按屏幕宽度减去左右各 8dp 算好塞进 LayoutParams。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -33,7 +36,7 @@
         android:background="@drawable/bg_notif_icon"
         android:contentDescription="@null"
         android:padding="10dp"
-        android:src="@drawable/ic_notification" />
+        android:src="@drawable/ic_float_alarm" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -77,7 +80,7 @@
         android:contentDescription="稍后提醒"
         android:padding="11dp"
         android:scaleType="fitCenter"
-        android:src="@drawable/ic_notif_snooze"
+        android:src="@drawable/ic_float_snooze"
         android:tint="@color/float_card_icon" />
 
     <ImageButton

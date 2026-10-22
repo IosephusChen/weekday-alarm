@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「稍后提醒」按钮图标（v1.44.0）：三个 Z。
+
+  原来是 ic_notif_snooze（圆环 + 两根指针的钟面），和左侧 logo 撞脸——
+  用户报「悬浮窗的 logo 和稍后提醒的图标一模一样」。钟面表达的是「时间」，
+  而这个按钮要做的是「推迟」，用 z 更直接，也是系统闹钟的做法。
+
+  三个 Z 从右下往左上递减，暗示「时间往后推」而不是「时间在走」。
+  用折线画（上横 → 斜下 → 下横），圆头圆角，与左侧闹钟图标的笔触一致。
+  描边 1.8：比表盘的 2.2 细一点，否则最小的那个 Z 会糊成一坨。
+
+  注意：通知栏的 addAction 仍用 ic_notif_snooze，那个位置只有 18dp 左右，
+  三个 Z 在那个尺寸下看不清，所以两个场景各留一个图标，不要合并。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 两个 Z 而不是三个：24dp 里塞三个，斜线会连成一条斜带，
+         反而看不出是字母。两个都放大，间距拉开。 -->
+    <!-- 大 Z：左下 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M3,12.5 L11,12.5 L3,20.5 L11,20.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.9" />
+    <!-- 小 Z：右上 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M13.5,3 L19,3 L13.5,8.5 L19,8.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.9" />
+</vector>

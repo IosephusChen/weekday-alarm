@@ -95,6 +95,12 @@ public class AlarmService extends Service {
             // v1.38.0：小睡排好之后立刻补一条通知。原来这里只 stopSelf，通知栏随响铃通知
             // 一起清空，用户点完「5 分钟后再响」什么反馈都看不到，不知道它到底还响不响。
             SnoozeNotice.post(this, alarmId, label != null ? label : "闹钟", mins);
+            // v1.44.0：横幅点「稍后提醒」后立刻消失，通知栏那条要等一两秒才出现，
+            // 中间屏幕上什么都没有，用户会以为没点上而再点一次（于是多排一次小睡）。
+            // 这里补一句屏幕上的回执。
+            FloatingAlarm.flash(this,
+                    (label != null && !label.isEmpty() ? label : "闹钟")
+                            + " " + mins + " 分钟后再响");
             stopSelf();
             return START_NOT_STICKY;
         }

@@ -128,6 +128,12 @@
         <item name="android:windowExitAnimation">@anim/float_out</item>
     </style>
 
+    <!-- 稍后提醒的短提示（v1.44.0）：淡入淡出，不滑动 -->
+    <style name="FloatToastAnim">
+        <item name="android:windowEnterAnimation">@anim/float_toast_in</item>
+        <item name="android:windowExitAnimation">@anim/float_toast_out</item>
+    </style>
+
     <!-- 分组标题条（v1.22.1）：通栏浅色底，把 15 行设置分成四段，
          省得「铃声」和「睡前提醒」混在一起找。
          v1.41.0：底色改走 @color/section_bg（夜间有对应值），

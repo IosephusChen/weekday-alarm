@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +36,9 @@ import java.time.LocalDate;
  *   <li>v1.41.0「浮在中间太突兀」→ 必须贴顶（gravity=TOP、y 只让出状态栏）且通栏</li>
  *   <li>v1.43.0「位置还是太靠下」→ y 只让出状态栏 + 2dp</li>
  *   <li>v1.43.0「布局照系统闹钟」→ 大号时刻是主信息，两个圆钮靠 contentDescription 说清用途</li>
+ *   <li>v1.44.0「位置还是太靠下」→ 顶边压到状态栏高度的一半，且窗口带 LAYOUT_IN_SCREEN
+ *       （不加这个标志，y 会被系统 clamp 回状态栏下沿，调了等于没调）</li>
+ *   <li>v1.44.0「logo 和稍后提醒的图标一模一样」→ 左边闹钟、右边 zzz，两个 drawable 必须不同</li>
  * </ol>
  */
 @RunWith(RobolectricTestRunner.class)
@@ -108,11 +112,23 @@ public class FloatingAlarmTest {
         assertTrue("应显示 HH:mm，实际「" + shown + "」", shown.matches("\\d{2}:\\d{2}"));
     }
 
+    /** 复算 FloatingAlarm 用的状态栏高度（取不到时按 24dp 估，与实现一致）。 */
+    private int statusBarHeight() {
+        int id = ctx().getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (id > 0) {
+            int h = ctx().getResources().getDimensionPixelSize(id);
+            if (h > 0) return h;
+        }
+        return Math.round(24 * ctx().getResources().getDisplayMetrics().density);
+    }
+
     /**
-     * 贴顶通栏（v1.41.0 起，v1.43.0 要求更贴顶）。
+     * 贴顶通栏（v1.41.0 起；v1.44.0 要求压进状态栏）。
      *
-     * <p>v1.40.0 的卡片是 {@code WRAP_CONTENT} + 屏幕高度 18% 的 y，落在屏幕中间；
-     * v1.42.0 贴顶但留了 6dp，用户仍说「太靠下」。现在只让出状态栏 + 2dp。
+     * <p>演进：v1.40.0 卡片浮在屏幕 18% 处 → v1.42.0「状态栏下沿 + 6dp」
+     * → v1.43.0 收到 +2dp，用户仍说「位置还是太靠下」。对照系统闹钟量了一下，
+     * 它的横幅顶边落在<b>状态栏高度的一半</b>——压在状态栏下半部分上，
+     * 而不是排在状态栏下面。这里钉住这个比例。
      */
     @Test
     public void banner_isPinnedToTopAndFullWidth() {
@@ -124,15 +140,29 @@ public class FloatingAlarmTest {
         assertEquals("必须贴着顶边（而不是居中）",
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL, lp.gravity);
 
-        int screenH = ctx().getResources().getDisplayMetrics().heightPixels;
-        int density = (int) ctx().getResources().getDisplayMetrics().density;
-        assertTrue("y 只该让出状态栏 + 2dp（现在 " + lp.y + "，屏高 " + screenH + "）",
-                lp.y < screenH * 0.10f);
-        assertTrue("y 不能是负数或 0——那样会压到状态栏图标上", lp.y >= 2 * density);
+        int sb = statusBarHeight();
+        assertEquals("顶边应落在状态栏高度的一半处（系统闹钟就是这个位置）",
+                Math.round(sb * 0.5f), lp.y);
 
         int screenW = ctx().getResources().getDisplayMetrics().widthPixels;
         assertTrue("宽度应接近屏宽（现在 " + lp.width + " / " + screenW + "）",
                 lp.width > screenW * 0.9f);
+    }
+
+    /**
+     * 必须带 FLAG_LAYOUT_IN_SCREEN，否则上面那条 y 等于白设。
+     *
+     * <p>{@code TYPE_APPLICATION_OVERLAY} 默认被系统限制在状态栏之下，
+     * 窗口顶边最早只能到状态栏下沿；y 写成 25dp 会被 clamp 回去。
+     * 只有加了这个标志，窗口才被允许画进状态栏区域。
+     */
+    @Test
+    public void banner_isAllowedToDrawIntoStatusBar() {
+        grantOverlay(true);
+        assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
+        WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
+        assertTrue("缺 FLAG_LAYOUT_IN_SCREEN，y 会被系统 clamp 回状态栏下沿",
+                (lp.flags & WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN) != 0);
     }
 
     /** 次数用尽：不给「稍后提醒」，只留「停止」。 */
@@ -236,5 +266,124 @@ public class FloatingAlarmTest {
         assertTrue("停止钮应是 ImageButton", v.findViewById(R.id.fa_stop) instanceof ImageButton);
         assertTrue("稍后提醒钮应是 ImageButton",
                 v.findViewById(R.id.fa_snooze) instanceof ImageButton);
+    }
+
+    /**
+     * 左侧 logo 与「稍后提醒」不能是同一个图标（v1.44.0）。
+     *
+     * <p>用户原话：「悬浮窗的 logo 和稍后提醒的图标一模一样，这个不太好」。
+     * 当时左边用 {@code ic_notification}（圆环 + 两根指针），右边用
+     * {@code ic_notif_snooze}（同样是圆环 + 两根指针）——两个文件不同，
+     * 但画出来肉眼一样。所以这里比的是<b>资源 id</b>，不是文件是否存在。
+     */
+    @Test
+    public void logoAndSnoozeIcons_areDifferent() {
+        grantOverlay(true);
+        FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true);
+        View v = FloatingAlarm.viewForTest();
+
+        String logo = layoutSrcOf("fa_icon");
+        String snooze = layoutSrcOf("fa_snooze");
+
+        assertFalse("没解析到 fa_icon 的 src，布局格式可能变了", logo.isEmpty());
+        assertFalse("没解析到 fa_snooze 的 src，布局格式可能变了", snooze.isEmpty());
+        assertNotEquals("logo 与稍后提醒不能共用同一个图标", logo, snooze);
+    }
+
+    /**
+     * 从 {@code float_alarm.xml} 里抠出某个 ImageView 的 {@code android:src}。
+     *
+     * <p>为什么读布局而不是查运行时：Robolectric 4.14 没有 {@code ShadowImageView}，
+     * {@code ImageView} 也没有公开的「当前图来自哪个资源」的 getter，
+     * 反射 {@code mResource} 在 shadow 实现下读出来是 0。
+     * 而这里要防的恰恰是「两个位置被写成同一个 drawable」——布局里就能看出来。
+     *
+     * <p><b>注意这条测试管不到「两个资源不同但画出来一样」</b>——v1.44.0 的 bug
+     * 正是这种：{@code ic_notification} 和 {@code ic_notif_snooze} 是两个文件，
+     * 内容都是「圆环 + 两根指针」，肉眼分不出。那种只能靠人眼看截图。
+     */
+    private String layoutSrcOf(String id) {
+        try {
+            String xml = new String(java.nio.file.Files.readAllBytes(
+                    java.nio.file.Paths.get("src/main/res/layout/float_alarm.xml")),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            int at = xml.indexOf("android:id=\"@+id/" + id + "\"");
+            assertTrue("布局里找不到 " + id, at >= 0);
+            int next = xml.indexOf("android:id=\"@+id/", at + 10);
+            String block = next > 0 ? xml.substring(at, next) : xml.substring(at);
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("android:src=\"([^\"]+)\"").matcher(block);
+            return m.find() ? m.group(1) : "";
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    // ===== 稍后提醒后的短提示（v1.44.0）=====
+
+    /** 点稍后提醒后要有一句屏幕上的回执，否则用户以为没点上会再点一次。 */
+    @Test
+    public void flash_showsSnoozeReceipt() {
+        grantOverlay(true);
+        FloatingAlarm.flash(ctx(), "闹钟 5 分钟后再响");
+
+        View v = FloatingAlarm.toastViewForTest();
+        assertNotNull("应挂上一条短提示", v);
+        assertEquals("闹钟 5 分钟后再响",
+                ((TextView) v.findViewById(R.id.ft_text)).getText().toString());
+    }
+
+    /**
+     * 短提示不能拦触摸——它是回执，不是控件。
+     *
+     * <p>如果漏了 {@code FLAG_NOT_TOUCHABLE}，它会吃掉那一片区域的点击，
+     * 用户点下面的列表就没反应，等于用一个「提示」造出一个新的坑。
+     */
+    @Test
+    public void flash_doesNotStealTouches() {
+        grantOverlay(true);
+        FloatingAlarm.flash(ctx(), "闹钟 5 分钟后再响");
+
+        WindowManager.LayoutParams lp = FloatingAlarm.toastParamsForTest();
+        assertNotNull(lp);
+        assertTrue("必须带 FLAG_NOT_TOUCHABLE",
+                (lp.flags & WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE) != 0);
+        assertTrue("必须带 FLAG_NOT_FOCUSABLE",
+                (lp.flags & WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) != 0);
+        assertEquals("应贴屏幕底部居中", Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, lp.gravity);
+    }
+
+    /**
+     * 短提示能被撤掉，不会永久挂在屏幕上。
+     *
+     * <p><b>自动消失（2.4 秒后）这条在 Robolectric 里测不了</b>：推进主 Looper 会执行
+     * {@code ViewRootImpl} 的 traversal 回调，而 shadow 的窗口系统没有真正的
+     * Choreographer，直接抛「message queue synchronization barrier token has not been
+     * posted」。所以这里只验「撤得掉」，定时那半截只能真机看。
+     *
+     * <p>真机验收点：点「稍后提醒」→ 底部出现回执 → 约 2.4 秒后自己淡出，
+     * 不需要点任何东西。
+     */
+    @Test
+    public void flash_canBeDismissed() {
+        grantOverlay(true);
+        FloatingAlarm.flash(ctx(), "闹钟 5 分钟后再响");
+        assertNotNull(FloatingAlarm.toastViewForTest());
+
+        FloatingAlarm.hideToast();
+        assertNull("撤掉后不该还挂着", FloatingAlarm.toastViewForTest());
+    }
+
+    /** 横幅和短提示互不干扰：撤横幅不该把刚弹的回执一起清掉。 */
+    @Test
+    public void hidingBanner_keepsToast() {
+        grantOverlay(true);
+        FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true);
+        FloatingAlarm.flash(ctx(), "闹钟 5 分钟后再响");
+        FloatingAlarm.hide();
+
+        assertFalse(FloatingAlarm.isShowing());
+        assertNotNull("点稍后提醒时横幅正在退场，回执不能跟着消失",
+                FloatingAlarm.toastViewForTest());
     }
 }

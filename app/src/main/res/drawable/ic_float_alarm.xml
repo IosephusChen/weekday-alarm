@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  横幅左侧的大图标（v1.44.0）：闹钟，不是时钟。
+
+  之前这里用的是 ic_notification（圆环 + 两根指针的钟面），而右侧「稍后提醒」
+  按钮用的是 ic_notif_snooze（同样是圆环 + 两根指针）——两个图标肉眼几乎一样，
+  用户报「悬浮窗的 logo 和稍后提醒的图标一模一样」。
+
+  这里照系统闹钟的画法加两个铃铛角：铃铛是「闹钟」和「时钟」唯一可靠的区分点，
+  光靠指针形状区分不了。风格仍与 ic_notification 一致（线性描边、圆头），
+  不混用 Material 那种实心图标，否则一张卡里两种笔触。
+
+  铃铛放在 10 点 / 2 点方向、圆环外侧，不与圆环相交；描边 2.2 比表盘的 2.2 相同，
+  小尺寸下不会糊成一片。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- 表盘：圆心下移 2.2、半径收到 6.8，给顶部两个铃铛让出空间。
+         半径再大铃铛就会被圆环压住，看起来像猫耳朵而不是闹钟。 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,14.2 m-6.8,0 a6.8,6.8 0 1,0 13.6,0 a6.8,6.8 0 1,0 -13.6,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.1" />
+    <!-- 左铃：从圆环左上外侧往外挑 2.8，长度要够，短了就是个角 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M6.8,8.8 L4.7,6.7"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.1" />
+    <!-- 右铃：与左铃对称 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M17.2,8.8 L19.3,6.7"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.1" />
+    <!-- 分针：指向 12 点 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,14.2 L12,10.4"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.1" />
+    <!-- 时针：指向右下 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,14.2 L14.7,15.9"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.1" />
+</vector>

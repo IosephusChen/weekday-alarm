@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「闹钟 X 分钟后再响」的短提示（v1.44.0）。
+
+  单行、居中、不接收触摸（窗口带 FLAG_NOT_TOUCHABLE）——它是回执，不是控件。
+  左右内边距 22dp、上下 13dp，配合 14sp 文字，整体高度约 46dp，和横幅的圆钮同高。
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ft_text"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_float_toast"
+    android:includeFontPadding="false"
+    android:maxLines="1"
+    android:ellipsize="end"
+    android:paddingStart="22dp"
+    android:paddingTop="13dp"
+    android:paddingEnd="22dp"
+    android:paddingBottom="13dp"
+    android:textColor="@color/float_card_time"
+    android:textSize="14sp" />

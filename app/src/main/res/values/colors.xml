@@ -74,6 +74,11 @@
     <!-- ===== 本周班表小组件（v1.20）=====
          组件底色是紫色渐变（bg_hero），因此标签取同色系浅色：
          上班用纯白最醒目，休息降到淡紫灰，节假日/补班/请假/加班各自沿用日历语义色系的亮版。 -->
+    <!-- 注意：这一组「故意」没有 values-night 版本。
+         小组件的底是固定紫色渐变（bg_hero），深色模式下也一样，
+         标签色压在那块紫上，跟着明暗变反而会失真。
+         如果哪天小组件改成跟随主题的底，记得回来把这六个色补进夜间配色，
+         并把 ColorTokenTest.NIGHTLESS 里对应的名字删掉。 -->
     <color name="widget_dim">#C7CBF0</color>
     <color name="widget_rest">#C7D2FE</color>
     <color name="widget_holiday">#FDE68A</color>

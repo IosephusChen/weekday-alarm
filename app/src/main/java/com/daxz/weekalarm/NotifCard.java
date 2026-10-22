@@ -2,12 +2,10 @@ package com.daxz.weekalarm;
 
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.res.Configuration;
 import android.os.SystemClock;
 import android.view.View;
 import android.widget.RemoteViews;
 
-import androidx.core.content.ContextCompat;
 
 /**
  * 通知卡片（折叠态）的统一画法（v1.38.0）。
@@ -67,13 +65,11 @@ final class NotifCard {
         rv.setTextViewText(R.id.nc_title, title);
         rv.setTextViewText(R.id.nc_text, text);
 
-        boolean night = (ctx.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        // RemoteViews 拿不到当前主题的文字色，只能自己读 uiMode
-        rv.setTextColor(R.id.nc_title, night ? 0xFFFFFFFF : 0xFF1E2235);
-        rv.setTextColor(R.id.nc_text, night ? 0xB3FFFFFF : 0xFF6B7189);
+        // RemoteViews 拿不到当前主题的文字色，只能按通知栏明暗自己挑（见 NotifTheme）
+        rv.setTextColor(R.id.nc_title, NotifTheme.title(ctx));
+        rv.setTextColor(R.id.nc_text, NotifTheme.text(ctx));
         // 紫底上只能放白图标
-        rv.setInt(R.id.nc_icon, "setColorFilter", 0xFFFFFFFF);
+        rv.setInt(R.id.nc_icon, "setColorFilter", NotifTheme.ON_BRAND);
         if (contentPi != null) {
             rv.setOnClickPendingIntent(R.id.nc_icon, contentPi);
         }
@@ -86,7 +82,7 @@ final class NotifCard {
             rv.setViewVisibility(R.id.nc_chrono, View.VISIBLE);
             rv.setChronometer(R.id.nc_chrono, base, null, true);
             rv.setChronometerCountDown(R.id.nc_chrono, true);
-            rv.setTextColor(R.id.nc_chrono, night ? 0xFFC4B5FD : ContextCompat.getColor(ctx, R.color.indigo));
+            rv.setTextColor(R.id.nc_chrono, NotifTheme.accent(ctx));
         } else {
             rv.setViewVisibility(R.id.nc_chrono, View.GONE);
         }
@@ -103,7 +99,7 @@ final class NotifCard {
         }
         if (primary != null) {
             rv.setTextViewText(R.id.nc_action, primary.text);
-            rv.setTextColor(R.id.nc_action, 0xFFFFFFFF);
+            rv.setTextColor(R.id.nc_action, NotifTheme.ON_BRAND);
             rv.setViewVisibility(R.id.nc_action, View.VISIBLE);
             rv.setOnClickPendingIntent(R.id.nc_action, primary.pi);
         } else {
@@ -111,8 +107,7 @@ final class NotifCard {
         }
         if (secondary != null) {
             rv.setTextViewText(R.id.nc_action2, secondary.text);
-            rv.setTextColor(R.id.nc_action2,
-                    night ? 0xFFC4B5FD : ContextCompat.getColor(ctx, R.color.indigo));
+            rv.setTextColor(R.id.nc_action2, NotifTheme.accent(ctx));
             rv.setViewVisibility(R.id.nc_action2, View.VISIBLE);
             rv.setOnClickPendingIntent(R.id.nc_action2, secondary.pi);
         } else {

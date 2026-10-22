@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.widget.RemoteViews;
@@ -318,15 +317,11 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,
                               int textId, int actionId) {
-        boolean night = (ctx.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        int titleColor = night ? 0xFFFFFFFF : 0xFF1E2235;
-        int subColor = night ? 0xB3FFFFFF : 0xFF6B7189;
-        rv.setTextColor(titleId, titleColor);
-        rv.setTextColor(textId, subColor);
+        rv.setTextColor(titleId, NotifTheme.title(ctx));
+        rv.setTextColor(textId, NotifTheme.text(ctx));
         // 紫底上只能放白字、白图标
-        rv.setTextColor(actionId, 0xFFFFFFFF);
-        rv.setInt(iconId, "setColorFilter", 0xFFFFFFFF);
+        rv.setTextColor(actionId, NotifTheme.ON_BRAND);
+        rv.setInt(iconId, "setColorFilter", NotifTheme.ON_BRAND);
     }
 
     /** 提前关闭这次响铃：取消主闹钟 + 提前通知闹钟 + 待触发的小睡。 */

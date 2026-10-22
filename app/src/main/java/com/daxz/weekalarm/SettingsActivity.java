@@ -15,6 +15,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
+import java.time.LocalDate;
+
 /**
  * 「设置与使用说明」页（v1.19.7）。
  *
@@ -31,6 +33,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     private TextView tvKeys, tvSnooze, tvPreNotice, tvRingDuration, tvRingtone;
     private TextView tvHorizon, tvHolidayData, tvVolume, tvBedtime, tvWeekStart;
+    /** 周休制度三行（v1.46.3 从首页「排班」卡搬来）。 */
+    private TextView tvWeekMode, tvWeekBig, tvSmallRest;
     private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
     private SwitchCompat swChristian;
 
@@ -117,6 +121,9 @@ public class SettingsActivity extends AppCompatActivity {
         tvRingtone = findViewById(R.id.tv_ringtone);
         tvHorizon = findViewById(R.id.tv_horizon);
         tvWeekStart = findViewById(R.id.tv_week_start);
+        tvWeekMode = findViewById(R.id.tv_week_mode);
+        tvWeekBig = findViewById(R.id.tv_week_big);
+        tvSmallRest = findViewById(R.id.tv_small_rest);
         tvHolidayData = findViewById(R.id.tv_holiday_data);
         tvVolume = findViewById(R.id.tv_volume);
         tvBedtime = findViewById(R.id.tv_bedtime);
@@ -126,6 +133,11 @@ public class SettingsActivity extends AppCompatActivity {
         swChristian = findViewById(R.id.switch_christian);
         swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
 
+        // 周休制度（v1.46.3）：从首页「排班」卡搬来，放在「一周开始日」之前——
+        // 班制决定哪天上班，比日历从周一还是周日排更基础
+        findViewById(R.id.row_week_mode).setOnClickListener(v -> showWeekModeDialog());
+        findViewById(R.id.row_week_big).setOnClickListener(v -> showWeekBigDialog());
+        findViewById(R.id.row_small_rest).setOnClickListener(v -> showSmallRestDialog());
         // v1.19.8：整行可点（标题左、值右），点哪一段都打开同一个对话框
         findViewById(R.id.row_week_start).setOnClickListener(v -> showWeekStartDialog());
         findViewById(R.id.row_horizon).setOnClickListener(v -> showHorizonDialog());
@@ -201,6 +213,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void refreshAll() {
         updateHorizonText();
+        updateWeekModeUi();
+        updateWeekBigText();
+        updateSmallRestText();
         updateWeekStartText();
         updateHolidayDataText();
         updateVolumeText();
@@ -227,6 +242,84 @@ public class SettingsActivity extends AppCompatActivity {
             ScheduleManager.rescheduleAll(this);
         }
         refreshAll();
+    }
+
+    // ================= 周休制度（v1.46.3 由主界面迁入）=================
+
+    /** 刷新右侧文字，并只在「大小周」下显示本周是大周/小周、小周休哪天。 */
+    private void updateWeekModeUi() {
+        WeekSchedule.Mode mode = Prefs.getWeekMode(this);
+        tvWeekMode.setText(mode.label);
+        findViewById(R.id.ll_big_small).setVisibility(
+                mode.needsAnchor() ? View.VISIBLE : View.GONE);
+    }
+
+    /** 周休制度选择：四选一，选完立刻按新制度重排。 */
+    private void showWeekModeDialog() {
+        WeekSchedule.Mode[] modes = WeekSchedule.Mode.values();
+        String[] options = {
+                "大小周（一周双休、一周单休）",
+                "双休（每周六、周日都休）",
+                "单休 · 周日休（周六上班）",
+                "单休 · 周六休（周日上班）"
+        };
+        new RoundedDialog.Builder(this)
+                .setTitle("周休制度")
+                .setSingleChoiceItems(options, Prefs.getWeekMode(this).ordinal(), (dialog, which) -> {
+                    dialog.dismiss();
+                    Prefs.setWeekMode(this, modes[which]);
+                    updateWeekModeUi();
+                    applySettingsIfEnabled();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void updateWeekBigText() {
+        tvWeekBig.setText(Prefs.isWeekBig(this) ? "大周（休2天）" : "小周（休1天）");
+    }
+
+    /** 本周是大周还是小周：单选对话框，选完立刻重排（含 anchor 前移 / 后移一周）。 */
+    private void showWeekBigDialog() {
+        String[] options = {"大周（周六、周日都休）", "小周（只休一天）"};
+        int checked = Prefs.isWeekBig(this) ? 0 : 1;
+        new RoundedDialog.Builder(this)
+                .setTitle("本周是")
+                .setSingleChoiceItems(options, checked, (dialog, which) -> {
+                    dialog.dismiss();
+                    boolean big = which == 0;
+                    Prefs.setWeekBig(this, big);
+                    // anchor 始终是「最近的一个大周周六」
+                    LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
+                    Prefs.setAnchor(this, big ? sat : sat.minusWeeks(1));
+                    updateWeekBigText();
+                    applySettingsIfEnabled();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void updateSmallRestText() {
+        tvSmallRest.setText(Prefs.isSmallRestSat(this)
+                ? "周六（周日上班）" : "周日（周六上班）");
+    }
+
+    /** 小周休息日：单选对话框，替代 Spinner（部分 ROM 上 Spinner 选中文字不渲染）。 */
+    private void showSmallRestDialog() {
+        String[] options = {"周日休（周六上班）", "周六休（周日上班）"};
+        int checked = Prefs.isSmallRestSat(this) ? 1 : 0;
+        new RoundedDialog.Builder(this)
+                .setTitle("小周休哪天")
+                .setSingleChoiceItems(options, checked, (dialog, which) -> {
+                    // 先关对话框再做重排/刷新：部分 ROM 上对话框仍持有窗口令牌时
+                    // 操作 Activity 视图树会触发异常，先 dismiss 最稳
+                    dialog.dismiss();
+                    Prefs.setSmallRestSat(this, which == 1);
+                    updateSmallRestText();
+                    applySettingsIfEnabled();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     // ================= 提醒范围（v1.19.7 由主界面迁入）=================

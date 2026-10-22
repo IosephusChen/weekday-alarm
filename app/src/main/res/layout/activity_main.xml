@@ -233,105 +233,17 @@
 
         </LinearLayout>
 
-        <!-- ===== ① 排班 =====
-             v1.23：排班和闹钟拆成两张卡。上一版把它们并成一张、用小节标签分组，
-             实际用下来「周休制度」和「闹钟列表」是两件事，混在一张卡里要滚过三行设置
-             才看到闹钟。拆开后各占一张，标题直接写「排班」「闹钟」。 -->
-        <TextView
-            style="@style/SectionTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="排班" />
-
+        <!-- ===== 闹钟总开关（v1.46.3 从闹钟卡里拆出来）=====
+             它管着下面所有闹钟，是每天都要碰的一下。日历上移到闹钟列表之前后，
+             列表会沉到第二屏——但开关不能跟着沉，所以拆出来单独一张卡，紧贴今日卡。 -->
         <LinearLayout
+            android:id="@+id/card_alarm_switch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:paddingTop="4dp">
-
-            <!-- 周休制度（v1.22）：双休 / 单休 / 大小周。整行可点，弹单选对话框 -->
-            <LinearLayout
-                android:id="@+id/row_week_mode"
-                style="@style/CardRow">
-
-                <TextView
-                    style="@style/CardRowLabel"
-                    android:text="周休制度" />
-
-                <TextView
-                    android:id="@+id/tv_week_mode"
-                    style="@style/CardRowValue"
-                    android:text="大小周" />
-
-                <TextView style="@style/CardRowChevron" />
-            </LinearLayout>
-
-            <!-- 大小周专属：选「大小周」时才显示；双休 / 单休下整块隐藏 -->
-            <LinearLayout
-                android:id="@+id/ll_big_small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <View style="@style/CardDivider" />
-
-                <!-- 本周是大周还是小周：原来两个大单选 + 通栏按钮占了近 200dp，
-                     改成「左标题 + 右值 + ›」一行，高度减半。 -->
-                <LinearLayout
-                    android:id="@+id/row_week_big"
-                    style="@style/CardRow">
-
-                    <TextView
-                        style="@style/CardRowLabel"
-                        android:text="本周是" />
-
-                    <TextView
-                        android:id="@+id/tv_week_big"
-                        style="@style/CardRowValue"
-                        android:text="大周（休2天）" />
-
-                    <TextView style="@style/CardRowChevron" />
-                </LinearLayout>
-
-                <View style="@style/CardDivider" />
-
-                <!-- 小周休哪天：整行可点，弹单选对话框（MIUI 上 Spinner 选中文字不渲染） -->
-                <LinearLayout
-                    android:id="@+id/row_small_rest"
-                    style="@style/CardRow">
-
-                    <TextView
-                        style="@style/CardRowLabel"
-                        android:text="小周休哪天" />
-
-                    <TextView
-                        android:id="@+id/tv_small_rest"
-                        style="@style/CardRowValue"
-                        android:text="周日（周六上班）" />
-
-                    <TextView style="@style/CardRowChevron" />
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- ===== ② 闹钟 ===== -->
-        <TextView
-            style="@style/SectionTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="闹钟" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:paddingTop="4dp">
+            android:clipToOutline="true"
+            android:orientation="vertical">
 
             <!-- 闹钟总开关（v1.22.4）：它管着下面所有闹钟，所以排在列表上方当「总指挥」 -->
             <LinearLayout
@@ -369,38 +281,6 @@
                     android:clickable="false"
                     android:focusable="false" />
             </LinearLayout>
-
-            <!-- 卡头与列表之间的线，起点在 renderAlarmList() 里跟着时间列宽对齐 -->
-            <View
-                android:id="@+id/div_alarm_top"
-                style="@style/CardDivider" />
-
-            <!-- 闹钟列表：由 MainActivity.renderAlarmList() 动态生成（每行：时间/名称/规则/开关） -->
-            <LinearLayout
-                android:id="@+id/alarm_list"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="12dp" />
-
-            <TextView
-                android:id="@+id/btn_add_alarm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_add_alarm"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:padding="13dp"
-                android:text="+ 添加闹钟"
-                android:textColor="@color/indigo"
-                android:textSize="14sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <!-- ===== ③ 排班日历（v1.34.0 搬回首页，默认展开）=====
@@ -573,6 +453,49 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:orientation="vertical" />
+        </LinearLayout>
+
+        <!-- ===== ② 闹钟 ===== -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="闹钟" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical">
+
+            <!-- 闹钟列表：由 MainActivity.renderAlarmList() 动态生成（每行：时间/名称/规则/开关） -->
+            <LinearLayout
+                android:id="@+id/alarm_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="12dp" />
+
+            <TextView
+                android:id="@+id/btn_add_alarm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_add_alarm"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="13dp"
+                android:text="+ 添加闹钟"
+                android:textColor="@color/indigo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <!-- ===== ④ 底部三块搬去设置页（v1.46.2）=====

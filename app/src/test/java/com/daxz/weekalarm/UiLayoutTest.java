@@ -3,6 +3,8 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -59,20 +61,30 @@ public class UiLayoutTest {
         return ctl.get();
     }
 
-    /** 总开关是「总指挥」，必须排在闹钟列表之前（v1.22.4 从列表下方上移）。 */
+    /**
+     * 总开关是「总指挥」，必须排在闹钟列表之前。
+     *
+     * <p>v1.22.4 把它从列表下方上移；v1.46.3 更进一步，从闹钟卡里拆出来单独成卡——
+     * 日历上移到列表之前后，列表会沉到第二屏，而开关是每天要碰的一下，不能跟着沉。
+     *
+     * <p>所以这条不再断言「同一张卡」，改断言整页里的先后：它必须还在列表之前。
+     */
     @Test
     public void masterSwitch_sitsAboveAlarmList() {
         MainActivity a = launch();
         View rowSwitch = a.findViewById(R.id.row_alarm_switch);
+        View card = a.findViewById(R.id.card_alarm_switch);
         View list = a.findViewById(R.id.alarm_list);
         assertNotNull(rowSwitch);
         assertNotNull(list);
-        ViewGroup card = (ViewGroup) list.getParent();
-        assertTrue("总开关应与列表在同一张卡片里", card == rowSwitch.getParent());
-        int switchIndex = card.indexOfChild(rowSwitch);
-        int listIndex = card.indexOfChild(list);
-        assertTrue("总开关（" + switchIndex + "）应在闹钟列表（" + listIndex + "）之前",
-                switchIndex < listIndex);
+        assertNotNull("总开关应独立成卡", card);
+        assertSame("开关行应装在自己的卡里", card, rowSwitch.getParent());
+
+        ViewGroup parent = (ViewGroup) card.getParent();
+        View alarmCard = (View) list.getParent();
+        assertSame("两张卡应在同一个容器里", parent, alarmCard.getParent());
+        assertTrue("总开关卡应排在闹钟卡之前",
+                parent.indexOfChild(card) < parent.indexOfChild(alarmCard));
     }
 
 
@@ -228,17 +240,61 @@ public class UiLayoutTest {
         return Long.parseLong(p[0]) * 3600 + Long.parseLong(p[1]) * 60 + Long.parseLong(p[2]);
     }
 
-    /** v1.23：排班与闹钟拆成两张卡——两张卡各有标题，不再靠小节标签分组。 */
+    /**
+     * v1.46.3：排班卡整块搬去设置页，首页不再有它。
+     *
+     * <p>v1.23 这条守的是「排班与闹钟拆成两张卡」——当时两件事混在一张卡里，
+     * 要滚过三行设置才看见闹钟。现在更进一步：排班三行（周休制度 / 本周是 / 小周休哪天）
+     * 全是配置，一年动不了几次，却占 209dp（含分组标题）把日历挤出第一屏。
+     *
+     * <p>它不缺替身：显示职能由今日卡右上角的徽标承担（「大周 · 休2天」），
+     * 首次设置由新手引导第 1 页承担。剩下的只有「换工作改班制」和「推算错了校准」。
+     */
     @Test
-    public void scheduleAndAlarm_areTwoSeparateCards() {
+    public void scheduleCard_livesInSettings_notOnHome() {
         MainActivity a = launch();
-        View weekMode = a.findViewById(R.id.row_week_mode);
-        View list = a.findViewById(R.id.alarm_list);
-        assertTrue("排班行与闹钟列表不该在同一张卡里",
-                weekMode.getParent() != list.getParent());
-        // 大小周下：周休制度行 + 「本周是 / 小周休哪天」那一组，共 2 个子 View
-        assertEquals("排班卡只装排班设置", 2,
-                ((ViewGroup) weekMode.getParent()).getChildCount());
+        assertNull("首页不该再有周休制度行", a.findViewById(R.id.row_week_mode));
+        assertNull("首页不该再有「本周是」行", a.findViewById(R.id.row_week_big));
+        assertNull("首页不该再有「小周休哪天」行", a.findViewById(R.id.row_small_rest));
+
+        SettingsActivity s = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertNotNull("设置页应有周休制度行", s.findViewById(R.id.row_week_mode));
+        assertNotNull("设置页应有「本周是」行", s.findViewById(R.id.row_week_big));
+        assertNotNull("设置页应有「小周休哪天」行", s.findViewById(R.id.row_small_rest));
+    }
+
+    /**
+     * v1.46.3：总开关从闹钟卡里拆出来，单独一张卡。
+     *
+     * <p>日历上移到闹钟列表之前后，列表会沉到第二屏——但「闹钟总开关」是每天要碰的一下，
+     * 不能跟着沉。原来它在闹钟卡里当「总指挥」，现在独立成卡紧贴今日卡。
+     */
+    @Test
+    public void alarmSwitch_isItsOwnCard() {
+        MainActivity a = launch();
+        View card = a.findViewById(R.id.card_alarm_switch);
+        ViewGroup list = a.findViewById(R.id.alarm_list);
+        assertNotNull("总开关应独立成卡", card);
+        assertTrue("总开关不该再和闹钟列表挤在同一张卡里", card != list.getParent());
+    }
+
+    /**
+     * v1.46.3：日历排在闹钟列表之前。
+     *
+     * <p>核对班表是每天的事，翻闹钟列表不是。原来日历排在最末，要滚过整个列表才看得见——
+     * v1.34.0 把它从独立页搬回首页的理由是「多一次跳转就多一次放弃」，
+     * 结果变成了「多滚一屏才能看见」，问题只是换了形式。
+     *
+     * <p>这条守的是容器里的先后顺序，不涉及任何尺寸——顺序被挪回去，它立刻红。
+     */
+    @Test
+    public void calendar_comesBeforeAlarmList() {
+        MainActivity a = launch();
+        View cal = a.findViewById(R.id.calendar_card);
+        View alarmCard = (View) a.findViewById(R.id.alarm_list).getParent();
+        ViewGroup parent = (ViewGroup) cal.getParent();
+        assertSame("日历与闹钟卡应在同一个容器里", parent, alarmCard.getParent());
+        assertTrue("日历应排在闹钟卡之前", parent.indexOfChild(cal) < parent.indexOfChild(alarmCard));
     }
 
     /**
@@ -254,27 +310,6 @@ public class UiLayoutTest {
         LinearLayout row = (LinearLayout) list.getChildAt(0);
         assertEquals("时间与名称应顶部对齐", Gravity.TOP,
                 row.getGravity() & Gravity.VERTICAL_GRAVITY_MASK);
-    }
-
-    /**
-     * v1.23.9：卡头那条线跟行间的线落在同一条竖线上。
-     *
-     * <p>卡头线在卡片里、行间线在列表里，列表自己还有 16dp 的左内边距，
-     * 两边算出来的绝对起点必须相等，否则三条线一长一短看着零碎。
-     */
-    @Test
-    public void alarmCard_topDividerAlignsWithRowDividers() {
-        MainActivity a = launch();
-        ViewGroup list = a.findViewById(R.id.alarm_list);
-        View innerDiv = list.getChildAt(1);
-        View topDiv = a.findViewById(R.id.div_alarm_top);
-        assertNotNull("卡头分隔线必须存在", topDiv);
-
-        int innerStart = ((LinearLayout.LayoutParams) innerDiv.getLayoutParams()).getMarginStart();
-        int topStart = ((LinearLayout.LayoutParams) topDiv.getLayoutParams()).getMarginStart();
-        int listPad = (int) (16 * a.getResources().getDisplayMetrics().density);
-        assertEquals("卡头分隔线应与行间分隔线落在同一条竖线上",
-                innerStart + listPad, topStart);
     }
 
     /**

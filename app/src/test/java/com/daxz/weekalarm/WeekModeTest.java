@@ -174,14 +174,20 @@ public class WeekModeTest {
         assertEquals("小周 · 休1天", WeekSchedule.describe(r, SUN));
     }
 
-    /** 主界面「本周是」：点开对话框选小周，应写入状态并把基准推到上一周的周六。 */
+    /**
+     * 「本周是」：点开对话框选小周，应写入状态并把基准推到上一周的周六。
+     *
+     * <p>v1.46.3 起这一行从首页搬到了设置页，所以反射目标也跟着换成 SettingsActivity。
+     * 断言没变——写状态、推 anchor 这两件事和界面放哪无关。
+     */
     @Test
     public void weekBigDialog_setsStateAndAnchor() throws Exception {
         Context c = ApplicationProvider.getApplicationContext();
         c.getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
 
-        MainActivity a = org.robolectric.Robolectric.buildActivity(MainActivity.class).setup().get();
-        java.lang.reflect.Method m = MainActivity.class.getDeclaredMethod("showWeekBigDialog");
+        SettingsActivity a =
+                org.robolectric.Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        java.lang.reflect.Method m = SettingsActivity.class.getDeclaredMethod("showWeekBigDialog");
         m.setAccessible(true);
         m.invoke(a);
         org.robolectric.shadows.ShadowLooper.idleMainLooper();

@@ -45,16 +45,34 @@ public class SmallRestDialogCrashTest {
         return controller.get();
     }
 
+    /** 模拟用户装 v1.12.1 后的状态，但开的是设置页（v1.46.3 起班制在这里）。 */
+    private SettingsActivity setupSettingsLikeUser() {
+        android.content.SharedPreferences sp =
+                ApplicationProvider.getApplicationContext()
+                        .getSharedPreferences("daxz_alarm", android.content.Context.MODE_PRIVATE);
+        sp.edit().clear().apply();
+        sp.edit()
+                .putInt("alarm_hour", 21)
+                .putInt("alarm_min", 11)
+                .putBoolean("enabled", true)
+                .putInt("horizon_days", 365)
+                .apply();
+        ActivityController<SettingsActivity> controller =
+                Robolectric.buildActivity(SettingsActivity.class);
+        controller.setup();
+        return controller.get();
+    }
+
     /** 反射调用私有的 showSmallRestDialog()。 */
-    private static void openSmallRestDialog(MainActivity activity) throws Exception {
-        java.lang.reflect.Method m = MainActivity.class.getDeclaredMethod("showSmallRestDialog");
+    private static void openSmallRestDialog(SettingsActivity activity) throws Exception {
+        java.lang.reflect.Method m = SettingsActivity.class.getDeclaredMethod("showSmallRestDialog");
         m.setAccessible(true);
         m.invoke(activity);
     }
 
     @Test
     public void clickSmallRestOption_doesNotCrash() throws Exception {
-        MainActivity activity = setupActivityLikeUser();
+        SettingsActivity activity = setupSettingsLikeUser();
 
         // 打开「小周休哪天」对话框
         openSmallRestDialog(activity);

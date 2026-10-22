@@ -63,6 +63,116 @@
                 style="@style/SettingsSection"
                 android:text="排程与节假日" />
 
+            <!-- ===== 周休制度（v1.46.3 从首页搬来）=====
+                 首页那张「排班」卡三行全是配置：周休制度、本周大/小周、小周休哪天，
+                 一年动不了几次，却占 209dp（含分组标题），把日历挤出了第一屏。
+                 显示职能不需要它——今日卡右上角的徽标已经写着「大周 · 休2天」；
+                 首次设置也不需要它——新手引导第 1 页就是选周休制度。
+                 所以只剩「换工作改班制」和「推算错了要校准」两个低频场景，归到设置页。 -->
+            <LinearLayout
+                android:id="@+id/row_week_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="54dp"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    style="@style/SettingsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="周休制度" />
+
+                <TextView
+                    android:id="@+id/tv_week_mode"
+                    style="@style/SettingsValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="大小周" />
+
+                <TextView style="@style/SettingsChevron" />
+            </LinearLayout>
+
+            <View style="@style/SettingsDivider" />
+
+            <!-- 大小周专属：双休 / 单休下整块隐藏 -->
+            <LinearLayout
+                android:id="@+id/ll_big_small"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/row_week_big"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="54dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        style="@style/SettingsTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="本周是" />
+
+                    <TextView
+                        android:id="@+id/tv_week_big"
+                        style="@style/SettingsValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="大周（休2天）" />
+
+                    <TextView style="@style/SettingsChevron" />
+                </LinearLayout>
+
+                <View style="@style/SettingsDivider" />
+
+                <LinearLayout
+                    android:id="@+id/row_small_rest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="54dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        style="@style/SettingsTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="小周休哪天" />
+
+                    <TextView
+                        android:id="@+id/tv_small_rest"
+                        style="@style/SettingsValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="周日（周六上班）" />
+
+                    <TextView style="@style/SettingsChevron" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View style="@style/SettingsDivider" />
+
             <!-- 一周开始日（v1.22.2）：只影响日历与「本周班表」的排列，不动排班 -->
             <LinearLayout
                 android:id="@+id/row_week_start"

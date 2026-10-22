@@ -91,7 +91,6 @@ final class AlarmRowRenderer {
             box.addView(t1);
             box.addView(t2);
             container.addView(box);
-            alignTopDivider(timeW, timeGap);
             return;
         }
 
@@ -205,17 +204,5 @@ final class AlarmRowRenderer {
             container.addView(row);
         }
 
-        alignTopDivider(timeW, timeGap);
-    }
-
-    /** 卡头那条分隔线的起点对齐到名称左边缘，跟行与行之间的线落在同一条竖线上。 */
-    private void alignTopDivider(int timeW, int timeGap) {
-        View div = activity.findViewById(R.id.div_alarm_top);
-        if (div == null) return;
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) div.getLayoutParams();
-        // alarmList 自己有 16dp paddingStart，卡片里的线要补上这一段
-        lp.setMarginStart((int) (16 * activity.getResources().getDisplayMetrics().density)
-                + timeW + timeGap);
-        div.setLayoutParams(lp);
     }
 }

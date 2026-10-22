@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
  * v1.19.9 调度层回归：
  * ① requestCode 必须与「今天是哪天」无关——旧版用「相对今天的天数」编码，
  *    跨天后再取消，算出的 requestCode 与注册时不同，cancel 打不中，旧闹钟一直留在系统里；
- * ② 关闭总开关时必须连「稍后提醒」一起取消；
+ * ② 彻底停掉（删到没有启用的闹钟）时必须连「稍后提醒」一起取消；
  * ③ 提前通知与主闹钟的 requestCode 分段互不覆盖。
  */
 @RunWith(RobolectricTestRunner.class)
@@ -41,7 +41,6 @@ public class ScheduleRegressionTest {
         Application app = (Application) ctx();
         app.getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setOnboardDone(ctx(), true);
-        Prefs.setEnabled(ctx(), true);
         Prefs.setHorizonDays(ctx(), 90);
     }
 
@@ -87,7 +86,7 @@ public class ScheduleRegressionTest {
                 .plusMinutes(Math.max(1, Prefs.getSnoozeMinutes(ctx()))).toLocalDate();
     }
 
-    /** 关总开关要连「稍后提醒」一起清，否则点了小睡再关开关，几分钟后照样响。 */
+    /** 彻底停掉要连「稍后提醒」一起清，否则点了小睡再删掉闹钟，几分钟后照样响。 */
     @Test
     public void cancelAllIncludingTransient_clearsSnooze() {
         LocalDate day = snoozeDay();

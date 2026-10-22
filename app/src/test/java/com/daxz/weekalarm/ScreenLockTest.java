@@ -47,7 +47,6 @@ public class ScreenLockTest {
         ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setGuideSeen(ctx(), true);
         Prefs.setOnboardDone(ctx(), true);
-        Prefs.setEnabled(ctx(), true);
     }
 
     private void setScreen(boolean interactive, boolean locked) {

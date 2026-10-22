@@ -116,14 +116,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 「闹钟总开关」管全部闹钟。开着时改任何设置都即时生效，不用再点保存。" />
+                android:text="· 每条闹钟右侧有自己的开关，拨一下就能单独停掉它。改任何设置都即时生效，不用再点保存。" />
 
             <TextView
                 style="@style/HelpItem"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 首页那行「距下次响铃」是实时倒计时。总开关关掉时它会变灰并写明原因，不会假装还会响。" />
+                android:text="· 首页那行「距下次响铃」是实时倒计时，按当前班表和已开启的闹钟自动算。" />
 
             <TextView
                 style="@style/HelpItem"

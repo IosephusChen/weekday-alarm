@@ -37,7 +37,6 @@ public class NextAlarmWidgetTest {
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, 90)
                 .apply();
     }
@@ -49,21 +48,8 @@ public class NextAlarmWidgetTest {
     }
 
     @Test
-    public void disabled_showsOffHint() {
-        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
-        sp.edit().putBoolean(Prefs.KEY_ENABLED, false).apply();
+    public void noAlarms_showsEmptyHint() {
         NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
-        assertFalse(m.enabled);
-        assertEquals("尚未开启", m.title);
-        assertEquals("打开「闹钟总开关」即自动排程", m.subtitle);
-    }
-
-    @Test
-    public void enabledButNoAlarms_showsEmptyHint() {
-        SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
-        sp.edit().putBoolean(Prefs.KEY_ENABLED, true).apply();
-        NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
-        assertTrue(m.enabled);
         assertEquals("暂无提醒", m.title);
         assertTrue(m.subtitle.contains("90 天"));
     }
@@ -78,7 +64,6 @@ public class NextAlarmWidgetTest {
         ScheduleManager.rescheduleAll(ctx());
 
         NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
-        assertTrue(m.enabled);
         assertTrue("主信息应含下一次响铃时刻", m.title.contains("07:00"));
         assertTrue("副信息应含闹钟名称", m.subtitle.contains("起床"));
         assertTrue("副信息应含提醒总数", m.subtitle.contains("共"));

@@ -185,7 +185,7 @@ final class AlarmRowRenderer {
 
             // 右侧：该闹钟的独立开关。
             // 注意：开关必须可点击（clickable=true）——Android 事件分发中，可点击子 View
-            // 会自己消费触摸事件、不冒泡给父容器；若像总开关那样设 clickable=false，
+            // 会自己消费触摸事件、不冒泡给父容器；若设 clickable=false，
             // 点开关区域会被整行的 OnClickListener（编辑对话框）吃掉，导致「按开关
             // 却弹出编辑框、切不动」。整行的点击仍然负责打开编辑对话框。
             SwitchCompat sw = new SwitchCompat(activity);

@@ -241,7 +241,6 @@ public class PreNoticeTest {
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
         Prefs.setAlarms(ctx(), Collections.singletonList(
                 new Alarm(1, when.getHour(), when.getMinute(), "午休", Alarm.Mode.DAILY, true)));
-        Prefs.setEnabled(ctx(), true);
     }
 
     private Notification preNoticeNotification() {

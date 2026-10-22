@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 主界面（v1.19.7）：只保留「闹钟」与「排班日历」两张卡片 + 一个页面入口。
-     ① 闹钟区：大小周设置 + 闹钟列表 + 闹钟总开关（日常最常用）
-     ② 日历区：排班日历 + 图例 + 请假 / 加班标记（核对与临时调整）
-     ③ 设置与使用说明：整页独立（SettingsActivity），设置项全部平铺在一级，
-        不再有「更多设置」二级菜单，也不再和闹钟 / 日历挤在同一屏 -->
+<!-- 主界面（v1.46.4）：今天 → 闹钟 → 日历，从上到下按「每天要看的先后」排。
+     ① 今日状态：今天上不上班、距下次响铃、今天 / 明天不上班
+     ② 闹钟区：闹钟列表 + 添加（主功能，紧接今日卡）
+     ③ 日历区：排班日历 + 图例 + 请假 / 加班标记（核对与临时调整）
+     ④ 设置与使用说明：整页独立（SettingsActivity），设置项全部平铺在一级 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -143,8 +143,8 @@
                 android:lineSpacingMultiplier="1.15" />
 
             <!-- 距下次响铃倒计时（v1.22.5）：
-                 左边一句说明，右边等宽数字每秒跳。总开关关掉时整条变灰并写明原因，
-                 避免用户盯着一个不动的「下一个 13:40」以为闹钟还会响。
+                 左边一句说明，右边等宽数字每秒跳。没有启用的闹钟时数字留空档，
+                 副标题会写清原因，不会让用户盯着一个不动的时刻以为闹钟还会响。
                  v1.34：不再可点——「点看后三次」要多点一步才看到本来就能算出的信息，
                  用户原话「有点脱裤子放屁」。倒计时回归纯展示。 -->
             <LinearLayout
@@ -233,54 +233,52 @@
 
         </LinearLayout>
 
-        <!-- ===== 闹钟总开关（v1.46.3 从闹钟卡里拆出来）=====
-             它管着下面所有闹钟，是每天都要碰的一下。日历上移到闹钟列表之前后，
-             列表会沉到第二屏——但开关不能跟着沉，所以拆出来单独一张卡，紧贴今日卡。 -->
+        <!-- ===== ② 闹钟（v1.46.4 上移到日历之前）=====
+             它是这个 App 的主功能，名字就叫闹钟。v1.46.3 为了把日历整月塞进第一屏，
+             把闹钟列表压到了日历下面，用起来变成「想看闹钟得先滚过一整张日历」。
+             现在顺序回到「今天 → 闹钟 → 日历」：今天要响什么，紧接今天的状态；
+             日历退到后面，它是核对用的，不是每天要点的。
+             同时删掉了「闹钟总开关」——每条闹钟本来就有自己的开关，系统闹钟也没有总开关。 -->
+        <TextView
+            style="@style/SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="闹钟" />
+
         <LinearLayout
-            android:id="@+id/card_alarm_switch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:background="@drawable/bg_card"
-            android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 闹钟总开关（v1.22.4）：它管着下面所有闹钟，所以排在列表上方当「总指挥」 -->
+            <!-- 闹钟列表：由 MainActivity.renderAlarmList() 动态生成（每行：时间/名称/规则/开关） -->
             <LinearLayout
-                android:id="@+id/row_alarm_switch"
-                style="@style/CardRow">
+                android:id="@+id/alarm_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="12dp" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="闹钟总开关"
-                        android:textColor="@color/ink"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_switch_hint"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="开启后按当前设置自动排程"
-                        android:textColor="@color/sub"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_alarm"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/btn_add_alarm"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_add_alarm"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:padding="13dp"
+                android:text="+ 添加闹钟"
+                android:textColor="@color/indigo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <!-- ===== ③ 排班日历（v1.34.0 搬回首页，默认展开）=====
@@ -453,49 +451,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:orientation="vertical" />
-        </LinearLayout>
-
-        <!-- ===== ② 闹钟 ===== -->
-        <TextView
-            style="@style/SectionTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="闹钟" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical">
-
-            <!-- 闹钟列表：由 MainActivity.renderAlarmList() 动态生成（每行：时间/名称/规则/开关） -->
-            <LinearLayout
-                android:id="@+id/alarm_list"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="12dp" />
-
-            <TextView
-                android:id="@+id/btn_add_alarm"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_add_alarm"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center"
-                android:padding="13dp"
-                android:text="+ 添加闹钟"
-                android:textColor="@color/indigo"
-                android:textSize="14sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
         <!-- ===== ④ 底部三块搬去设置页（v1.46.2）=====

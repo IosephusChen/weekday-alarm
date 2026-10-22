@@ -44,12 +44,11 @@ public class BedtimeTest {
         ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().apply();
     }
 
-    private void putAlarms(List<Alarm> list, boolean enabled) {
+    private void putAlarms(List<Alarm> list) {
         SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, enabled)
                 .apply();
     }
 
@@ -126,7 +125,7 @@ public class BedtimeTest {
         List<Alarm> list = new ArrayList<>();
         list.add(new Alarm(1, 8, 0, "午休", Alarm.Mode.DAILY, true));
         list.add(new Alarm(2, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
-        putAlarms(list, true);
+        putAlarms(list);
 
         BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), workday);
         assertTrue(m.workday);
@@ -143,7 +142,7 @@ public class BedtimeTest {
         LocalDate rest = findRestDay();
         List<Alarm> list = new ArrayList<>();
         list.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
-        putAlarms(list, true);
+        putAlarms(list);
 
         BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), rest);
         assertFalse(m.workday);
@@ -162,7 +161,7 @@ public class BedtimeTest {
         Prefs.addVacation(ctx(), workday);
         List<Alarm> list = new ArrayList<>();
         list.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
-        putAlarms(list, true);
+        putAlarms(list);
 
         BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), workday);
         assertTrue(m.vacation);
@@ -172,24 +171,11 @@ public class BedtimeTest {
     }
 
     @Test
-    public void model_masterSwitchOff_warnsNoRing() {
-        LocalDate workday = findWorkday();
-        List<Alarm> list = new ArrayList<>();
-        list.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
-        putAlarms(list, false);
-
-        BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), workday);
-        assertFalse(m.hasAlarm);
-        assertEquals("明天要上班", m.title);
-        assertTrue(m.text.contains("闹钟总开关"));
-    }
-
-    @Test
     public void model_weekendOnlyAlarm_onWorkday_hasNoAlarm() {
         LocalDate workday = findWorkday();
         List<Alarm> list = new ArrayList<>();
         list.add(new Alarm(1, 9, 0, "周末", Alarm.Mode.WEEKEND, true));
-        putAlarms(list, true);
+        putAlarms(list);
 
         BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), workday);
         assertFalse(m.hasAlarm);
@@ -201,7 +187,7 @@ public class BedtimeTest {
         LocalDate workday = findWorkday();
         List<Alarm> list = new ArrayList<>();
         list.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false));   // 单个闹钟关着
-        putAlarms(list, true);
+        putAlarms(list);
 
         assertFalse(BedtimeReminder.computeModel(ctx(), workday).hasAlarm);
     }

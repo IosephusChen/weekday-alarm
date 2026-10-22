@@ -77,7 +77,6 @@ public final class BedtimeReminder {
     public static Model computeModel(Context ctx, LocalDate tomorrow) {
         boolean vacation = Prefs.isVacation(ctx, tomorrow);
         boolean workday = !vacation && ScheduleManager.isEffectiveWorkday(ctx, tomorrow);
-        boolean enabled = Prefs.isEnabled(ctx);
 
         // 明天的第一个闹钟：只算启用的、且当天适用的
         List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
@@ -91,7 +90,7 @@ public final class BedtimeReminder {
                 first = a;
             }
         }
-        boolean hasAlarm = first != null && !vacation && enabled;
+        boolean hasAlarm = first != null && !vacation;
         String label = first != null ? first.label : "";
         int hour = first != null ? first.hour : 0;
         int minute = first != null ? first.minute : 0;
@@ -106,9 +105,6 @@ public final class BedtimeReminder {
         } else if (!workday) {
             title = "明天休息";
             text = "明天不用早起，闹钟不会响，放心睡";
-        } else if (!enabled) {
-            title = "明天要上班";
-            text = "闹钟总开关还没打开，明早不会响";
         } else if (hasAlarm) {
             title = "明天要上班";
             text = "明早 " + String.format(Locale.getDefault(), "%02d:%02d", hour, minute)

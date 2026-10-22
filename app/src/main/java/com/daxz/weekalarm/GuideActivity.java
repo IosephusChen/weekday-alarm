@@ -257,18 +257,14 @@ public class GuideActivity extends AppCompatActivity {
         first.hour = hour;
         first.minute = minute;
         Prefs.setAlarms(this, alarms);
-        if (Prefs.isEnabled(this)) {
-            ScheduleManager.rescheduleAll(this);
-        }
+        ScheduleManager.rescheduleAll(this);
     }
 
     /**
      * 收尾时保证「真有闹钟会响」。
      *
      * <p>首次安装其实已经有两条预置闹钟（起床 07:30 开、午休 12:30 关），所以这里通常
-     * 不用新建；但**总开关默认是关的**——用户点完「开始使用」却什么都不会响，
-     * 是最伤人的一种「不工作」。首次走完引导顺手打开它；重看引导时不动，
-     * 免得覆盖用户自己关掉的选择。
+     * 不用新建；空列表时才补一条「上班」，保证点完「开始使用」真会有闹钟响。
      *
      * @return 是否新建了闹钟（只影响提示文案）
      */
@@ -280,9 +276,6 @@ public class GuideActivity extends AppCompatActivity {
                     Alarm.Mode.WORKDAY, true));
             Prefs.setAlarms(this, alarms);
             created = true;
-        }
-        if (!Prefs.isOnboardDone(this)) {
-            Prefs.setEnabled(this, true);
         }
         return created;
     }
@@ -600,9 +593,7 @@ public class GuideActivity extends AppCompatActivity {
         boolean firstRun = !Prefs.isOnboardDone(this);
         ensureAlarm();
         Prefs.setOnboardDone(this, true);
-        if (Prefs.isEnabled(this)) {
-            ScheduleManager.rescheduleAll(this);
-        }
+        ScheduleManager.rescheduleAll(this);
         String tip = firstRun
                 ? "已排好班，上班日 " + String.format(Locale.US, "%02d:%02d", hour, minute) + " 会响"
                 : "设置已更新";

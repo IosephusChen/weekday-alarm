@@ -44,7 +44,6 @@ public class OvertimeTest {
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, 30)
                 .apply();
     }

@@ -84,12 +84,8 @@ public class WeekWidgetTest {
     }
 
     @Test
-    public void model_enabledStateReflectedInSubtitle() {
-        sp().edit().putBoolean(Prefs.KEY_ENABLED, true).commit();
+    public void model_subtitleSaysAlarmsOn() {
         assertTrue(WeekScheduleWidget.computeModel(ctx()).subtitle.contains("已开启"));
-        sp().edit().putBoolean(Prefs.KEY_ENABLED, false).commit();
-        assertFalse(WeekScheduleWidget.computeModel(ctx()).enabled);
-        assertTrue(WeekScheduleWidget.computeModel(ctx()).subtitle.contains("未开启"));
     }
 
     /** 本周内找一个上班日 / 休息日（一周里两者必然都有）。 */

@@ -276,28 +276,9 @@ public class OnceAlarmTest {
         assertEquals(45, off.minute);
     }
 
-    /**
-     * 总开关关着时不动它，但要当面说一句。
-     *
-     * <p>总开关是用户自己关的，替他打开等于替他做决定；可不提醒的话，
-     * 他改完闹钟等一整天也不会响，还不知道为什么。
-     */
-    @Test
-    public void editingWithMasterOff_warnsInsteadOfTurningItOn() {
-        Prefs.setEnabled(ctx(), false);
-        Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
-
-        String tip = AlarmEditor.applyEdit(ctx(), a, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0);
-
-        assertFalse("总开关不该被编辑操作打开", Prefs.isEnabled(ctx()));
-        assertNotNull("总开关关着要提示，否则用户以为改了就会响", tip);
-        assertTrue("提示要说清是哪件事，实际：" + tip, tip.contains("总开关"));
-    }
-
-    /** 总开关开着、闹钟也正常：不该有多余提示，别每次都弹一句。 */
+    /** 改一条正常闹钟：不该有多余提示，别每次都弹一句。 */
     @Test
     public void editingNormalAlarm_saysNothing() {
-        Prefs.setEnabled(ctx(), true);
         Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
 
         assertNull("没什么异常就别弹提示",
@@ -311,7 +292,6 @@ public class OnceAlarmTest {
      */
     @Test
     public void editingSpentOnce_movesDateAndSaysSo() {
-        Prefs.setEnabled(ctx(), true);
         LocalDate yesterday = LocalDate.now().minusDays(1);
         Alarm spent = new Alarm(2, 6, 30, "赶车", Alarm.Mode.ONCE, false, yesterday.toString());
 
@@ -400,7 +380,6 @@ public class OnceAlarmTest {
         LocalDate today = LocalDate.now();
 
         Prefs.setAlarms(ctx(), java.util.Collections.singletonList(once(today.minusDays(1))));
-        Prefs.setEnabled(ctx(), true);
         ScheduleManager.rescheduleAll(ctx());
         assertFalse("排程路径要结算", Prefs.getAlarms(ctx()).get(0).enabled);
 

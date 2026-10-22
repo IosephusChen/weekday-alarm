@@ -117,7 +117,6 @@ public class AlarmColorTest {
         List<Alarm> list = new ArrayList<>();
         list.add(a);
         Prefs.setAlarms(ctx(), list);
-        Prefs.setEnabled(ctx(), true);
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         ShadowLooper.idleMainLooper();
         return activity;
@@ -144,7 +143,6 @@ public class AlarmColorTest {
         List<Alarm> list = new ArrayList<>();
         list.add(a);
         Prefs.setAlarms(ctx(), list);
-        Prefs.setEnabled(ctx(), true);
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
         ShadowLooper.idleMainLooper();
 

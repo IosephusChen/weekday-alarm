@@ -96,7 +96,7 @@ public class SmallRestDialogCrashTest {
     @Test
     public void toggleAlarmAndRefreshAll_doesNotCrash() {
         MainActivity activity = setupActivityLikeUser();
-        // 直接走 applySettingsIfEnabled 的核心路径（反射调用私有方法）
+        // 直接走 applySettingsNow 的核心路径（反射调用私有方法）
         try {
             java.lang.reflect.Method m = MainActivity.class.getDeclaredMethod("refreshAll");
             m.setAccessible(true);
@@ -107,7 +107,7 @@ public class SmallRestDialogCrashTest {
             m = MainActivity.class.getDeclaredMethod("refreshStatus");
             m.setAccessible(true);
             m.invoke(activity);
-            m = MainActivity.class.getDeclaredMethod("applySettingsIfEnabled");
+            m = MainActivity.class.getDeclaredMethod("applySettingsNow");
             m.setAccessible(true);
             m.invoke(activity);
         } catch (Exception e) {

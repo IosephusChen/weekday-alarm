@@ -53,7 +53,6 @@ public class ConfigBackupTest {
         sp().edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putBoolean(Prefs.KEY_WEEK_BIG, false)
                 .putString(Prefs.KEY_ANCHOR, "2026-10-17")
                 .putBoolean(Prefs.KEY_SMALL_REST_SAT, true)
@@ -120,7 +119,6 @@ public class ConfigBackupTest {
         assertFalse(Prefs.isWeekBig(ctx()));
         assertEquals(LocalDate.of(2026, 10, 17), Prefs.getAnchor(ctx()));
         assertTrue(Prefs.isSmallRestSat(ctx()));
-        assertTrue(Prefs.isEnabled(ctx()));
         assertEquals(180, Prefs.getHorizonDays(ctx()));
         assertEquals(55, Prefs.getVolume(ctx()));
         assertTrue(Prefs.isFadeIn(ctx()));
@@ -213,10 +211,9 @@ public class ConfigBackupTest {
     }
 
     @Test
-    public void applyAfterImport_doesNotCrashWhenDisabled() {
+    public void applyAfterImport_doesNotCrashOnEmptyConfig() {
         seed();
-        sp().edit().putBoolean(Prefs.KEY_ENABLED, false).commit();
-        ConfigBackup.applyAfterImport(ctx());   // 关闭态：只清残留，不排程
+        ConfigBackup.applyAfterImport(ctx());
         assertNotNull(Prefs.getAlarms(ctx()));
     }
 }

@@ -80,6 +80,14 @@ public class GuideTest {
         Prefs.setAlarms(ctx(), list);
     }
 
+    /** 列表里至少有一条开着、会响的闹钟（v1.46.4：总开关没了，看的就是这个）。 */
+    private boolean anyEnabledAlarm() {
+        for (Alarm a : Prefs.getAlarms(ctx())) {
+            if (a.enabled) return true;
+        }
+        return false;
+    }
+
     private static void tap(GuideActivity a, int id) {
         View v = a.findViewById(id);
         assertNotNull("找不到控件 " + id, v);
@@ -245,7 +253,6 @@ public class GuideTest {
         assertEquals(45, first.minute);
         assertEquals(Alarm.Mode.WORKDAY, first.mode);
         assertTrue("新手改的这个闹钟要能直接响", first.enabled);
-        assertTrue("总开关默认是关的，走完引导必须替他打开", Prefs.isEnabled(ctx()));
         assertTrue(Prefs.isOnboardDone(ctx()));
         assertTrue(a.isFinishing());
     }
@@ -267,7 +274,6 @@ public class GuideTest {
         assertEquals(40, alarms.get(0).minute);
         assertEquals(Alarm.Mode.WORKDAY, alarms.get(0).mode);
         assertTrue(alarms.get(0).enabled);
-        assertTrue(Prefs.isEnabled(ctx()));
     }
 
     /** 重看引导：第二页显示的是已有闹钟的时间，改时间就是改它。 */
@@ -501,14 +507,14 @@ public class GuideTest {
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));
     }
 
-    /** 点「跳过」= 我知道了：照样把总开关打开、照样写标记。 */
+    /** 点「跳过」= 我知道了：照样留下能响的闹钟、照样写标记。 */
     @Test
     public void skip_marksOnboardAndTurnsSwitchOn() {
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
         assertTrue(Prefs.isOnboardDone(ctx()));
-        assertTrue("跳过也要有能响的闹钟", Prefs.isEnabled(ctx()));
+        assertTrue("跳过也要有能响的闹钟", anyEnabledAlarm());
         assertTrue(a.isFinishing());
     }
 

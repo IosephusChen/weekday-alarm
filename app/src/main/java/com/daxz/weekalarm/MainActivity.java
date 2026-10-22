@@ -29,12 +29,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-/** 主界面：排班设置 + 多闹钟管理 + 月历 + 今日状态 + 闹钟总开关。 */
+/** 主界面：今日状态 + 多闹钟管理 + 排班日历。 */
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
     private TextView tvWeekChip;
-    private TextView tvSwitchHint;
     /** 今日卡里的「今天 / 明天不上班」两个按钮（v1.28.1 起，v1.34 起并排）。 */
     private TextView btnDayOff, btnDayOffTomorrow;
     /** 首页内嵌的排班日历（v1.34.0）：渲染与单日标记都在它里面。 */
@@ -51,9 +50,6 @@ public class MainActivity extends AppCompatActivity {
     /** 新手引导（v1.19.9）：本次启动是否拉起过引导页；onResume 计次用于延后权限请求。 */
     private boolean firstRunGuideShown;
     private boolean resumedOnce;
-    private SwitchCompat swAlarm;
-    /** 开关同步保护：refreshStatus 里回写开关状态时避免触发用户操作逻辑。 */
-    private boolean swAttaching = false;
     private LinearLayout alarmList;
     /** 闹钟行渲染（v1.36.0 从本类拆出），只画界面，改动仍回本类处理。 */
     private AlarmRowRenderer alarmRowRenderer;
@@ -78,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
         tvTodaySub = findViewById(R.id.tv_today_sub);
         tvCountdown = findViewById(R.id.tv_countdown);
         tvWeekChip = findViewById(R.id.tv_week_chip);
-        tvSwitchHint = findViewById(R.id.tv_switch_hint);
         btnDayOff = findViewById(R.id.btn_day_off);
         btnDayOffTomorrow = findViewById(R.id.btn_day_off_tomorrow);
         alarmList = findViewById(R.id.alarm_list);
@@ -95,16 +90,14 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onToggle(Alarm a, boolean checked) {
-                if (swAttaching) return;   // 界面回写，非用户操作
                 toggleAlarm(a, checked);
             }
         });
-        swAlarm = findViewById(R.id.switch_alarm);
 
         // v1.34：日历回到首页、默认展开。面板自己找容器里的子 View，主界面只提供
         // 「改完标记之后要我干什么」——重排 + 刷新首页（面板也会跟着重画）。
         calendarPanel = new CalendarPanel(this, findViewById(R.id.calendar_card),
-                this::applySettingsIfEnabled);
+                this::applySettingsNow);
 
         loadPrefs();
 
@@ -118,21 +111,9 @@ public class MainActivity extends AppCompatActivity {
         btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
         btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
 
-        // 闹钟总开关：开 = 保存当前设置并排程；关 = 取消全部提醒。
-        // 开关本体不消费点击（clickable=false），由整行容器转发点击切换状态。
-        findViewById(R.id.row_alarm_switch).setOnClickListener(v -> swAlarm.toggle());
-        swAlarm.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;   // 界面回写，非用户操作
-            if (checked) {
-                save();
-            } else {
-                Prefs.setEnabled(this, false);
-                // v1.19.9：连「稍后提醒」一起取消，否则刚点过小睡再关开关，5 分钟后照样响
-                ScheduleManager.cancelAllIncludingTransient(this);
-                // v1.18：不再弹 Toast——开关位置与状态栏（「尚未开启」）已足够直观
-                refreshAll();
-            }
-        });
+        // v1.46.4：闹钟总开关已删除。每条闹钟自己的开关就是唯一开关——
+        // 总开关只是多一层「关了却没提醒」的静默失败，还要靠今日卡、小组件、
+        // 睡前提醒、编辑弹窗四处补一句「总开关还关着」，不如不要。
 
         refreshAll();
 
@@ -193,11 +174,9 @@ public class MainActivity extends AppCompatActivity {
                 // 先清掉，下面的重排才会重新发一条带图标的。
                 ScheduleManager.dropStalePreNotices(this);
             }
-            if (Prefs.isEnabled(this)) {
-                // v1.28：这里不再单独 refreshAll——onResume 末尾会统一刷一次。
-                // 旧写法在升级那次启动要刷两遍（42 个日历格子 + 两个小组件各重建一次）。
-                ScheduleManager.rescheduleAll(this);
-            }
+            // v1.28：这里不再单独 refreshAll——onResume 末尾会统一刷一次。
+            // 旧写法在升级那次启动要刷两遍（42 个日历格子 + 两个小组件各重建一次）。
+            ScheduleManager.rescheduleAll(this);
             // v1.22.3：升级后弹一次本次更新内容，看过即不再弹（last 已写成当前版本）
             if (upgraded) {
                 maybeShowChangelog(current);
@@ -380,7 +359,7 @@ public class MainActivity extends AppCompatActivity {
         Alarm copy = copyOf(src, Prefs.nextAlarmId(this), LocalDateTime.now());
         alarms.add(copy);
         Prefs.setAlarms(this, alarms);
-        applySettingsIfEnabled();
+        applySettingsNow();
         Toast.makeText(this, "已复制「" + copy.label + "」", Toast.LENGTH_SHORT).show();
     }
 
@@ -427,7 +406,30 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         Prefs.setAlarms(this, alarms);
-        applySettingsIfEnabled();
+        applyAlarmChange();
+    }
+
+    /**
+     * 增删 / 启停闹钟后的统一收尾（v1.46.4）。
+     *
+     * <p>还有启用的闹钟就重排；一条都不剩就彻底停掉——连待触发的「稍后提醒」一起清，
+     * 否则刚点过小睡再删掉最后一条闹钟，五分钟后照样响。总开关删除后，
+     * 这条「全部停掉」的路径只能由「列表里没有启用的闹钟」来触发。
+     */
+    private void applyAlarmChange() {
+        boolean anyEnabled = false;
+        for (Alarm x : alarms) {
+            if (x.enabled) {
+                anyEnabled = true;
+                break;
+            }
+        }
+        if (anyEnabled) {
+            ScheduleManager.rescheduleAll(this);
+        } else {
+            ScheduleManager.cancelAllIncludingTransient(this);
+        }
+        refreshAll();
     }
 
     /** 切换单个闹钟的启停：停用即从系统取消该闹钟已排程的实例；启用则重排全部。 */
@@ -446,12 +448,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         Prefs.setAlarms(this, alarms);
-        if (Prefs.isEnabled(this)) {
-            // rescheduleAll 会先取消全部再按当前列表重设，停用的闹钟自然不会重排
-            ScheduleManager.rescheduleAll(this);
-        }
+        // rescheduleAll 会先取消全部再按当前列表重设，停用的闹钟自然不会重排；
+        // 全关时连小睡一起清（见 applyAlarmChange）
+        applyAlarmChange();
         // v1.18：不再弹「已启用 / 已停用」Toast——每行右侧的开关位置已直观反映状态
-        refreshAll();
     }
 
     /**
@@ -460,34 +460,12 @@ public class MainActivity extends AppCompatActivity {
      */
     /** 添加 / 编辑闹钟的对话框交给 {@link AlarmEditor}（v1.36.0 拆分）。 */
     private void showAlarmEditDialog(Alarm target) {
-        AlarmEditor.show(this, alarms, target, this::applySettingsIfEnabled);
+        AlarmEditor.show(this, alarms, target, this::applySettingsNow);
     }
 
-    private void save() {
-        Prefs.setEnabled(this, true);
-        boolean exact = ScheduleManager.canScheduleExactAlarms(this);
-        int n = ScheduleManager.rescheduleAll(this);
-        refreshAll();
-        // v1.18：开关状态与状态栏文案已足够直观，不再弹「已开启 N 个提醒」打扰；
-        // 只在「一个都没排上」这种真正需要用户处理的情况提示
-        if (n == 0) {
-            Toast.makeText(this, "未来 " + Prefs.getHorizonDays(this)
-                    + " 天没有需要设置的闹钟，请检查排班设置", Toast.LENGTH_LONG).show();
-        }
-        if (!exact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            PermissionGuides.requestExactAlarm(this);
-        }
-        PermissionGuides.warnIfNotificationOff(this);
-        PermissionGuides.showPopupGuideIfNeeded(this);
-    }
-
-    /**
-     * 设置项改动后调用：开启态即时重排（免保存，旧闹钟自动清除重设），关闭态只刷新界面。
-     */
-    private void applySettingsIfEnabled() {
-        if (Prefs.isEnabled(this)) {
-            ScheduleManager.rescheduleAll(this);
-        }
+    /** 设置项改动后调用：立即重排（旧闹钟自动清除重设）再刷新界面。 */
+    private void applySettingsNow() {
+        ScheduleManager.rescheduleAll(this);
         refreshAll();
     }
 
@@ -549,7 +527,7 @@ public class MainActivity extends AppCompatActivity {
     private void toggleDayOff(int dayOffset) {
         String msg = DayOffAction.toggle(this, dayOffset);
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-        applySettingsIfEnabled();
+        applySettingsNow();
     }
 
     private void refreshStatus() {
@@ -601,16 +579,14 @@ public class MainActivity extends AppCompatActivity {
         // 旧写法有两个洞：
         // ① 只算「今天 + 今天算上班」——休息日里设了「每天」闹钟、节假日里设了「每天」闹钟，
         //    明明会响，首页却写「休息日，闹钟不响」；
-        // ② 完全不看总开关——开关关着，副标题照样说「下一个闹钟 13:40」。
-        boolean masterOn = Prefs.isEnabled(this);
+        // ② 完全不看「闹钟是否启用」——一条都没开，副标题照样说「下一个闹钟 13:40」。
         LocalDateTime now = LocalDateTime.now();
         // v1.25.3：喂上面刚重读的 alarms，而不是让 nextRing 再去读一遍 Prefs。
         // 两处各读一次就会各读各的，改完闹钟回来必然对不上。
         ScheduleManager.NextAlarm next = ScheduleManager.nextRing(alarms, rule,
                 Prefs.getVacationDates(this), Prefs.getOvertimeDates(this),
                 now, Prefs.getHorizonDays(this));
-        // 总开关关着就没有「下一次」：nextRingAt 置空，tick 才不会把「--:--:--」又写成倒计时
-        nextRingAt = masterOn && next != null ? next.when : null;
+        nextRingAt = next != null ? next.when : null;
         tickDay = today;
 
         String dayTag = vacation ? "个人请假"
@@ -622,9 +598,6 @@ public class MainActivity extends AppCompatActivity {
         String subText;
         if (vacation) {
             subText = "个人请假 · 闹钟全部跳过";
-        } else if (!masterOn) {
-            subText = next == null ? "闹钟总开关已关闭"
-                    : "闹钟总开关已关闭 · 开着的话下次 " + fmtRing(next, today);
         } else if (next == null) {
             subText = work ? "今天上班，但没有要响的闹钟" : "没有启用的闹钟";
         } else {
@@ -647,12 +620,6 @@ public class MainActivity extends AppCompatActivity {
         // 这里只留下小组件要用的两个统计值。
         int n = ScheduleManager.countScheduled(this, alarms);
         ScheduleManager.NextAlarm nextAlarm = ScheduleManager.nextRegisteredAlarm(this, alarms);
-        // 开关位置同步启用态（swAttaching 防止回写触发用户操作逻辑）
-        swAttaching = true;
-        swAlarm.setChecked(Prefs.isEnabled(this));
-        swAttaching = false;
-        tvSwitchHint.setText(Prefs.isEnabled(this)
-                ? "已开启 · 改动设置即时生效" : "开启后按当前设置自动排程");
         // 主界面状态刷新后，同步刷新桌面小组件（v1.19 起；v1.20 起含「本周班表」）
         // v1.29.0：把刚算好的 nextAlarm / n 传进去，小组件不必再做一次 PendingIntent 探测
         Widgets.updateAll(this, nextAlarm, n);

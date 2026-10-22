@@ -236,11 +236,9 @@ public class SettingsActivity extends AppCompatActivity {
         swAttaching = false;
     }
 
-    /** 设置项改动后：开启态即时重排（旧闹钟自动清除重设），关闭态只刷新本页。 */
-    private void applySettingsIfEnabled() {
-        if (Prefs.isEnabled(this)) {
-            ScheduleManager.rescheduleAll(this);
-        }
+    /** 设置项改动后：立即重排（旧闹钟自动清除重设）再刷新本页。 */
+    private void applySettingsNow() {
+        ScheduleManager.rescheduleAll(this);
         refreshAll();
     }
 
@@ -269,7 +267,7 @@ public class SettingsActivity extends AppCompatActivity {
                     dialog.dismiss();
                     Prefs.setWeekMode(this, modes[which]);
                     updateWeekModeUi();
-                    applySettingsIfEnabled();
+                    applySettingsNow();
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -293,7 +291,7 @@ public class SettingsActivity extends AppCompatActivity {
                     LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
                     Prefs.setAnchor(this, big ? sat : sat.minusWeeks(1));
                     updateWeekBigText();
-                    applySettingsIfEnabled();
+                    applySettingsNow();
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -316,7 +314,7 @@ public class SettingsActivity extends AppCompatActivity {
                     dialog.dismiss();
                     Prefs.setSmallRestSat(this, which == 1);
                     updateSmallRestText();
-                    applySettingsIfEnabled();
+                    applySettingsNow();
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -388,7 +386,7 @@ public class SettingsActivity extends AppCompatActivity {
             dialog.dismiss();
             int days = which == R.id.rb_h180 ? 180 : which == R.id.rb_h365 ? 365 : 90;
             Prefs.setHorizonDays(this, days);
-            applySettingsIfEnabled();
+            applySettingsNow();
         });
         dialog.show();
     }
@@ -412,7 +410,7 @@ public class SettingsActivity extends AppCompatActivity {
             switch (result) {
                 case UPDATED:
                     // 数据变了，日历上的「假/补」标记与已排闹钟都可能受影响 → 重排
-                    applySettingsIfEnabled();
+                    applySettingsNow();
                     Toast.makeText(this, "节假日数据已更新至 " + HolidayData.effectiveYear()
                             + " 年安排", Toast.LENGTH_LONG).show();
                     break;
@@ -478,34 +476,29 @@ public class SettingsActivity extends AppCompatActivity {
      * 不该每天摆在首页最底部。
      */
     private void showRunStatusDialog() {
-        boolean masterOn = Prefs.isEnabled(this);
         java.util.List<Alarm> alarms = Prefs.getAlarms(this);
         int n = ScheduleManager.countScheduled(this, alarms);
         ScheduleManager.NextAlarm next = ScheduleManager.nextRegisteredAlarm(this, alarms);
         int horizon = Prefs.getHorizonDays(this);
 
         StringBuilder sb = new StringBuilder();
-        if (!masterOn) {
-            sb.append("尚未开启 · 打开「闹钟总开关」即自动排程");
+        sb.append("未来 ").append(horizon).append(" 天共 ").append(n).append(" 个提醒");
+        if (next != null) {
+            sb.append("\n下一个闹钟：")
+                    .append(next.when.format(java.time.format.DateTimeFormatter.ofPattern("M月d日")))
+                    .append(" ").append(WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate()))
+                    .append(" ")
+                    .append(String.format(java.util.Locale.getDefault(), "%02d:%02d",
+                            next.when.getHour(), next.when.getMinute()))
+                    .append(" ").append(next.label).append(" · 系统已登记 ✓");
         } else {
-            sb.append("未来 ").append(horizon).append(" 天共 ").append(n).append(" 个提醒");
-            if (next != null) {
-                sb.append("\n下一个闹钟：")
-                        .append(next.when.format(java.time.format.DateTimeFormatter.ofPattern("M月d日")))
-                        .append(" ").append(WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate()))
-                        .append(" ")
-                        .append(String.format(java.util.Locale.getDefault(), "%02d:%02d",
-                                next.when.getHour(), next.when.getMinute()))
-                        .append(" ").append(next.label).append(" · 系统已登记 ✓");
-            } else {
-                sb.append("\n系统中暂无已登记的闹钟，请检查排班设置");
-            }
-            // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
-            if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
-                sb.append("\n提醒较多，已优先排程最近的 ")
-                        .append(ScheduleManager.MAX_REGISTERED_ALARMS)
-                        .append(" 个，更久的会随闹钟响铃自动补上");
-            }
+            sb.append("\n系统中暂无已登记的闹钟，请检查排班设置");
+        }
+        // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
+        if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
+            sb.append("\n提醒较多，已优先排程最近的 ")
+                    .append(ScheduleManager.MAX_REGISTERED_ALARMS)
+                    .append(" 个，更久的会随闹钟响铃自动补上");
         }
 
         WeekSchedule.Rule rule = Prefs.getRule(this);
@@ -527,10 +520,6 @@ public class SettingsActivity extends AppCompatActivity {
     private void updateRunStatusText() {
         TextView tv = findViewById(R.id.tv_run_status_summary);
         if (tv == null) return;
-        if (!Prefs.isEnabled(this)) {
-            tv.setText("已关闭");
-            return;
-        }
         int n = ScheduleManager.countScheduled(this, Prefs.getAlarms(this));
         tv.setText("已开启 · " + n + " 个提醒");
     }

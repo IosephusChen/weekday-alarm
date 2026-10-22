@@ -391,8 +391,8 @@ public final class ScheduleManager {
     }
 
     /**
-     * 关闭总开关等「彻底停掉」的场景：在主实例之外，连稍后提醒与自动停止一起清掉。
-     * 否则会出现「点了小睡 → 关掉总开关 → 5 分钟后照样响」。
+     * 「彻底停掉」的场景（v1.46.4 起：删到没有启用的闹钟）：在主实例之外，
+     * 连稍后提醒与自动停止一起清掉。否则会出现「点了小睡 → 删掉闹钟 → 5 分钟后照样响」。
      */
     public static void cancelAllIncludingTransient(Context ctx) {
         cancelAll(ctx);
@@ -403,7 +403,7 @@ public final class ScheduleManager {
             cancelSnooze(ctx, a.id, today.plusDays(1));
             cancelAutoStop(ctx, a.id, today);
             cancelAutoStop(ctx, a.id, today.plusDays(1));
-            // 提前提醒是常驻通知（v1.23.2），总开关关掉后它说的「即将响铃」已经不成立，
+            // 提前提醒是常驻通知（v1.23.2），彻底停掉后它说的「即将响铃」已经不成立，
             // 一并撤掉，否则会一直挂在通知栏里
             try {
                 NotificationManagerCompat.from(ctx)
@@ -460,11 +460,6 @@ public final class ScheduleManager {
 
     private static int rescheduleAllLocked(Context ctx) {
         cancelAll(ctx);
-        if (!Prefs.isEnabled(ctx)) {
-            // 总开关关着就不该有任何提前提醒挂着（v1.23.5）
-            dropStalePreNotices(ctx);
-            return 0;
-        }
 
         // v1.28.1：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
         // 排程表里虽然排不到它，但列表与统计口径会一直当它有效
@@ -571,7 +566,7 @@ public final class ScheduleManager {
      * 只保留 {@code keep} 里列出的那些提前提醒，其余全部撤掉（v1.23.5）。
      *
      * <p>重排时用它做一次「通知栏对账」：闹钟被关掉、已经响过、或者提前提醒整体关闭之后，
-     * 通知栏里不该还留着「即将响铃」——之前只有响铃和关总开关会撤，单个闹钟关掉不撤。
+     * 通知栏里不该还留着「即将响铃」——之前只有响铃和彻底停掉会撤，单个闹钟关掉不撤。
      */
     private static void dropPreNoticesExcept(Context ctx, Set<Integer> keep) {
         try {
@@ -727,8 +722,8 @@ public final class ScheduleManager {
      *
      * <p>与 {@link #nextRegisteredAlarm} 的分工：那个是「系统里真的排上了没有」的自检，
      * 每次都要做 PendingIntent 探测；这个是「按规则本该什么时候响」，用来在首页显示
-     * 倒计时和「下次」提示。总开关关掉时系统里没有登记，但用户仍然想知道「如果开着，
-     * 下一次是几点」——所以调用方自己决定要不要用。
+     * 倒计时和「下次」提示。系统里没有登记时，用户仍然想知道
+     * 「下一次是几点」——所以调用方自己决定要不要用。
      */
     public static NextAlarm nextRing(Context ctx, LocalDateTime from) {
         return nextRing(Prefs.getAlarms(ctx), Prefs.getRule(ctx),
@@ -739,7 +734,7 @@ public final class ScheduleManager {
     /**
      * 见 {@link #nextRing(Context, LocalDateTime)}。抽成静态是为了单测能固定「现在」。
      *
-     * <p>只按「闹钟启用 + 规则命中 + 当天没请假」筛选，不看总开关，也不看分钟级以下的
+     * <p>只按「闹钟启用 + 规则命中 + 当天没请假」筛选，不看分钟级以下的
      * 偏移：闹钟在 hh:mm:00 触发，{@code from} 正好等于该时刻时算已过（返回下一个）。
      */
     static NextAlarm nextRing(List<Alarm> alarms, WeekSchedule.Rule rule,

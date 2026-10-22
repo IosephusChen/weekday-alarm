@@ -48,7 +48,6 @@ public class AlarmLimitTest {
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, HORIZON)
                 .apply();
     }
@@ -82,7 +81,6 @@ public class AlarmLimitTest {
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, HORIZON)
                 .apply();
         Prefs.setPreNoticeMinutes(ctx(), 0);   // 同上：只看主闹钟的截断
@@ -153,12 +151,12 @@ public class AlarmLimitTest {
         MainActivity activity = controller.get();
         // 再走一次设置变更路径（等价于点对话框选项后的重排）
         try {
-            java.lang.reflect.Method m = MainActivity.class.getDeclaredMethod("applySettingsIfEnabled");
+            java.lang.reflect.Method m = MainActivity.class.getDeclaredMethod("applySettingsNow");
             m.setAccessible(true);
             m.invoke(activity);
         } catch (Exception e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
-            throw new AssertionError("applySettingsIfEnabled 崩溃: " + cause, cause);
+            throw new AssertionError("applySettingsNow 崩溃: " + cause, cause);
         }
     }
 

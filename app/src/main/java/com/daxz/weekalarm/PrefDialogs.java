@@ -74,9 +74,7 @@ public final class PrefDialogs {
      */
     public static void setPreNoticeEnabled(Context c, boolean enabled) {
         Prefs.setPreNoticeMinutes(c, enabled ? Prefs.getPreNoticeLastMinutes(c) : 0);
-        if (Prefs.isEnabled(c)) {
-            ScheduleManager.rescheduleAll(c);
-        }
+        ScheduleManager.rescheduleAll(c);
     }
 
     /**
@@ -112,9 +110,7 @@ public final class PrefDialogs {
                     Prefs.setPreNoticeMinutes(c, preNoticeOf(rg));
                     // v1.18.2 修复：提前通知闹钟是与主闹钟配对注册的，
                     // 改了提前量必须重排一次才生效（此前要等下次响铃 / 重启）
-                    if (Prefs.isEnabled(c)) {
-                        ScheduleManager.rescheduleAll(c);
-                    }
+                    ScheduleManager.rescheduleAll(c);
                     if (onChanged != null) onChanged.run();
                 })
                 .setNegativeButton("取消", null)

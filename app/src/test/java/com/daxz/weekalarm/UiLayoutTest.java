@@ -62,29 +62,19 @@ public class UiLayoutTest {
     }
 
     /**
-     * 总开关是「总指挥」，必须排在闹钟列表之前。
+     * v1.46.4：首页不再有「闹钟总开关」。
      *
-     * <p>v1.22.4 把它从列表下方上移；v1.46.3 更进一步，从闹钟卡里拆出来单独成卡——
-     * 日历上移到列表之前后，列表会沉到第二屏，而开关是每天要碰的一下，不能跟着沉。
-     *
-     * <p>所以这条不再断言「同一张卡」，改断言整页里的先后：它必须还在列表之前。
+     * <p>每条闹钟都有自己的开关，系统闹钟也没有全局总开关；多一层总开关只会造出
+     * 「关了却不记得」的静默失败，还得靠今日卡、小组件、睡前提醒、编辑弹窗四处解释。
+     * 这条守的是「别再被加回来」：布局 id 与文案都不该再出现。
      */
     @Test
-    public void masterSwitch_sitsAboveAlarmList() {
+    public void home_hasNoMasterSwitch() {
         MainActivity a = launch();
-        View rowSwitch = a.findViewById(R.id.row_alarm_switch);
-        View card = a.findViewById(R.id.card_alarm_switch);
-        View list = a.findViewById(R.id.alarm_list);
-        assertNotNull(rowSwitch);
-        assertNotNull(list);
-        assertNotNull("总开关应独立成卡", card);
-        assertSame("开关行应装在自己的卡里", card, rowSwitch.getParent());
-
-        ViewGroup parent = (ViewGroup) card.getParent();
-        View alarmCard = (View) list.getParent();
-        assertSame("两张卡应在同一个容器里", parent, alarmCard.getParent());
-        assertTrue("总开关卡应排在闹钟卡之前",
-                parent.indexOfChild(card) < parent.indexOfChild(alarmCard));
+        int id = a.getResources().getIdentifier("switch_alarm", "id", a.getPackageName());
+        assertEquals("总开关的布局 id 应已删除", 0, id);
+        String all = collectText(a.getWindow().getDecorView());
+        assertFalse("首页不该再出现「总开关」字样，实际：" + all, all.contains("总开关"));
     }
 
 
@@ -109,7 +99,6 @@ public class UiLayoutTest {
         ActivityController<MainActivity> ctl = Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
         MainActivity a = ctl.get();
-        Prefs.setEnabled(ctx(), true);
 
         java.util.List<Alarm> alarms = new java.util.ArrayList<>(Prefs.getAlarms(ctx()));
         assertFalse("预置闹钟不该是空的", alarms.isEmpty());
@@ -127,16 +116,6 @@ public class UiLayoutTest {
         TextView hero = a.findViewById(R.id.tv_today_sub);
         assertTrue("倒计时卡片也要是 07:00，实际：" + hero.getText(),
                 hero.getText().toString().contains("07:00"));
-    }
-
-    /** 名字从「闹钟开关」改成「闹钟总开关」，避免被当成单个闹钟的开关。 */
-    @Test
-    public void masterSwitch_isNamedZongKaiGuan() {
-        MainActivity a = launch();
-        ViewGroup row = a.findViewById(R.id.row_alarm_switch);
-        TextView title = (TextView) ((ViewGroup) row.getChildAt(0)).getChildAt(0);
-        assertTrue("标题应写明是总开关，实际：" + title.getText(),
-                title.getText().toString().contains("闹钟总开关"));
     }
 
     /** 对话框圆角：窗口背景被换成 24dp 圆角的 shape，不再是直角白块。 */
@@ -167,7 +146,6 @@ public class UiLayoutTest {
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
         Prefs.setAlarms(ctx(), Collections.singletonList(
                 new Alarm(1, target.getHour(), target.getMinute(), "测试", Alarm.Mode.DAILY, true)));
-        Prefs.setEnabled(ctx(), true);
 
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
@@ -185,13 +163,13 @@ public class UiLayoutTest {
         ctl.pause().stop().destroy();
     }
 
-    /** 总开关关着：不能还显示「下一个 13:40」让人以为会响。 */
+    /** 一条启用的闹钟都没有：不能还显示一个倒计时，让人以为会响。 */
     @Test
-    public void countdown_whenMasterOff_saysClosed() {
+    public void countdown_whenNoEnabledAlarm_staysBlank() {
         ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setGuideSeen(ctx(), true);
         Prefs.setOnboardDone(ctx(), true);
-        Prefs.setEnabled(ctx(), false);
+        Prefs.setAlarms(ctx(), new java.util.ArrayList<>());
 
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
@@ -199,8 +177,8 @@ public class UiLayoutTest {
 
         TextView sub = ctl.get().findViewById(R.id.tv_today_sub);
         TextView cd = ctl.get().findViewById(R.id.tv_countdown);
-        assertTrue("副标题要说明总开关关着，实际：" + sub.getText(),
-                sub.getText().toString().contains("闹钟总开关已关闭"));
+        assertTrue("副标题要说明没有启用的闹钟，实际：" + sub.getText(),
+                sub.getText().toString().contains("没有"));
         assertEquals("--:--:--", cd.getText().toString());
         ctl.pause().stop().destroy();
     }
@@ -264,37 +242,23 @@ public class UiLayoutTest {
     }
 
     /**
-     * v1.46.3：总开关从闹钟卡里拆出来，单独一张卡。
+     * v1.46.4：闹钟排在日历之前。
      *
-     * <p>日历上移到闹钟列表之前后，列表会沉到第二屏——但「闹钟总开关」是每天要碰的一下，
-     * 不能跟着沉。原来它在闹钟卡里当「总指挥」，现在独立成卡紧贴今日卡。
-     */
-    @Test
-    public void alarmSwitch_isItsOwnCard() {
-        MainActivity a = launch();
-        View card = a.findViewById(R.id.card_alarm_switch);
-        ViewGroup list = a.findViewById(R.id.alarm_list);
-        assertNotNull("总开关应独立成卡", card);
-        assertTrue("总开关不该再和闹钟列表挤在同一张卡里", card != list.getParent());
-    }
-
-    /**
-     * v1.46.3：日历排在闹钟列表之前。
-     *
-     * <p>核对班表是每天的事，翻闹钟列表不是。原来日历排在最末，要滚过整个列表才看得见——
-     * v1.34.0 把它从独立页搬回首页的理由是「多一次跳转就多一次放弃」，
-     * 结果变成了「多滚一屏才能看见」，问题只是换了形式。
+     * <p>这个 App 叫闹钟，主操作是看 / 改闹钟；日历是核对班表用的，看一眼就走。
+     * v1.46.3 为了把日历整月塞进第一屏，把闹钟压到了日历下面，用起来变成
+     * 「想看闹钟得先滚过一整张日历」——主次倒了。现在回到「今天 → 闹钟 → 日历」。
      *
      * <p>这条守的是容器里的先后顺序，不涉及任何尺寸——顺序被挪回去，它立刻红。
      */
     @Test
-    public void calendar_comesBeforeAlarmList() {
+    public void alarmList_comesBeforeCalendar() {
         MainActivity a = launch();
         View cal = a.findViewById(R.id.calendar_card);
         View alarmCard = (View) a.findViewById(R.id.alarm_list).getParent();
         ViewGroup parent = (ViewGroup) cal.getParent();
         assertSame("日历与闹钟卡应在同一个容器里", parent, alarmCard.getParent());
-        assertTrue("日历应排在闹钟卡之前", parent.indexOfChild(cal) < parent.indexOfChild(alarmCard));
+        assertTrue("闹钟卡应排在日历之前",
+                parent.indexOfChild(alarmCard) < parent.indexOfChild(cal));
     }
 
     /**

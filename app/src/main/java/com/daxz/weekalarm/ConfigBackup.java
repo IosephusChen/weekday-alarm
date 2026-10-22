@@ -66,7 +66,6 @@ public final class ConfigBackup {
             p.put(Prefs.KEY_ANCHOR, Prefs.getAnchor(ctx).toString());
             p.put(Prefs.KEY_SMALL_REST_SAT, Prefs.isSmallRestSat(ctx));
             p.put(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx));
-            p.put(Prefs.KEY_ENABLED, Prefs.isEnabled(ctx));
             p.put(Prefs.KEY_HORIZON, Prefs.getHorizonDays(ctx));
             p.put(Prefs.KEY_ALARMS, new JSONArray(Alarm.toJson(Prefs.getAlarms(ctx))));
 
@@ -199,7 +198,6 @@ public final class ConfigBackup {
         ed.putInt(Prefs.KEY_WEEK_START,
                 p.optInt(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx)) == Prefs.WEEK_START_SUNDAY
                         ? Prefs.WEEK_START_SUNDAY : Prefs.WEEK_START_MONDAY);
-        ed.putBoolean(Prefs.KEY_ENABLED, p.optBoolean(Prefs.KEY_ENABLED, Prefs.isEnabled(ctx)));
         ed.putInt(Prefs.KEY_HORIZON,
                 clamp(p.optInt(Prefs.KEY_HORIZON, Prefs.getHorizonDays(ctx)), 1, 365));
         if (alarms != null) {
@@ -277,11 +275,7 @@ public final class ConfigBackup {
     /** 导入完成后的统一收尾：按新配置重排 + 刷新小组件 + 睡前提醒。 */
     public static void applyAfterImport(Context ctx) {
         BedtimeReminder.reschedule(ctx);
-        if (Prefs.isEnabled(ctx)) {
-            ScheduleManager.rescheduleAll(ctx);
-        } else {
-            ScheduleManager.cancelAllIncludingTransient(ctx);
-        }
+        ScheduleManager.rescheduleAll(ctx);
         Widgets.updateAll(ctx);
     }
 

@@ -49,7 +49,6 @@ public class SnoozePreNoticeTest {
         sp.edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .putInt(Prefs.KEY_HORIZON, horizonDays)
                 .apply();
     }

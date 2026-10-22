@@ -65,9 +65,8 @@ public class WeekScheduleWidget extends AppWidgetProvider {
     }
 
     static class WeekModel {
-        final boolean enabled;
         final String title;      // 大周 · 休2天
-        final String subtitle;   // 已开启 / 未开启
+        final String subtitle;   // 一句状态
         final List<DayCell> days;
         /** 底部两个按钮（v1.33）：文案 + 是否已生效（已生效时换成实底白字那一层）。 */
         final String todayAction;
@@ -75,10 +74,10 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         final String tomorrowAction;
         final boolean tomorrowMarked;
 
-        WeekModel(boolean enabled, String title, String subtitle, List<DayCell> days,
+        WeekModel(String title, String subtitle, List<DayCell> days,
                   String todayAction, boolean todayMarked,
                   String tomorrowAction, boolean tomorrowMarked) {
-            this.enabled = enabled;
+
             this.title = title;
             this.subtitle = subtitle;
             this.days = days;
@@ -130,10 +129,9 @@ public class WeekScheduleWidget extends AppWidgetProvider {
             cells.add(new DayCell(letters[i], label, d.equals(today),
                     type, vacation, overtime));
         }
-        boolean enabled = Prefs.isEnabled(ctx);
         // 标题取显示周的最后一天（周六）：周一 / 周日起始下都落在同一周，不会差一周
         String title = WeekSchedule.describe(rule, start.plusDays(6));
-        String sub = enabled ? "闹钟已开启" : "闹钟未开启";
+        String sub = "闹钟已开启";
 
         // 底部两个按钮：今天和明天各一个。早上关心「今天能不能不去」，
         // 睡前关心「明早能不能不去」——同一件事的两个时间点，都放在手边
@@ -142,7 +140,7 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         WeekSchedule.DayType tomorrowType = WeekSchedule.dayType(tomorrow, rule);
         boolean todayMarked = isMarked(todayType, today, vacations, overtimes);
         boolean tomorrowMarked = isMarked(tomorrowType, tomorrow, vacations, overtimes);
-        return new WeekModel(enabled, title, sub, cells,
+        return new WeekModel(title, sub, cells,
                 actionText("今天", todayType, todayMarked), todayMarked,
                 actionText("明天", tomorrowType, tomorrowMarked), tomorrowMarked);
     }

@@ -219,11 +219,6 @@ final class AlarmEditor {
         String tip = moved
                 ? "这个时间已经过了，已改到" + onceDateText(target.parseOnceDate())
                 : null;
-        // 总开关是用户自己关的，不替他打开；但不提醒的话，
-        // 他改完闹钟等一整天也不会响，还不知道为什么
-        if (!Prefs.isEnabled(activity)) {
-            tip = (tip == null ? "" : tip + "；") + "闹钟总开关还关着，先打开才会响";
-        }
         return tip;
     }
 

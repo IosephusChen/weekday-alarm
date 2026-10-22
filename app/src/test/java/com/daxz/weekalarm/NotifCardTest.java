@@ -75,7 +75,6 @@ public class NotifCardTest {
         ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit()
                 .putString(Prefs.KEY_ALARMS, Alarm.toJson(list))
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true)
-                .putBoolean(Prefs.KEY_ENABLED, true)
                 .apply();
     }
 

@@ -26,11 +26,9 @@ public class NextAlarmWidget extends AppWidgetProvider {
 
     /** 小组件展示的数据模型（纯数据，便于单元测试，不经过 RemoteViews）。 */
     static class WidgetModel {
-        final boolean enabled;
         final String title;     // 主信息：下一个闹钟时间 / 状态文案
-        final String subtitle;  // 副信息：标签 + 统计 / 引导提示
-        WidgetModel(boolean enabled, String title, String subtitle) {
-            this.enabled = enabled;
+        final String subtitle;  // 副信息：标签 + 统计
+        WidgetModel(String title, String subtitle) {
             this.title = title;
             this.subtitle = subtitle;
         }
@@ -38,9 +36,6 @@ public class NextAlarmWidget extends AppWidgetProvider {
 
     /** 计算小组件要展示的内容；与主 App 共用同一套排班计算。 */
     static WidgetModel computeModel(Context ctx) {
-        if (!Prefs.isEnabled(ctx)) {
-            return new WidgetModel(false, "尚未开启", "打开「闹钟总开关」即自动排程");
-        }
         return computeModel(ctx, ScheduleManager.nextRegisteredAlarm(ctx),
                 ScheduleManager.countScheduled(ctx));
     }
@@ -52,11 +47,8 @@ public class NextAlarmWidget extends AppWidgetProvider {
      * 而 {@code nextRegisteredAlarm} 每次都要逐候选探测 PendingIntent，是跨进程调用。
      */
     static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next, int count) {
-        if (!Prefs.isEnabled(ctx)) {
-            return new WidgetModel(false, "尚未开启", "打开「闹钟总开关」即自动排程");
-        }
         if (next == null) {
-            return new WidgetModel(true, "暂无提醒",
+            return new WidgetModel("暂无提醒",
                     "未来 " + Prefs.getHorizonDays(ctx) + " 天没有可排的闹钟");
         }
         LocalDateTime when = next.when;
@@ -64,12 +56,12 @@ public class NextAlarmWidget extends AppWidgetProvider {
                 + DOW[when.getDayOfWeek().getValue() - 1] + " "
                 + String.format(Locale.getDefault(), "%02d:%02d", when.getHour(), when.getMinute());
         String sub = next.label + " · 未来 " + Prefs.getHorizonDays(ctx) + " 天共 " + count + " 个提醒";
-        return new WidgetModel(true, time, sub);
+        return new WidgetModel(time, sub);
     }
 
     static RemoteViews buildViews(Context ctx, WidgetModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm);
-        rv.setTextViewText(R.id.widget_status, m.enabled ? "已开启" : "未开启");
+        rv.setTextViewText(R.id.widget_status, "已开启");
         rv.setTextViewText(R.id.widget_title, m.title);
         rv.setTextViewText(R.id.widget_sub, m.subtitle);
         // 点击整卡打开 App（v1.19）

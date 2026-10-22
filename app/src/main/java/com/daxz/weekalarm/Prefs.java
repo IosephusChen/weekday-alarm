@@ -25,7 +25,6 @@ public final class Prefs {
     public static final String KEY_ALARMS = "alarms_json";       // 多闹钟列表（Alarm.toJson）
     public static final String KEY_ALARMS_MIGRATED = "alarms_migrated";
     public static final String KEY_SMALL_REST_SAT = "small_rest_sat";
-    public static final String KEY_ENABLED = "enabled";
     public static final String KEY_HORIZON = "horizon_days"; // 提醒范围（天）
     public static final String KEY_SCHEDULED = "scheduled_dates"; // 已设置的闹钟日期集合
     public static final String KEY_FSI_GUIDED = "fsi_guided";     // 全屏意图权限是否已引导过（只引导一次）
@@ -267,14 +266,6 @@ public final class Prefs {
 
     public static void setSmallRestSat(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_SMALL_REST_SAT, v).apply();
-    }
-
-    public static boolean isEnabled(Context c) {
-        return sp(c).getBoolean(KEY_ENABLED, false);
-    }
-
-    public static void setEnabled(Context c, boolean v) {
-        sp(c).edit().putBoolean(KEY_ENABLED, v).apply();
     }
 
     /** 提醒范围（天）：默认 90，可选 90 / 180 / 365。节假日数据只内置到 2026 年底，超出部分按纯大小周规则推算。 */

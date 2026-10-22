@@ -54,7 +54,6 @@ public class FloatingAlarmTest {
     public void setUp() {
         ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setOnboardDone(ctx(), true);
-        Prefs.setEnabled(ctx(), true);
         FloatingAlarm.hide();
     }
 

@@ -122,8 +122,7 @@ final class AlarmEditor {
                     handled[0] = true;
                     // 先关对话框再执行业务逻辑（与其它对话框回调时序保持一致）
                     d.dismiss();
-                    String label = etLabel.getText().toString().trim();
-                    if (label.isEmpty()) label = "闹钟";
+                    String label = normalizeLabel(etLabel.getText().toString());
                     Alarm.Mode mode;
                     int mid = group.getCheckedRadioButtonId();
                     if (mid == R.id.rb_mode_daily) {
@@ -196,6 +195,19 @@ final class AlarmEditor {
      *
      * @return 需要当面提示的话；没什么可说就返回 null
      */
+    /**
+     * 名称留空时统一叫「闹钟」（v1.47.5）。
+     *
+     * <p>v1.47.5 起新建闹钟不再预填「起床」——多数闹钟不是起床用的（午休、吃药、接娃），
+     * 预填等于让用户先删两个字。留空也有兜底：列表、通知、睡前提醒都需要一个非空的称呼。
+     *
+     * <p>包级可见是为了单测：这个函数决定了「空名字」最终长什么样。
+     */
+    static String normalizeLabel(String raw) {
+        String t = raw == null ? "" : raw.trim();
+        return t.isEmpty() ? "闹钟" : t;
+    }
+
     static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,
                             String label, Alarm.Mode mode, String onceStr, int color) {
         target.hour = hour;

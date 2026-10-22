@@ -53,15 +53,46 @@
 
         <!-- ===== 设置卡片：一级平铺，每行左标题 + 右值 ===== -->
         <LinearLayout
+            android:id="@+id/card_main"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <TextView
-                style="@style/SettingsSection"
-                android:text="排程与节假日" />
+            <LinearLayout
+                android:id="@+id/hdr_schedule"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@color/section_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    style="@style/SettingsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="排程与节假日" />
+
+                <TextView
+                    android:id="@+id/sum_schedule"
+                    style="@style/SettingsValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="170dp" />
+
+                <TextView
+                    android:id="@+id/chev_schedule"
+                    style="@style/SettingsChevron" />
+            </LinearLayout>
 
             <!-- ===== 周休制度（v1.46.3 从首页搬来）=====
                  首页那张「排班」卡三行全是配置：周休制度、本周大/小周、小周休哪天，
@@ -371,9 +402,39 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <TextView
-                style="@style/SettingsSection"
-                android:text="响铃" />
+            <LinearLayout
+                android:id="@+id/hdr_ring"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@color/section_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    style="@style/SettingsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="响铃" />
+
+                <TextView
+                    android:id="@+id/sum_ring"
+                    style="@style/SettingsValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="170dp" />
+
+                <TextView
+                    android:id="@+id/chev_ring"
+                    style="@style/SettingsChevron" />
+            </LinearLayout>
 
             <!-- 闹钟音量 -->
             <LinearLayout
@@ -566,9 +627,39 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <TextView
-                style="@style/SettingsSection"
-                android:text="提醒" />
+            <LinearLayout
+                android:id="@+id/hdr_remind"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@color/section_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    style="@style/SettingsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="提醒" />
+
+                <TextView
+                    android:id="@+id/sum_remind"
+                    style="@style/SettingsValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="170dp" />
+
+                <TextView
+                    android:id="@+id/chev_remind"
+                    style="@style/SettingsChevron" />
+            </LinearLayout>
 
             <!-- 稍后提醒 -->
             <LinearLayout
@@ -750,9 +841,39 @@
                     android:focusable="false" />
             </LinearLayout>
 
-            <TextView
-                style="@style/SettingsSection"
-                android:text="其他" />
+            <LinearLayout
+                android:id="@+id/hdr_other"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:background="@color/section_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="14dp">
+
+                <TextView
+                    style="@style/SettingsTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="其他" />
+
+                <TextView
+                    android:id="@+id/sum_other"
+                    style="@style/SettingsValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="170dp" />
+
+                <TextView
+                    android:id="@+id/chev_other"
+                    style="@style/SettingsChevron" />
+            </LinearLayout>
 
             <!-- 按键设置：标题 + 两个键的作用 -->
             <LinearLayout
@@ -980,15 +1101,44 @@
 
         <!-- ===== 备份与恢复（v1.20）=====
              换手机 / 重装后不用重新攒设置：导出成一份 JSON，导入时整份覆盖。 -->
-        <TextView
-            style="@style/SectionTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <LinearLayout
+            android:id="@+id/hdr_backup"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="14dp"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="备份与恢复" />
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true">
+
+            <TextView
+                style="@style/SettingsTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="备份与恢复" />
+
+            <TextView
+                android:id="@+id/sum_backup"
+                style="@style/SettingsValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="170dp" />
+
+            <TextView
+                android:id="@+id/chev_backup"
+                style="@style/SettingsChevron" />
+        </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/grp_backup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_card"

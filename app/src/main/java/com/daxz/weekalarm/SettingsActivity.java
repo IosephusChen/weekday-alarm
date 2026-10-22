@@ -5,6 +5,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 「设置与使用说明」页（v1.19.7）。
@@ -188,6 +191,8 @@ public class SettingsActivity extends AppCompatActivity {
             Prefs.setVibrate(this, checked);
         });
 
+        buildGroups();
+        collapseAll();
         refreshAll();
     }
 
@@ -196,6 +201,30 @@ public class SettingsActivity extends AppCompatActivity {
         super.onResume();
         refreshAll();
     }
+
+    // ================= 分组折叠（v1.48.2）=================
+    //
+    // 设置页实测 2543dp ≈ 3.8 屏：26 行平铺，改「睡前提醒」要滑过三屏。
+    // 现在每组折成一行（标题 + 当前状态），整页一屏装下。
+    // 默认全部收起、不记忆状态——设置页是低频页面，位置固定比「上次看到哪」更重要。
+
+    private static final int[] GROUP_HEADERS = {
+            R.id.hdr_schedule, R.id.hdr_ring, R.id.hdr_remind,
+            R.id.hdr_other, R.id.hdr_backup
+    };
+    private static final int[] GROUP_SUMS = {
+            R.id.sum_schedule, R.id.sum_ring, R.id.sum_remind,
+            R.id.sum_other, R.id.sum_backup
+    };
+    private static final int[] GROUP_CHEVS = {
+            R.id.chev_schedule, R.id.chev_ring, R.id.chev_remind,
+            R.id.chev_other, R.id.chev_backup
+    };
+
+    /** 每个组包含的行（第一个组在 card_main 内，备份组是另一张卡）。 */
+    private final List<List<View>> groupRows = new ArrayList<>();
+    /** 当前展开的组头；null = 全部收起。 */
+    private View expandedHeader;
 
     private void refreshAll() {
         updateHorizonText();
@@ -220,6 +249,95 @@ public class SettingsActivity extends AppCompatActivity {
         swChristian.setChecked(Prefs.isChristianFestivals(this));
         swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
         swAttaching = false;
+        updateGroupSummaries();
+    }
+
+    /**
+     * 按卡片里的顺序切分「组头 → 该组的行」。
+     *
+     * <p>不额外加容器：组头之间的所有 View（行与分隔线）就是那一组的内容，
+     * 收起时整段隐藏。这样 XML 只需换掉 5 个标题，行本身一行都不用动。
+     */
+    private void buildGroups() {
+        groupRows.clear();
+        ViewGroup card = findViewById(R.id.card_main);
+        List<View> cur = null;
+        for (int i = 0; i < card.getChildCount(); i++) {
+            View v = card.getChildAt(i);
+            if (isGroupHeader(v.getId())) {
+                cur = new ArrayList<>();
+                groupRows.add(cur);
+            } else if (cur != null) {
+                cur.add(v);
+            }
+        }
+        // 备份组的标题在卡片外，内容是另一张卡
+        List<View> backup = new ArrayList<>();
+        backup.add(findViewById(R.id.grp_backup));
+        groupRows.add(backup);
+
+        for (int i = 0; i < GROUP_HEADERS.length; i++) {
+            final int idx = i;
+            findViewById(GROUP_HEADERS[i]).setOnClickListener(v -> toggleGroup(idx));
+        }
+    }
+
+    private static boolean isGroupHeader(int id) {
+        for (int h : GROUP_HEADERS) {
+            if (h == id) return true;
+        }
+        return false;
+    }
+
+    /** 点一组：已展开就收起；否则收起别的、只展开这一组。 */
+    private void toggleGroup(int idx) {
+        boolean willExpand = expandedHeader != findViewById(GROUP_HEADERS[idx]);
+        collapseAll();
+        if (!willExpand) return;
+        expandedHeader = findViewById(GROUP_HEADERS[idx]);
+        setRowsVisible(idx, true);
+        ((TextView) findViewById(GROUP_CHEVS[idx])).setText("⌄");
+    }
+
+    private void collapseAll() {
+        for (int i = 0; i < groupRows.size(); i++) {
+            setRowsVisible(i, false);
+        }
+        for (int id : GROUP_CHEVS) {
+            ((TextView) findViewById(id)).setText("›");
+        }
+        expandedHeader = null;
+    }
+
+    private void setRowsVisible(int idx, boolean visible) {
+        for (View v : groupRows.get(idx)) {
+            v.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /**
+     * 收起状态下的摘要：不展开也知道现在是什么配置。
+     *
+     * <p>直接取各行已经算好的文案，避免同一句话维护两处（改了行内文案却忘了摘要）。
+     */
+    private void updateGroupSummaries() {
+        setSum(R.id.sum_schedule, tvWeekMode.getText() + " · " + tvWeekStart.getText());
+        setSum(R.id.sum_ring, tvVolume.getText() + " · " + tvRingtone.getText());
+        setSum(R.id.sum_remind, remindSummary());
+        // 「其他」「备份与恢复」没有状态可摘要，留空
+    }
+
+    private void setSum(int id, CharSequence text) {
+        ((TextView) findViewById(id)).setText(text);
+    }
+
+    private String remindSummary() {
+        int cur = Prefs.getBedtimeMinutes(this);
+        String bed = cur == Prefs.BEDTIME_OFF
+                ? "睡前关闭" : "睡前 " + BedtimeReminder.timeText(cur);
+        int pre = Prefs.getPreNoticeMinutes(this);
+        if (pre <= 0) return bed;
+        return bed + " · 提前 " + (pre >= 60 ? (pre / 60) + " 小时" : pre + " 分钟");
     }
 
     /** 设置项改动后：立即重排（旧闹钟自动清除重设）再刷新本页。 */

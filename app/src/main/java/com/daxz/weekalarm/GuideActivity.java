@@ -364,7 +364,15 @@ public class GuideActivity extends AppCompatActivity {
     private void bindPermissions() {
         findViewById(R.id.perm_notif).setOnClickListener(v -> openNotificationSettings());
         findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
-        findViewById(R.id.perm_fsi).setOnClickListener(v -> openFullScreenIntentSettings());
+        // v1.47.2：真机验证发现「后台弹出界面」开启会连带开启全屏通知（反之不成立），
+        // 所以这一行改成指向「后台弹出界面」——一个入口覆盖两件事，不用再单独引导全屏
+        findViewById(R.id.perm_fsi).setOnClickListener(v -> {
+            if (!PermissionGuides.openBackgroundPopup(this)) {
+                Toast.makeText(this, "这台机器没有可直达的页面，请到「应用管理 → 打工人闹钟 → 其他权限」里找",
+                        Toast.LENGTH_LONG).show();
+                openAppDetails();
+            }
+        });
         findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
         // v1.47.1：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
         // 只能给跳转。它比电池优化更关键：没有它，App 被划掉后闹钟到点广播直接被丢弃。
@@ -410,7 +418,15 @@ public class GuideActivity extends AppCompatActivity {
         }
         setPermState(stExact, exact);
         setPermState(stFsi, fsi);
-        setPermState(stBattery, battery);
+        if (fsi) stFsi.setText("已开启 · 锁屏也能弹");
+        // v1.47.2：实测「自启动 + 电池优化受限」时闹钟照响——setAlarmClock 本来就不受
+        // Doze 限制。这一项从「建议」降为「可选」，不再催用户去改
+        if (battery) {
+            setPermState(stBattery, true);
+        } else {
+            stBattery.setText("可选 · 一般不影响响铃");
+            stBattery.setTextColor(ContextCompat.getColor(this, R.color.sub));
+        }
         setPermState(stOverlay, Settings.canDrawOverlays(this));
         refreshLockState();
     }
@@ -470,19 +486,6 @@ public class GuideActivity extends AppCompatActivity {
         try {
             startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
                     .setData(Uri.parse("package:" + getPackageName())));
-        } catch (Exception e) {
-            openAppDetails();
-        }
-    }
-
-    private void openFullScreenIntentSettings() {
-        try {
-            if (Build.VERSION.SDK_INT >= 34) {
-                startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
-                        .setData(Uri.parse("package:" + getPackageName())));
-            } else {
-                openAppDetails();
-            }
         } catch (Exception e) {
             openAppDetails();
         }

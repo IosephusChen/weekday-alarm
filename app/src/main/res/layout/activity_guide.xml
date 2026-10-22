@@ -739,7 +739,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="锁屏时弹出闹钟"
+                            android:text="后台弹出界面"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
 
@@ -748,7 +748,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="去开启"
+                            android:text="去开启 · 顺带开全屏"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -787,7 +787,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="后台不被清理"
+                            android:text="省电策略（可选）"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
 

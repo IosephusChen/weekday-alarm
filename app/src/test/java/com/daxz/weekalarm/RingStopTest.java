@@ -165,4 +165,37 @@ public class RingStopTest {
         assertEquals("未开 · 闹钟响了关不掉", st.getText().toString());
         ctl.pause().stop().destroy();
     }
+
+    // ---------- 4. 权限行的两处调整（真机结论，v1.47.2）----------
+
+    /**
+     * 真机验证：开「后台弹出界面」会连带开启全屏通知，反之不成立。
+     * 所以引导里只留这一项，标题必须写清是哪一项。
+     */
+    @Test
+    public void guide_popupRow_targetsBackgroundPopup() {
+        resetPrefs();
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class).setup();
+        View row = ctl.get().findViewById(R.id.perm_fsi);
+        // 行内左侧竖排的第一个子 View 是标题
+        android.view.ViewGroup inner = (android.view.ViewGroup)
+                ((android.view.ViewGroup) row).getChildAt(0);
+        assertEquals("后台弹出界面", ((TextView) inner.getChildAt(0)).getText().toString());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 实测：自启动开着、电池优化受限，闹钟照响（setAlarmClock 不受 Doze 限制）。
+     * 这一项因此降为「可选」，不该再用「去开启」催用户。
+     */
+    @Test
+    public void guide_batteryRow_isOptionalNotATodo() {
+        resetPrefs();
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class).setup();
+        assertEquals("可选 · 一般不影响响铃",
+                ((TextView) ctl.get().findViewById(R.id.st_battery)).getText().toString());
+        ctl.pause().stop().destroy();
+    }
 }

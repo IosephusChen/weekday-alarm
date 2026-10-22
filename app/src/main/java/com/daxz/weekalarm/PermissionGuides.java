@@ -67,6 +67,43 @@ final class PermissionGuides {
         openAppDetails(activity);
     }
 
+    /**
+     * 跳「后台弹出界面」（v1.47.2）。
+     *
+     * <p>为什么用它替掉原来的「锁屏时弹出闹钟」：真机验证发现两者联动——
+     * 开「后台弹出界面」会连带开启全屏通知，反过来不成立。所以这一项覆盖得更全，
+     * 引导里只留一个入口就够了。
+     *
+     * <p>它不是标准权限：小米 / 澎湃把它藏在「应用管理 → 其他权限」里，只能拼 intent
+     * 定位到本应用的权限编辑页；认不出来就退回全屏通知设置，再不行交给调用方兜底。
+     *
+     * @return true 表示已经成功跳转
+     */
+    static boolean openBackgroundPopup(Activity activity) {
+        try {
+            Intent i = new Intent("miui.intent.action.APP_PERM_EDITOR")
+                    .setClassName("com.miui.securitycenter",
+                            "com.miui.permcenter.permissions.PermissionsEditorActivity")
+                    .putExtra("extra_pkgname", activity.getPackageName());
+            if (activity.getPackageManager().resolveActivity(i, 0) != null) {
+                activity.startActivity(i);
+                return true;
+            }
+        } catch (Exception ignore) {
+            // 换下一个入口
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                activity.startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
+                        .setData(Uri.parse("package:" + activity.getPackageName())));
+                return true;
+            }
+        } catch (Exception ignore) {
+            // 落到调用方兜底
+        }
+        return false;
+    }
+
     /** Android 13+ 的通知权限。未授予时静默请求，不解释——系统弹窗自带说明。 */
     static void requestNotification(Activity activity) {
         if (Build.VERSION.SDK_INT >= 33) {

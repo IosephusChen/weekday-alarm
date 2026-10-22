@@ -28,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowSettings;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -120,6 +121,50 @@ public class NotifCardTest {
         assertEquals("5 分钟后再响", text(root, R.id.nc_action2));
         // 响铃不需要倒计时：它正在响，不是「还剩多久」
         assertEquals(View.GONE, root.findViewById(R.id.nc_chrono).getVisibility());
+    }
+
+    // ================= 渠道选择（v1.42.0） =================
+    //
+    // 用户报「两个悬浮窗」：高优先级渠道在屏幕亮着时必然弹一张系统 heads-up，
+    // 我们的横幅又叠上去。这两条钉住「什么时候该安静、什么时候该抢屏」。
+
+    /**
+     * 解锁 + 有悬浮窗权限：走低优先级渠道，不挂 FSI，也不挂系统 action。
+     *
+     * <p>界面已经由横幅负责，这条通知只需在栏里可点可停。渠道一高，heads-up 就会回来。
+     */
+    @Test
+    public void floatPath_usesQuietChannelWithoutHeadsUp() {
+        enableDailyAlarm();
+        ShadowSettings.setCanDrawOverlays(true);
+        try {
+            AlarmService svc = startRinging();
+            Notification n = shadowOf(svc).getLastForegroundNotification();
+
+            assertEquals("能弹横幅就该用「已弹横幅」这条安静渠道",
+                    App.CHANNEL_ALARM_BANNER, n.getChannelId());
+            assertNull("有横幅就不该再挂全屏意图", n.fullScreenIntent);
+            assertTrue("自绘卡片已有两个药丸，不该再挂系统 action",
+                    n.actions == null || n.actions.length == 0);
+        } finally {
+            FloatingAlarm.hide();
+        }
+    }
+
+    /** 锁屏 / 没给悬浮窗权限：高优先级渠道 + 全屏意图，这是唯一能叫醒人的路径。 */
+    @Test
+    public void noFloatPath_keepsHighChannelAndFullScreenIntent() {
+        enableDailyAlarm();
+        ShadowSettings.setCanDrawOverlays(false);
+
+        AlarmService svc = startRinging();
+        Notification n = shadowOf(svc).getLastForegroundNotification();
+
+        assertEquals("没横幅时必须用高优先级渠道",
+                App.CHANNEL_ALARM, n.getChannelId());
+        assertNotNull("没有横幅时全屏意图是兜底", n.fullScreenIntent);
+        assertNotNull("这条路径仍要挂系统 action", n.actions);
+        assertEquals("停止", n.actions[0].title.toString());
     }
 
     /** 次数用尽时第二个按钮必须消失，否则点了只会弹「已用完」。 */

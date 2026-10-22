@@ -26,6 +26,10 @@ import android.widget.TextView;
  * 代价是要「显示悬浮窗」权限，没权限时 {@link #show} 返回 false，
  * 调用方（{@link AlarmService}）退回整屏，不会静默什么都不弹。
  *
+ * <p>v1.42.0：结构改成系统 heads-up 那种三行（图标 + 标题 / 一行说明 / 一排药丸），
+ * 底色换暖桃、按钮换品牌紫。同时响铃通知改走低优先级渠道——否则高优先级渠道
+ * 会在屏幕亮着时再弹一张系统 heads-up，两层叠在一起（用户报的「两个悬浮窗」）。
+ *
  * <p>窗口只挂一个实例：重复响铃时先撤旧的再挂新的，不会叠出两张横幅。
  */
 final class FloatingAlarm {
@@ -81,19 +85,16 @@ final class FloatingAlarm {
 
             TextView title = v.findViewById(R.id.fa_title);
             TextView sub = v.findViewById(R.id.fa_sub);
-            View stop = v.findViewById(R.id.fa_stop);
-            View snooze = v.findViewById(R.id.fa_snooze);
+            TextView stop = v.findViewById(R.id.fa_stop);
+            TextView snooze = v.findViewById(R.id.fa_snooze);
 
             String name = label == null || label.isEmpty() ? "闹钟" : label;
             title.setText(name + " 时间到了");
-            // 按钮只剩图标，所以这两句要把「哪个按钮干什么」说清。
-            // 宽度算过：360dp 屏上横幅可用约 344dp，减图标 42 + 两个圆钮 98 + 内边距，
-            // 文字只剩约 171dp —— 12sp 一行放得下 14 个汉字，再长就被省略号吃掉。
-            sub.setText(canSnooze
-                    ? "点右侧停止，或 " + snoozeMins + " 分钟后再响"
-                    : "点右侧按钮停止响铃");
+            // v1.42.0：按钮恢复文字（药丸），说明行不用再交代「点哪个按钮」，
+            // 直接写「点此停止或小睡」，和通知栏那条卡片同一句话。
+            sub.setText(canSnooze ? "点此停止或小睡" : "点此停止");
 
-            stop.setContentDescription("停止");
+            stop.setText("停止");
             stop.setOnClickListener(x -> {
                 hide();
                 try {
@@ -105,7 +106,7 @@ final class FloatingAlarm {
 
             if (canSnooze) {
                 snooze.setVisibility(View.VISIBLE);
-                snooze.setContentDescription(snoozeMins + " 分钟后再响");
+                snooze.setText(snoozeMins + " 分钟后再响");
                 snooze.setOnClickListener(x -> {
                     hide();
                     try {

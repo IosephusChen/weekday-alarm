@@ -81,6 +81,37 @@ public class NightModeTest {
         assertTrue("日间分组条上的字要读得清（对比度 " + ratio + "，要求 >= 4.5）", ratio >= 4.5);
     }
 
+    /**
+     * 响铃横幅（v1.42.0）：暖桃底在夜间必须压暗，字要够亮。
+     *
+     * <p>这张卡是写死的暖色（不跟主题走），所以最怕「夜里闪一块亮橙」。
+     * 这里同时钉住底色够暗、标题与说明的对比度都 ≥ 4.5。
+     */
+    @Test
+    @Config(qualifiers = "night")
+    public void night_floatBannerIsDarkAndReadable() {
+        int bg = ContextCompat.getColor(ctx(), R.color.float_card_bg);
+        assertTrue("夜间横幅底色应压暗（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
+                ColorUtils.calculateLuminance(bg) < 0.1);
+        for (int fg : new int[]{R.color.float_card_title, R.color.float_card_sub}) {
+            double ratio = ColorUtils.calculateContrast(ContextCompat.getColor(ctx(), fg), bg);
+            assertTrue("夜间横幅上的字要读得清（对比度 " + ratio + "）", ratio >= 4.5);
+        }
+    }
+
+    /** 日间：暖色底 + 深字，同样要够对比。 */
+    @Test
+    @Config(qualifiers = "notnight")
+    public void day_floatBannerIsWarmAndReadable() {
+        int bg = ContextCompat.getColor(ctx(), R.color.float_card_bg);
+        assertTrue("日间横幅应是浅暖色（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
+                ColorUtils.calculateLuminance(bg) > 0.8);
+        for (int fg : new int[]{R.color.float_card_title, R.color.float_card_sub}) {
+            double ratio = ColorUtils.calculateContrast(ContextCompat.getColor(ctx(), fg), bg);
+            assertTrue("日间横幅上的字要读得清（对比度 " + ratio + "）", ratio >= 4.5);
+        }
+    }
+
     /** 日间反过来：浅底深字。这条同时防止「为了修夜间把白天改坏」。 */
     @Test
     @Config(qualifiers = "notnight")

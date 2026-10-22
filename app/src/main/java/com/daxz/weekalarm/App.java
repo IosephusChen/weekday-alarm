@@ -33,6 +33,18 @@ public class App extends Application {
      * 再弹一条横幅就是重复。用低优先级渠道，只占个前台服务名额，不抢屏不横幅。
      */
     public static final String CHANNEL_TEST = "test_channel_v1";
+    /**
+     * 解锁响铃、且已经弹出悬浮横幅时用的渠道（v1.42.0）。
+     *
+     * <p>为什么另开一个：{@link #CHANNEL_ALARM} 是 IMPORTANCE_HIGH，屏幕亮着时一 post
+     * 系统就会弹一张 heads-up——那是 SystemUI 自己的窗口，我们关不掉、也改不了它的按钮颜色。
+     * 结果就是「白横幅 + 桃色 heads-up」两张卡叠在一起（用户报的「两个悬浮窗」）。
+     *
+     * <p>界面已经由 {@link FloatingAlarm} 负责了，这条通知只需要「在栏里可点、可停」，
+     * 不需要抢屏，所以用 IMPORTANCE_LOW：不横幅、不响、不震。
+     * 锁屏 / 没给悬浮窗权限时仍走 {@link #CHANNEL_ALARM}——那时候需要高优先级 + 全屏意图。
+     */
+    public static final String CHANNEL_ALARM_BANNER = "alarm_banner_channel_v1";
     /** 睡前提醒（v1.20）：晚上一条「明天要不要早起」，有声但很轻（默认提示音）。 */
     public static final String CHANNEL_BEDTIME = "bedtime_channel_v1";
 
@@ -87,6 +99,15 @@ public class App extends Application {
         test.setSound(null, null);
         test.enableVibration(false);
 
+        // 解锁响铃（v1.42.0）：界面由悬浮横幅负责，这条只占个位置。
+        // 描述要写清用途——用户会在系统设置里看到它，别让人以为可以关掉闹钟通知。
+        NotificationChannel banner = new NotificationChannel(
+                CHANNEL_ALARM_BANNER, "响铃（已弹横幅）", NotificationManager.IMPORTANCE_LOW);
+        banner.setDescription("解锁时响铃，屏幕上已弹出横幅；这里只留一条可点的通知，不横幅、不响");
+        banner.setSound(null, null);
+        banner.enableVibration(false);
+        banner.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
         NotificationChannel bedtime = new NotificationChannel(
                 CHANNEL_BEDTIME, "睡前提醒", NotificationManager.IMPORTANCE_DEFAULT);
         bedtime.setDescription("睡前告诉你明天要不要早起、闹钟几点响，可一键标记明天请假");
@@ -98,6 +119,7 @@ public class App extends Application {
             nm.createNotificationChannel(ch);
             nm.createNotificationChannel(pre);
             nm.createNotificationChannel(test);
+            nm.createNotificationChannel(banner);
             nm.createNotificationChannel(bedtime);
             nm.deleteNotificationChannel(CHANNEL_OLD);   // 清理旧渠道（幂等，无旧渠道时空操作）
             nm.deleteNotificationChannel(CHANNEL_PRE_NOTICE_OLD);

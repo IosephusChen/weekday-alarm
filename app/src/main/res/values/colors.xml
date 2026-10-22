@@ -14,6 +14,13 @@
          白字压白底，选中那一项等于消失了。 -->
     <color name="guide_option_selected">#EEF0FE</color>
     <color name="section_bg">#F7F8FD</color>
+    <!-- 响铃横幅（v1.42.0）：暖桃色，参照系统闹钟的 heads-up。
+         底色写死一个暖色而不是跟主题走，是因为这张卡只在「正在响铃」时出现，
+         那一刻需要的是「被叫醒」而不是「融入界面」；深色模式另有压暗版本。 -->
+    <color name="float_card_bg">#FFF6EC</color>
+    <color name="float_card_line">#F0DFC8</color>
+    <color name="float_card_title">#2A2018</color>
+    <color name="float_card_sub">#8A6A4E</color>   <!-- 桃底上 4.6:1 -->
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。
          以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，

@@ -313,9 +313,16 @@ public class AlarmService extends Service {
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
         // v1.40.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
         String text = test ? "这是测试，正式提醒一样响" : "点此停止或小睡";
-        // 测试响铃用低优先级渠道：界面已经由「测试响铃」按钮打开了，再来一条横幅就是重复
-        Notification.Builder nb = new Notification.Builder(this,
-                test ? App.CHANNEL_TEST : App.CHANNEL_ALARM)
+        // v1.42.0：渠道按「要不要自己弹界面」来选，这决定了系统会不会再叠一张 heads-up。
+        //
+        // 用户报的「两个悬浮窗」是这么来的：CHANNEL_ALARM 是 IMPORTANCE_HIGH，屏幕亮着时
+        // 一 post 系统就弹 heads-up；我们又挂了自己的横幅，两张卡就叠在同一块地方。
+        // 现在能弹横幅时走 IMPORTANCE_LOW 的 CHANNEL_ALARM_BANNER——界面已经由横幅负责，
+        // 这条通知只需在栏里可点可停；锁屏 / 没给悬浮窗权限时才用高优先级渠道 + 全屏意图。
+        boolean willFloat = !popup && !test && FloatingAlarm.canFloat(this);
+        String channel = test ? App.CHANNEL_TEST
+                : (willFloat ? App.CHANNEL_ALARM_BANNER : App.CHANNEL_ALARM);
+        Notification.Builder nb = new Notification.Builder(this, channel)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -324,15 +331,9 @@ public class AlarmService extends Service {
                 .setPriority(Notification.PRIORITY_MAX)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(true)
-                .setAutoCancel(false)
-                // v1.23.3：action 必须带图标，否则 MIUI / HyperOS 不渲染按钮
-                .addAction(new Notification.Action.Builder(
-                        Icon.createWithResource(this, R.drawable.ic_notif_close),
-                        test ? "结束测试" : "停止", stopPi).build());
+                .setAutoCancel(false);
         // 全屏 intent 只在「确实要整屏」时挂：锁屏 / 息屏（popup），
         // 或者解锁但挂不了悬浮窗（没给权限）——那时候整屏是唯一的兜底。
-        // 能挂悬浮窗就不挂 FSI，否则解锁时会先弹一条横幅、再出现小窗，两层重复。
-        boolean willFloat = !popup && !test && FloatingAlarm.canFloat(this);
         if (!test && (popup || !willFloat)) {
             nb.setFullScreenIntent(fpi, true);
         }
@@ -341,10 +342,18 @@ public class AlarmService extends Service {
         // 用户会以为按钮坏了；现在测试通知里只留「结束测试」。
         boolean canSnooze = !test && ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
         int snoozeMins = Math.max(1, Prefs.getSnoozeMinutes(this));
-        if (canSnooze) {
+        // v1.42.0：能弹横幅时不再挂 addAction。自绘卡片上已经有两个药丸，
+        // 系统模板的 action 只在 heads-up / 展开态出现，重复且样式不一致。
+        if (!willFloat) {
+            // v1.23.3：action 必须带图标，否则 MIUI / HyperOS 不渲染按钮
             nb.addAction(new Notification.Action.Builder(
-                    Icon.createWithResource(this, R.drawable.ic_notif_snooze),
-                    snoozeMins + "分钟后再响", snoozePi).build());
+                    Icon.createWithResource(this, R.drawable.ic_notif_close),
+                    test ? "结束测试" : "停止", stopPi).build());
+            if (canSnooze) {
+                nb.addAction(new Notification.Action.Builder(
+                        Icon.createWithResource(this, R.drawable.ic_notif_snooze),
+                        snoozeMins + "分钟后再响", snoozePi).build());
+            }
         }
         // v1.38.0：折叠态换成自绘卡片。
         //

@@ -117,14 +117,12 @@ public class ScreenLockTest {
     public void preNotice_unlocked_doesNotOpenPopup() {
         reset();
         setScreen(true, false);
-        LocalDate d = LocalDate.now();
-        // 用「当天 12:00」而不是 now+1h：23 点后跑测试会跨到第二天，
-        // 登记的是明天、查的是今天，这条用例就必然红（2026-10-20 晚踩到过）。
-        ScheduleManager.setAlarm(ctx(), d.atTime(12, 0), 1, "起床");
+        LocalDateTime when = inAnHour();
+        ScheduleManager.setAlarm(ctx(), when, 1, "起床");
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
 
-        new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(d));
+        new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(when));
         assertNull("解锁时不该弹整屏提醒", shadowOf(app).getNextStartedActivity());
     }
 
@@ -133,14 +131,12 @@ public class ScreenLockTest {
     public void preNotice_locked_opensPopup() {
         reset();
         setScreen(true, true);
-        LocalDate d = LocalDate.now();
-        // 用「当天 12:00」而不是 now+1h：23 点后跑测试会跨到第二天，
-        // 登记的是明天、查的是今天，这条用例就必然红（2026-10-20 晚踩到过）。
-        ScheduleManager.setAlarm(ctx(), d.atTime(12, 0), 1, "起床");
+        LocalDateTime when = inAnHour();
+        ScheduleManager.setAlarm(ctx(), when, 1, "起床");
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
 
-        new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(d));
+        new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(when));
         Intent started = shadowOf(app).getNextStartedActivity();
         assertNotNull("锁屏时应弹出提前提醒", started);
         assertTrue("拉起的应是 PreNoticeActivity，实际：" + started.getComponent(),
@@ -157,15 +153,28 @@ public class ScreenLockTest {
         return i;
     }
 
-    private Intent preNoticeIntent(LocalDate d) {
+    /**
+     * 「一小时后的整分」——提前提醒的时间必须相对 now 生成。
+     *
+     * <p>这里踩过两次：先是写死「当天 12:00」，23 点后跑会跨天；
+     * 后来改成 12:00 登记 + 写死 07:00 文案，结果 v1.40 起标题按真实剩余时间现算，
+     * 07:00 一过 `actualMinutes` 就返回 0、整条提醒被当成过期丢掉——
+     * 于是这条用例在上午 10 点后必红，而在凌晨跑又是绿的。
+     */
+    private LocalDateTime inAnHour() {
+        return LocalDateTime.now().plusMinutes(60).withSecond(0).withNano(0);
+    }
+
+    private Intent preNoticeIntent(LocalDateTime when) {
         Intent i = new Intent(ctx(), PreNoticeReceiver.class)
                 .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
-                .setData(android.net.Uri.parse("daxz://prenotice/1/" + d));
+                .setData(android.net.Uri.parse("daxz://prenotice/1/" + when.toLocalDate()));
         i.putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1);
         i.putExtra(PreNoticeReceiver.EXTRA_LABEL, "起床");
-        i.putExtra(PreNoticeReceiver.EXTRA_DATE, d.toString());
-        i.putExtra(PreNoticeReceiver.EXTRA_MINUTES, 30);
-        i.putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT, "07:00");
+        i.putExtra(PreNoticeReceiver.EXTRA_DATE, when.toLocalDate().toString());
+        i.putExtra(PreNoticeReceiver.EXTRA_MINUTES, 60);
+        i.putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT,
+                when.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
         return i;
     }
 }

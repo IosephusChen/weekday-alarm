@@ -74,7 +74,7 @@ public class FloatingAlarmTest {
         assertFalse(FloatingAlarm.isShowing());
     }
 
-    /** 有权限：挂上、文案对、两个按钮都在（按钮只剩图标，文案走 contentDescription）。 */
+    /** 有权限：挂上、文案对、两个药丸都在。 */
     @Test
     public void withPermission_showsBannerWithStopAndSnooze() {
         grantOverlay(true);
@@ -84,13 +84,14 @@ public class FloatingAlarmTest {
         View v = FloatingAlarm.viewForTest();
         assertNotNull("窗口应已挂上", v);
         assertEquals("起床 时间到了", ((TextView) v.findViewById(R.id.fa_title)).getText().toString());
-        assertEquals("副标题应说清「哪个按钮干什么」",
-                "点右侧停止，或 5 分钟后再响",
+        // v1.42.0：按钮恢复文字药丸（不再是纯图标），说明行与通知卡片同一句话
+        assertEquals("点此停止或小睡",
                 ((TextView) v.findViewById(R.id.fa_sub)).getText().toString());
         assertEquals(View.VISIBLE, v.findViewById(R.id.fa_snooze).getVisibility());
         assertEquals("5 分钟后再响",
-                v.findViewById(R.id.fa_snooze).getContentDescription().toString());
-        assertEquals("停止", v.findViewById(R.id.fa_stop).getContentDescription().toString());
+                ((TextView) v.findViewById(R.id.fa_snooze)).getText().toString());
+        assertEquals("停止",
+                ((TextView) v.findViewById(R.id.fa_stop)).getText().toString());
     }
 
     /**

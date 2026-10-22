@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 响铃横幅的卡片底（v1.41.0）：大圆角 + 细边。
+<!-- 响铃横幅的卡片底（v1.41.0 贴顶通栏；v1.42.0 改暖桃色）。
 
-     横幅贴顶通栏，圆角要够大才像系统闹钟那张卡（24dp），又不至于圆成胶囊。
-     悬浮窗吃不到主题的 elevation 阴影，所以靠一条描边把边界交代清楚；
-     底色走 @color/card，深色模式下自动变成 #1C1F35。 -->
+     为什么是桃色：用户对比系统闹钟的 heads-up，说那张卡的「整体 UI 更好看」。
+     系统那张的底色是 HyperOS 按主题算的，我们抄不了也改不了它的按钮颜色；
+     但自己的窗口可以照那个观感画——暖桃底 + 品牌紫药丸。
+
+     深色模式另有压暗版本（#2A2118），否则夜里会闪一块亮橙。
+     圆角 24dp、1dp 描边：悬浮窗吃不到 elevation 阴影，靠描边交代边界。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/card" />
+    <solid android:color="@color/float_card_bg" />
     <stroke
         android:width="1dp"
-        android:color="@color/line" />
+        android:color="@color/float_card_line" />
     <corners android:radius="24dp" />
 </shape>

@@ -1,89 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  响铃时的横幅（v1.41.0，原来是 300dp 的小卡片浮在屏幕中间）。
+  响铃时的贴顶横幅（v1.41.0 起；v1.42.0 改成系统 heads-up 那种三行结构）。
 
-  用户原话：「这悬浮窗出现在屏幕中间也太突兀了，要参考系统闹钟来做」。系统闹钟在解锁使用中
-  弹的是**贴顶的通栏横幅**：左侧图标、中间标题，右侧两个圆形按钮（稍后提醒 / 停止），
-  从状态栏下面滑下来，不挡屏幕中间的内容。
+  演变：
+  - v1.40.0：300dp 小卡片浮在屏幕 18% 处，用户说「出现在屏幕中间太突兀」。
+  - v1.41.0：贴顶通栏，但压成一行（图标 + 文字 + 两个圆钮），信息太挤。
+  - v1.42.0：用户对比系统闹钟的 heads-up，说那张「整体 UI 更好看」——
+    于是照它的结构来：图标 + 标题 / 一行说明 / 下面一排药丸，底色用暖桃，
+    按钮用品牌紫（系统那张的灰药丸改不了颜色，只能自己画）。
 
-  这个窗口由 WindowManager 以 TYPE_APPLICATION_OVERLAY 挂上去，需要「显示悬浮窗」权限；
-  没权限时 AlarmService 会退回整屏。锁屏 / 息屏仍然走整屏（那时候横幅没人看得见）。
-
-  宽度不在这里写死：FloatingAlarm 按屏幕宽度减去左右各 8dp 算好后塞进 LayoutParams。
+  宽度不在这里写死：FloatingAlarm 按屏幕宽度减去左右各 8dp 算好塞进 LayoutParams。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_float_card"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:paddingStart="12dp"
-    android:paddingTop="10dp"
-    android:paddingEnd="10dp"
-    android:paddingBottom="10dp">
-
-    <ImageView
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:background="@drawable/bg_notif_icon"
-        android:contentDescription="@null"
-        android:padding="9dp"
-        android:src="@drawable/ic_notification" />
+    android:orientation="vertical"
+    android:paddingStart="14dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="12dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="11dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/fa_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:textColor="@color/ink"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_notif_icon"
+            android:contentDescription="@null"
+            android:padding="8dp"
+            android:src="@drawable/ic_notification" />
 
-        <TextView
-            android:id="@+id/fa_sub"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:ellipsize="end"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:textColor="@color/sub"
-            android:textSize="12sp" />
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/fa_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/float_card_title"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/fa_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:textColor="@color/float_card_sub"
+                android:textSize="12sp" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- 稍后提醒：空心圆 + 时钟图标。文案在代码里塞进 contentDescription（无障碍要读得出）。 -->
-    <ImageButton
-        android:id="@+id/fa_snooze"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_marginStart="6dp"
-        android:background="@drawable/bg_float_btn_outline"
-        android:contentDescription="稍后再响"
-        android:padding="10dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_notif_snooze"
-        android:tint="@color/indigo"
-        android:visibility="gone" />
+    <!-- 按钮行与标题左边缘对齐（图标 40 + 间距 12），和系统那张卡一致 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="52dp"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
 
-    <!-- 停止：实色紫圆 + 方块图标，位置最右、最显眼，和系统闹钟一致 -->
-    <ImageButton
-        android:id="@+id/fa_stop"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_marginStart="8dp"
-        android:background="@drawable/bg_float_btn_solid"
-        android:contentDescription="停止"
-        android:padding="11dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_float_stop"
-        android:tint="@color/white" />
+        <TextView
+            android:id="@+id/fa_snooze"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:background="@drawable/bg_notif_action_outline"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:minWidth="64dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/violet"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/fa_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_notif_action"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:minWidth="64dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/white"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

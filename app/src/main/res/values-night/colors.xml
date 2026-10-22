@@ -19,6 +19,12 @@
          而条里的字是 @color/sub（中灰）——用户截图里「排程与节假日」「提醒」两段就是一片发白。
          这里取比 card(#1C1F35) 略亮一档的靛蓝灰，和 sub 的对比度约 5.7:1。 -->
     <color name="section_bg">#242840</color>
+
+    <!-- 响铃横幅（v1.42.0）：暖色压暗，别在深色界面上闪一块亮橙 -->
+    <color name="float_card_bg">#2A2118</color>
+    <color name="float_card_line">#4A3A28</color>
+    <color name="float_card_title">#F6EEE4</color>
+    <color name="float_card_sub">#C9B39C</color>   <!-- 深棕底上 7.8:1 -->
     <!-- 引导页选中项：同色相压暗，配 ink（近白）对比度约 9:1 -->
     <color name="guide_option_selected">#2A2350</color>
     <color name="white">#FFFFFFFF</color>

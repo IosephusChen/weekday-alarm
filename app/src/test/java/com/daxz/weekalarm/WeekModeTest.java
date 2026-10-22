@@ -185,8 +185,12 @@ public class WeekModeTest {
         Context c = ApplicationProvider.getApplicationContext();
         c.getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
 
-        SettingsActivity a =
-                org.robolectric.Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：「本周是」搬进了二级页（更多设置），所以在这里打开它
+        SettingsActivity a = org.robolectric.Robolectric.buildActivity(
+                MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext(), false))
+                .setup().get();
         java.lang.reflect.Method m = SettingsActivity.class.getDeclaredMethod("showWeekBigDialog");
         m.setAccessible(true);
         m.invoke(a);

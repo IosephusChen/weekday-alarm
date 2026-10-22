@@ -242,10 +242,11 @@ public class SnoozePreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 0);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        // 设置项全部一级平铺在本页，不再经「更多设置」二级菜单；
-        // v1.19.8 起每行统一「左标题 + 右值」，这里校验右侧值文案
+        // v1.49.0：设置分成主页 + 二级页，这一条改成「两页各自该显示的值」
+        SettingsActivity more = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), false)).setup().get();
         assertEquals("未来 180 天",
-                ((TextView) activity.findViewById(R.id.tv_horizon)).getText().toString());
+                ((TextView) more.findViewById(R.id.tv_horizon)).getText().toString());
         assertEquals("静音（仅震动）",
                 ((TextView) activity.findViewById(R.id.tv_volume)).getText().toString());
         // v1.27 起这一行是开关下方的副标题：关着时说「开着会怎样」，
@@ -295,12 +296,15 @@ public class SnoozePreNoticeTest {
         Prefs.setVolKeyAction(ctx(), Prefs.KEY_ACTION_STOP);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：稍后提醒与按键设置进了「更多响铃设置」，提前提醒留在主页
+        SettingsActivity ring = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertEquals("10 分钟 × 2 次",
-                ((TextView) activity.findViewById(R.id.tv_snooze)).getText().toString());
+                ((TextView) ring.findViewById(R.id.tv_snooze)).getText().toString());
         assertEquals("响铃前 15 分钟提醒",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
         // v1.29.0：两个键各占一行（原来挤在一行，窄屏 + 大字号会断在词中间）
-        String keys = ((TextView) activity.findViewById(R.id.tv_keys)).getText().toString();
+        String keys = ((TextView) ring.findViewById(R.id.tv_keys)).getText().toString();
         assertTrue("按键行应摘要显示音量键的作用，实际：" + keys, keys.contains("音量键 · 关闭"));
         assertTrue("两个键应各占一行，实际：" + keys, keys.contains("\n电源键 · "));
     }

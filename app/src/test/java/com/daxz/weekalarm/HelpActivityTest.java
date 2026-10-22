@@ -64,7 +64,9 @@ public class HelpActivityTest {
     @Test
     public void settingsEntry_opensHelpPage_notGuide() {
         resetPrefs();
-        SettingsActivity a = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：使用说明入口搬进「更多设置」
+        SettingsActivity a = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), false)).setup().get();
         a.findViewById(R.id.row_help).performClick();
 
         Intent next = Shadows.shadowOf(a).getNextStartedActivity();

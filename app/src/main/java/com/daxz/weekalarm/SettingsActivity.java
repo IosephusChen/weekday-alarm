@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SeekBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,6 +41,10 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView tvWeekMode, tvWeekBig, tvSmallRest;
     private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
     private SwitchCompat swChristian;
+    /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
+    private SeekBar sbVolume;
+    /** 主页睡前提醒开关（v1.49.0）。 */
+    private SwitchCompat swBedtime;
 
     /** 开关同步保护：回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
@@ -96,12 +101,22 @@ public class SettingsActivity extends AppCompatActivity {
                         }
                     });
 
+    /**
+     * 本页布局（v1.49.0）。
+     *
+     * <p>二级页 {@link MoreSettingsActivity} 继承本类、只换布局，
+     * 这样对话框、刷新、导出导入全部共用一份，不必复制。
+     */
+    protected int layoutRes() {
+        return R.layout.activity_settings;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
+        setContentView(layoutRes());
 
-        findViewById(R.id.btn_back).setOnClickListener(v -> finish());
+        bind(R.id.btn_back, v -> finish());
 
         tvKeys = findViewById(R.id.tv_keys);
         tvSnooze = findViewById(R.id.tv_snooze);
@@ -121,79 +136,126 @@ public class SettingsActivity extends AppCompatActivity {
         swLunar = findViewById(R.id.switch_lunar);
         swChristian = findViewById(R.id.switch_christian);
         swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
+        swBedtime = findViewById(R.id.switch_bedtime);
+        sbVolume = findViewById(R.id.seek_volume_embed);
 
         // 周休制度（v1.46.3）：从首页「排班」卡搬来，放在「一周开始日」之前——
         // 班制决定哪天上班，比日历从周一还是周日排更基础
-        findViewById(R.id.row_week_mode).setOnClickListener(v -> showWeekModeDialog());
-        findViewById(R.id.row_week_big).setOnClickListener(v -> showWeekBigDialog());
-        findViewById(R.id.row_small_rest).setOnClickListener(v -> showSmallRestDialog());
+        bind(R.id.row_week_mode, v -> showWeekModeDialog());
+        bind(R.id.row_week_big, v -> showWeekBigDialog());
+        bind(R.id.row_small_rest, v -> showSmallRestDialog());
         // v1.19.8：整行可点（标题左、值右），点哪一段都打开同一个对话框
-        findViewById(R.id.row_week_start).setOnClickListener(v -> showWeekStartDialog());
-        findViewById(R.id.row_horizon).setOnClickListener(v -> showHorizonDialog());
-        findViewById(R.id.row_holiday_data).setOnClickListener(v -> checkHolidayUpdate());
-        findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
-        findViewById(R.id.row_ringtone).setOnClickListener(v -> openRingtonePicker());
-        findViewById(R.id.row_ring_duration).setOnClickListener(v -> showRingDurationDialog());
-        findViewById(R.id.row_snooze).setOnClickListener(v -> showSnoozeDialog());
+        bind(R.id.row_week_start, v -> showWeekStartDialog());
+        bind(R.id.row_horizon, v -> showHorizonDialog());
+        bind(R.id.row_holiday_data, v -> checkHolidayUpdate());
+        bind(R.id.row_volume, v -> showVolumeDialog());
+        bind(R.id.row_ringtone, v -> openRingtonePicker());
+        bind(R.id.row_ring_duration, v -> showRingDurationDialog());
+        bind(R.id.row_snooze, v -> showSnoozeDialog());
         swPreNotice = findViewById(R.id.switch_pre_notice);
         // 整行点开关（跟震动、渐响一致），副标题那一小块点进对话框调提前量
-        findViewById(R.id.row_pre_notice).setOnClickListener(v -> swPreNotice.toggle());
-        findViewById(R.id.tv_pre_notice).setOnClickListener(v -> showPreNoticeDialog());
-        findViewById(R.id.row_keys).setOnClickListener(v -> showKeysDialog());
+        bind(R.id.row_pre_notice, v -> { if (swPreNotice != null) swPreNotice.toggle(); });
+        bind(R.id.tv_pre_notice, v -> showPreNoticeDialog());
+        bind(R.id.row_keys, v -> showKeysDialog());
         // v1.20：睡前提醒（时刻 + 是否只在上班前提醒）
-        findViewById(R.id.row_bedtime).setOnClickListener(v -> showBedtimeDialog());
-        findViewById(R.id.row_bedtime_workday).setOnClickListener(v -> swBedtimeWorkday.toggle());
-        swBedtimeWorkday.setOnCheckedChangeListener((v, checked) -> {
+        bind(R.id.row_bedtime, v -> showBedtimeDialog());
+        // v1.49.0：整行点开关，点下面的时间改时刻——与「响铃前提醒」同一套操作
+        if (swBedtime != null) {
+            swBedtime.setOnCheckedChangeListener((v, checked) -> {
+                if (swAttaching) return;
+                if (checked) {
+                    Prefs.setBedtimeMinutes(this, Prefs.getBedtimeLast(this));
+                } else {
+                    Prefs.setBedtimeLast(this, Prefs.getBedtimeMinutes(this));
+                    Prefs.setBedtimeMinutes(this, Prefs.BEDTIME_OFF);
+                }
+                BedtimeReminder.reschedule(this);
+                updateBedtimeText();
+                BedtimeReminder.refreshIfShown(this);
+            });
+        }
+        // v1.49.0：主页的两个入口
+        bind(R.id.row_more_ring, v -> startActivity(new Intent(this, MoreSettingsActivity.class)
+                .putExtra(MoreSettingsActivity.EXTRA_SECTION, MoreSettingsActivity.SECTION_RING)));
+        bind(R.id.row_more, v -> startActivity(new Intent(this, MoreSettingsActivity.class)));
+        // v1.49.0：音量就地拖。拖动中只改文字，松手才写 Prefs——
+        // 每移动一格都落盘会反复触发重排，而且没必要。
+        if (sbVolume != null) {
+            sbVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                    if (!fromUser || tvVolume == null) return;
+                    tvVolume.setText(progress == 0 ? "静音（仅震动）" : progress + "%");
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar bar) {
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar bar) {
+                    Prefs.setVolume(SettingsActivity.this, bar.getProgress());
+                    updateVolumeText();
+                }
+            });
+        }
+        bind(R.id.row_bedtime_workday, v -> { if (swBedtimeWorkday != null) swBedtimeWorkday.toggle(); });
+        if (swBedtimeWorkday != null) swBedtimeWorkday.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setBedtimeWorkdayOnly(this, checked);
             // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
             BedtimeReminder.reschedule(this);
         });
         // v1.20：农历节日开关（只影响日历显示，不涉及排程）
-        findViewById(R.id.row_lunar).setOnClickListener(v -> swLunar.toggle());
-        swLunar.setOnCheckedChangeListener((v, checked) -> {
+        bind(R.id.row_lunar, v -> { if (swLunar != null) swLunar.toggle(); });
+        if (swLunar != null) swLunar.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setLunarFestivals(this, checked);
         });
         // v1.21：基督教节日开关（同样只影响日历显示）
-        findViewById(R.id.row_christian).setOnClickListener(v -> swChristian.toggle());
-        swChristian.setOnCheckedChangeListener((v, checked) -> {
+        bind(R.id.row_christian, v -> { if (swChristian != null) swChristian.toggle(); });
+        if (swChristian != null) swChristian.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setChristianFestivals(this, checked);
         });
         // v1.20：配置导出 / 导入
-        findViewById(R.id.row_export).setOnClickListener(v -> exportConfig());
-        findViewById(R.id.row_import).setOnClickListener(v -> importConfig());
+        bind(R.id.row_export, v -> exportConfig());
+        bind(R.id.row_import, v -> importConfig());
         // v1.19.9：新手引导随时重看（首次安装仍会自动展示）
-        findViewById(R.id.row_onboard).setOnClickListener(v ->
-                startActivity(new Intent(this, GuideActivity.class)));
+        bind(R.id.row_onboard, v -> startActivity(new Intent(this, GuideActivity.class)));
         // v1.22.3：更新日志——每版改了什么都能翻，不联网
-        findViewById(R.id.row_changelog).setOnClickListener(v ->
-                startActivity(new Intent(this, ChangelogActivity.class)));
+        bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
 
         // ===== v1.46.2：从首页搬来的三块 =====
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
         // 日历少被推远 190dp。三块的语义没有变，只是换了地方。
-        findViewById(R.id.row_help).setOnClickListener(v ->
-                startActivity(new Intent(this, HelpActivity.class)));
-        findViewById(R.id.row_test_ring).setOnClickListener(v -> testAlarm());
-        findViewById(R.id.row_run_status).setOnClickListener(v -> showRunStatusDialog());
+        bind(R.id.row_help, v -> startActivity(new Intent(this, HelpActivity.class)));
+        bind(R.id.row_test_ring, v -> testAlarm());
+        bind(R.id.row_run_status, v -> showRunStatusDialog());
 
         // 铃声渐响 / 振动：整行点击转发给开关切换（开关自身不消费点击，避免与整行点击冲突）
-        findViewById(R.id.row_fade_in).setOnClickListener(v -> swFadeIn.toggle());
-        swFadeIn.setOnCheckedChangeListener((v, checked) -> {
+        bind(R.id.row_fade_in, v -> { if (swFadeIn != null) swFadeIn.toggle(); });
+        if (swFadeIn != null) swFadeIn.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setFadeIn(this, checked);
         });
-        findViewById(R.id.row_vibrate).setOnClickListener(v -> swVibrate.toggle());
-        swVibrate.setOnCheckedChangeListener((v, checked) -> {
+        bind(R.id.row_vibrate, v -> { if (swVibrate != null) swVibrate.toggle(); });
+        if (swVibrate != null) swVibrate.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setVibrate(this, checked);
         });
 
-        buildGroups();
-        collapseAll();
         refreshAll();
+    }
+
+    /**
+     * 绑定点击：当前布局里没有这个控件就跳过（v1.49.0）。
+     *
+     * <p>主页与二级页共用同一份绑定逻辑，靠这个办法避免「每个 findViewById 都写一遍判空」。
+     */
+    private void bind(int id, View.OnClickListener l) {
+        View v = findViewById(id);
+        if (v != null) v.setOnClickListener(l);
     }
 
     @Override
@@ -202,142 +264,33 @@ public class SettingsActivity extends AppCompatActivity {
         refreshAll();
     }
 
-    // ================= 分组折叠（v1.48.2）=================
-    //
-    // 设置页实测 2543dp ≈ 3.8 屏：26 行平铺，改「睡前提醒」要滑过三屏。
-    // 现在每组折成一行（标题 + 当前状态），整页一屏装下。
-    // 默认全部收起、不记忆状态——设置页是低频页面，位置固定比「上次看到哪」更重要。
-
-    private static final int[] GROUP_HEADERS = {
-            R.id.hdr_schedule, R.id.hdr_ring, R.id.hdr_remind,
-            R.id.hdr_other, R.id.hdr_backup
-    };
-    private static final int[] GROUP_SUMS = {
-            R.id.sum_schedule, R.id.sum_ring, R.id.sum_remind,
-            R.id.sum_other, R.id.sum_backup
-    };
-    private static final int[] GROUP_CHEVS = {
-            R.id.chev_schedule, R.id.chev_ring, R.id.chev_remind,
-            R.id.chev_other, R.id.chev_backup
-    };
-
-    /** 每个组包含的行（第一个组在 card_main 内，备份组是另一张卡）。 */
-    private final List<List<View>> groupRows = new ArrayList<>();
-    /** 当前展开的组头；null = 全部收起。 */
-    private View expandedHeader;
-
     private void refreshAll() {
-        updateHorizonText();
-        updateWeekModeUi();
-        updateWeekBigText();
-        updateSmallRestText();
-        updateWeekStartText();
-        updateHolidayDataText();
-        updateVolumeText();
-        updateKeysText();
-        updateSnoozeText();
-        updatePreNoticeText();
-        updateRingDurationText();
-        updateRingtoneText();
-        updateBedtimeText();
+        // v1.49.0：主页与二级页共用这份刷新，控件不在当前布局里就跳过
+        if (tvHorizon != null) updateHorizonText();
+        if (tvWeekMode != null) updateWeekModeUi();
+        if (tvWeekBig != null) updateWeekBigText();
+        if (tvSmallRest != null) updateSmallRestText();
+        if (tvWeekStart != null) updateWeekStartText();
+        if (tvHolidayData != null) updateHolidayDataText();
+        if (tvVolume != null) updateVolumeText();
+        if (tvKeys != null) updateKeysText();
+        if (tvSnooze != null) updateSnoozeText();
+        if (tvPreNotice != null) updatePreNoticeText();
+        if (tvRingDuration != null) updateRingDurationText();
+        if (tvRingtone != null) updateRingtoneText();
+        if (tvBedtime != null) updateBedtimeText();
         updateRunStatusText();
         updateVersionText();
         swAttaching = true;
-        swFadeIn.setChecked(Prefs.isFadeIn(this));
-        swVibrate.setChecked(Prefs.isVibrate(this));
-        swLunar.setChecked(Prefs.isLunarFestivals(this));
-        swChristian.setChecked(Prefs.isChristianFestivals(this));
-        swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
+        if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
+        if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
+        if (swLunar != null) swLunar.setChecked(Prefs.isLunarFestivals(this));
+        if (swChristian != null) swChristian.setChecked(Prefs.isChristianFestivals(this));
+        if (swBedtimeWorkday != null) swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
+        if (swPreNotice != null) swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
+        if (swBedtime != null) swBedtime.setChecked(Prefs.getBedtimeMinutes(this) != Prefs.BEDTIME_OFF);
+        if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this));
         swAttaching = false;
-        updateGroupSummaries();
-    }
-
-    /**
-     * 按卡片里的顺序切分「组头 → 该组的行」。
-     *
-     * <p>不额外加容器：组头之间的所有 View（行与分隔线）就是那一组的内容，
-     * 收起时整段隐藏。这样 XML 只需换掉 5 个标题，行本身一行都不用动。
-     */
-    private void buildGroups() {
-        groupRows.clear();
-        ViewGroup card = findViewById(R.id.card_main);
-        List<View> cur = null;
-        for (int i = 0; i < card.getChildCount(); i++) {
-            View v = card.getChildAt(i);
-            if (isGroupHeader(v.getId())) {
-                cur = new ArrayList<>();
-                groupRows.add(cur);
-            } else if (cur != null) {
-                cur.add(v);
-            }
-        }
-        // 备份组的标题在卡片外，内容是另一张卡
-        List<View> backup = new ArrayList<>();
-        backup.add(findViewById(R.id.grp_backup));
-        groupRows.add(backup);
-
-        for (int i = 0; i < GROUP_HEADERS.length; i++) {
-            final int idx = i;
-            findViewById(GROUP_HEADERS[i]).setOnClickListener(v -> toggleGroup(idx));
-        }
-    }
-
-    private static boolean isGroupHeader(int id) {
-        for (int h : GROUP_HEADERS) {
-            if (h == id) return true;
-        }
-        return false;
-    }
-
-    /** 点一组：已展开就收起；否则收起别的、只展开这一组。 */
-    private void toggleGroup(int idx) {
-        boolean willExpand = expandedHeader != findViewById(GROUP_HEADERS[idx]);
-        collapseAll();
-        if (!willExpand) return;
-        expandedHeader = findViewById(GROUP_HEADERS[idx]);
-        setRowsVisible(idx, true);
-        ((TextView) findViewById(GROUP_CHEVS[idx])).setText("⌄");
-    }
-
-    private void collapseAll() {
-        for (int i = 0; i < groupRows.size(); i++) {
-            setRowsVisible(i, false);
-        }
-        for (int id : GROUP_CHEVS) {
-            ((TextView) findViewById(id)).setText("›");
-        }
-        expandedHeader = null;
-    }
-
-    private void setRowsVisible(int idx, boolean visible) {
-        for (View v : groupRows.get(idx)) {
-            v.setVisibility(visible ? View.VISIBLE : View.GONE);
-        }
-    }
-
-    /**
-     * 收起状态下的摘要：不展开也知道现在是什么配置。
-     *
-     * <p>直接取各行已经算好的文案，避免同一句话维护两处（改了行内文案却忘了摘要）。
-     */
-    private void updateGroupSummaries() {
-        setSum(R.id.sum_schedule, tvWeekMode.getText() + " · " + tvWeekStart.getText());
-        setSum(R.id.sum_ring, tvVolume.getText() + " · " + tvRingtone.getText());
-        setSum(R.id.sum_remind, remindSummary());
-        // 「其他」「备份与恢复」没有状态可摘要，留空
-    }
-
-    private void setSum(int id, CharSequence text) {
-        ((TextView) findViewById(id)).setText(text);
-    }
-
-    private String remindSummary() {
-        int cur = Prefs.getBedtimeMinutes(this);
-        String bed = cur == Prefs.BEDTIME_OFF
-                ? "睡前关闭" : "睡前 " + BedtimeReminder.timeText(cur);
-        int pre = Prefs.getPreNoticeMinutes(this);
-        if (pre <= 0) return bed;
-        return bed + " · 提前 " + (pre >= 60 ? (pre / 60) + " 小时" : pre + " 分钟");
     }
 
     /** 设置项改动后：立即重排（旧闹钟自动清除重设）再刷新本页。 */
@@ -353,9 +306,15 @@ public class SettingsActivity extends AppCompatActivity {
     /** 刷新右侧文字，并只在「大小周」下显示本周是大周/小周、小周休哪天。 */
     private void updateWeekModeUi() {
         WeekSchedule.Mode mode = Prefs.getWeekMode(this);
-        tvWeekMode.setText(mode.label);
-        findViewById(R.id.ll_big_small).setVisibility(
-                mode.needsAnchor() ? View.VISIBLE : View.GONE);
+        // v1.49.0：收起后这一行要自己说清「大周小周 + 小周休哪天」，
+        // 因为「小周休哪天」已经挪进二级页了
+        String text = mode.label;
+        if (mode.needsAnchor()) {
+            text += " · " + (Prefs.isSmallRestSat(this) ? "周六" : "周日");
+        }
+        tvWeekMode.setText(text);
+        View big = findViewById(R.id.ll_big_small);
+        if (big != null) big.setVisibility(mode.needsAnchor() ? View.VISIBLE : View.GONE);
     }
 
     /** 周休制度选择：四选一，选完立刻按新制度重排。 */
@@ -626,6 +585,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void updateRunStatusText() {
         TextView tv = findViewById(R.id.tv_run_status_summary);
         if (tv == null) return;
+        if (tv == null) return;
         int n = ScheduleManager.countScheduled(this, Prefs.getAlarms(this));
         tv.setText("已开启 · " + n + " 个提醒");
     }
@@ -675,7 +635,9 @@ public class SettingsActivity extends AppCompatActivity {
         try {
             android.content.pm.PackageInfo pi = getPackageManager()
                     .getPackageInfo(getPackageName(), 0);
-            ((TextView) findViewById(R.id.tv_version)).setText(
+            TextView v = findViewById(R.id.tv_version);
+            if (v == null) return;
+            v.setText(
                     "版本 " + pi.versionName + " (" + pi.getLongVersionCode() + ")");
             // 「更新日志」行右侧直接显示版本号，一眼看出日志是不是这一版
             ((TextView) findViewById(R.id.tv_changelog_version))
@@ -846,9 +808,11 @@ public class SettingsActivity extends AppCompatActivity {
         // 免得用户以为改了它就会开始提醒
         boolean on = cur != Prefs.BEDTIME_OFF;
         View row = findViewById(R.id.row_bedtime_workday);
-        row.setAlpha(on ? 1f : 0.45f);
-        row.setEnabled(on);
-        swBedtimeWorkday.setEnabled(on);
+        if (row != null) {
+            row.setAlpha(on ? 1f : 0.45f);
+            row.setEnabled(on);
+        }
+        if (swBedtimeWorkday != null) swBedtimeWorkday.setEnabled(on);
     }
 
     /**
@@ -906,6 +870,9 @@ public class SettingsActivity extends AppCompatActivity {
         // 以前只取消了下一天的调度，当前这条会一直留到 05:00 过期。
         if (cur == Prefs.BEDTIME_OFF) {
             BedtimeReminder.cancelNotice(this);
+        } else {
+            // 记住这次的时刻：关掉再打开要回到它，不是重置成 22:00
+            Prefs.setBedtimeLast(this, cur);
         }
         Toast.makeText(this, cur == Prefs.BEDTIME_OFF
                 ? "已关闭睡前提醒"

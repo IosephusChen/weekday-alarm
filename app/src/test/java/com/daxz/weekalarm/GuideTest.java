@@ -547,7 +547,9 @@ public class GuideTest {
         wipe();
         Prefs.setOnboardDone(ctx(), true);
 
-        SettingsActivity s = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：引导入口搬进「更多设置」
+        SettingsActivity s = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), false)).setup().get();
         View row = s.findViewById(R.id.row_onboard);
         assertNotNull("设置页应保留引导入口", row);
         shadowOf(s).clearNextStartedActivities();

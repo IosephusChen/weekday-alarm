@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 设置的二级页（v1.49.0）。
+     参考澎湃系统闹钟的分层：主页只留高频项，其余按领域收进这里。
+     一个布局承载两段，由 MoreSettingsActivity 按 intent extra 显示其中一段：
+       ring —— 响铃（时长 / 渐响 / 震动 / 稍后提醒 / 按键）
+       all  —— 排程、检查与工具、备份与恢复
+     两段共用布局是有意的：结构相同，只有内容不同，没必要维护两份几乎一样的 XML。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- 顶部栏：返回 + 标题（标题由代码按段设置） -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="12dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="‹ 返回"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="更多"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ===== 响铃 ===== -->
+        <LinearLayout
+            android:id="@+id/sec_ring"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="响铃" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:clipToOutline="true"
+                android:orientation="vertical">
+
+                            <LinearLayout
+                                android:id="@+id/row_ring_duration"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="响铃时长" />
+
+                                <TextView
+                                    android:id="@+id/tv_ring_duration"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="不限" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_fade_in"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="铃声渐响" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="从静音逐渐变大，约 30 秒到设定音量" />
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/switch_fade_in"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_vibrate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="响铃时震动" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="配合音量调到 0 可实现「静音仅震动」" />
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/switch_vibrate"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+                            </LinearLayout>
+                            <LinearLayout
+                                android:id="@+id/row_snooze"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="稍后提醒" />
+
+                                <TextView
+                                    android:id="@+id/tv_snooze"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="5 分钟 × 1 次" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_keys"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="按键设置" />
+
+                                    <TextView
+                                        android:id="@+id/tv_keys"
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="音量键 · 无\n电源键 · 无" />
+                                </LinearLayout>
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== 更多（排程 / 检查 / 备份）===== -->
+        <LinearLayout
+            android:id="@+id/sec_all"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="排程" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:clipToOutline="true"
+                android:orientation="vertical">
+
+                            <LinearLayout
+                                android:id="@+id/ll_big_small"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <LinearLayout
+                                    android:id="@+id/row_week_big"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:background="?attr/selectableItemBackground"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="54dp"
+                                    android:orientation="horizontal"
+                                    android:paddingStart="16dp"
+                                    android:paddingEnd="14dp">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="本周是" />
+
+                                    <TextView
+                                        android:id="@+id/tv_week_big"
+                                        style="@style/SettingsValue"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="大周（休2天）" />
+
+                                    <TextView style="@style/SettingsChevron" />
+                                </LinearLayout>
+
+                                <View style="@style/SettingsDivider" />
+
+                                <LinearLayout
+                                    android:id="@+id/row_small_rest"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:background="?attr/selectableItemBackground"
+                                    android:clickable="true"
+                                    android:focusable="true"
+                                    android:gravity="center_vertical"
+                                    android:minHeight="54dp"
+                                    android:orientation="horizontal"
+                                    android:paddingStart="16dp"
+                                    android:paddingEnd="14dp">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="小周休哪天" />
+
+                                    <TextView
+                                        android:id="@+id/tv_small_rest"
+                                        style="@style/SettingsValue"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="周日（周六上班）" />
+
+                                    <TextView style="@style/SettingsChevron" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_week_start"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="一周开始日" />
+
+                                <TextView
+                                    android:id="@+id/tv_week_start"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="周一" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_horizon"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="提醒范围" />
+
+                                <TextView
+                                    android:id="@+id/tv_horizon"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="未来 90 天" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_lunar"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="农历节日" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="日历里显示春节、中秋等，日期后不再只有「班 / 休」" />
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/switch_lunar"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_christian"
+                                android:layout_width="match_parent"
+
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="基督教节日" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="显示圣诞、复活节等，含天主教共同遵守的节日" />
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/switch_christian"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+                            </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/row_bedtime_workday"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="64dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/SettingsTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="仅在明天上班时提醒" />
+
+                        <TextView
+                            style="@style/SettingsSummary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="明天休息或已请假就不发通知，免得打扰" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switch_bedtime_workday"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="8dp"
+                android:text="检查与工具" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:clipToOutline="true"
+                android:orientation="vertical">
+
+                            <LinearLayout
+                                android:id="@+id/row_test_ring"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="测试响铃" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="立刻响一次，确认音量与铃声" />
+                                </LinearLayout>
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_run_status"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="运行状态" />
+
+                                <TextView
+                                    android:id="@+id/tv_run_status_summary"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="—" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_onboard"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="新手引导与权限" />
+
+                                <TextView
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="重看" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_help"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="使用说明" />
+
+                                <TextView
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="查看" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_changelog"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="更新日志" />
+
+                                <TextView
+                                    android:id="@+id/tv_changelog_version"
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="v1.22.3" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="8dp"
+                android:text="备份与恢复" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:clipToOutline="true"
+                android:orientation="vertical">
+
+                            <LinearLayout
+                                android:id="@+id/row_export"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="导出配置" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="把闹钟、排班、请假/加班标记、音量铃声存成一个文件" />
+                                </LinearLayout>
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_import"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="10dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="导入配置" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="选择之前导出的文件恢复设置（会覆盖当前配置）" />
+                                </LinearLayout>
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

@@ -99,7 +99,9 @@ public class RingerSettingsTest {
     public void settingsActivity_showsVibrateAndRingDuration() {
         Prefs.setVibrate(ctx(), false);
         Prefs.setRingMinutes(ctx(), 5);
-        SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：震动与响铃时长搬进了「更多响铃设置」
+        SettingsActivity activity = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertFalse("振动关闭时开关应为关",
                 ((SwitchCompat) activity.findViewById(R.id.switch_vibrate)).isChecked());
         assertEquals("5 分钟后停止",

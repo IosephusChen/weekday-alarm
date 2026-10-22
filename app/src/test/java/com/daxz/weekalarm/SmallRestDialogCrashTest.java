@@ -57,8 +57,11 @@ public class SmallRestDialogCrashTest {
                 .putBoolean("enabled", true)
                 .putInt("horizon_days", 365)
                 .apply();
-        ActivityController<SettingsActivity> controller =
-                Robolectric.buildActivity(SettingsActivity.class);
+        // v1.49.0：「小周休哪天」搬进了二级页
+        ActivityController<MoreSettingsActivity> controller =
+                Robolectric.buildActivity(MoreSettingsActivity.class,
+                        MoreSettingsActivity.intent(
+                                androidx.test.core.app.ApplicationProvider.getApplicationContext(), false));
         controller.setup();
         return controller.get();
     }

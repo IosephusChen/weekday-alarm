@@ -235,10 +235,16 @@ public class UiLayoutTest {
         assertNull("首页不该再有「本周是」行", a.findViewById(R.id.row_week_big));
         assertNull("首页不该再有「小周休哪天」行", a.findViewById(R.id.row_small_rest));
 
-        SettingsActivity s = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        assertNotNull("设置页应有周休制度行", s.findViewById(R.id.row_week_mode));
-        assertNotNull("设置页应有「本周是」行", s.findViewById(R.id.row_week_big));
-        assertNotNull("设置页应有「小周休哪天」行", s.findViewById(R.id.row_small_rest));
+        // v1.49.0：周休制度留在设置主页，本周是 / 小周休哪天进了「更多设置」
+        SettingsActivity home = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertNotNull("设置主页应有周休制度行", home.findViewById(R.id.row_week_mode));
+
+        SettingsActivity more = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext(), false))
+                .setup().get();
+        assertNotNull("「本周是」在更多设置里", more.findViewById(R.id.row_week_big));
+        assertNotNull("「小周休哪天」在更多设置里", more.findViewById(R.id.row_small_rest));
     }
 
     /**
@@ -333,7 +339,11 @@ public class UiLayoutTest {
      */
     @Test
     public void runStatus_livesInSettings_withSummaryAndDialog() {
-        SettingsActivity a = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        // v1.49.0：运行状态入口在「更多设置」二级页
+        SettingsActivity a = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(
+                        androidx.test.core.app.ApplicationProvider.getApplicationContext(), false))
+                .setup().get();
 
         TextView summary = a.findViewById(R.id.tv_run_status_summary);
         assertNotNull("设置页应有运行状态摘要", summary);

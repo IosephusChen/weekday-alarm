@@ -495,6 +495,20 @@ public final class Prefs {
         sp(c).edit().putString(KEY_BEDTIME_NOTICE_DAY, isoDay).apply();
     }
 
+    /** 上次开启时的睡前时刻（v1.49.0）：关掉再打开要回到原来的时间，不是重置成 22:00。 */
+    public static final String KEY_BEDTIME_LAST = "bedtime_last_minutes";
+
+    public static int getBedtimeLast(Context c) {
+        int v = sp(c).getInt(KEY_BEDTIME_LAST, 22 * 60);
+        return (v < 0 || v >= 24 * 60) ? 22 * 60 : v;
+    }
+
+    public static void setBedtimeLast(Context c, int minutesOfDay) {
+        if (minutesOfDay >= 0 && minutesOfDay < 24 * 60) {
+            sp(c).edit().putInt(KEY_BEDTIME_LAST, minutesOfDay).apply();
+        }
+    }
+
     public static boolean isBedtimeWorkdayOnly(Context c) {
         return sp(c).getBoolean(KEY_BEDTIME_WORKDAY_ONLY, true);
     }

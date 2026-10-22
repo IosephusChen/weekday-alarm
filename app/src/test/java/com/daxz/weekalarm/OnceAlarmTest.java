@@ -315,6 +315,18 @@ public class OnceAlarmTest {
         assertEquals("还没响的不能被清理", 1, Prefs.getAlarms(ctx()).size());
     }
 
+    /**
+     * 新建一次性闹钟默认「今天」（v1.47.6）。
+     *
+     * <p>v1.27 起默认是明天，理由是「此刻多半已过今天的起床时间」。但一次性闹钟多数
+     * 是为今天剩下的事建的（下午的会、晚上的车），默认明天等于每次都要先改回来。
+     * 这条测试守着「别又改回明天」。
+     */
+    @Test
+    public void defaultOnceDay_isToday() {
+        assertEquals(LocalDate.now(), AlarmEditor.defaultOnceDay());
+    }
+
     @Test
     public void pastTime_rollsToNextDay() {
         LocalDate today = LocalDate.of(2026, 10, 21);

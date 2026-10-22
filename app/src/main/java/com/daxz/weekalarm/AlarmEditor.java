@@ -45,9 +45,11 @@ final class AlarmEditor {
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
 
-        // v1.27：一次性闹钟的那一天。新建默认给「明天」而不是今天——
-        // 此刻多半已经过了今天的起床时间，建一个今天的一次性闹钟几乎必然不响。
-        final LocalDate[] once = {LocalDate.now().plusDays(1)};
+        // 一次性闹钟的那一天。v1.47.6 起默认「今天」——
+        // v1.27 当时给的是明天，理由是「此刻多半已过今天的起床时间」；但用户
+        // 建一次性闹钟多半是为今天剩下的时间（下午的会、晚上的车），默认明天反而要先改。
+        // 时间真过了也不会变成哑弹：保存时 onceDayAfter() 会顺延到明天并当面提示。
+        final LocalDate[] once = {defaultOnceDay()};
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
@@ -203,6 +205,17 @@ final class AlarmEditor {
      *
      * <p>包级可见是为了单测：这个函数决定了「空名字」最终长什么样。
      */
+    /**
+     * 新建一次性闹钟的默认日期（v1.47.6）：今天。
+     *
+     * <p>为什么不是明天：用户建一次性闹钟，多数是今天剩下的事（下午的会、晚上的车），
+     * 默认明天就得先点一下改回来。真过了点也不怕——保存时 {@link #onceDayAfter}
+     * 会顺延并提示，所以「默认今天」只影响起点，不影响安全性。
+     */
+    static LocalDate defaultOnceDay() {
+        return LocalDate.now();
+    }
+
     static String normalizeLabel(String raw) {
         String t = raw == null ? "" : raw.trim();
         return t.isEmpty() ? "闹钟" : t;

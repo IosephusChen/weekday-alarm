@@ -1,6 +1,9 @@
 package com.daxz.weekalarm;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -151,6 +154,36 @@ public class MainActivity extends AppCompatActivity {
 
     // ================= 个人请假（v1.14）=================
     // v1.34：标记统计与单日标记都搬到 CalendarPanel；这里只留「今天 / 明天」两个快按钮。
+
+    /**
+     * 界面外的状态变更（通知栏「明天请假」、桌面小组件的「今天 / 明天不上班」）改完 Prefs 后
+     * 会发一条包内广播，这里接住并当场刷新（v1.46.7）。
+     *
+     * <p>不这么做的话，用户正开着 App 点通知按钮，界面要等「退到桌面再进来」才更新——
+     * 因为刷新只发生在 onResume。
+     */
+    private final BroadcastReceiver refreshReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!isFinishing() && !isDestroyed()) refreshAll();
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        ContextCompat.registerReceiver(this, refreshReceiver,
+                new IntentFilter(UiRefresh.ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+    }
+
+    @Override
+    protected void onStop() {
+        try {
+            unregisterReceiver(refreshReceiver);
+        } catch (Throwable ignore) {
+        }
+        super.onStop();
+    }
 
     @Override
     protected void onResume() {
@@ -430,6 +463,9 @@ public class MainActivity extends AppCompatActivity {
             ScheduleManager.cancelAllIncludingTransient(this);
         }
         refreshAll();
+        // v1.46.7：睡前提醒可能还挂在通知栏上说着旧话（「明天没有会响的闹钟」），
+        // 用户刚加的闹钟要立刻反映到那条通知上
+        BedtimeReminder.refreshIfShown(this);
     }
 
     /** 切换单个闹钟的启停：停用即从系统取消该闹钟已排程的实例；启用则重排全部。 */
@@ -467,6 +503,7 @@ public class MainActivity extends AppCompatActivity {
     private void applySettingsNow() {
         ScheduleManager.rescheduleAll(this);
         refreshAll();
+        BedtimeReminder.refreshIfShown(this);
     }
 
     private void refreshAll() {

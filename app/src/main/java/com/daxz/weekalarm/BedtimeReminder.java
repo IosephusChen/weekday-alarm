@@ -5,6 +5,9 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.service.notification.StatusBarNotification;
+
+import androidx.core.app.NotificationManagerCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -124,6 +127,47 @@ public final class BedtimeReminder {
         LocalTime t = LocalTime.of(minutes / 60, minutes % 60);
         LocalDateTime todayAt = LocalDateTime.of(now.toLocalDate(), t);
         return todayAt.isAfter(now) ? todayAt : todayAt.plusDays(1);
+    }
+
+    /**
+     * 通知还挂在通知栏时，按当前状态把它刷成最新内容（v1.46.7）。
+     *
+     * <p>问题场景：22:00 那条提醒写着「明天没有会响的闹钟」，用户随后在 App 里加了闹钟，
+     * 通知仍停在通知栏上说着旧话。
+     *
+     * <p>只在通知**确实还在**时才动手：已经划掉或从没发过，就不该凭空冒出来。
+     * 重发同一个通知 id 并设 {@code setOnlyAlertOnce}，只换内容、不再响一次。
+     */
+    public static void refreshIfShown(Context ctx) {
+        if (ctx == null) return;
+        refreshIfShown(ctx, computeModel(ctx, LocalDate.now().plusDays(1)));
+    }
+
+    /** 用给定内容刷新（便于测试；生产走上面那个按当天实况计算的版本）。 */
+    static void refreshIfShown(Context ctx, Model m) {
+        if (ctx == null || m == null) return;
+        NotificationManagerCompat nm = NotificationManagerCompat.from(ctx);
+        boolean shown = false;
+        try {
+            for (StatusBarNotification sbn : nm.getActiveNotifications()) {
+                if (sbn.getId() == NOTIF_ID) {
+                    shown = true;
+                    break;
+                }
+            }
+        } catch (Throwable ignore) {
+            return;     // 个别 ROM 限制查询时宁可不改，也不要误发一条新通知
+        }
+        if (!shown) return;
+
+        if (!m.notify) {
+            try {
+                nm.cancel(NOTIF_ID);
+            } catch (Throwable ignore) {
+            }
+            return;
+        }
+        BedtimeReceiver.repost(ctx, m);
     }
 
     /**

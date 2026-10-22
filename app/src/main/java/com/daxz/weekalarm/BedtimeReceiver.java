@@ -61,13 +61,21 @@ public class BedtimeReceiver extends BroadcastReceiver {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         BedtimeReminder.Model m = BedtimeReminder.computeModel(context, tomorrow);
         if (m.notify) {
-            showNotification(context, m);
+            showNotification(context, m, false);
         }
         // 无论发没发，都要续订下一天：今天没发（明天休息）不代表明天不发
         BedtimeReminder.reschedule(context);
     }
 
-    private void showNotification(Context ctx, BedtimeReminder.Model m) {
+    /**
+     * 重发同一条提醒，只换内容不再响（v1.46.7）。供 {@link BedtimeReminder#refreshIfShown} 调用：
+     * 用户把「明天没有闹钟」那条改成了真闹钟，通知栏上那句话得跟着变，但没必要再提醒一次。
+     */
+    static void repost(Context ctx, BedtimeReminder.Model m) {
+        showNotification(ctx, m, true);
+    }
+
+    private static void showNotification(Context ctx, BedtimeReminder.Model m, boolean quiet) {
         Intent open = new Intent(ctx, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent contentPi = PendingIntent.getActivity(ctx, 11, open,
@@ -81,6 +89,8 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 // v1.37.0：强调色统一成品牌紫，和「即将响铃」那条看起来是一家的
                 .setColor(ctx.getColor(R.color.indigo))
                 .setAutoCancel(true)
+                // quiet=true 时只更新内容：同 id 重发不会再次弹横幅 / 响铃
+                .setOnlyAlertOnce(quiet)
                 .setPriority(Notification.PRIORITY_DEFAULT);
 
         // 「明天请假」只在「明天真要上班」时给：休息日/已请假时这个按钮没有意义
@@ -121,6 +131,10 @@ public class BedtimeReceiver extends BroadcastReceiver {
             Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
+        // v1.46.7：App 可能正开着，改完得让它立刻刷新，不能等用户退到桌面再进来；
+        // 通知栏上那条睡前提醒也可能正说着「明天要上班」，一并改口
+        UiRefresh.request(ctx);
+        BedtimeReminder.refreshIfShown(ctx);
         // 重排是上百次 IPC，不能占着广播主线程（10 秒上限）——与 skipTomorrow 同一套做法
         final PendingResult pending = goAsync();
         final Context app = ctx.getApplicationContext();
@@ -130,7 +144,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 Widgets.updateAll(app);
             } catch (Throwable ignore) {
             } finally {
-                pending.finish();
+                if (pending != null) pending.finish();   // 直接调用（测试）时为 null
             }
         }, "widget-toggle-day").start();
     }
@@ -152,6 +166,8 @@ public class BedtimeReceiver extends BroadcastReceiver {
             Toast.makeText(ctx, "已把明天标记为请假，闹钟不会响", Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
+        // v1.46.7：同上——用户正看着 App 时点了通知，界面必须当场变
+        UiRefresh.request(ctx);
         final PendingResult pending = goAsync();
         final Context app = ctx.getApplicationContext();
         new Thread(() -> {
@@ -160,7 +176,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 Widgets.updateAll(app);
             } catch (Throwable ignore) {
             } finally {
-                pending.finish();
+                if (pending != null) pending.finish();   // 直接调用（测试）时为 null
             }
         }, "bedtime-skip").start();
     }

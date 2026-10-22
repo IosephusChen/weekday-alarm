@@ -240,6 +240,8 @@ public class SettingsActivity extends AppCompatActivity {
     private void applySettingsNow() {
         ScheduleManager.rescheduleAll(this);
         refreshAll();
+        // v1.46.7：改完设置（尤其是「只在上班日提醒」）通知栏那条要跟着变 / 该撤就撤
+        BedtimeReminder.refreshIfShown(this);
     }
 
     // ================= 周休制度（v1.46.3 由主界面迁入）=================

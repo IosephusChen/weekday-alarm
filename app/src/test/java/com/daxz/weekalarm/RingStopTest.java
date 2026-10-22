@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
@@ -83,6 +84,10 @@ public class RingStopTest {
     @Test
     public void ringingRow_appearsWhileRingingAndStopWorks() throws Exception {
         resetPrefs();
+        // v1.47.8：这一行现在只在「没有别的停止入口」时出现，所以先把通知关掉、
+        // 并确认没有浮窗——这正是 v1.47.1 要救的那个场景
+        notifications(false);
+        FloatingAlarm.hide();
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity a = ctl.get();
@@ -103,6 +108,60 @@ public class RingStopTest {
         assertEquals(AlarmService.ACTION_STOP, started.getAction());
 
         setRinging(false);
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 通知开着时不该再出现首页那行（v1.47.8）。
+     *
+     * <p>用户真机截图：浮窗、通知栏、首页各有一个「停止」，看起来像三件不同的事。
+     * 通知栏的按钮已经能停，这一行就是重复。
+     */
+    @Test
+    public void ringingRow_hiddenWhenNotificationCanStop() throws Exception {
+        resetPrefs();
+        notifications(true);
+        FloatingAlarm.hide();
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        MainActivity a = ctl.get();
+
+        setRinging(true);
+        UiRefresh.request(a);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("通知栏已有停止按钮，首页不该再挂一行",
+                View.GONE, a.findViewById(R.id.row_ringing).getVisibility());
+        setRinging(false);
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 悬浮窗挂着时同样不该出现（v1.47.8）：横幅上那个方块就是停止键。
+     *
+     * <p>注意这里刻意把通知关掉——只靠浮窗也要算「有入口」，否则用户关掉通知后
+     * 会在浮窗和首页看到两个停止按钮。
+     */
+    @Test
+    public void ringingRow_hiddenWhenBannerCanStop() throws Exception {
+        resetPrefs();
+        notifications(false);
+        org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true);
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        MainActivity a = ctl.get();
+
+        setRinging(true);
+        assertTrue("前提：浮窗要真的挂上",
+                FloatingAlarm.show(ctx(), 1, "起床", java.time.LocalDate.now().toString(), 5, true));
+        UiRefresh.request(a);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("浮窗上已有停止键，首页不该再挂一行",
+                View.GONE, a.findViewById(R.id.row_ringing).getVisibility());
+
+        setRinging(false);
+        FloatingAlarm.hide();
         ctl.pause().stop().destroy();
     }
 

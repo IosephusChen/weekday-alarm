@@ -168,12 +168,15 @@ final class AlarmRowRenderer {
             TextView rule = new TextView(activity);
             // v1.27.2：一次性闹钟响过会自动关闭。此时写「已停用」像是用户自己关的，
             // 「已响过」才说明白它为什么是关着的
+            //
+            // v1.47.8：其余关掉的闹钟不再写「已停用」前缀。整行字已经是灰的、右侧开关也是灰的，
+            // 状态早就说清了；再补一句「已停用」只是重复，还把真正有用的规则挤到后面。
             if (!a.enabled && a.mode == Alarm.Mode.ONCE
                     && a.isExpiredAt(LocalDateTime.now())) {
                 String day = a.onceDayText();
                 rule.setText("已响过 · " + (day == null ? "仅一次" : day));
             } else {
-                rule.setText(a.enabled ? a.modeTextWithDate() : "已停用 · " + a.modeTextWithDate());
+                rule.setText(a.modeTextWithDate());
             }
             rule.setTextColor(ContextCompat.getColor(activity, R.color.sub));
             rule.setTextSize(12);

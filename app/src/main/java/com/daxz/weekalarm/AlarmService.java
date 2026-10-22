@@ -193,6 +193,25 @@ public class AlarmService extends Service {
 
     /** 注册「响铃自动停止」闹钟：到点触发 StopReceiver，避免无人时一直响。 */
     /**
+     * 响铃时，App 之外是否还有能停的入口（v1.47.8）。
+     *
+     * <p>通知栏的「停止」按钮、悬浮窗横幅上的停止键，只要有一个在，主界面再挂一行
+     * 「正在响铃 · 停止」就是重复——用户截图里三个停止按钮并列，看着像三件不同的事。
+     *
+     * <p>两个都没有时才返回 false：那时主界面那一行是唯一能停的地方（v1.47.1 的初衷）。
+     */
+    static boolean hasStopEntryOutside(Context ctx) {
+        if (ctx == null) return false;
+        boolean notif;
+        try {
+            notif = NotificationManagerCompat.from(ctx).areNotificationsEnabled();
+        } catch (Throwable t) {
+            notif = false;      // 查不到就当没有：宁可多给一个入口，也别让人停不下来
+        }
+        return notif || FloatingAlarm.isShowing();
+    }
+
+    /**
      * 本次响铃到底该响多久（分钟），0 = 不限。
      *
      * <p>v1.47.1：通知被关掉时，「停止」按钮就没了——整屏响铃页也可能被系统拦（后台拉起

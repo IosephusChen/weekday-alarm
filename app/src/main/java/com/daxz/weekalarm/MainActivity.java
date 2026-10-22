@@ -518,8 +518,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshAll() {
         refreshStatus();
-        // 响铃中才显示停止入口（v1.47.1）：响铃页 / 通知都可能被系统拦掉
-        rowRinging.setVisibility(AlarmService.isRinging() ? View.VISIBLE : View.GONE);
+        // 响铃中、且没有别的停止入口时才显示（v1.47.8）。
+        // 通知栏按钮或悬浮窗已经在的时候，这一行只是第三个「停止」，属于噪音；
+        // 两个都没有时它才是唯一能停的地方（v1.47.1 的初衷）。
+        rowRinging.setVisibility(
+                AlarmService.isRinging() && !AlarmService.hasStopEntryOutside(this)
+                        ? View.VISIBLE : View.GONE);
         renderAlarmList();
         // v1.34：日历回到首页，全局刷新时一起重画（跨天、改设置、标完标记都要重算）
         calendarPanel.refresh();

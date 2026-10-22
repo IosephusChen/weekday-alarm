@@ -784,6 +784,11 @@ public class SettingsActivity extends AppCompatActivity {
         BedtimeReminder.reschedule(this);
         updateBedtimeText();
         int cur = Prefs.getBedtimeMinutes(this);
+        // v1.48.1：关掉就是关掉——已经挂在通知栏上的那条也要撤。
+        // 以前只取消了下一天的调度，当前这条会一直留到 05:00 过期。
+        if (cur == Prefs.BEDTIME_OFF) {
+            BedtimeReminder.cancelNotice(this);
+        }
         Toast.makeText(this, cur == Prefs.BEDTIME_OFF
                 ? "已关闭睡前提醒"
                 : "已设置 " + BedtimeReminder.timeText(cur) + " 的睡前提醒",

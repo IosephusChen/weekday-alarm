@@ -176,6 +176,12 @@ public final class BedtimeReminder {
      * <p>拆出 today/now 两个参数是为了单测能固定时刻，不必去改系统时钟。
      */
     static void refreshIfShownAt(Context ctx, LocalDate today, LocalTime now) {
+        // v1.48.1：功能已关闭时，刷新只能是「撤掉」。
+        // 否则关掉开关之后，任何一次界面刷新都会按「明天要上班」把它重新发回来。
+        if (Prefs.getBedtimeMinutes(ctx) == Prefs.BEDTIME_OFF) {
+            cancelNotice(ctx);
+            return;
+        }
         String postedDay = Prefs.getBedtimeNoticeDay(ctx);
         boolean stale = postedDay != null && !postedDay.equals(today.toString());
         if (stale && !now.isBefore(MORNING_CUTOFF)) {

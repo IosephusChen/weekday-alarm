@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
+import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
@@ -17,6 +18,7 @@ import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
@@ -29,6 +31,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowNotificationManager;
 import org.robolectric.shadows.ShadowLooper;
 
@@ -244,6 +247,52 @@ public class BedtimeNotificationTest {
                 target.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
 
         assertNull("提前通知出现后，昨晚那条该退场", shown());
+    }
+
+    /**
+     * 关掉功能之后，已经挂着的那条要撤（v1.48.1）。
+     *
+     * <p>缺口场景：22:00 收到提醒、22:05 去设置里关掉开关。以前只取消了下一天的调度，
+     * 当前这条会一直留到 05:00 过期——关了却还在，看着像没关掉。
+     */
+    @Test
+    public void switchingOffInSettings_cancelsShownNotice() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        ActivityController<SettingsActivity> ctl =
+                Robolectric.buildActivity(SettingsActivity.class).setup();
+        ctl.get().findViewById(R.id.row_bedtime).performClick();
+        ShadowLooper.idleMainLooper();
+
+        Dialog d = ShadowAlertDialog.getLatestDialog();
+        assertNotNull("应弹出睡前提醒设置", d);
+        // 选「关闭」当场生效并收起对话框（没有确定按钮）。
+        // 用 performClick 而不是 RadioGroup.check：后者在 Robolectric 里不一定派发
+        // OnCheckedChangeListener，偏好会一直是旧值——这条第一次写就踩到了。
+        ((RadioButton) d.findViewById(R.id.rb_bed_off)).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));
+        assertNull("关掉开关后，已挂的通知要立刻撤掉", shown());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 功能关着的时候，任何刷新都只能是「撤掉」。
+     *
+     * <p>否则关掉开关后，一次界面刷新（改闹钟、标请假）又会按「明天要上班」把它发回来。
+     */
+    @Test
+    public void refresh_whenFeatureOff_cancelsNotice() {
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        Prefs.setBedtimeMinutes(ctx(), Prefs.BEDTIME_OFF);
+        BedtimeReminder.refreshIfShownAt(ctx(), LocalDate.now(), LocalTime.of(22, 30));
+
+        assertNull("功能已关，刷新不该把它留在栏里", shown());
     }
 
     // ---------- 界面外的变更要立刻反映到界面 ----------

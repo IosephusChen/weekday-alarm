@@ -170,6 +170,14 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.row_changelog).setOnClickListener(v ->
                 startActivity(new Intent(this, ChangelogActivity.class)));
 
+        // ===== v1.46.2：从首页搬来的三块 =====
+        // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
+        // 日历少被推远 190dp。三块的语义没有变，只是换了地方。
+        findViewById(R.id.row_help).setOnClickListener(v ->
+                startActivity(new Intent(this, HelpActivity.class)));
+        findViewById(R.id.row_test_ring).setOnClickListener(v -> testAlarm());
+        findViewById(R.id.row_run_status).setOnClickListener(v -> showRunStatusDialog());
+
         // 铃声渐响 / 振动：整行点击转发给开关切换（开关自身不消费点击，避免与整行点击冲突）
         findViewById(R.id.row_fade_in).setOnClickListener(v -> swFadeIn.toggle());
         swFadeIn.setOnCheckedChangeListener((v, checked) -> {
@@ -202,6 +210,7 @@ public class SettingsActivity extends AppCompatActivity {
         updateRingDurationText();
         updateRingtoneText();
         updateBedtimeText();
+        updateRunStatusText();
         updateVersionText();
         swAttaching = true;
         swFadeIn.setChecked(Prefs.isFadeIn(this));
@@ -345,6 +354,92 @@ public class SettingsActivity extends AppCompatActivity {
                 .setPositiveButton("重试", (d, w) -> checkHolidayUpdate())
                 .setNegativeButton("知道了", null)
                 .show();
+    }
+
+    // ================= v1.46.2：从首页搬来的三块 =================
+
+    /**
+     * 测试响铃（原在首页）。
+     *
+     * <p>逻辑原样搬过来：沿用主闹钟的名称，与正式提醒的呈现完全一致；
+     * 测试是用户主动点的，页面直接打开，通知走低优先级渠道，不再叠一条横幅。
+     */
+    private void testAlarm() {
+        Alarm primary = AlarmEditor.primaryAlarm(Prefs.getAlarms(this));
+        String label = primary != null ? primary.label : "闹钟";
+        Intent svc = new Intent(this, AlarmService.class);
+        svc.setAction(AlarmService.ACTION_TEST);
+        svc.putExtra(AlarmService.EXTRA_LABEL, label);
+        androidx.core.content.ContextCompat.startForegroundService(this, svc);
+        Intent full = new Intent(this, AlarmActivity.class);
+        full.putExtra(AlarmActivity.EXTRA_TEST, true);
+        full.putExtra(AlarmActivity.EXTRA_LABEL, label);
+        startActivity(full);
+    }
+
+    /**
+     * 运行状态（原为首页底部默认收起的折叠卡，v1.46.2 改成设置页一行 + 对话框）。
+     *
+     * <p>内容一个字没少：开关状态、未来 N 天的提醒总数、下一个已登记闹钟、
+     * 大周基准、节假日数据来源。变的是位置——这些都是「核对用」信息，
+     * 不该每天摆在首页最底部。
+     */
+    private void showRunStatusDialog() {
+        boolean masterOn = Prefs.isEnabled(this);
+        java.util.List<Alarm> alarms = Prefs.getAlarms(this);
+        int n = ScheduleManager.countScheduled(this, alarms);
+        ScheduleManager.NextAlarm next = ScheduleManager.nextRegisteredAlarm(this, alarms);
+        int horizon = Prefs.getHorizonDays(this);
+
+        StringBuilder sb = new StringBuilder();
+        if (!masterOn) {
+            sb.append("尚未开启 · 打开「闹钟总开关」即自动排程");
+        } else {
+            sb.append("未来 ").append(horizon).append(" 天共 ").append(n).append(" 个提醒");
+            if (next != null) {
+                sb.append("\n下一个闹钟：")
+                        .append(next.when.format(java.time.format.DateTimeFormatter.ofPattern("M月d日")))
+                        .append(" ").append(WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate()))
+                        .append(" ")
+                        .append(String.format(java.util.Locale.getDefault(), "%02d:%02d",
+                                next.when.getHour(), next.when.getMinute()))
+                        .append(" ").append(next.label).append(" · 系统已登记 ✓");
+            } else {
+                sb.append("\n系统中暂无已登记的闹钟，请检查排班设置");
+            }
+            // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
+            if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
+                sb.append("\n提醒较多，已优先排程最近的 ")
+                        .append(ScheduleManager.MAX_REGISTERED_ALARMS)
+                        .append(" 个，更久的会随闹钟响铃自动补上");
+            }
+        }
+
+        WeekSchedule.Rule rule = Prefs.getRule(this);
+        if (rule.mode.needsAnchor()) {
+            sb.append("\n\n当前基准（大周周六）：").append(rule.anchor);
+        }
+        sb.append("\n\n").append(HolidayData.hasRemote()
+                ? "节假日数据已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
+                : "已内置 " + HolidayData.BUILT_IN_YEAR + " 年节假日安排（放假与调休自动优先于周休制度）");
+
+        new RoundedDialog.Builder(this)
+                .setTitle("运行状态")
+                .setMessage(sb.toString())
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    /** 运行状态行右侧的一句话摘要：不点开也能看出「开着没、几个提醒」。 */
+    private void updateRunStatusText() {
+        TextView tv = findViewById(R.id.tv_run_status_summary);
+        if (tv == null) return;
+        if (!Prefs.isEnabled(this)) {
+            tv.setText("已关闭");
+            return;
+        }
+        int n = ScheduleManager.countScheduled(this, Prefs.getAlarms(this));
+        tv.setText("已开启 · " + n + " 个提醒");
     }
 
     // ================= 闹钟音量（v1.19.7 由主界面迁入）=================

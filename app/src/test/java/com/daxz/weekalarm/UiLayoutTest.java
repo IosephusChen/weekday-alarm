@@ -323,26 +323,47 @@ public class UiLayoutTest {
     }
 
     /**
-     * 运行状态默认收起（v1.28）。
+     * 运行状态搬去设置页（v1.46.2）。
      *
-     * <p>这里以前常驻三行小字（提醒总数、大周基准、节假日数据来源），占了主界面最底部
-     * 近 100dp。收进折叠卡后，用户默认只看到「已开启 · N 个提醒」一行，
-     * 想核对细节再展开——不能默认展开，否则等于没改。
+     * <p>它原来是首页底部一张默认收起的折叠卡（v1.28 从三行常驻小字收起来的），
+     * 占 56dp。加上「使用说明」70dp、「测试响铃」64dp，三块共 190dp 全是低频操作，
+     * 而首页合计 2.25 屏——日历被它们挤到第二屏之后。
+     *
+     * <p>现在改成设置页一行：右侧摘要仍能一眼看出「开着没、几个提醒」，
+     * 点开是对话框，内容一个字没少（总数、下一个闹钟、基准、节假日来源）。
      */
     @Test
-    public void runStatus_collapsedByDefault_withOneLineSummary() {
-        MainActivity a = launch();
-        assertEquals("运行状态默认应收起", View.GONE,
-                a.findViewById(R.id.run_body).getVisibility());
-        TextView summary = a.findViewById(R.id.tv_run_summary);
-        assertNotNull(summary);
+    public void runStatus_livesInSettings_withSummaryAndDialog() {
+        SettingsActivity a = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+
+        TextView summary = a.findViewById(R.id.tv_run_status_summary);
+        assertNotNull("设置页应有运行状态摘要", summary);
         String text = summary.getText().toString();
         assertTrue("摘要要能看出开关状态，实际：" + text,
                 text.startsWith("已开启") || text.startsWith("已关闭"));
-        // 详情仍要在展开区里，别把信息删了
-        assertNotNull(a.findViewById(R.id.tv_status));
-        assertEquals("收起时按钮写「展开」", "展开",
-                ((TextView) a.findViewById(R.id.tv_run_toggle)).getText().toString());
+
+        a.findViewById(R.id.row_run_status).performClick();
+        Dialog d = ShadowAlertDialog.getLatestDialog();
+        assertNotNull("点运行状态应弹出详情", d);
+        View root = d.getWindow().getDecorView();
+        assertTrue("详情里要有提醒总数或未开启说明", containsText(root, "个提醒")
+                || containsText(root, "尚未开启"));
+        assertTrue("详情里要有节假日数据来源", containsText(root, "节假日"));
+    }
+
+    /** 递归找一个含指定文字的 TextView。 */
+    private static boolean containsText(View v, String needle) {
+        if (v instanceof TextView) {
+            CharSequence t = ((TextView) v).getText();
+            if (t != null && t.toString().contains(needle)) return true;
+        }
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                if (containsText(g.getChildAt(i), needle)) return true;
+            }
+        }
+        return false;
     }
 
     /**

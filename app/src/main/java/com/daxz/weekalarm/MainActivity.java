@@ -32,9 +32,9 @@ import java.util.Locale;
 /** 主界面：排班设置 + 多闹钟管理 + 月历 + 今日状态 + 闹钟总开关。 */
 public class MainActivity extends AppCompatActivity {
 
-    private TextView tvAnchor, tvHolidayNote, tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
+    private TextView tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
     private TextView tvWeekMode, tvWeekBig;
-    private TextView tvWeekChip, tvStatus;
+    private TextView tvWeekChip;
     private TextView tvSmallRest, tvSwitchHint;
     /** 今日卡里的「今天 / 明天不上班」两个按钮（v1.28.1 起，v1.34 起并排）。 */
     private TextView btnDayOff, btnDayOffTomorrow;
@@ -48,9 +48,6 @@ public class MainActivity extends AppCompatActivity {
     private LocalDate tickDay;
     private final Handler ticker = new Handler(Looper.getMainLooper());
     /** 运行状态折叠卡（v1.28）：自检信息默认收起，标题行只留一句摘要。 */
-    private View runBody;
-    private TextView tvRunSummary, tvRunToggle;
-    private boolean runExpanded;
 
     /** 新手引导（v1.19.9）：本次启动是否拉起过引导页；onResume 计次用于延后权限请求。 */
     private boolean firstRunGuideShown;
@@ -61,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout alarmList;
     /** 闹钟行渲染（v1.36.0 从本类拆出），只画界面，改动仍回本类处理。 */
     private AlarmRowRenderer alarmRowRenderer;
-    private TextView btnTest;
 
     /** 多闹钟列表（v1.13）：每个闹钟独立的 时间/名称/规则/启停。 */
     private List<Alarm> alarms;
@@ -78,15 +74,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tvWeekBig = findViewById(R.id.tv_week_big);
-        tvAnchor = findViewById(R.id.tv_anchor);
-        tvHolidayNote = findViewById(R.id.tv_holiday_note);
         tvTodayDate = findViewById(R.id.tv_today_date);
         tvTodayLunar = findViewById(R.id.tv_today_lunar);
         tvTodayStatus = findViewById(R.id.tv_today_status);
         tvTodaySub = findViewById(R.id.tv_today_sub);
         tvCountdown = findViewById(R.id.tv_countdown);
         tvWeekChip = findViewById(R.id.tv_week_chip);
-        tvStatus = findViewById(R.id.tv_status);
         tvSmallRest = findViewById(R.id.tv_small_rest);
         tvWeekMode = findViewById(R.id.tv_week_mode);
         tvSwitchHint = findViewById(R.id.tv_switch_hint);
@@ -110,11 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 toggleAlarm(a, checked);
             }
         });
-        btnTest = findViewById(R.id.btn_test);
         swAlarm = findViewById(R.id.switch_alarm);
-        runBody = findViewById(R.id.run_body);
-        tvRunSummary = findViewById(R.id.tv_run_summary);
-        tvRunToggle = findViewById(R.id.tv_run_toggle);
 
         // v1.34：日历回到首页、默认展开。面板自己找容器里的子 View，主界面只提供
         // 「改完标记之后要我干什么」——重排 + 刷新首页（面板也会跟着重画）。
@@ -132,20 +121,11 @@ public class MainActivity extends AppCompatActivity {
         // 设置与使用说明整体独立成页（v1.19.7）：主界面只保留入口，不再内嵌设置卡片
         findViewById(R.id.btn_settings_entry).setOnClickListener(v ->
                 startActivity(new Intent(this, SettingsActivity.class)));
-        // v1.34.2：这一行进「使用说明」页（HelpActivity）。
-        // v1.34.0 曾把它指到 GuideActivity——那是首次安装的 3 页设置向导，
-        // 用户想查「组件怎么加」却被要求重设一遍班制，等于拿教程当手册。
-        findViewById(R.id.row_guide_entry).setOnClickListener(v ->
-                startActivity(new Intent(this, HelpActivity.class)));
-        findViewById(R.id.row_run_header).setOnClickListener(v -> {
-            runExpanded = !runExpanded;
-            applyRunState();
-        });
+        // v1.46.2：使用说明 / 测试响铃 / 运行状态三块搬去设置页，
+        // 首页只留每天要看的东西。见 SettingsActivity 的 row_help / row_test_ring / row_run_status。
         // v1.34：今天 / 明天并排，语义都由 DayOffAction 按当天实际班休决定
         btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
         btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
-
-        btnTest.setOnClickListener(v -> testAlarm());
 
         // 闹钟总开关：开 = 保存当前设置并排程；关 = 取消全部提醒。
         // 开关本体不消费点击（clickable=false），由整行容器转发点击切换状态。
@@ -227,12 +207,6 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("取消", null)
                 .show();
-    }
-
-    /** 运行状态展开 / 收起（v1.28）：同上，默认收起，不记忆。 */
-    private void applyRunState() {
-        runBody.setVisibility(runExpanded ? View.VISIBLE : View.GONE);
-        tvRunToggle.setText(runExpanded ? "收起" : "展开");
     }
 
     private void updateWeekBigText() {
@@ -605,21 +579,6 @@ public class MainActivity extends AppCompatActivity {
         refreshAll();
     }
 
-    private void testAlarm() {
-        // 测试沿用主闹钟的名称，与正式提醒的呈现完全一致
-        Alarm primary = AlarmEditor.primaryAlarm(alarms);
-        String label = primary != null ? primary.label : "闹钟";
-        Intent svc = new Intent(this, AlarmService.class);
-        svc.setAction(AlarmService.ACTION_TEST);
-        svc.putExtra(AlarmService.EXTRA_LABEL, label);
-        // 测试是用户主动点的：页面直接打开，通知走低优先级渠道，不再叠一条横幅
-        ContextCompat.startForegroundService(this, svc);
-        Intent full = new Intent(this, AlarmActivity.class);
-        full.putExtra(AlarmActivity.EXTRA_TEST, true);
-        full.putExtra(AlarmActivity.EXTRA_LABEL, label);
-        startActivity(full);
-    }
-
     private void refreshAll() {
         refreshStatus();
         renderAlarmList();
@@ -771,41 +730,11 @@ public class MainActivity extends AppCompatActivity {
             updateCountdown();
         }
 
-        // 基准只在大小周下有意义，双休 / 单休时整行隐藏，避免出现看不懂的日期
-        if (rule.mode.needsAnchor()) {
-            tvAnchor.setVisibility(View.VISIBLE);
-            tvAnchor.setText("当前基准（大周周六）：" + rule.anchor);
-        } else {
-            tvAnchor.setVisibility(View.GONE);
-        }
-        tvHolidayNote.setText(HolidayData.hasRemote()
-                ? "节假日数据已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
-                : "已内置 " + HolidayData.BUILT_IN_YEAR + " 年节假日安排（放假与调休自动优先于周休制度）");
-        // v1.28：三处统计共用刚读好的 alarms，不再各读一遍 Prefs
+        // v1.46.2：运行状态整块搬去设置页（SettingsActivity 的 row_run_status），
+        // 首页不再展示「未来 N 天共 N 个提醒 / 系统已登记 ✓」这类核对信息。
+        // 这里只留下小组件要用的两个统计值。
         int n = ScheduleManager.countScheduled(this, alarms);
         ScheduleManager.NextAlarm nextAlarm = ScheduleManager.nextRegisteredAlarm(this, alarms);
-        int horizon = Prefs.getHorizonDays(this);
-        // 标题行的一句话摘要：默认收起时，用户只看得见这一行
-        tvRunSummary.setText(masterOn ? "已开启 · " + n + " 个提醒" : "已关闭");
-        String checkLine;
-        if (!masterOn) {
-            checkLine = "尚未开启 · 打开「闹钟总开关」即自动排程";
-        } else {
-            checkLine = "未来 " + horizon + " 天共 " + n + " 个提醒";
-            checkLine += nextAlarm != null
-                    ? "\n下一个闹钟：" + nextAlarm.when.format(DateTimeFormatter.ofPattern("M月d日"))
-                            + " " + weekLabel(nextAlarm.when.toLocalDate()) + " "
-                            + String.format(Locale.getDefault(), "%02d:%02d",
-                                    nextAlarm.when.getHour(), nextAlarm.when.getMinute())
-                            + " " + nextAlarm.label + " · 系统已登记 ✓"
-                    : "\n系统中暂无已登记的闹钟，请检查排班设置";
-            // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
-            if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
-                checkLine += "\n提醒较多，已优先排程最近的 " + ScheduleManager.MAX_REGISTERED_ALARMS
-                        + " 个，更久的会随闹钟响铃自动补上";
-            }
-        }
-        tvStatus.setText(checkLine);
         // 开关位置同步启用态（swAttaching 防止回写触发用户操作逻辑）
         swAttaching = true;
         swAlarm.setChecked(Prefs.isEnabled(this));

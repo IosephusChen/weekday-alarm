@@ -54,12 +54,18 @@ public class HelpActivityTest {
 
     // ---------- 入口指向 ----------
 
-    /** 首页那一行「使用说明」必须进说明页，不能进新手引导。 */
+    /**
+     * 设置页那一行「使用说明」必须进说明页，不能进新手引导。
+     *
+     * <p>v1.46.2：入口从首页搬来设置页「其他」组，紧挨着「新手引导与权限」。
+     * 两者相邻但语义不同——引导是首次的流程，说明是随时能查的参考，
+     * 所以这条断言「点说明进的是 HelpActivity」，别哪天顺手改成 GuideActivity。
+     */
     @Test
-    public void homeEntry_opensHelpPage_notGuide() {
+    public void settingsEntry_opensHelpPage_notGuide() {
         resetPrefs();
-        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
-        a.findViewById(R.id.row_guide_entry).performClick();
+        SettingsActivity a = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        a.findViewById(R.id.row_help).performClick();
 
         Intent next = Shadows.shadowOf(a).getNextStartedActivity();
         assertNotNull("点「使用说明」应启动一个页面", next);

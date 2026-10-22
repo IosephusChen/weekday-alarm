@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -258,27 +259,33 @@ public class SnoozePreNoticeTest {
     }
 
     /**
-     * 使用说明收成一行入口（v1.34.0），指向说明页而不是引导页（v1.34.2）。
+     * 首页底部三块已搬去设置页（v1.46.2）。
      *
-     * <p>9 条长文首次安装展开约 400dp，收成一行是对的；但 v1.34.0 把入口接到了
-     * 新手引导（3 页设置向导），用户想查「组件怎么加」却被要求重设一遍班制。
-     * 现在这一行进 {@link HelpActivity}，引导只在说明页底部与设置页里出现。
+     * <p>「使用说明」「测试响铃」「运行状态」原来占首页最后 190dp，全是低频操作，
+     * 而首页合计 2.25 屏，日历被它们挤到第二屏之后。现在三块都在设置页「其他」组，
+     * 入口跳转由 {@code HelpActivityTest} 与 {@code UiLayoutTest} 分别守着。
+     *
+     * <p>这条测试守的是「别再加回首页」——它们的 id 已经删了，
+     * 以后谁想在首页重新塞一块，这条会立刻红。
      */
     @Test
-    public void mainActivity_guideIsOneLineEntry_opensHelp() {
+    public void mainActivity_noLowFrequencyBlocksAtBottom() {
         Prefs.setGuideSeen(ctx(), true);
         Prefs.setOnboardDone(ctx(), true);   // 别让启动时的引导页抢走「下一个 Activity」
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
 
-        View row = activity.findViewById(R.id.row_guide_entry);
-        assertNotNull("首页应保留使用说明入口", row);
-        assertEquals("入口只占一行：标题 + 箭头", 2, ((LinearLayout) row).getChildCount());
+        // 这些 id 已经从布局里删掉了，R 类里根本没有它们——
+        // 用资源名查一次，返回 0 就说明布局里确实没有这个控件。
+        assertTrue("首页布局里不该再有「使用说明」入口 row_guide_entry",
+                idOf(activity, "row_guide_entry") == 0);
+        assertTrue("首页布局里不该再有「测试响铃」按钮 btn_test",
+                idOf(activity, "btn_test") == 0);
+        assertTrue("首页布局里不该再有「运行状态」卡 tv_run_summary",
+                idOf(activity, "tv_run_summary") == 0);
+    }
 
-        row.performClick();
-        Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
-        assertNotNull("点入口应打开使用说明", next);
-        assertEquals("使用说明不该再指向新手引导",
-                HelpActivity.class.getName(), next.getComponent().getClassName());
+    private static int idOf(Context c, String name) {
+        return c.getResources().getIdentifier(name, "id", c.getPackageName());
     }
 
     @Test

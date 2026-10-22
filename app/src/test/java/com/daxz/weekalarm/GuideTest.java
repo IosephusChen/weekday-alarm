@@ -365,7 +365,7 @@ public class GuideTest {
     @Test
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
-        int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi, R.id.perm_battery,
+        int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi,
                 R.id.perm_autostart, R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);

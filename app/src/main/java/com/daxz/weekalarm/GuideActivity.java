@@ -5,7 +5,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -56,7 +55,7 @@ public class GuideActivity extends AppCompatActivity {
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
-    private TextView stNotif, stExact, stFsi, stBattery, stOverlay, stLock;
+    private TextView stNotif, stExact, stFsi, stOverlay, stLock;
 
     private int index = 0;
     private int hour = 7;
@@ -87,7 +86,6 @@ public class GuideActivity extends AppCompatActivity {
         stNotif = findViewById(R.id.st_notif);
         stExact = findViewById(R.id.st_exact);
         stFsi = findViewById(R.id.st_fsi);
-        stBattery = findViewById(R.id.st_battery);
         stOverlay = findViewById(R.id.st_overlay);
         stLock = findViewById(R.id.st_lock);
 
@@ -373,7 +371,6 @@ public class GuideActivity extends AppCompatActivity {
                 openAppDetails();
             }
         });
-        findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
         // v1.47.1：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
         // 只能给跳转。它比电池优化更关键：没有它，App 被划掉后闹钟到点广播直接被丢弃。
         findViewById(R.id.perm_autostart).setOnClickListener(
@@ -409,7 +406,6 @@ public class GuideActivity extends AppCompatActivity {
         boolean notif = NotificationManagerCompat.from(this).areNotificationsEnabled();
         boolean exact = ScheduleManager.canScheduleExactAlarms(this);
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
-        boolean battery = isIgnoringBattery();
         setPermState(stNotif, notif);
         // 通知不是「有更好」，是停止响铃的唯一常驻入口：关掉之后闹钟响了没有按钮可按
         if (!notif) {
@@ -419,14 +415,9 @@ public class GuideActivity extends AppCompatActivity {
         setPermState(stExact, exact);
         setPermState(stFsi, fsi);
         if (fsi) stFsi.setText("已开启 · 锁屏也能弹");
-        // v1.47.2：实测「自启动 + 电池优化受限」时闹钟照响——setAlarmClock 本来就不受
-        // Doze 限制。这一项从「建议」降为「可选」，不再催用户去改
-        if (battery) {
-            setPermState(stBattery, true);
-        } else {
-            stBattery.setText("可选 · 一般不影响响铃");
-            stBattery.setTextColor(ContextCompat.getColor(this, R.color.sub));
-        }
+        // v1.47.3：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
+        // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
+        // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
         setPermState(stOverlay, Settings.canDrawOverlays(this));
         refreshLockState();
     }
@@ -463,41 +454,6 @@ public class GuideActivity extends AppCompatActivity {
         tv.setTextColor(ContextCompat.getColor(this, ok ? R.color.success : R.color.indigo));
     }
 
-    private boolean isIgnoringBattery() {
-        try {
-            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-            return pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private void openNotificationSettings() {
-        try {
-            Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
-            startActivity(i);
-        } catch (Exception e) {
-            openAppDetails();
-        }
-    }
-
-    private void openExactAlarmSettings() {
-        try {
-            startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                    .setData(Uri.parse("package:" + getPackageName())));
-        } catch (Exception e) {
-            openAppDetails();
-        }
-    }
-
-    private void openBatterySettings() {
-        try {
-            startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
-        } catch (Exception e) {
-            openAppDetails();
-        }
-    }
 
     /** 悬浮窗权限（v1.45.0）：有标准跳转页，直接送到本应用的开关上。 */
     private void openOverlaySettings() {
@@ -556,6 +512,25 @@ public class GuideActivity extends AppCompatActivity {
                 .setPositiveButton("去应用详情", (d, w) -> openAppDetails())
                 .setNegativeButton("知道了", null)
                 .show();
+    }
+
+    private void openNotificationSettings() {
+        try {
+            Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            startActivity(i);
+        } catch (Exception e) {
+            openAppDetails();
+        }
+    }
+
+    private void openExactAlarmSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                    .setData(Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            openAppDetails();
+        }
     }
 
     private void openAppDetails() {

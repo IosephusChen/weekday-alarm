@@ -761,54 +761,6 @@
                         android:textSize="20sp" />
                 </LinearLayout>
 
-                <!-- 电池优化 -->
-                <LinearLayout
-                    android:id="@+id/perm_battery"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="省电策略（可选）"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/st_battery"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="去开启"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-
                 <!-- 自启动（v1.47.1）：国产 ROM 的后台白名单，不是 Android 权限。
                      没有它，App 被划掉后闹钟到点广播直接被丢弃——排着，但不响。
                      没有任何 API 能读到状态，所以这一行只写「去开启」，不给勾。 -->

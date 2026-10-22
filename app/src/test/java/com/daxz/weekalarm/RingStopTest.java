@@ -186,16 +186,21 @@ public class RingStopTest {
     }
 
     /**
-     * 实测：自启动开着、电池优化受限，闹钟照响（setAlarmClock 不受 Doze 限制）。
-     * 这一项因此降为「可选」，不该再用「去开启」催用户。
+     * 电池优化整行已删（v1.47.3）：实测自启动开着、电池优化受限时闹钟照响，
+     * 这一项对本 App 没有作用。检查清单里留一个「你不需要管」的开关，
+     * 只会让人以为还有事没做。
+     *
+     * <p>按项目规矩，删掉的布局 id 不能在测试里写 {@code R.id.xxx}（会直接编译失败），
+     * 用 getIdentifier 断言它确实不存在。
      */
     @Test
-    public void guide_batteryRow_isOptionalNotATodo() {
+    public void guide_batteryRow_isGone() {
         resetPrefs();
-        ActivityController<GuideActivity> ctl =
-                Robolectric.buildActivity(GuideActivity.class).setup();
-        assertEquals("可选 · 一般不影响响铃",
-                ((TextView) ctl.get().findViewById(R.id.st_battery)).getText().toString());
-        ctl.pause().stop().destroy();
+        int id = ctx().getResources().getIdentifier(
+                "perm_battery", "id", ctx().getPackageName());
+        assertEquals("这一行应该已经被删掉", 0, id);
+        int stId = ctx().getResources().getIdentifier(
+                "st_battery", "id", ctx().getPackageName());
+        assertEquals("状态文案也一并删掉", 0, stId);
     }
 }

@@ -21,8 +21,8 @@ import java.util.Locale;
  * 通知栏就空了一块——用户看不到「它还会不会响、什么时候响」，
  * 只能干等到铃声再炸一次。这中间本来是最需要确认的时刻。
  *
- * <p>做法：小睡排程排好之后，立刻发一条安静的通知（复用「响铃提前提醒」渠道，
- * 不响不震），写清几点再响，并挂一个系统倒计时。真响的时候由
+ * <p>做法：小睡排程排好之后，立刻发一条安静的通知（v1.46.0 起走独立的「稍后提醒」渠道，
+ * 不响不震、不横幅），写清几点再响，并挂一个系统倒计时。真响的时候由
  * {@link AlarmService#onStartCommand} 撤掉它，不会两条并存。
  *
  * <p>id 段用 4000+，避开提前提醒的 2000–2999：
@@ -72,14 +72,15 @@ final class SnoozeNotice {
 
         long triggerAt = at.atZone(java.time.ZoneId.systemDefault())
                 .toInstant().toEpochMilli();
-        Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_PRE_NOTICE)
+        Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_SNOOZE)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(name + " 稍后再响")
                 .setContentText(mins + " 分钟后 · " + clock + " 再次响铃")
                 .setContentIntent(openPi)
                 .setColor(ctx.getColor(R.color.indigo))
                 .setCategory(Notification.CATEGORY_ALARM)
-                .setPriority(Notification.PRIORITY_HIGH)
+                // 渠道已经是 LOW，这里再写 HIGH 只会误导下一个读代码的人
+                .setPriority(Notification.PRIORITY_DEFAULT)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 // 可以划掉：它只是一条告知，划掉不代表取消小睡
                 .setAutoCancel(true)

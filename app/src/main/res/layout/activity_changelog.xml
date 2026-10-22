@@ -3,6 +3,7 @@
      设置 → 其他 → 更新日志进入；每版一张白卡，从新到旧，当前版本用主色标出。
      卡片内容由 Changelog.renderInto 动态生成，这里只留骨架。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sv_changelog"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"

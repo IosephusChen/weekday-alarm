@@ -51,6 +51,11 @@ public final class Changelog {
      * 真想知道为什么，去项目里的使用说明。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(121, "1.46.6", "2026/10/22", "更新日志页不再一次性画完",
+                    "114 个版本一次性 inflate 约 670 个 View，进页面要卡一下；改成先画 15 条，滚到接近底部再追加一批",
+                    "首帧 View 从 670 降到 105，翻看方式没变，也没有多出「加载更多」按钮",
+                    "分批画和一次性画的排版完全一致，跨批次的「同日」缩写也不会写错",
+                    "顺带清掉一个没人读的旧接口，功能一行没改"),
             new Entry(120, "1.46.5", "2026/10/22", "更新日志补全到 v1.0",
                     "早期 41 个版本（versionCode 1~41，v1.0 ~ v1.19.6）当时没做日志，这次从会话记录里补了回来",
                     "全部产生于「大小周闹钟」时期，v1.22.0 才改名；包名 com.daxz.weekalarm 从头没变",
@@ -565,6 +570,9 @@ public final class Changelog {
         }
     }
 
+    /** 更新日志页首批画多少版，以及每次追加多少版（v1.46.6）。 */
+    public static final int PAGE_SIZE = 15;
+
     /**
      * 把版本列表画进容器：一版一张白卡，当前版本用主色标出。
      *
@@ -576,57 +584,79 @@ public final class Changelog {
     public static void renderInto(Context c, LinearLayout box, List<Entry> entries,
                                   int highlightCode) {
         box.removeAllViews();
+        appendInto(c, box, entries, 0, entries.size(), highlightCode);
+    }
+
+    /**
+     * 从 {@code from} 起追加至多 {@code count} 张卡，返回下一张的下标。
+     *
+     * <p>v1.46.6：114 版一次性 inflate 约 570 个 View，进页面要卡一下。更新日志页改成
+     * 先画 {@link #PAGE_SIZE} 张、滚到接近底部再追加一批；全部画完时返回值等于
+     * {@code entries.size()}，调用方据此停止追加。
+     *
+     * <p>「同日」按绝对下标取上一版，所以分批画与一次性画的结果完全一致，
+     * 跨批次也不会把换日的那一版误写成「同日」。
+     */
+    public static int appendInto(Context c, LinearLayout box, List<Entry> entries,
+                                 int from, int count, int highlightCode) {
         float d = c.getResources().getDisplayMetrics().density;
         int pad = Math.round(16 * d);
+        int start = Math.max(0, from);
+        int end = Math.min(entries.size(), start + Math.max(0, count));
 
-        for (int i = 0; i < entries.size(); i++) {
+        for (int i = start; i < end; i++) {
             Entry e = entries.get(i);
             boolean current = e.code == highlightCode;
             // entries 从新到旧：同一批日期里，只有最上面那张写完整日期
             boolean sameDay = i > 0 && entries.get(i - 1).date.equals(e.date);
+            box.addView(buildCard(c, e, current, sameDay, pad, d));
+        }
+        return end;
+    }
 
-            LinearLayout card = new LinearLayout(c);
-            card.setOrientation(LinearLayout.VERTICAL);
-            card.setBackgroundResource(R.drawable.bg_card);
-            card.setPadding(pad, pad, pad, pad);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+    /** 画一张版本卡；样式与分批无关，只由这一处维护。 */
+    private static LinearLayout buildCard(Context c, Entry e, boolean current, boolean sameDay,
+                                          int pad, float d) {
+        LinearLayout card = new LinearLayout(c);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackgroundResource(R.drawable.bg_card);
+        card.setPadding(pad, pad, pad, pad);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = Math.round(10 * d);
+        card.setLayoutParams(lp);
+
+        TextView head = new TextView(c);
+        head.setText("v" + e.version + "  " + e.title);
+        head.setTextSize(15f);
+        head.setTypeface(Typeface.DEFAULT_BOLD);
+        head.setTextColor(c.getColor(current ? R.color.indigo : R.color.ink));
+        card.addView(head);
+
+        TextView meta = new TextView(c);
+        meta.setText((sameDay ? "同日" : e.date)
+                + " · versionCode " + e.code + (current ? " · 当前版本" : ""));
+        meta.setTextSize(11f);
+        meta.setTextColor(c.getColor(R.color.sub));
+        LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        mlp.topMargin = Math.round(2 * d);
+        card.addView(meta, mlp);
+
+        for (String s : e.points) {
+            TextView t = new TextView(c);
+            t.setText("· " + s);
+            t.setTextSize(13f);
+            t.setTextColor(c.getColor(R.color.ink));
+            t.setLineSpacing(Math.round(3 * d), 1.15f);
+            LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            lp.bottomMargin = Math.round(10 * d);
-            card.setLayoutParams(lp);
-
-            TextView head = new TextView(c);
-            head.setText("v" + e.version + "  " + e.title);
-            head.setTextSize(15f);
-            head.setTypeface(Typeface.DEFAULT_BOLD);
-            head.setTextColor(c.getColor(current ? R.color.indigo : R.color.ink));
-            card.addView(head);
-
-            TextView meta = new TextView(c);
-            meta.setText((sameDay ? "同日" : e.date)
-                    + " · versionCode " + e.code + (current ? " · 当前版本" : ""));
-            meta.setTextSize(11f);
-            meta.setTextColor(c.getColor(R.color.sub));
-            LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            mlp.topMargin = Math.round(2 * d);
-            card.addView(meta, mlp);
-
-            for (String s : e.points) {
-                TextView t = new TextView(c);
-                t.setText("· " + s);
-                t.setTextSize(13f);
-                t.setTextColor(c.getColor(R.color.ink));
-                t.setLineSpacing(Math.round(3 * d), 1.15f);
-                LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                tlp.topMargin = Math.round(7 * d);
-                card.addView(t, tlp);
-            }
-
-            box.addView(card);
+            tlp.topMargin = Math.round(7 * d);
+            card.addView(t, tlp);
         }
+        return card;
     }
 }

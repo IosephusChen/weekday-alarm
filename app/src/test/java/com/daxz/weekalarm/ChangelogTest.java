@@ -226,4 +226,77 @@ public class ChangelogTest {
             prevDate = e.date;
         }
     }
+
+    /**
+     * v1.46.6：更新日志页改成首帧只画一批。
+     *
+     * <p>背景：114 版一次性 inflate 约 570 个 View，进页面会卡一下。
+     */
+    @Test
+    public void page_rendersOnlyFirstChunkOnOpen() {
+        List<Changelog.Entry> all = Changelog.all();
+        assertTrue("条目数应多于一页，否则这条断言没有意义", all.size() > Changelog.PAGE_SIZE);
+
+        ActivityController<ChangelogActivity> ctl =
+                Robolectric.buildActivity(ChangelogActivity.class).setup();
+        LinearLayout box = ctl.get().findViewById(R.id.ll_changelog);
+        assertEquals("首帧只该画一批", Changelog.PAGE_SIZE, box.getChildCount());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 分批画与一次性画必须完全等价——包括跨批次边界的「同日」判断。
+     *
+     * <p>这条是分页改造的安全网：如果哪次改了分页大小或「同日」的取值方式，
+     * 导致某一批的第一张卡把日期写错，这里就会红。
+     */
+    @Test
+    public void pagedAppend_equalsFullRender() {
+        List<Changelog.Entry> all = Changelog.all();
+        int code = installedCode();
+
+        LinearLayout full = new LinearLayout(ctx());
+        Changelog.renderInto(ctx(), full, all, code);
+
+        LinearLayout paged = new LinearLayout(ctx());
+        int guard = 0;
+        int next = 0;
+        while (next < all.size() && guard++ < 1000) {
+            next = Changelog.appendInto(ctx(), paged, all, next, Changelog.PAGE_SIZE, code);
+        }
+
+        assertEquals("分批画完的卡数应与一次性画一致",
+                full.getChildCount(), paged.getChildCount());
+        for (int i = 0; i < full.getChildCount(); i++) {
+            ViewGroup a = (ViewGroup) full.getChildAt(i);
+            ViewGroup b = (ViewGroup) paged.getChildAt(i);
+            assertEquals("第 " + i + " 张卡的结构应一致",
+                    a.getChildCount(), b.getChildCount());
+            for (int j = 0; j < a.getChildCount(); j++) {
+                assertEquals("第 " + i + " 张第 " + j + " 行文案应一致",
+                        ((TextView) a.getChildAt(j)).getText().toString(),
+                        ((TextView) b.getChildAt(j)).getText().toString());
+            }
+        }
+    }
+
+    @Test
+    public void appendInto_returnsEndIndexAndStopsAtTail() {
+        List<Changelog.Entry> all = Changelog.all();
+        LinearLayout box = new LinearLayout(ctx());
+
+        int next = Changelog.appendInto(ctx(), box, all, 0, 3, installedCode());
+        assertEquals("应返回已画到第几条", 3, next);
+        assertEquals(3, box.getChildCount());
+
+        // 越过末尾的 count 会被夹到列表长度
+        next = Changelog.appendInto(ctx(), box, all, next, 9999, installedCode());
+        assertEquals(all.size(), next);
+        assertEquals(all.size(), box.getChildCount());
+
+        // 画完之后再调：返回值不变，也不再产生卡片
+        assertEquals(all.size(),
+                Changelog.appendInto(ctx(), box, all, next, Changelog.PAGE_SIZE, installedCode()));
+        assertEquals(all.size(), box.getChildCount());
+    }
 }

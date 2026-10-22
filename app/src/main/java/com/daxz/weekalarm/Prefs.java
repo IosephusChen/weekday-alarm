@@ -432,13 +432,12 @@ public final class Prefs {
     }
 
     /**
-     * 使用说明是否已经自动展开过一次（v1.19.8）。
-     * 首次安装后主界面自动展开说明，让新用户一眼看到用法；之后默认收起成一行。
+     * 标记「使用说明」的展开状态（v1.19.8）。
+     *
+     * <p>v1.46.6：读取侧 {@code isGuideSeen()} 已删——v1.34.0 把使用说明收成一行入口、
+     * 交给引导页之后，生产代码不再读这个标记。写入侧暂时保留，因为 13 个测试文件
+     * 在初始化时仍调用它；等 v1.47.0 一并清理测试初始化，届时这个 key 可以整个删掉。
      */
-    public static boolean isGuideSeen(Context c) {
-        return sp(c).getBoolean(KEY_GUIDE_SEEN, false);
-    }
-
     public static void setGuideSeen(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_GUIDE_SEEN, v).apply();
     }

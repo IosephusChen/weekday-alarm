@@ -82,33 +82,55 @@ public class NightModeTest {
     }
 
     /**
-     * 响铃横幅（v1.42.0）：暖桃底在夜间必须压暗，字要够亮。
+     * 响铃横幅（v1.43.0）：深色半透明卡，白天夜里都用同一张。
      *
-     * <p>这张卡是写死的暖色（不跟主题走），所以最怕「夜里闪一块亮橙」。
-     * 这里同时钉住底色够暗、标题与说明的对比度都 ≥ 4.5。
+     * <p>底色带 alpha（88%），{@link ColorUtils#calculateContrast} 要求两边都不透明，
+     * 所以先把它合成到「最坏情况」的底上再算：
+     * <ul>
+     *   <li>白底 #FFFFFF——浅色壁纸/浅色应用，半透明卡被衬得最亮，白字最危险</li>
+     *   <li>黑底 #000000——深色壁纸，卡片最暗，深字最危险（这里字是白的，不是问题，留着防回归）</li>
+     * </ul>
+     * 两种极端下都要 ≥ 4.5:1，才算「不看壁纸颜色也读得清」。
      */
     @Test
     @Config(qualifiers = "night")
     public void night_floatBannerIsDarkAndReadable() {
-        int bg = ContextCompat.getColor(ctx(), R.color.float_card_bg);
-        assertTrue("夜间横幅底色应压暗（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
-                ColorUtils.calculateLuminance(bg) < 0.1);
-        for (int fg : new int[]{R.color.float_card_title, R.color.float_card_sub}) {
-            double ratio = ColorUtils.calculateContrast(ContextCompat.getColor(ctx(), fg), bg);
-            assertTrue("夜间横幅上的字要读得清（对比度 " + ratio + "）", ratio >= 4.5);
-        }
+        assertBannerReadableOverAnyWallpaper("夜间");
     }
 
-    /** 日间：暖色底 + 深字，同样要够对比。 */
     @Test
     @Config(qualifiers = "notnight")
-    public void day_floatBannerIsWarmAndReadable() {
+    public void day_floatBannerIsDarkAndReadable() {
+        assertBannerReadableOverAnyWallpaper("日间");
+    }
+
+    /**
+     * 横幅底色本身必须够暗——白天也一样。
+     *
+     * <p>v1.42.0 是浅桃底（亮度 &gt; 0.8），v1.43.0 改成深色卡（亮度 &lt; 0.1）。
+     * 这条防的是「有人觉得白天用深色卡太沉，又改回浅色」——那样夜里就得再维护一套，
+     * 而历史证明两套配色必然有一边漏。
+     */
+    @Test
+    @Config(qualifiers = "notnight")
+    public void day_floatBannerIsAlsoDark() {
         int bg = ContextCompat.getColor(ctx(), R.color.float_card_bg);
-        assertTrue("日间横幅应是浅暖色（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
-                ColorUtils.calculateLuminance(bg) > 0.8);
-        for (int fg : new int[]{R.color.float_card_title, R.color.float_card_sub}) {
-            double ratio = ColorUtils.calculateContrast(ContextCompat.getColor(ctx(), fg), bg);
-            assertTrue("日间横幅上的字要读得清（对比度 " + ratio + "）", ratio >= 4.5);
+        assertTrue("横幅底色日夜都该是深色（现在亮度 " + ColorUtils.calculateLuminance(bg) + "）",
+                ColorUtils.calculateLuminance(bg) < 0.1);
+    }
+
+    /** 把带 alpha 的横幅色合成到白/黑两种壁纸上，逐一验对比度。 */
+    private void assertBannerReadableOverAnyWallpaper(String which) {
+        int bg = ContextCompat.getColor(ctx(), R.color.float_card_bg);
+        for (int wallpaper : new int[]{0xFFFFFFFF, 0xFF000000}) {
+            int flatBg = ColorUtils.compositeColors(bg, wallpaper);
+            for (int fg : new int[]{R.color.float_card_time, R.color.float_card_sub}) {
+                int flatFg = ColorUtils.compositeColors(ContextCompat.getColor(ctx(), fg), flatBg);
+                double ratio = ColorUtils.calculateContrast(flatFg, flatBg);
+                assertTrue(which + "横幅上的字要读得清（壁纸 " + Integer.toHexString(wallpaper)
+                                + "，对比度 " + String.format(java.util.Locale.US, "%.2f", ratio) + "）",
+                        ratio >= 4.5);
+            }
         }
     }
 

@@ -14,13 +14,23 @@
          白字压白底，选中那一项等于消失了。 -->
     <color name="guide_option_selected">#EEF0FE</color>
     <color name="section_bg">#F7F8FD</color>
-    <!-- 响铃横幅（v1.42.0）：暖桃色，参照系统闹钟的 heads-up。
-         底色写死一个暖色而不是跟主题走，是因为这张卡只在「正在响铃」时出现，
-         那一刻需要的是「被叫醒」而不是「融入界面」；深色模式另有压暗版本。 -->
-    <color name="float_card_bg">#FFF6EC</color>
-    <color name="float_card_line">#F0DFC8</color>
-    <color name="float_card_title">#2A2018</color>
-    <color name="float_card_sub">#8A6A4E</color>   <!-- 桃底上 4.6:1 -->
+    <!-- 响铃横幅（v1.43.0）：深色半透明卡，白天夜里都用这一张。
+
+         v1.42.0 是暖桃色，用户看过后要的是「透明感，和其他通知栏一样」。
+         真模糊拿不到（第三方悬浮窗基本吃不到系统跨窗口模糊，见 FloatingAlarm 注释），
+         所以用「深色 + 88% 不透明」近似通知栏那种浮在内容之上的观感：
+         底下透出一点点壁纸，但字仍然压得住。
+
+         注意这里全是带 alpha 的颜色，算对比度要先合成到某个底色上，
+         不能直接丢给 ColorUtils.calculateContrast（它要求两边都不透明）。 -->
+    <color name="float_card_bg">#E61B1D2B</color>
+    <color name="float_card_line">#33FFFFFF</color>   <!-- 白 20% 描边 -->
+    <color name="float_card_time">#FFFFFF</color>
+    <color name="float_card_sub">#CCFFFFFF</color>    <!-- 白 80% -->
+    <color name="float_card_icon">#FFFFFF</color>
+    <color name="float_btn_outline_bg">#14FFFFFF</color>     <!-- 白 8% -->
+    <color name="float_btn_outline_line">#B3FFFFFF</color>   <!-- 白 70% -->
+    <color name="float_stop_bg">#7C3AED</color>              <!-- 实色紫 -->
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。
          以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，

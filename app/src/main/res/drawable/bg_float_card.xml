@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 响铃横幅的卡片底（v1.41.0 贴顶通栏；v1.42.0 改暖桃色）。
+<!--
+  响铃横幅的卡片底（v1.43.0 改成深色半透明）。
 
-     为什么是桃色：用户对比系统闹钟的 heads-up，说那张卡的「整体 UI 更好看」。
-     系统那张的底色是 HyperOS 按主题算的，我们抄不了也改不了它的按钮颜色；
-     但自己的窗口可以照那个观感画——暖桃底 + 品牌紫药丸。
+  为什么不再用桃色：用户要的是「透明感，和其他通知栏一样」。
+  真正的系统模糊（FLAG_BLUR_BEHIND + setBlurBehindRadius）需要 Android 12+
+  且系统开启「跨窗口模糊」，第三方悬浮窗基本拿不到——所以退一步，
+  用「深色 + 88% 不透明」做出通知栏那种「浮在内容之上」的观感：
+  底下透出一点点，但不至于让字压到壁纸上读不清。
 
-     深色模式另有压暗版本（#2A2118），否则夜里会闪一块亮橙。
-     圆角 24dp、1dp 描边：悬浮窗吃不到 elevation 阴影，靠描边交代边界。 -->
+  深色卡是刻意的：横幅只在「正在响铃」时出现，那一刻要的是「被叫醒」，
+  不是「融入界面」。白天夜里都用这一张，所以没有浅色版本。
+
+  圆角 22dp、1dp 白色 20% 描边：悬浮窗吃不到 elevation 阴影，靠描边交代边界。
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="@color/float_card_bg" />
     <stroke
         android:width="1dp"
         android:color="@color/float_card_line" />
-    <corners android:radius="24dp" />
+    <corners android:radius="22dp" />
 </shape>

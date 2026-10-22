@@ -64,7 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="提示：到点自动停止响铃与震动，并撤下通知。设为「不限」则一直响到手动停止/小睡。"
+        android:text="提示：到点自动停止响铃与震动，并撤下通知。设为「不限」则一直响到手动停止或稍后提醒。"
         android:textColor="@color/sub"
         android:textSize="12sp" />
 </LinearLayout>

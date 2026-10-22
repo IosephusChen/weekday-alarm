@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  响铃时的贴顶横幅（v1.41.0 起；v1.42.0 改成系统 heads-up 那种三行结构）。
+  响铃时的贴顶横幅（v1.43.0 重画）。
 
   演变：
   - v1.40.0：300dp 小卡片浮在屏幕 18% 处，用户说「出现在屏幕中间太突兀」。
-  - v1.41.0：贴顶通栏，但压成一行（图标 + 文字 + 两个圆钮），信息太挤。
-  - v1.42.0：用户对比系统闹钟的 heads-up，说那张「整体 UI 更好看」——
-    于是照它的结构来：图标 + 标题 / 一行说明 / 下面一排药丸，底色用暖桃，
-    按钮用品牌紫（系统那张的灰药丸改不了颜色，只能自己画）。
+  - v1.41.0：贴顶通栏，压成一行，信息太挤。
+  - v1.42.0：照系统 heads-up 做三行（图标 + 标题 / 说明 / 一排药丸），底色暖桃。
+  - v1.43.0：用户要「透明感 + 位置更贴顶 + 布局照系统闹钟」。
+    透明做不到（第三方悬浮窗吃不到系统模糊，见 FloatingAlarm 注释），于是改走
+    **深色半透明卡**——和通知栏那张卡一个调子，白天夜里都用深色，不再跟主题走。
+
+  结构（单行，和系统闹钟的 heads-up 一致）：
+    左侧大图标 · 大号响铃时刻 + 小字闹钟名 · 右侧两个圆钮（稍后提醒描边 / 停止实色紫）
 
   宽度不在这里写死：FloatingAlarm 按屏幕宽度减去左右各 8dp 算好塞进 LayoutParams。
 -->
@@ -15,94 +19,76 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_float_card"
-    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
     android:paddingStart="14dp"
-    android:paddingTop="14dp"
-    android:paddingEnd="14dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="12dp"
     android:paddingBottom="12dp">
 
+    <ImageView
+        android:id="@+id/fa_icon"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_notif_icon"
+        android:contentDescription="@null"
+        android:padding="10dp"
+        android:src="@drawable/ic_notification" />
+
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_notif_icon"
-            android:contentDescription="@null"
-            android:padding="8dp"
-            android:src="@drawable/ic_notification" />
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <!-- 大号时刻：横幅出现时用户第一眼要确认「是不是我这个点」，
+             所以它比闹钟名大三倍多，和系统闹钟的主次一致 -->
+        <TextView
+            android:id="@+id/fa_time"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/fa_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/float_card_title"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/fa_sub"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:ellipsize="end"
-                android:includeFontPadding="false"
-                android:maxLines="1"
-                android:textColor="@color/float_card_sub"
-                android:textSize="12sp" />
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- 按钮行与标题左边缘对齐（图标 40 + 间距 12），和系统那张卡一致 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="52dp"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/fa_snooze"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:background="@drawable/bg_notif_action_outline"
-            android:gravity="center"
+            android:ellipsize="end"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:minWidth="64dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:textColor="@color/violet"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/fa_stop"
-            android:layout_width="wrap_content"
-            android:layout_height="34dp"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/bg_notif_action"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:minWidth="64dp"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:textColor="@color/white"
-            android:textSize="13sp"
+            android:textColor="@color/float_card_time"
+            android:textSize="30sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/fa_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textColor="@color/float_card_sub"
+            android:textSize="12sp" />
     </LinearLayout>
+
+    <!-- 圆钮：主次靠「描边 / 实色」区分，和通知卡片里两个药丸的关系一致 -->
+    <ImageButton
+        android:id="@+id/fa_snooze"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/bg_float_btn_outline"
+        android:contentDescription="稍后提醒"
+        android:padding="11dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_notif_snooze"
+        android:tint="@color/float_card_icon" />
+
+    <ImageButton
+        android:id="@+id/fa_stop"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/bg_float_btn_solid"
+        android:contentDescription="停止"
+        android:padding="11dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_float_stop"
+        android:tint="@color/white" />
 </LinearLayout>

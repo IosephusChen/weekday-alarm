@@ -145,7 +145,7 @@ public class AlarmActivity extends AppCompatActivity {
             btnSnooze.setAlpha(0.4f);
             tvSnoozeLabel.setText("稍后提醒");
             btnSnooze.setOnClickListener(v ->
-                    Toast.makeText(this, "测试模式不支持小睡，请滑动结束", Toast.LENGTH_SHORT).show());
+                    Toast.makeText(this, "测试模式不支持稍后提醒，请滑动结束", Toast.LENGTH_SHORT).show());
         } else if (exhausted) {
             btnSnooze.setAlpha(0.4f);
             tvSnoozeLabel.setText("稍后提醒已用完");
@@ -262,7 +262,7 @@ public class AlarmActivity extends AppCompatActivity {
         }
         if (action == Prefs.KEY_ACTION_SNOOZE) {
             if (test) {
-                Toast.makeText(this, "测试模式不支持小睡，请点「结束测试」", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "测试模式不支持稍后提醒，请点「结束测试」", Toast.LENGTH_SHORT).show();
             } else {
                 snoozeAlarm();
             }

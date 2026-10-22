@@ -20,11 +20,16 @@
          这里取比 card(#1C1F35) 略亮一档的靛蓝灰，和 sub 的对比度约 5.7:1。 -->
     <color name="section_bg">#242840</color>
 
-    <!-- 响铃横幅（v1.42.0）：暖色压暗，别在深色界面上闪一块亮橙 -->
-    <color name="float_card_bg">#2A2118</color>
-    <color name="float_card_line">#4A3A28</color>
-    <color name="float_card_title">#F6EEE4</color>
-    <color name="float_card_sub">#C9B39C</color>   <!-- 深棕底上 7.8:1 -->
+    <!-- 响铃横幅（v1.43.0）：卡片本身就是深色，夜间版只是「再沉一点」，
+         免得半夜一块偏亮的板子糊在锁屏上。文字与按钮两套完全一致。 -->
+    <color name="float_card_bg">#E6121420</color>
+    <color name="float_card_line">#33FFFFFF</color>
+    <color name="float_card_time">#FFFFFF</color>
+    <color name="float_card_sub">#CCFFFFFF</color>
+    <color name="float_card_icon">#FFFFFF</color>
+    <color name="float_btn_outline_bg">#14FFFFFF</color>
+    <color name="float_btn_outline_line">#B3FFFFFF</color>
+    <color name="float_stop_bg">#8B5CF6</color>
     <!-- 引导页选中项：同色相压暗，配 ink（近白）对比度约 9:1 -->
     <color name="guide_option_selected">#2A2350</color>
     <color name="white">#FFFFFFFF</color>

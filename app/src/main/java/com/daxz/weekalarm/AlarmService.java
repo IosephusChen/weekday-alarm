@@ -125,7 +125,10 @@ public class AlarmService extends Service {
         if (!popup && !test) {
             int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
             boolean canSnooze = ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
-            if (!FloatingAlarm.show(this, currentAlarmId, label, dateStr, mins, canSnooze)) {
+            // v1.43.0：横幅上要显示大号响铃时刻。取闹钟自己的 HH:mm 而不是当前时间——
+            // 迟到几十秒（系统排程有抖动）时，显示「07:30」才是用户认识的那个闹钟
+            if (!FloatingAlarm.show(this, currentAlarmId, label, dateStr,
+                    ringTimeText(currentAlarmId), mins, canSnooze)) {
                 openAlarmPage(dateStr, label);
             }
         }
@@ -133,6 +136,23 @@ public class AlarmService extends Service {
     }
 
     /** 兜底：把整屏响铃页拉到前面（悬浮窗挂不上、或锁屏时用）。 */
+    /**
+     * 本次响铃的闹钟时刻（HH:mm）。
+     *
+     * <p>按 id 去列表里找；找不到（闹钟在响铃期间被删掉、或测试响铃没带 id）
+     * 就返回 null，让 {@link FloatingAlarm} 退回当前时间——宁可显示「现在几点」，
+     * 也不要显示一个空字符串。
+     */
+    private String ringTimeText(int alarmId) {
+        try {
+            for (Alarm a : Prefs.getAlarmsSettled(this)) {
+                if (a.id == alarmId) return a.timeText();
+            }
+        } catch (Exception ignore) {
+        }
+        return null;
+    }
+
     private void openAlarmPage(String dateStr, String label) {
         try {
             Intent full = new Intent(this, AlarmActivity.class);
@@ -312,7 +332,7 @@ public class AlarmService extends Service {
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
         // v1.40.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
-        String text = test ? "这是测试，正式提醒一样响" : "点此停止或小睡";
+        String text = test ? "这是测试，正式提醒一样响" : "点此停止，或稍后提醒";
         // v1.42.0：渠道按「要不要自己弹界面」来选，这决定了系统会不会再叠一张 heads-up。
         //
         // 用户报的「两个悬浮窗」是这么来的：CHANNEL_ALARM 是 IMPORTANCE_HIGH，屏幕亮着时

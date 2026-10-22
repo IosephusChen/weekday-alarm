@@ -150,23 +150,26 @@ public class FloatingAlarmTest {
     }
 
     /**
-     * 不能带 FLAG_LAYOUT_IN_SCREEN（v1.45.0 反转了这条断言）。
+     * 必须带 FLAG_LAYOUT_IN_SCREEN（v1.47.4 第三次反转这条断言）。
      *
-     * <p>v1.44.0 为了让横幅压进状态栏，加了这个标志、把 y 写成「状态栏高度 × 0.5」。
-     * 用户截图实测后发现：顶边落在 46.5dp，正好是状态栏高度——0.5 被 WMS clamp 掉了，
-     * 那个标志没起作用，效果是靠系统兜底得来的。换一台不 clamp 的 ROM 就会真盖住时间。
+     * <p>演进：v1.44.0 加标志、y 写成「状态栏高度 × 0.5」，结果被系统 clamp，等于白写；
+     * v1.45.0 索性撤掉标志、只留「状态栏高度」当 y —— 这一版是<b>错的</b>：
+     * 不带标志时窗口原点已经在状态栏下方，y 再加一个状态栏高度，真机落点变成
+     * 「2 × 状态栏高度」（用户截图里横幅无缘无故往下掉了一截，就是这 46dp）。
      *
-     * <p>所以现在显式贴状态栏下沿、撤掉标志。这条测试防止有人「想再往上顶一点」
-     * 又把标志加回来——加了在这台机器上看起来没变化（会被 clamp），
-     * 但在别的机器上就会盖住状态栏，属于那种「改完看不出来、换机才炸」的坑。
+     * <p>现在：标志把原点挪回屏幕顶，y 仍写状态栏高度，落点紧贴状态栏下沿。
+     * 这条测试同时钉住「别再把标志删掉」和「y 别改成 0 或 0.5 倍」。
      */
     @Test
-    public void banner_staysBelowStatusBar() {
+    public void banner_usesScreenOrigin() {
         grantOverlay(true);
         assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
         WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
-        assertEquals("横幅不该画进状态栏区域，否则会盖住时间和电量",
-                0, lp.flags & WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
+
+        assertTrue("缺了它，y 会被当成「状态栏下方再偏移」，横幅会整体下一截",
+                (lp.flags & WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN) != 0);
+        assertEquals("原点在屏幕顶时，紧贴状态栏下沿就是 y = 状态栏高度",
+                statusBarHeight(), lp.y);
     }
 
     /** 次数用尽：不给「稍后提醒」，只留「停止」。 */

@@ -362,10 +362,23 @@ public class GuideTest {
         assertEquals("开了之后回来自动变「已开启」", "已开启", text(a, R.id.st_notif));
     }
 
+    /**
+     * 「闹钟和提醒」整行已删（v1.47.4）：我们声明了 {@code USE_EXACT_ALARM}，
+     * Android 13+ 安装即授予且用户在系统里关不掉（开关是灰的）。留一行只能点、
+     * 进去还改不了的项，只会让用户以为哪里没设置好。
+     */
+    @Test
+    public void exactAlarmRow_isGone() {
+        assertEquals("这一行应该已经被删掉", 0, ctx().getResources()
+                .getIdentifier("perm_exact", "id", ctx().getPackageName()));
+        assertEquals(0, ctx().getResources()
+                .getIdentifier("st_exact", "id", ctx().getPackageName()));
+    }
+
     @Test
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
-        int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi,
+        int[] ids = {R.id.perm_notif, R.id.perm_fsi,
                 R.id.perm_autostart, R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);

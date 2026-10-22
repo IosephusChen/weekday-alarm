@@ -67,9 +67,12 @@ final class FloatingAlarm {
      * OCR 能读出「12:09 / 信号 / 电量」），但那是靠系统兜底，换一台不 clamp 的 ROM
      * 就会真把横幅塞进状态栏里盖住时间。
      *
-     * <p>所以改成显式写「状态栏高度」，不再依赖 clamp，也不再需要
-     * {@code FLAG_LAYOUT_IN_SCREEN}（那个标志是为了画进状态栏区域，现在不需要了）。
-     * 行为在所有机型上一致：紧贴状态栏下沿，一个像素都不重叠。
+     * <p>v1.45.0 据此把 {@code FLAG_LAYOUT_IN_SCREEN} 也撤了，只留「状态栏高度」当 y。
+     * <b>这是个回归</b>：不带该标志时窗口原点已在状态栏下方，y 又加了一次状态栏高度，
+     * 实际落点变成「2 × 状态栏高度」（约 92dp），真机上就是「横幅往下掉了一截」。
+     *
+     * <p>v1.47.4 改回「带标志 + y = 状态栏高度」：标志只把原点挪回屏幕顶，
+     * 落点仍是紧贴状态栏下沿，一个像素都不重叠。两条路（系统 clamp / 不 clamp）都指向同一位置。
      */
     private static final int TOP_GAP_DP = 0;
 
@@ -214,8 +217,12 @@ final class FloatingAlarm {
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     // 不抢焦点：来电话、打字、返回键都照常走下面的应用。
-                    // 不加 FLAG_LAYOUT_IN_SCREEN：横幅就该待在状态栏下面，不压住时间和电量
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    // v1.47.4：必须带 FLAG_LAYOUT_IN_SCREEN，否则坐标系不是屏幕顶——
+                    // 不带它时窗口原点已经在状态栏下方，再减 statusBarHeight 就多让了一整个状态栏
+                    // （46dp 左右），真机上表现为「横幅无缘无故往下掉了一截」。
+                    // 这个标志只影响原点，y 仍是状态栏高度，所以不会盖住时间和电量。
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
             // 紧贴状态栏下沿。写成「状态栏高度」而不是某个固定 dp：

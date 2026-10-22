@@ -55,7 +55,7 @@ public class GuideActivity extends AppCompatActivity {
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
-    private TextView stNotif, stExact, stFsi, stOverlay, stLock;
+    private TextView stNotif, stFsi, stOverlay, stLock;
 
     private int index = 0;
     private int hour = 7;
@@ -84,7 +84,6 @@ public class GuideActivity extends AppCompatActivity {
         tvSingleSub = findViewById(R.id.tv_single_sub);
 
         stNotif = findViewById(R.id.st_notif);
-        stExact = findViewById(R.id.st_exact);
         stFsi = findViewById(R.id.st_fsi);
         stOverlay = findViewById(R.id.st_overlay);
         stLock = findViewById(R.id.st_lock);
@@ -361,7 +360,6 @@ public class GuideActivity extends AppCompatActivity {
 
     private void bindPermissions() {
         findViewById(R.id.perm_notif).setOnClickListener(v -> openNotificationSettings());
-        findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
         // v1.47.2：真机验证发现「后台弹出界面」开启会连带开启全屏通知（反之不成立），
         // 所以这一行改成指向「后台弹出界面」——一个入口覆盖两件事，不用再单独引导全屏
         findViewById(R.id.perm_fsi).setOnClickListener(v -> {
@@ -404,7 +402,6 @@ public class GuideActivity extends AppCompatActivity {
 
     private void refreshPermissions() {
         boolean notif = NotificationManagerCompat.from(this).areNotificationsEnabled();
-        boolean exact = ScheduleManager.canScheduleExactAlarms(this);
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
         setPermState(stNotif, notif);
         // 通知不是「有更好」，是停止响铃的唯一常驻入口：关掉之后闹钟响了没有按钮可按
@@ -412,9 +409,10 @@ public class GuideActivity extends AppCompatActivity {
             stNotif.setText("未开 · 闹钟响了关不掉");
             stNotif.setTextColor(ContextCompat.getColor(this, R.color.danger));
         }
-        setPermState(stExact, exact);
         setPermState(stFsi, fsi);
-        if (fsi) stFsi.setText("已开启 · 锁屏也能弹");
+        // v1.47.4：真机上这个 intent 落在「应用信息 → 权限」页，后台弹出界面还藏在
+        // 「其他权限」里，所以状态文案直接告诉用户下一层点哪
+        stFsi.setText(fsi ? "已开启 · 锁屏也能弹" : "去开启 · 进去点「其他权限」");
         // v1.47.3：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
         // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
         // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
@@ -524,14 +522,6 @@ public class GuideActivity extends AppCompatActivity {
         }
     }
 
-    private void openExactAlarmSettings() {
-        try {
-            startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                    .setData(Uri.parse("package:" + getPackageName())));
-        } catch (Exception e) {
-            openAppDetails();
-        }
-    }
 
     private void openAppDetails() {
         try {

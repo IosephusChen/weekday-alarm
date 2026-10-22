@@ -57,6 +57,22 @@ public class SettingsLayoutTest {
         return ctl;
     }
 
+    /**
+     * 二级页必须在 manifest 里注册（v1.49.1）。
+     *
+     * <p>这一条是补的：v1.49.0 把 Activity 写好了却忘了登记，
+     * 点「更多响铃设置」直接 ActivityNotFoundException——用户看到的是「弹回首页」。
+     * Robolectric 的 startActivity 不检查 manifest，所以之前的测试全绿也发现不了。
+     */
+    @Test
+    public void morePage_isDeclaredInManifest() {
+        assertNotNull("二级页没有在 AndroidManifest 里注册，点进去会崩",
+                ctx().getPackageManager().resolveActivity(
+                        MoreSettingsActivity.intent(ctx(), true), 0));
+        assertNotNull(ctx().getPackageManager().resolveActivity(
+                MoreSettingsActivity.intent(ctx(), false), 0));
+    }
+
     /** 主页只留 8 项，搬走的行在这一页找不到。 */
     @Test
     public void homeKeepsOnlyHighFrequencyRows() {

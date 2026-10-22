@@ -78,6 +78,15 @@
             android:label="设置"
             android:parentActivityName=".MainActivity" />
 
+        <!-- 设置的二级页（v1.49.0）：主页的「更多响铃设置」「更多设置」指向这里。
+             一个 Activity 承载两段，靠 intent extra 决定显示哪段。
+             parent 指回设置页，系统返回手势能顺着原路退。 -->
+        <activity
+            android:name=".MoreSettingsActivity"
+            android:exported="false"
+            android:label="更多设置"
+            android:parentActivityName=".SettingsActivity" />
+
         <!-- 使用说明（v1.34.2）：首页底部一行入口指向这里。
              别再指到 GuideActivity——那是 3 页设置向导，不是随时能查的说明书。 -->
         <activity

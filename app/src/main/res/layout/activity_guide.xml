@@ -515,7 +515,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="提前提醒"
+                            android:text="响铃前提醒"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
 
@@ -535,7 +535,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="渐响会从静音用 30 秒升到设定音量。提前提醒会在响铃前先来一条通知，嫌吵就关掉。"
+                    android:text="渐响会从静音用 30 秒升到设定音量。响铃前提醒会在闹钟响之前先在通知栏露一面，嫌吵就关掉。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -783,6 +783,105 @@
                         android:textSize="20sp" />
                 </LinearLayout>
 
+                <!-- 显示悬浮窗（v1.45.0）：解锁响铃时那张贴顶横幅要它才能挂上。
+                     这一项有标准 API（Settings.canDrawOverlays），能直接打勾。 -->
+                <LinearLayout
+                    android:id="@+id/perm_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="显示悬浮窗"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/st_overlay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
+                <!-- 锁屏显示（v1.45.0）：系统不提供查询，只能「测一下」。
+                     点它弹对话框 → 开始测试 → 用户按电源键 → 6 秒后自测页自己亮起来。
+                     副标题是三态的：没测过 / 已通过 / 没测到。 -->
+                <LinearLayout
+                    android:id="@+id/perm_lock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="锁屏显示"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/st_lock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="测一下"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -790,18 +889,6 @@
                     android:lineSpacingExtra="3dp"
                     android:text="没全开也能用，只是可能不响、或者只躺在通知栏里。"
                     android:textColor="@color/sub"
-                    android:textSize="12sp" />
-
-                <!-- v1.39.0：系统里还有一个「锁屏显示」，不在标准权限里，检测不到，
-                     只能给路径。锁屏响铃要解锁才看得到界面，就是它没开。 -->
-                <TextView
-                    android:id="@+id/tv_lock_hint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="3dp"
-                    android:text="锁屏时只亮屏、不弹窗？点这里看「锁屏显示」怎么开 ›"
-                    android:textColor="@color/indigo"
                     android:textSize="12sp" />
 
                 <!-- v1.25.1：开完权限当场试一次，别等第二天早上才发现不响 -->

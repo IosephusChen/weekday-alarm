@@ -133,8 +133,9 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 会一直停在原处：等到只剩 10 分钟，它还是「1 小时后」，比不写更误导。
         // 相对时间只在「发出那一刻」成立，而通知要在栏里躺满整个提前量，所以只能写绝对时间。
         //
-        // 「还剩多久」交给通知头部的系统倒计时（setUsesChronometer + countDown）：
-        // 那是 SystemUI 自己每秒刷新的，既不会失真，也不用我们额外唤醒设备。
+        // v1.45.0 起「还剩多久」也不再由卡片读秒承担（用户要求去掉），
+        // 正文这句绝对时间就是全部信息。横幅上仍有一句相对时间（见下面的 headsUpText）——
+        // 它只出现几秒，不存在躺久了失真的问题。
         String sub = whenText(d, timeText);
         Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_PRE_NOTICE)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -160,21 +161,22 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 .addAction(new Notification.Action.Builder(
                         Icon.createWithResource(ctx, R.drawable.ic_notif_close),
                         "关闭闹钟", cancelPi).build());
-        // v1.37.0：让系统替我们倒计时。
+        // v1.45.0：这条通知**不再显示读秒倒计时**（用户要求）。
         //
-        // 时间文本解析不出来（老数据 / 空串）就退回普通时间戳，不硬凑一个错的倒计时。
+        // 卡片里的 Chronometer 每秒跳一次，眼睛会一直往那儿瞟，反而比「14:10 响铃」
+        // 更吵；而且它只精确到秒，对「还有多久」这个判断没有增量信息。
+        // 现在正文就是一句绝对时间（whenText），卡片里不留倒计时位。
         //
-        // v1.38.0 修正：这几个 builder 调用其实**一直没生效**。设了 customContentView 之后，
-        // 通知头部（应用名 / 时间那一行）整行都不再由系统渲染，setUsesChronometer 画在头部
-        // 的倒计时从来没有显示过——用户「找不到倒计时」就是这个原因。
-        // 真正的倒计时改由卡片里的 Chronometer 承担（见下面 NotifCard.build 的 countdownAt），
-        // 这几行保留给「ROM 忽略自绘布局」的兜底。
+        // 顺带说明历史：v1.37.0 用 setUsesChronometer 让系统画在通知头部，但设了
+        // customContentView 之后头部整行都不再由系统渲染，那几行从来没生效过（v1.38.0 发现）；
+        // v1.38.0 改由卡片里的 Chronometer 承担。现在两处都撤掉了。
+        //
+        // 注意：「稍后再响」那条通知的倒计时**保留**——那里需要一个明确的「还剩多久」，
+        // 而且它只活几分钟，不会长时间跳着烦人。
         long triggerAt = triggerAt(d, timeText);
         if (triggerAt > 0) {
-            nb.setWhen(triggerAt)
-                    .setShowWhen(true)
-                    .setUsesChronometer(true)
-                    .setChronometerCountDown(true);
+            // 只留时间戳（下拉展开后的系统头部会用），不启用读秒
+            nb.setWhen(triggerAt).setShowWhen(true);
         }
 
         // v1.23.6：把按钮画进**折叠态**布局。锁屏卡片和下拉后未展开的卡片渲染的都是折叠态，
@@ -182,7 +184,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
         // 设了 customContentView，折叠态就是我们的布局，按钮直接躺在卡片上。
         nb.setCustomContentView(
-                NotifCard.build(ctx, label + " 即将响铃", sub, triggerAt, popupPi,
+                NotifCard.build(ctx, label + " 即将响铃", sub, 0, popupPi,
                         NotifCard.Button.primary("关闭闹钟", cancelPi)));
         // v1.23.4：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
         // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，

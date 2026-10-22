@@ -244,7 +244,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="· 音量、铃声、响铃时长、稍后提醒、睡前提醒，都在右上角「设置」里；一周开始日、提醒范围也在那。" />
+                android:text="· 音量、铃声、响铃时长、稍后提醒、响铃前提醒、睡前提醒，都在右上角「设置」里；一周开始日、提醒范围也在那。" />
 
             <TextView
                 style="@style/HelpItem"

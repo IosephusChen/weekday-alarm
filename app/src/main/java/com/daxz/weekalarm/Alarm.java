@@ -102,11 +102,52 @@ public final class Alarm {
         this.onceDate = onceDate;
     }
 
-    /** 一次性闹钟的规则文案，带上具体日期：「仅一次 · 10月21日 周三」。 */
+    /** 一次性闹钟的规则文案，带上具体日期：「仅一次 · 明天 · 10月23日」。 */
     public String modeTextWithDate() {
         if (mode != Mode.ONCE) return mode.text();
-        String day = onceDayText();
+        String day = onceDayLabel();
         return day == null ? mode.text() : mode.text() + " · " + day;
+    }
+
+    /**
+     * 一次性闹钟的日期文案（带相对词）：「明天 · 10月23日」；离得远退回「10月30日 周五」。
+     *
+     * <p>和 {@link #onceDayText()} 的分工：那个是「哪一天」的纯绝对说法，给「已响过」
+     * 那一行用——已经过去的事说「昨天」没意义，还显得在提醒你什么；
+     * 这个给「还会响」的场合用，相对词才是用户当下要判断的东西。
+     */
+    public String onceDayLabel() {
+        LocalDate d = parseOnceDate();
+        return d == null ? null : dayLabel(d, LocalDate.now());
+    }
+
+    /**
+     * 日期文案的统一出口（v1.45.0）。
+     *
+     * <p>以前列表行与编辑框各写一套：列表是「10月22日 周四」，编辑框是「明天 · 10月22日」，
+     * 同一天在两处长得不一样。现在都从这里出。
+     *
+     * <p>规则：近处用相对词，远处用绝对日期。
+     * <ul>
+     *   <li>前天 / 昨天 / 今天 / 明天 / 后天 → 「明天 · 10月23日」</li>
+     *   <li>其余 → 「10月30日 周五」</li>
+     * </ul>
+     * 远处不放「周三」在前面：今天的周三说「周三」指的是本周三（已过），
+     * 十天后的周三说「周三」指的是哪个周三？不如直接给日期。
+     *
+     * @param today 由调用方传入而不是内部取 {@code now()}——否则每条断言都绑在跑测试的那一天，
+     *              今天写得对、明天就红
+     */
+    static String dayLabel(LocalDate d, LocalDate today) {
+        long delta = java.time.temporal.ChronoUnit.DAYS.between(today, d);
+        String rel = delta == 0 ? "今天"
+                : delta == 1 ? "明天"
+                : delta == 2 ? "后天"
+                : delta == -1 ? "昨天"
+                : delta == -2 ? "前天"
+                : null;
+        String md = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
+        return rel == null ? md + " " + weekLabel(d) : rel + " · " + md;
     }
 
     /**

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锁屏显示自测页（v1.45.0）。
+
+     它只在锁屏上出现两三秒，作用是「证明自己来过」。所以做得极简：
+     一个符号 + 一句话，不需要任何操作。
+
+     颜色写死不跟随主题：它要盖在任何壁纸、任何锁屏上，固定深底白字最稳；
+     跟着日间主题变成浅底，浅色壁纸上就看不见了。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F21B1D2B"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:paddingStart="32dp"
+    android:paddingEnd="32dp">
+
+    <TextView
+        android:id="@+id/lp_mark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✓"
+        android:textColor="#4ADE80"
+        android:textSize="64sp" />
+
+    <TextView
+        android:id="@+id/lp_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="锁屏显示是开着的"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/lp_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:text="这一页能出现在锁屏上，说明闹钟响时也能。"
+        android:textColor="#B3FFFFFF"
+        android:textSize="14sp" />
+
+</LinearLayout>

@@ -154,13 +154,13 @@ public class PreNoticeTest {
         a.findViewById(R.id.row_pre_notice).performClick();
         assertEquals("关掉应写 0", 0, Prefs.getPreNoticeMinutes(ctx()));
         assertEquals("关着时副标题该说明「开着会怎样」，而不是复述「关闭」",
-                "响铃前先发一条通知",
+                "响铃前先在通知栏提醒一次",
                 ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
 
         a.findViewById(R.id.row_pre_notice).performClick();
         assertEquals("再打开要回到上次选的 15 分钟，不是默认 1 小时",
                 15, Prefs.getPreNoticeMinutes(ctx()));
-        assertEquals("提前 15 分钟提醒",
+        assertEquals("响铃前 15 分钟提醒",
                 ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
         ctl.pause().stop().destroy();
     }
@@ -327,17 +327,17 @@ public class PreNoticeTest {
     }
 
     /**
-     * 倒计时必须画在卡片里（v1.38.0）。
+     * 卡片里**不该**再有读秒倒计时（v1.45.0）。
      *
-     * <p>v1.37.0 用 {@code setUsesChronometer} 让系统画在通知头部，但设了 customContentView 后
-     * 头部整行都不再由系统渲染——用户「找不到倒计时」就是这个原因，那几行代码从没生效过。
-     * 现在改成卡片里的 Chronometer：断言它可见、且 base 落在「还剩一小时」附近。
+     * <p>演进：v1.37.0 用 {@code setUsesChronometer} 让系统画在通知头部（设了自绘布局后
+     * 从没生效过）→ v1.38.0 改由卡片里的 Chronometer 承担 → v1.45.0 用户说「读秒没必要」
+     * 干脆去掉：它每秒跳一次，眼睛会一直往那儿瞟，比一句「14:10 响铃」更吵。
      *
-     * <p>base 用 elapsedRealtime 时基，不是 wall clock。传错会显示成几十万小时，
-     * 所以这里同时把「base 与 elapsedRealtime 的差」钉在合理范围内。
+     * <p>这条测试钉的是「去掉之后别再被加回来」。要恢复的话，先想清楚
+     * 用户为什么要求去掉——不是嫌它不准，是嫌它吵。
      */
     @Test
-    public void preNotice_cardShowsLiveCountdown() {
+    public void preNotice_cardHasNoCountdown() {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 60);
         seedAlarm(30);
@@ -347,13 +347,7 @@ public class PreNoticeTest {
         assertNotNull(n);
         View card = n.contentView.apply(ctx(), new android.widget.FrameLayout(ctx()));
         View chrono = card.findViewById(R.id.nc_chrono);
-        assertEquals("有准确时间就该显示倒计时", View.VISIBLE, chrono.getVisibility());
-
-        long remaining = ((android.widget.Chronometer) chrono).getBase()
-                - android.os.SystemClock.elapsedRealtime();
-        // 提前量 60 分钟，闹钟设在 30 分钟后 → 提醒在 30 分钟后，倒计时应接近 30 分钟
-        assertTrue("倒计时剩余应接近 30 分钟，实际 " + remaining / 1000 + " 秒",
-                remaining > 25 * 60_000L && remaining < 35 * 60_000L);
+        assertEquals("提前提醒不该显示读秒倒计时", View.GONE, chrono.getVisibility());
     }
 
     /**
@@ -497,14 +491,16 @@ public class PreNoticeTest {
     }
 
     /**
-     * 通知头部要挂系统倒计时（v1.37.0）。
+     * 通知头部的系统倒计时也要关掉（v1.45.0）。
      *
-     * <p>setUsesChronometer + countDown 之后，SystemUI 每秒自己刷新「1:00:00」，
-     * 不占我们的 CPU。这是唯一能真正「随时间变化」的做法——自己起服务刷新通知
-     * 既费电，又会被国产 ROM 的后台限制掐掉。
+     * <p>v1.37.0 开过 {@code setUsesChronometer}，虽然设了自绘布局后它从没渲染出来，
+     * 但只要留着，哪天有人换回系统模板它就又冒出来了。既然用户不要读秒，两处都清掉。
+     *
+     * <p>时间戳 {@code when} 保留：下拉展开后的系统头部会用它显示「14:10」，
+     * 那不是读秒，是有用的信息。
      */
     @Test
-    public void preNotice_usesSystemCountdown() {
+    public void preNotice_hasNoSystemChronometer() {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 60);
         seedAlarm(30);
@@ -512,10 +508,8 @@ public class PreNoticeTest {
 
         Notification n = preNoticeNotification();
         assertNotNull(n);
-        assertTrue("要开倒计时", n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
-        assertTrue("倒计时方向应是「还剩」而不是「已过」",
-                n.extras.getBoolean("android.chronometerCountDown"));
-        assertTrue("when 应是触发时刻（未来），实际：" + n.when,
+        assertFalse("不该再开系统倒计时", n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER));
+        assertTrue("when 仍是触发时刻（未来），实际：" + n.when,
                 n.when > System.currentTimeMillis());
     }
 

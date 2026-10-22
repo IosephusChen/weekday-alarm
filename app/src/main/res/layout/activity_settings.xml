@@ -493,7 +493,10 @@
 
             <View style="@style/SettingsDivider" />
 
-            <!-- 提前提醒（v1.27 改成「标题 + 副标题 + 开关」）
+            <!-- 响铃前提醒（v1.27 改成「标题 + 副标题 + 开关」；v1.45.0 改名）
+                 原名「提前提醒」——「提前」没说是提前到哪儿，和「稍后提醒」放在一起
+                 还容易看混（一个提前一个稍后，都像在说推迟）。改成「响铃前提醒」，
+                 和「稍后提醒」正好一前一后，不用猜。
                  参照系统设置里通知类开关的写法：一句话说清是什么，一行说清状态，
                  开关直接给开关。原先只有一行标题加一个「关闭」的值，
                  想开要先点进去才知道里面有什么。 -->
@@ -522,7 +525,7 @@
                         style="@style/SettingsTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="提前提醒" />
+                        android:text="响铃前提醒" />
 
                     <TextView
                         android:id="@+id/tv_pre_notice"

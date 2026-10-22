@@ -53,7 +53,7 @@ public class GuideActivity extends AppCompatActivity {
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
-    private TextView stNotif, stExact, stFsi, stBattery;
+    private TextView stNotif, stExact, stFsi, stBattery, stOverlay, stLock;
 
     private int index = 0;
     private int hour = 7;
@@ -83,6 +83,8 @@ public class GuideActivity extends AppCompatActivity {
         stExact = findViewById(R.id.st_exact);
         stFsi = findViewById(R.id.st_fsi);
         stBattery = findViewById(R.id.st_battery);
+        stOverlay = findViewById(R.id.st_overlay);
+        stLock = findViewById(R.id.st_lock);
 
         bindModeCards();
         bindTime();
@@ -361,9 +363,12 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
         findViewById(R.id.perm_fsi).setOnClickListener(v -> openFullScreenIntentSettings());
         findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
-        // v1.39.0：锁屏响铃要解锁才看得到界面 —— 系统里那个「锁屏显示」没开。
-        // 它不在标准权限体系里，没有任何 API 能读到状态，只能给路径。
-        findViewById(R.id.tv_lock_hint).setOnClickListener(v -> showLockScreenHint());
+        // v1.45.0：悬浮窗权限。解锁响铃时那张贴顶横幅就是靠它挂上去的，
+        // 没有它只能退回整屏——用户要的恰恰是「别整屏」
+        findViewById(R.id.perm_overlay).setOnClickListener(v -> openOverlaySettings());
+        // v1.45.0：锁屏显示。它不在标准权限体系里，没有任何 API 能读到状态，
+        // 所以这一行给的是「测一下」，不是「去开启」
+        findViewById(R.id.perm_lock).setOnClickListener(v -> showLockScreenHint());
         // v1.25.1：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
         // 让用户等到第二天早上才发现不响，比什么都不做还糟。
         findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
@@ -394,6 +399,33 @@ public class GuideActivity extends AppCompatActivity {
         setPermState(stExact, exact);
         setPermState(stFsi, fsi);
         setPermState(stBattery, battery);
+        setPermState(stOverlay, Settings.canDrawOverlays(this));
+        refreshLockState();
+    }
+
+    /**
+     * 「锁屏显示」那一行的状态（v1.45.0）。
+     *
+     * <p>三态而不是两态：这一项查不到，只能靠自测。「还没测过」不能显示成「没开」——
+     * 第一次打开引导页就说人家没开，等于凭空指责；而「测了没反应」得给下一步动作，
+     * 不能只挂一句「去开启」（它根本没有能跳转的设置页）。
+     */
+    private void refreshLockState() {
+        if (stLock == null) return;
+        int r = Prefs.getLockProbeResult(this);
+        if (r == Prefs.LOCK_PROBE_PASS) {
+            stLock.setText("已通过 · 锁屏上能显示");
+            stLock.setTextColor(ContextCompat.getColor(this, R.color.success));
+        } else if (r == Prefs.LOCK_PROBE_UNLOCKED) {
+            stLock.setText("当时没锁屏，再测一次");
+            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+        } else if (LockProbe.isTimedOut(this)) {
+            stLock.setText("没测到 · 点这里看怎么开");
+            stLock.setTextColor(ContextCompat.getColor(this, R.color.danger));
+        } else {
+            stLock.setText("测一下");
+            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+        }
     }
 
     private void setPermState(TextView tv, boolean ok) {
@@ -452,26 +484,61 @@ public class GuideActivity extends AppCompatActivity {
         }
     }
 
+    /** 悬浮窗权限（v1.45.0）：有标准跳转页，直接送到本应用的开关上。 */
+    private void openOverlaySettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            openAppDetails();
+        }
+    }
+
     /**
-     * 「锁屏显示」怎么开（v1.39.0）。
+     * 「锁屏显示」：先测，测不出来再给路径（v1.45.0）。
      *
-     * <p>国产 ROM 在标准权限之外还有一个「锁屏显示 / 锁屏通知」开关，管的是
-     * 「这个 App 的界面能不能盖在锁屏上」。它不在 Android 的权限体系里，
-     * 既没有 API 能读，也没法申请，只能给用户指路——关着的时候表现就是
-     * 锁屏响铃只亮屏、必须解锁才看得到响铃页。
+     * <p>v1.39.0 那版只能给路径——因为这一项不在 Android 的权限体系里，既没有 API 能读、
+     * 也没法申请。但「给路径」对用户来说等于「你自己去找」，很多人就卡在这一步。
+     * 现在改成「试一次」：界面能不能盖在锁屏上，试一下就知道，比任何说明都直接。
+     *
+     * <p>测试本身不碰业务：不响铃、不发通知、不排班、不记 snooze（见 {@link LockProbe}）。
      */
     void showLockScreenHint() {
+        String msg = "这一项系统不提供查询：它不在标准权限里，App 读不到状态，也申请不了。"
+                + "所以只能试一次。\n\n"
+                + "1. 点「开始测试」\n"
+                + "2. 马上按电源键锁屏\n"
+                + "3. 6 秒后如果屏幕自己亮起、显示一个绿勾，说明是开着的\n\n"
+                + "没亮就是没开（或者系统拦了后台拉起界面）。"
+                + "这种情况按「看怎么开」里的路径手动打开。";
         new RoundedDialog.Builder(this)
-                .setTitle("锁屏时不弹窗？")
-                .setMessage("系统里还有一个「锁屏显示」开关，管的是「这个应用的界面能不能盖在锁屏上」。"
-                        + "它不在标准权限里，App 自己读不到、也申请不了，所以只能手动开一次。\n\n"
-                        + "路径（荣耀 / 华为 / 小米 / OPPO / vivo 大同小异）：\n"
+                .setTitle("锁屏显示")
+                .setMessage(msg)
+                .setPositiveButton("开始测试", (d, w) -> startLockProbe())
+                .setNeutralButton("看怎么开", (d, w) -> showLockPath())
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    /** 发起自测：写「待测」并安排 6 秒后拉起测试页，然后当面把步骤再说一遍。 */
+    private void startLockProbe() {
+        LockProbe.start(this);
+        refreshLockState();
+        Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
+                Toast.LENGTH_LONG).show();
+    }
+
+    /** 手动开启路径。测不出来时才会走到这里，所以写成「照着找一遍」。 */
+    private void showLockPath() {
+        new RoundedDialog.Builder(this)
+                .setTitle("锁屏显示怎么开")
+                .setMessage("路径（荣耀 / 华为 / 小米 / OPPO / vivo 大同小异）：\n"
                         + "设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示\n\n"
                         + "另外两个一起确认更稳：\n"
-                        + "· 显示悬浮窗（允许后台把界面拉到前面）\n"
+                        + "· 显示悬浮窗（解锁响铃时那张横幅靠它）\n"
                         + "· 后台弹出界面（小米 / 红米 / HyperOS 必开）\n\n"
                         + "开完之后，锁屏响铃会直接铺满屏幕，不用先解锁。")
-                .setPositiveButton("去设置", (d, w) -> openAppDetails())
+                .setPositiveButton("去应用详情", (d, w) -> openAppDetails())
                 .setNegativeButton("知道了", null)
                 .show();
     }

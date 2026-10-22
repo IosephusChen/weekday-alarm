@@ -55,21 +55,23 @@ final class FloatingAlarm {
     /** 横幅左右各留多少：8dp，和系统通知横幅一致，再宽就顶到屏幕边缘了。 */
     private static final int SIDE_MARGIN_DP = 8;
     /**
-     * 窗口顶边落在状态栏高度的百分之多少处。
+     * 窗口顶边与状态栏下沿的距离：0dp，即紧贴状态栏。
      *
-     * <p>演变：v1.41.0 是屏幕高度的 18%（浮在半空）→ v1.42.0 改成「状态栏下沿 + 6dp」
-     * → v1.43.0 收到 +2dp，用户仍说「位置还是太靠下」。对照系统闹钟的截图量了一下：
-     * 它的横幅顶边落在状态栏高度的<b>一半</b>左右，也就是压在状态栏下半部分上，
-     * 而不是排在状态栏下面。
+     * <p>位置演进：v1.41.0 是屏幕高度的 18%（浮在半空）→ v1.42.0「状态栏下沿 + 6dp」
+     * → v1.43.0「+2dp」，用户仍说「太靠下」→ v1.44.0 写成「状态栏高度 × 0.5」
+     * 并加 {@code FLAG_LAYOUT_IN_SCREEN}，想压进状态栏。
      *
-     * <p>要做到这一点光调 y 没用——{@code TYPE_APPLICATION_OVERLAY} 默认被系统
-     * 限制在状态栏之下，y 设成 0 也只是贴到状态栏下沿。必须同时加
-     * {@code FLAG_LAYOUT_IN_SCREEN}，窗口才被允许画进状态栏区域。
+     * <p><b>v1.44.0 那个 0.5 其实没生效。</b>用户截图实测：横幅顶边 y = 142px，
+     * 密度 3.05，换算 46.5dp，正好等于状态栏高度——也就是说系统（WMS）仍把 overlay
+     * 窗口的 y clamp 回了状态栏下沿，乘 0.5 等于白写。效果碰巧是对的（状态栏完整可见，
+     * OCR 能读出「12:09 / 信号 / 电量」），但那是靠系统兜底，换一台不 clamp 的 ROM
+     * 就会真把横幅塞进状态栏里盖住时间。
      *
-     * <p>取一半而不是固定 dp：状态栏高度各机型不同（挖孔屏 40~55dp 都见过），
-     * 固定值在一种机型上刚好、在另一种上就压住状态栏文字了。
+     * <p>所以改成显式写「状态栏高度」，不再依赖 clamp，也不再需要
+     * {@code FLAG_LAYOUT_IN_SCREEN}（那个标志是为了画进状态栏区域，现在不需要了）。
+     * 行为在所有机型上一致：紧贴状态栏下沿，一个像素都不重叠。
      */
-    private static final float TOP_FRACTION_OF_STATUS_BAR = 0.5f;
+    private static final int TOP_GAP_DP = 0;
 
     /** 短提示停留多久：够读完「闹钟 5 分钟后再响」一行，又不至于挡着人操作。 */
     private static final long TOAST_MS = 2400;
@@ -212,14 +214,13 @@ final class FloatingAlarm {
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     // 不抢焦点：来电话、打字、返回键都照常走下面的应用。
-                    // LAYOUT_IN_SCREEN：允许窗口画进状态栏区域，否则下面的 y 会被
-                    // 系统 clamp 回状态栏下沿，等于没调（见 TOP_FRACTION_OF_STATUS_BAR）
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    // 不加 FLAG_LAYOUT_IN_SCREEN：横幅就该待在状态栏下面，不压住时间和电量
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            // 压在状态栏下半部分，和系统闹钟的横幅一个高度（见 TOP_FRACTION_OF_STATUS_BAR）
-            lp.y = Math.round(statusBarHeight(ctx) * TOP_FRACTION_OF_STATUS_BAR);
+            // 紧贴状态栏下沿。写成「状态栏高度」而不是某个固定 dp：
+            // 挖孔屏的状态栏 40~55dp 都有，固定值在一台上刚好、在另一台上就压住了
+            lp.y = statusBarHeight(ctx) + dp(ctx, TOP_GAP_DP);
             lp.windowAnimations = R.style.FloatWindowAnim;
             // 不加 FLAG_BLUR_BEHIND：在 HyperOS 上会糊掉整屏，见类注释
 

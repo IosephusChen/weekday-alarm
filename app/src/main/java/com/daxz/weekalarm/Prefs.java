@@ -55,6 +55,12 @@ public final class Prefs {
     public static final String KEY_CHRISTIAN_FESTIVALS = "christian_festivals"; // 日历显示基督教节日（v1.21）
     private static final String KEY_SNOOZE_COUNT_PREFIX = "snooze_count_";   // + "{alarmId}_{date}"
 
+    // 锁屏显示自测（v1.45.0）：这一项没有 API 可查，只能「试一下」。
+    // 存结果而不是存布尔，是因为「还没测过」和「测了没通过」要分开显示——
+    // 都写成 false 的话，第一次打开引导页就会说「没通过」，像在指责用户
+    private static final String KEY_LOCK_PROBE_RESULT = "lock_probe_result";
+    private static final String KEY_LOCK_PROBE_AT = "lock_probe_at";
+
     // 按键作用取值（v1.16）
     public static final int KEY_ACTION_NONE = 0;
     public static final int KEY_ACTION_SNOOZE = 1;
@@ -635,5 +641,30 @@ public final class Prefs {
             if (date.compareTo(today) < 0) ed.remove(key);   // ISO 日期字符串比较即时间序
         }
         ed.apply();
+    }
+
+    // ================= 锁屏显示自测（v1.45.0）=================
+
+    /** 自测结果：还没测过。 */
+    public static final int LOCK_PROBE_NONE = 0;
+    /** 自测结果：通过——锁屏状态下测试页成功显示在锁屏之上。 */
+    public static final int LOCK_PROBE_PASS = 1;
+    /** 自测结果：没通过——测试页起来了，但当时屏幕没锁。 */
+    public static final int LOCK_PROBE_UNLOCKED = 2;
+
+    public static int getLockProbeResult(Context c) {
+        return sp(c).getInt(KEY_LOCK_PROBE_RESULT, LOCK_PROBE_NONE);
+    }
+
+    public static long getLockProbeAt(Context c) {
+        return sp(c).getLong(KEY_LOCK_PROBE_AT, 0L);
+    }
+
+    /** 记一次自测：{@code result} 用上面三个常量，{@code at} 是发起时刻。 */
+    public static void setLockProbe(Context c, int result, long at) {
+        sp(c).edit()
+                .putInt(KEY_LOCK_PROBE_RESULT, result)
+                .putLong(KEY_LOCK_PROBE_AT, at)
+                .apply();
     }
 }

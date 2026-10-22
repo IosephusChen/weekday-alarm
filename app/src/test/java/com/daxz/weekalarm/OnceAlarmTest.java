@@ -137,12 +137,43 @@ public class OnceAlarmTest {
 
     @Test
     public void modeText_carriesTheDate() {
-        // 列表里只写「仅一次」等于没说——用户得知道是哪一天
-        Alarm a = once(LocalDate.of(2026, 10, 22));
-        assertEquals("仅一次 · 10月22日 周四", a.modeTextWithDate());
+        // 列表里只写「仅一次」等于没说——用户得知道是哪一天。
+        // 日期必须相对 now 生成：写死某一天，跑到那天就变成「今天」而不是「明天」
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        Alarm a = once(tomorrow);
+        assertEquals("仅一次 · 明天 · " + tomorrow.getMonthValue() + "月"
+                        + tomorrow.getDayOfMonth() + "日",
+                a.modeTextWithDate());
         // 普通模式不受影响，仍是原来的文案
         assertEquals("仅上班日",
                 new Alarm(2, 7, 0, "起床", Alarm.Mode.WORKDAY, true).modeTextWithDate());
+    }
+
+    /**
+     * 日期文案的统一规则（v1.45.0）：近处用相对词，远处用绝对日期。
+     *
+     * <p>以前列表行写「10月22日 周四」、编辑框写「明天 · 10月22日」，同一天两处不一样。
+     * 现在都走 {@link Alarm#dayLabel}。today 传参而不是内部取 now()，
+     * 所以这些断言不会因为「今天是哪天」而变。
+     */
+    @Test
+    public void dayLabel_usesRelativeWordsNearAndAbsoluteFar() {
+        LocalDate today = LocalDate.of(2026, 10, 22);   // 周四
+
+        assertEquals("今天 · 10月22日", Alarm.dayLabel(today, today));
+        assertEquals("明天 · 10月23日", Alarm.dayLabel(today.plusDays(1), today));
+        assertEquals("后天 · 10月24日", Alarm.dayLabel(today.plusDays(2), today));
+        assertEquals("昨天 · 10月21日", Alarm.dayLabel(today.minusDays(1), today));
+        assertEquals("前天 · 10月20日", Alarm.dayLabel(today.minusDays(2), today));
+
+        // 三天以外不再给相对词，退回绝对日期 + 周几
+        assertEquals("10月25日 周日", Alarm.dayLabel(today.plusDays(3), today));
+        assertEquals("10月29日 周四", Alarm.dayLabel(today.plusDays(7), today));
+        assertEquals("10月19日 周一", Alarm.dayLabel(today.minusDays(3), today));
+
+        // 跨年也别崩
+        assertEquals("1月1日 周五", Alarm.dayLabel(LocalDate.of(2027, 1, 1),
+                LocalDate.of(2026, 12, 20)));
     }
 
     /**
@@ -224,6 +255,74 @@ public class OnceAlarmTest {
         assertEquals("2026-10-25", future.onceDate);
         Alarm daily = new Alarm(4, 6, 30, "起床", Alarm.Mode.DAILY, true, null);
         assertFalse(daily.reviveOnce(now));
+    }
+
+    // ================= 改完自动开启（v1.45.0）=================
+
+    /**
+     * 关掉的闹钟改完必须自己开起来。
+     *
+     * <p>用户点进编辑页改时间，意图是「这条要按新设置响」。改完还留着关闭状态，
+     * 等于改了个空——最常见的场景正是「关掉过的闹钟，重新调一下时间继续用」。
+     */
+    @Test
+    public void editingDisabledAlarm_turnsItBackOn() {
+        Alarm off = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
+
+        AlarmEditor.applyEdit(ctx(), off, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0);
+
+        assertTrue("改完必须自动开启", off.enabled);
+        assertEquals(7, off.hour);
+        assertEquals(45, off.minute);
+    }
+
+    /**
+     * 总开关关着时不动它，但要当面说一句。
+     *
+     * <p>总开关是用户自己关的，替他打开等于替他做决定；可不提醒的话，
+     * 他改完闹钟等一整天也不会响，还不知道为什么。
+     */
+    @Test
+    public void editingWithMasterOff_warnsInsteadOfTurningItOn() {
+        Prefs.setEnabled(ctx(), false);
+        Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
+
+        String tip = AlarmEditor.applyEdit(ctx(), a, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0);
+
+        assertFalse("总开关不该被编辑操作打开", Prefs.isEnabled(ctx()));
+        assertNotNull("总开关关着要提示，否则用户以为改了就会响", tip);
+        assertTrue("提示要说清是哪件事，实际：" + tip, tip.contains("总开关"));
+    }
+
+    /** 总开关开着、闹钟也正常：不该有多余提示，别每次都弹一句。 */
+    @Test
+    public void editingNormalAlarm_saysNothing() {
+        Prefs.setEnabled(ctx(), true);
+        Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
+
+        assertNull("没什么异常就别弹提示",
+                AlarmEditor.applyEdit(ctx(), a, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0));
+    }
+
+    /**
+     * 改一条「已经响过」的一次性闹钟：日期要顺延，不能只把开关拨上去。
+     *
+     * <p>只拨开关、日期留在过去，就是一条「显示已开启、永远不会响」的哑弹。
+     */
+    @Test
+    public void editingSpentOnce_movesDateAndSaysSo() {
+        Prefs.setEnabled(ctx(), true);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        Alarm spent = new Alarm(2, 6, 30, "赶车", Alarm.Mode.ONCE, false, yesterday.toString());
+
+        String tip = AlarmEditor.applyEdit(ctx(), spent, 6, 30, "赶车", Alarm.Mode.ONCE,
+                yesterday.toString(), 0);
+
+        assertTrue("改完要开启", spent.enabled);
+        assertTrue("日期必须顺延到未来，实际：" + spent.onceDate,
+                spent.parseOnceDate().isAfter(LocalDate.now()));
+        assertNotNull("顺延了要当面说，否则用户不知道日期变了", tip);
+        assertTrue("提示要说清改到了哪天，实际：" + tip, tip.contains("已改到"));
     }
 
     /** 还没到点的一次性闹钟当然要留着。 */

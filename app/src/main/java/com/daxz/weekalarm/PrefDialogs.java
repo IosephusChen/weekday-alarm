@@ -44,11 +44,22 @@ public final class PrefDialogs {
      */
     public static String preNoticeSummary(Context c) {
         int mins = Prefs.getPreNoticeMinutes(c);
-        return mins <= 0 ? "响铃前先发一条通知" : leadText(mins) + "提醒";
+        return mins <= 0 ? "响铃前先在通知栏提醒一次" : "响铃前 " + durationText(mins) + "提醒";
     }
 
+    /**
+     * 纯时长（「1 小时」/「5 分钟」），不带「提前」二字。
+     *
+     * <p>v1.45.0 拆出来的原因：副标题要读成「响铃前 1 小时提醒」，
+     * 直接把 {@link #leadText} 拼进去会变成「响铃前 提前 1 小时 提醒」，叠了两层。
+     */
+    private static String durationText(int mins) {
+        return mins >= 60 ? "1 小时" : mins + " 分钟";
+    }
+
+    /** 「提前 1 小时」——对话框档位与引导页右侧那一列用它。 */
     private static String leadText(int mins) {
-        return mins >= 60 ? "提前 1 小时" : "提前 " + mins + " 分钟";
+        return "提前 " + durationText(mins);
     }
 
     /**

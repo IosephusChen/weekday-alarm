@@ -355,12 +355,107 @@ public class GuideTest {
     @Test
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
-        int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi, R.id.perm_battery};
+        int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi, R.id.perm_battery,
+                R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);
             assertNotNull("权限行缺失 " + id, row);
             assertTrue("权限行要能点，否则用户只能自己去翻设置", row.isClickable());
         }
+    }
+
+    // ================= 第 3 页新增的两项（v1.45.0）=================
+
+    /**
+     * 悬浮窗权限跟系统状态走。
+     *
+     * <p>这一项是「解锁响铃只弹贴顶横幅、不整屏」的前提：没有它 {@code addView} 直接抛，
+     * 只能退回整屏。所以必须能自己打勾，不能让用户去猜。
+     */
+    @Test
+    public void overlayRow_followsSystemState() {
+        org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(false);
+        GuideActivity a = fresh();
+        assertEquals("没给权限时该说「去开启」", "去开启", text(a, R.id.st_overlay));
+
+        org.robolectric.shadows.ShadowSettings.setCanDrawOverlays(true);
+        a.onResume();   // 从系统设置回来
+        ShadowLooper.idleMainLooper();
+        assertEquals("给了权限回来自动打勾", "已开启", text(a, R.id.st_overlay));
+    }
+
+    /**
+     * 「锁屏显示」在没测过时不能显示成「没开」。
+     *
+     * <p>这一项查不到状态（不在标准权限里），只能靠自测。如果默认就写「去开启」或
+     * 「没开」，等于凭空指责用户——他可能明明开着，只是我们没测。
+     */
+    @Test
+    public void lockRow_beforeAnyProbe_saysTestNotFailure() {
+        GuideActivity a = fresh();
+        assertEquals("还没测过就说「测一下」", "测一下", text(a, R.id.st_lock));
+    }
+
+    /** 测过并且通过：结果写回 Prefs，引导页 onResume 时这一行要跟着变。 */
+    @Test
+    public void lockRow_showsPassAfterProbe() {
+        GuideActivity a = fresh();   // 先起页面（fresh 内部会清空数据）
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, System.currentTimeMillis());
+        a.onResume();                // 自测页关掉后回到引导页走的就是这条路
+        ShadowLooper.idleMainLooper();
+        assertTrue("通过后应显示已通过，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).startsWith("已通过"));
+    }
+
+    /** 测了但当时没锁屏：不是失败，是「再测一次」。 */
+    @Test
+    public void lockRow_asksRetryWhenScreenWasUnlocked() {
+        GuideActivity a = fresh();
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_UNLOCKED, System.currentTimeMillis());
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertTrue("当时没锁屏应提示再测一次，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).contains("再测"));
+    }
+
+    /**
+     * 发起测试后写「待测」，等太久没反应才算超时。
+     *
+     * <p>「超时」这一态不能靠猜：自测页被系统拦住时什么都不会发生，
+     * 界面上必须能说出「没测到」，否则用户永远停在「测一下」，以为按钮坏了。
+     */
+    @Test
+    public void lockProbe_timeoutOnlyAfterWaitingAndOnlyWhenNoResult() {
+        long now = System.currentTimeMillis();
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_NONE, now);
+        assertFalse("刚发起不算超时", LockProbe.isTimedOut(ctx()));
+
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_NONE, now - LockProbe.TIMEOUT_MS - 1000);
+        assertTrue("等了这么久还没结果，就当没测到", LockProbe.isTimedOut(ctx()));
+
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, now - LockProbe.TIMEOUT_MS - 1000);
+        assertFalse("已经有结果了就不算超时", LockProbe.isTimedOut(ctx()));
+    }
+
+    /**
+     * 点「锁屏显示」弹的是测试对话框，不是直接跳系统设置。
+     *
+     * <p>它没有能跳的设置页（厂商各不相同），直接跳会跳到应用详情，用户还得自己找。
+     * 先测一次，测不过再给路径，这才是这一项该有的顺序。
+     */
+    @Test
+    public void lockRow_opensProbeDialog() {
+        GuideActivity a = fresh();
+        tap(a, R.id.perm_lock);
+        // RoundedDialog 继承的是 appcompat 的 AlertDialog，不是 android.app 那个
+        androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("应弹出锁屏显示对话框", d);
+        assertTrue("对话框要说明「系统查不到，只能试一次」",
+                d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).getText().toString()
+                        .contains("开始测试"));
+        assertNotNull("要给「看怎么开」的兜底入口",
+                d.getButton(android.content.DialogInterface.BUTTON_NEUTRAL));
     }
 
     /** 试听：起前台服务（有声音）+ 打开响铃页（看得见），与主界面测试响铃同一条路径。 */

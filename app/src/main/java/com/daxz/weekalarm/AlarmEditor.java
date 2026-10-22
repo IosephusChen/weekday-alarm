@@ -159,12 +159,11 @@ final class AlarmEditor {
                         created.color = color[0];
                         alarms.add(created);
                     } else {
-                        target.hour = hour[0];
-                        target.minute = minute[0];
-                        target.label = label;
-                        target.mode = mode;
-                        target.onceDate = onceStr;
-                        target.color = color[0];
+                        String tip = applyEdit(activity, target, hour[0], minute[0],
+                                label, mode, onceStr, color[0]);
+                        if (tip != null) {
+                            Toast.makeText(activity, tip, Toast.LENGTH_LONG).show();
+                        }
                     }
                     Prefs.setAlarms(activity, alarms);
                     onChanged.run();
@@ -190,6 +189,45 @@ final class AlarmEditor {
     }
 
     /**
+     * 把编辑结果写进一条已有的闹钟（v1.45.0 从对话框回调里抽出来）。
+     *
+     * <p>抽出来是为了能单独测「改完自动开启」——那条逻辑藏在对话框的保存回调里，
+     * 不抽的话只能靠真机点，回退了也没人知道。
+     *
+     * @return 需要当面提示的话；没什么可说就返回 null
+     */
+    static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,
+                            String label, Alarm.Mode mode, String onceStr, int color) {
+        target.hour = hour;
+        target.minute = minute;
+        target.label = label;
+        target.mode = mode;
+        target.onceDate = onceStr;
+        target.color = color;
+
+        // v1.45.0：改完就开。
+        //
+        // 用户点进编辑页改时间、改名字，意图是「这条闹钟要按新设置响」；
+        // 改完还留着关闭状态，等于改了个空——想让它响还得回列表再拨一次开关。
+        // 最常见的场景正是「关掉过的闹钟，重新调一下时间继续用」。
+        target.enabled = true;
+
+        // 一次性闹钟如果已经响过，日期停在过去。只把开关拨上去就是一条
+        // 「显示已开启、永远不会响」的哑弹（同 MainActivity.toggleAlarm 的处理）。
+        // 调用方若已顺延过日期，这里返回 false，不会重复提示。
+        boolean moved = target.reviveOnce(LocalDateTime.now());
+        String tip = moved
+                ? "这个时间已经过了，已改到" + onceDateText(target.parseOnceDate())
+                : null;
+        // 总开关是用户自己关的，不替他打开；但不提醒的话，
+        // 他改完闹钟等一整天也不会响，还不知道为什么
+        if (!Prefs.isEnabled(activity)) {
+            tip = (tip == null ? "" : tip + "；") + "闹钟总开关还关着，先打开才会响";
+        }
+        return tip;
+    }
+
+    /**
      * 一次性闹钟的生效日：若给定的「日 + 时:分」已经过去，就顺延到之后最近的那一天。
      *
      * <p>只对 ONCE 用。普通闹钟时间过了就是「明天同一时间」，本来就是日复一日；
@@ -206,18 +244,14 @@ final class AlarmEditor {
         return d;
     }
 
-    /** 一次性闹钟的日期行文案：「明天 · 10月22日 周四」。 */
+    /**
+     * 一次性闹钟的日期行文案：「明天 · 10月23日」。
+     *
+     * <p>v1.45.0：实现挪到 {@link Alarm#dayLabel}，和列表行共用一套规则。
+     * 原来这里自己拼一遍，列表行另拼一遍，同一天在两处显示得不一样。
+     */
     static String onceDateText(LocalDate d) {
-        LocalDate today = LocalDate.now();
-        // 只保留「今天 / 明天 / 后天」这三种绝不会说错的相对说法。
-        // 曾经还有一档「本周末」（周六日），但五天后的周日并不是「本周末」——
-        // 与其判断周次，不如不给相对词：绝对日期本来就在后面写着
-        String rel = d.equals(today) ? "今天"
-                : d.equals(today.plusDays(1)) ? "明天"
-                : d.equals(today.plusDays(2)) ? "后天"
-                : "";
-        String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
-        return rel.isEmpty() ? abs : rel + " · " + abs;
+        return Alarm.dayLabel(d, LocalDate.now());
     }
 
     /**

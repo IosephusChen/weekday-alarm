@@ -36,8 +36,9 @@ import java.time.LocalDate;
  *   <li>v1.41.0「浮在中间太突兀」→ 必须贴顶（gravity=TOP、y 只让出状态栏）且通栏</li>
  *   <li>v1.43.0「位置还是太靠下」→ y 只让出状态栏 + 2dp</li>
  *   <li>v1.43.0「布局照系统闹钟」→ 大号时刻是主信息，两个圆钮靠 contentDescription 说清用途</li>
- *   <li>v1.44.0「位置还是太靠下」→ 顶边压到状态栏高度的一半，且窗口带 LAYOUT_IN_SCREEN
- *       （不加这个标志，y 会被系统 clamp 回状态栏下沿，调了等于没调）</li>
+ *   <li>v1.44.0「位置还是太靠下」→ 顶边压到状态栏高度的一半，且窗口带 LAYOUT_IN_SCREEN。
+ *       <b>v1.45.0 反转</b>：截图实测 0.5 被系统 clamp 掉了，实际落点就是状态栏下沿；
+ *       改成显式贴下沿、撤掉标志，行为不再依赖 ROM 的 clamp</li>
  *   <li>v1.44.0「logo 和稍后提醒的图标一模一样」→ 左边闹钟、右边 zzz，两个 drawable 必须不同</li>
  * </ol>
  */
@@ -141,8 +142,8 @@ public class FloatingAlarmTest {
                 Gravity.TOP | Gravity.CENTER_HORIZONTAL, lp.gravity);
 
         int sb = statusBarHeight();
-        assertEquals("顶边应落在状态栏高度的一半处（系统闹钟就是这个位置）",
-                Math.round(sb * 0.5f), lp.y);
+        assertEquals("顶边应紧贴状态栏下沿——多让 1dp 都会显得「浮在下面」，"
+                + "少让 1dp 就压住状态栏的时间和电量", sb, lp.y);
 
         int screenW = ctx().getResources().getDisplayMetrics().widthPixels;
         assertTrue("宽度应接近屏宽（现在 " + lp.width + " / " + screenW + "）",
@@ -150,19 +151,23 @@ public class FloatingAlarmTest {
     }
 
     /**
-     * 必须带 FLAG_LAYOUT_IN_SCREEN，否则上面那条 y 等于白设。
+     * 不能带 FLAG_LAYOUT_IN_SCREEN（v1.45.0 反转了这条断言）。
      *
-     * <p>{@code TYPE_APPLICATION_OVERLAY} 默认被系统限制在状态栏之下，
-     * 窗口顶边最早只能到状态栏下沿；y 写成 25dp 会被 clamp 回去。
-     * 只有加了这个标志，窗口才被允许画进状态栏区域。
+     * <p>v1.44.0 为了让横幅压进状态栏，加了这个标志、把 y 写成「状态栏高度 × 0.5」。
+     * 用户截图实测后发现：顶边落在 46.5dp，正好是状态栏高度——0.5 被 WMS clamp 掉了，
+     * 那个标志没起作用，效果是靠系统兜底得来的。换一台不 clamp 的 ROM 就会真盖住时间。
+     *
+     * <p>所以现在显式贴状态栏下沿、撤掉标志。这条测试防止有人「想再往上顶一点」
+     * 又把标志加回来——加了在这台机器上看起来没变化（会被 clamp），
+     * 但在别的机器上就会盖住状态栏，属于那种「改完看不出来、换机才炸」的坑。
      */
     @Test
-    public void banner_isAllowedToDrawIntoStatusBar() {
+    public void banner_staysBelowStatusBar() {
         grantOverlay(true);
         assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
         WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
-        assertTrue("缺 FLAG_LAYOUT_IN_SCREEN，y 会被系统 clamp 回状态栏下沿",
-                (lp.flags & WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN) != 0);
+        assertEquals("横幅不该画进状态栏区域，否则会盖住时间和电量",
+                0, lp.flags & WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
     }
 
     /** 次数用尽：不给「稍后提醒」，只留「停止」。 */

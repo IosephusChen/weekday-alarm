@@ -29,6 +29,17 @@
         <item name="android:windowLightNavigationBar">false</item>
     </style>
 
+    <!-- 锁屏显示自测页（v1.45.0）：固定深底，不跟随日夜。
+         它要盖在任何壁纸、任何锁屏上，跟着日间主题变成浅底就看不见了。
+         windowShowWhenLocked / turnScreenOn 在代码里设，这里只管底色和去标题。 -->
+    <style name="Theme.DaxiaoWeekAlarm.LockProbe" parent="Theme.DaxiaoWeekAlarm">
+        <item name="android:windowBackground">#1B1D2B</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
     <!-- 「时 / 分」滚轮选择器的文字样式：居中大字，选中值加粗主色 -->
     <style name="WheelPickerText">
         <item name="android:textColorPrimary">@color/ink</item>

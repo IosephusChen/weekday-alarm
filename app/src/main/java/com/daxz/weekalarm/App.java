@@ -86,7 +86,7 @@ public class App extends Application {
         // 提前提醒渠道（v1.23）：高优先级但静音——要高优先级才有横幅 / 全屏弹窗，
         // 声音和震动仍然留给真正的闹钟，提前提醒只「露个脸」。
         NotificationChannel pre = new NotificationChannel(
-                CHANNEL_PRE_NOTICE, "响铃提前提醒", NotificationManager.IMPORTANCE_HIGH);
+                CHANNEL_PRE_NOTICE, "响铃前提醒", NotificationManager.IMPORTANCE_HIGH);
         pre.setDescription("闹钟响铃前几分钟弹出提醒，可提前关闭该次响铃");
         pre.setSound(null, null);
         pre.enableVibration(false);

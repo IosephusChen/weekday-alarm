@@ -182,19 +182,49 @@ public class FloatingAlarmTest {
     }
 
     /**
-     * 模糊只在系统真的支持跨窗口模糊时才挂。
+     * 横幅绝不能挂模糊标志——v1.43.0 在小米 HyperOS 上糊掉了整屏。
      *
-     * <p>Robolectric 默认 {@code isCrossWindowBlurEnabled()} 为 false，
-     * 所以这里断言的是「没支持时不要留 FLAG_BLUR_BEHIND」——反过来的情况
-     * 在真机上才看得到，但至少能防住「无脑挂模糊、在国产 ROM 上白写一段代码」。
+     * <p>用户原话：「响铃时有一个全屏磨砂效果，导致我看不见屏幕上的其他内容了，
+     * 这个不应该的，我们做悬浮通知的初衷就是为了不让屏幕上的其他内容被闹钟全部挡住」。
+     * {@code FLAG_BLUR_BEHIND} 语义上是「模糊窗口背后的背景」，但模糊区域由 WMS 按窗口算，
+     * 各家 ROM 实现不一致；HyperOS 上直接糊成整屏。
+     *
+     * <p>为什么这条要读源码而不是验 LayoutParams：Robolectric 的 ShadowWindowManagerImpl
+     * 没有提供跨窗口模糊开关，{@code isCrossWindowBlurEnabled()} 恒为 false。
+     * 也就是说「系统支持模糊时会不会挂」这个分支在单测里<b>永远走不到</b>——
+     * 只断言 flags 的话，有人把 {@code applyBlurIfSupported} 原样加回来，测试照样绿。
+     * 所以这里退一步做源码检查：只要代码里出现这两个符号就红。
      */
     @Test
-    public void blurFlag_onlyWhenSystemSupportsIt() {
+    public void source_neverTouchesBlurBehind() throws Exception {
+        java.io.File src = new java.io.File(
+                "src/main/java/com/daxz/weekalarm/FloatingAlarm.java");
+        assertTrue("找不到 FloatingAlarm.java，路径变了就同步改这条测试", src.isFile());
+
+        StringBuilder offenders = new StringBuilder();
+        int lineNo = 0;
+        for (String raw : java.nio.file.Files.readAllLines(src.toPath(),
+                java.nio.charset.StandardCharsets.UTF_8)) {
+            lineNo++;
+            String line = raw.trim();
+            // 跳过注释行：类注释里正解释「为什么不用模糊」，会提到这两个名字
+            if (line.startsWith("*") || line.startsWith("/*") || line.startsWith("//")) continue;
+            if (line.contains("FLAG_BLUR_BEHIND") || line.contains("setBlurBehindRadius")) {
+                offenders.append(" 第 ").append(lineNo).append(" 行: ").append(line).append('\n');
+            }
+        }
+        assertEquals("横幅不能挂模糊：HyperOS 上会糊掉整屏，用户就看不见别的内容了。\n"
+                + "透明感只用 alpha 做。\n" + offenders, "", offenders.toString());
+    }
+
+    /** 运行时再兜一层：挂上去的窗口参数里不该有模糊标志。 */
+    @Test
+    public void params_carryNoBlurFlag() {
         grantOverlay(true);
         assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
         WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
-        boolean blurOn = (lp.flags & WindowManager.LayoutParams.FLAG_BLUR_BEHIND) != 0;
-        assertFalse("Robolectric 默认不支持跨窗口模糊，此时不该挂 FLAG_BLUR_BEHIND", blurOn);
+        assertEquals("窗口参数里不该出现 FLAG_BLUR_BEHIND",
+                0, lp.flags & WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
     }
 
     /** 两个圆钮必须是 ImageButton——恢复成文字药丸就等于退回 v1.42.0 的样子。 */

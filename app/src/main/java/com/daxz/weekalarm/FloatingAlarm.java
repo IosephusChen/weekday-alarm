@@ -33,12 +33,17 @@ import java.time.format.DateTimeFormatter;
  * 底色换暖桃、按钮换品牌紫。同时响铃通知改走低优先级渠道——否则高优先级渠道
  * 会在屏幕亮着时再弹一张系统 heads-up，两层叠在一起（用户报的「两个悬浮窗」）。
  *
- * <p>v1.43.0：用户要「透明感 + 位置更贴顶 + 布局照系统闹钟」。透明做不到——
- * {@code FLAG_BLUR_BEHIND} 与 {@code setBlurBehindRadius} 需要 Android 12+
- * <b>且系统开启跨窗口模糊</b>（{@code isCrossWindowBlurEnabled()}），WMS 还会做权限检查，
- * 第三方悬浮窗基本被静默忽略。所以退一步用「深色 + 88% 不透明」近似通知栏的观感；
- * 模糊只在系统真的支持时才挂，不支持就纯半透明，不做无效尝试。
- * 布局改成系统 heads-up 的单行：大图标 + 大号时刻 + 闹钟名 + 两个圆钮。
+ * <p>v1.43.0：用户要「透明感 + 位置更贴顶 + 布局照系统闹钟」。布局改成系统 heads-up
+ * 的单行（大图标 + 大号时刻 + 闹钟名 + 两个圆钮），贴顶距离 6dp → 2dp。
+ * 透明感用「深色 + 88% 不透明」近似——卡片本身带 alpha，底下的内容能透出轮廓。
+ *
+ * <p><b>模糊已经试过，不要再加。</b>v1.43.0 曾按 {@code isCrossWindowBlurEnabled()}
+ * 挂 {@code FLAG_BLUR_BEHIND} + {@code setBlurBehindRadius}，在小米 HyperOS 上
+ * 实际效果是<b>整屏磨砂</b>——不只是横幅背后那块，屏幕上所有内容都糊成一片，
+ * 用户报「看不见屏幕上的其他内容了」。这正好把悬浮横幅的初衷（不挡住下面的东西）
+ * 做反了。{@code FLAG_BLUR_BEHIND} 的语义是「模糊窗口背后的背景」，但模糊区域
+ * 由 WMS 按窗口算，各家 ROM 实现不一致，第三方悬浮窗拿不到「只糊自己那一块」的保证。
+ * 所以这里彻底不碰模糊标志，只靠 alpha 做透明感。
  *
  * <p>窗口只挂一个实例：重复响铃时先撤旧的再挂新的，不会叠出两张横幅。
  */
@@ -53,9 +58,6 @@ final class FloatingAlarm {
      * 圆角会和状态栏图标咬在一起，视觉上像被截断；2dp 已经是「贴顶」的观感。
      */
     private static final int TOP_GAP_DP = 2;
-
-    /** 系统支持跨窗口模糊时的模糊半径。20dp 接近通知栏的磨砂程度。 */
-    private static final int BLUR_RADIUS_DP = 20;
 
     private static View view;
     private static WindowManager windowManager;
@@ -185,7 +187,7 @@ final class FloatingAlarm {
             // 贴顶：状态栏下沿再让 2dp。以前是屏幕高度的 18%，看着像浮在半空
             lp.y = statusBarHeight(ctx) + dp(ctx, TOP_GAP_DP);
             lp.windowAnimations = R.style.FloatWindowAnim;
-            applyBlurIfSupported(ctx, lp);
+            // 不加 FLAG_BLUR_BEHIND：在 HyperOS 上会糊掉整屏，见类注释
 
             WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
             if (wm == null) return false;
@@ -222,26 +224,6 @@ final class FloatingAlarm {
         view = null;
         windowManager = null;
         lastParams = null;
-    }
-
-    /**
-     * 系统支持跨窗口模糊时才挂模糊，否则什么也不做。
-     *
-     * <p>为什么必须判断：{@code setBlurBehindRadius} 在 Android 12 以下不存在（直接崩），
-     * 12 以上如果系统没开「跨窗口模糊」或厂商没实现，会被 WMS 静默忽略——
-     * 不判断的话这段代码在多数国产 ROM 上等于白写，还会让人误以为「已经加了磨砂」。
-     * 判断为假时卡片仍然是半透明，只是没有磨砂，观感差别不大。
-     */
-    private static void applyBlurIfSupported(Context ctx, WindowManager.LayoutParams lp) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
-        try {
-            WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
-            if (wm == null || !wm.isCrossWindowBlurEnabled()) return;
-            lp.flags |= WindowManager.LayoutParams.FLAG_BLUR_BEHIND;
-            lp.setBlurBehindRadius(dp(ctx, BLUR_RADIUS_DP));
-        } catch (Throwable ignore) {
-            // 个别 ROM 的这个方法会抛，模糊只是锦上添花，失败就保持纯半透明
-        }
     }
 
     /** 状态栏高度。取不到（部分 ROM 不暴露这个 dimen）就按 24dp 估。 */

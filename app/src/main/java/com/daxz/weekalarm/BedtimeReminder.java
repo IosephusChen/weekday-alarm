@@ -160,14 +160,34 @@ public final class BedtimeReminder {
         }
         if (!shown) return;
 
+        // v1.47.9：昨天的就撤掉，别按今天重算再刷。
+        // 昨晚那条写的是「明天 07:30 起床」，今天上午还挂着时它想说的是今天早上——
+        // 内容已经错了，刷新只会把错误换个说法继续挂着。
+        String postedDay = Prefs.getBedtimeNoticeDay(ctx);
+        if (postedDay != null && !postedDay.equals(LocalDate.now().toString())) {
+            cancelNotice(ctx);
+            return;
+        }
+
         if (!m.notify) {
-            try {
-                nm.cancel(NOTIF_ID);
-            } catch (Throwable ignore) {
-            }
+            cancelNotice(ctx);
             return;
         }
         BedtimeReceiver.repost(ctx, m);
+    }
+
+    /**
+     * 撤掉通知栏上的睡前提醒（v1.47.9）。
+     *
+     * <p>三个调用点：跨天打开 App、状态变成不该提醒、起床闹钟开始响——
+     * 最后那个最自然：响铃就是这一夜结束了，昨晚那条提醒的任务已经完成。
+     */
+    public static void cancelNotice(Context ctx) {
+        if (ctx == null) return;
+        try {
+            NotificationManagerCompat.from(ctx).cancel(NOTIF_ID);
+        } catch (Throwable ignore) {
+        }
     }
 
     /**

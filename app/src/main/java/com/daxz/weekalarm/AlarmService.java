@@ -136,6 +136,8 @@ public class AlarmService extends Service {
         // v1.38.0：真的响了，那条「N 分钟后再次响铃」的预告就该撤——留着会变成
         // 两条同时在栏里，用户分不清哪条是现在响的
         SnoozeNotice.cancel(this, currentAlarmId);
+        // v1.47.9：响铃＝这一夜结束，昨晚那条「明天 07:30 起床」已经兑现，留着就是废话
+        BedtimeReminder.cancelNotice(this);
         ringDate = parseDate(dateStr);
         boolean test = ACTION_TEST.equals(action);
         // 缺省 true：老路径（测试响铃直接起服务）没有带这个 extra，保持原来的全屏行为

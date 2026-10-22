@@ -10,7 +10,9 @@ import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 睡前提醒的接收器（v1.20）：到点发通知，并顺手把「明天请假」做掉。
@@ -113,8 +115,14 @@ public class BedtimeReceiver extends BroadcastReceiver {
         // 和提前提醒（v1.23.6）、响铃（本版）一样把按钮画进布局里，说了就要能点。
         nb.setCustomContentView(NotifCard.build(ctx, m.title, m.text, 0, contentPi,
                 canSkip ? NotifCard.Button.primary("明天请假", skipPi) : null));
+        // v1.47.9：这条提醒只对「今晚」有效。用户不点也不划，它会一直挂到第二天白天，
+        // 那时内容已经错了——写着「明天 07:30 起床」，其实说的是今天早上。
+        // 让它自带过期时间：到次日 05:00 由系统移除，App 从没被打开也一样。
+        nb.setTimeoutAfter(millisUntilNextMorning());
         try {
             NotificationManagerCompat.from(ctx).notify(BedtimeReminder.NOTIF_ID, nb.build());
+            // 记下「这条属于哪一天」，App 下次打开时据此判断是不是昨天的（refreshIfShown）
+            Prefs.setBedtimeNoticeDay(ctx, LocalDate.now().toString());
         } catch (Exception ignore) {
         }
     }
@@ -179,5 +187,20 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 if (pending != null) pending.finish();   // 直接调用（测试）时为 null
             }
         }, "bedtime-skip").start();
+    }
+
+    /**
+     * 距次日 05:00 还有多少毫秒（v1.47.9）。
+     *
+     * <p>为什么是 05:00：那是这一夜结束、起床闹钟开始响的时段，再往后这条提醒就没有意义了。
+     * 下限给 1 小时——极端情况（用户把提醒设在凌晨 4 点多）也不会刚发出就消失。
+     *
+     * <p>包级可见便于单测：过期时间是这条通知唯一的「自清理」依据。
+     */
+    static long millisUntilNextMorning() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expire = now.toLocalDate().plusDays(1).atTime(5, 0);
+        long ms = Duration.between(now, expire).toMillis();
+        return Math.max(ms, 60L * 60 * 1000);
     }
 }

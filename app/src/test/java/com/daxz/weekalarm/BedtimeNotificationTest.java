@@ -131,6 +131,62 @@ public class BedtimeNotificationTest {
         assertNull("不该提醒时就撤掉，别留旧话", shown());
     }
 
+    // ---------- 没人处理的通知要自己消失（v1.47.9）----------
+
+    /**
+     * 用户不点也不划时，这条提醒不能一直挂着。
+     *
+     * <p>主机制是通知自带的过期时间：到次日 05:00 由系统移除，App 从没被打开也一样。
+     */
+    @Test
+    public void notice_expiresNextMorning() {
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+
+        Notification n = shown();
+        assertNotNull(n);
+        long timeout = n.getTimeoutAfter();
+        // 不能和 millisUntilNextMorning() 比精确值：两次调用之间已经过去几毫秒
+        assertTrue("过期时间必须是个正数", timeout > 0);
+        assertTrue("应落在次日 05:00 附近，实际 " + timeout + "ms",
+                Math.abs(timeout - BedtimeReceiver.millisUntilNextMorning()) < 5000);
+        assertTrue("至少给一小时，不能刚发出就消失", timeout >= 60L * 60 * 1000 - 5000);
+    }
+
+    /**
+     * 跨天之后打开 App：昨晚那条要撤掉，而不是按今天重算再刷。
+     *
+     * <p>昨晚写的是「明天 07:30 起床」，第二天上午还挂着时，它指的其实是今天早上——
+     * 内容已经错了，刷新只能把错误换个说法继续挂着。
+     */
+    @Test
+    public void refresh_dropsNoticeFromYesterday() {
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        // 把日期戳改成昨天，模拟「这条挂了整整一夜没人理」
+        Prefs.setBedtimeNoticeDay(ctx(), LocalDate.now().minusDays(1).toString());
+
+        BedtimeReminder.refreshIfShown(ctx(),
+                model(true, "明天要上班", "明早 07:30 起床 会响"));
+
+        assertNull("昨天的提醒不该继续挂着", shown());
+    }
+
+    /**
+     * 起床闹钟一响，昨晚那条就该消失——它已经兑现了。
+     *
+     * <p>这条同时是「过期时间之外的第二道保险」：万一某个 ROM 不守 timeoutAfter。
+     */
+    @Test
+    public void ringingCancelsNotice() {
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        BedtimeReminder.cancelNotice(ctx());
+
+        assertNull("响铃后不该还留着昨晚的提醒", shown());
+    }
+
     // ---------- 界面外的变更要立刻反映到界面 ----------
 
     /** 通知栏「明天请假」改完后要发刷新信号，否则界面得等下一次 onResume。 */

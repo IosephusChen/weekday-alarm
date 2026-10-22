@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
@@ -45,7 +46,9 @@ public class GuideActivity extends AppCompatActivity {
 
     private ViewFlipper flipper;
     private LinearLayout dots;
-    private TextView btnNext, btnPrev, btnSkip, tvTime, tvTimeHint;
+    private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime, tvTimeHint;
+    /** 导入旧备份（v1.47.0）：与设置页共用 {@link BackupImporter}。 */
+    private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSingleDay;
     private TextView optBig, optSmall, optRestSun, optRestSat, tvSingleSub;
     private final List<View> modeCards = new ArrayList<>();
@@ -69,6 +72,8 @@ public class GuideActivity extends AppCompatActivity {
         btnNext = findViewById(R.id.btn_next);
         btnPrev = findViewById(R.id.btn_prev);
         btnSkip = findViewById(R.id.btn_skip);
+        btnImport = findViewById(R.id.btn_import);
+        importLauncher = BackupImporter.register(this, this::onImportedFromBackup, true);
         tvTime = findViewById(R.id.tv_time);
         tvTimeHint = findViewById(R.id.tv_time_hint);
         rowWeekBig = findViewById(R.id.row_weekbig);
@@ -100,6 +105,11 @@ public class GuideActivity extends AppCompatActivity {
         });
         btnPrev.setOnClickListener(v -> goTo(index - 1));
         btnSkip.setOnClickListener(v -> complete());
+        btnImport.setOnClickListener(v -> {
+            if (!BackupImporter.pick(importLauncher)) {
+                Toast.makeText(this, "没有可用的文件管理器，无法导入", Toast.LENGTH_LONG).show();
+            }
+        });
 
         // 已经有闹钟的话（重看引导），第二页显示第一个闹钟的时间，改时间就是改它
         List<Alarm> existing = Prefs.getAlarms(this);
@@ -585,7 +595,37 @@ public class GuideActivity extends AppCompatActivity {
         btnNext.setText(last ? "开始使用" : "下一步");
         btnSkip.setVisibility(last ? View.GONE : View.VISIBLE);
         btnPrev.setVisibility(index == 0 ? View.INVISIBLE : View.VISIBLE);
+        // 「导入」只在第 1 页：那里才是用户犹豫「要不要重填」的时刻；
+        // 后面两页再放，等于承认第 1 页没讲清楚
+        btnImport.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
         renderDots();
+    }
+
+    /**
+     * 导入成功（v1.47.0）：先把导入的数据回填到前两页的显示上，然后直接去第 3 页开权限。
+     *
+     * <p>三件事一件都不能省：
+     * <ol>
+     *   <li>第 2 页的时间大字读的是内存字段 {@code hour/minute}，不重读 Prefs 就会停在 07:30；
+     *       用户点「改时间」时 {@code applyTimeToFirstAlarm()} 会把导入的时间覆盖掉。</li>
+     *   <li>第 1 页的选中卡片也要同步，否则用户点「上一步」回看时会显示成另一个制度。</li>
+     *   <li>不能直接 {@link #complete()}：新手机还没开任何权限，跳过第 3 页等于「导入完也不响」。</li>
+     * </ol>
+     *
+     * <p>包级可见：单测直接调它，不必去驱动系统文件选择器。
+     */
+    void onImportedFromBackup(ConfigBackup.Result result) {
+        List<Alarm> alarms = Prefs.getAlarms(this);
+        if (!alarms.isEmpty()) {
+            hour = alarms.get(0).hour;
+            minute = alarms.get(0).minute;
+            updateTimeText();
+            tvTimeHint.setText("改时间会直接改第一个闹钟；更多闹钟在主界面添加。");
+        }
+        syncModeUi();
+        goTo(PAGES - 1);
+        Toast.makeText(this, result.message + "。最后一步把权限开一下",
+                Toast.LENGTH_LONG).show();
     }
 
     /** 完成（或跳过）：落库、排程、写标记，然后关闭。 */

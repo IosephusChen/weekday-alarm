@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -26,6 +27,7 @@ import org.robolectric.shadows.ShadowLooper;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -553,5 +555,51 @@ public class GuideTest {
 
         assertTrue(a.isFinishing());
         assertFalse("半路退下次还要出现", Prefs.isOnboardDone(ctx()));
+    }
+
+    // ================= 导入旧备份（v1.47.0）=================
+
+    /**
+     * 换机场景的入口只在第 1 页出现：那才是用户犹豫「要不要重填」的时刻。
+     * 后面两页再放，等于承认第 1 页没讲清楚。
+     */
+    @Test
+    public void importEntry_onlyShowsOnFirstPage() {
+        GuideActivity a = fresh();
+        View entry = a.findViewById(R.id.btn_import);
+        assertEquals("第 1 页应能看到导入入口", View.VISIBLE, entry.getVisibility());
+
+        a.findViewById(R.id.btn_next).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("第 2 页不该再出现", View.GONE, entry.getVisibility());
+        assertEquals(1, ((ViewFlipper) a.findViewById(R.id.flipper)).getDisplayedChild());
+    }
+
+    /**
+     * 导入成功之后：第 2 页的大字要换成导入的值，然后直接去第 3 页开权限。
+     *
+     * <p>这条同时钉住三个坑：① 大字读的是内存字段，不重读 Prefs 会停在 07:30；
+     * ② 不能停在第 1 页；③ 不能直接结束引导（新手机没权限，跳过去等于不响）。
+     */
+    @Test
+    public void importFromBackup_refreshesTimeAndJumpsToPermissions() {
+        seedAlarms(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
+        GuideActivity a = launch();
+        assertEquals("07:30", ((TextView) a.findViewById(R.id.tv_time)).getText().toString());
+
+        // 模拟「导入了一份旧备份」：数据换成 06:45，但界面还停在 07:30
+        Prefs.setAlarms(ctx(), Collections.singletonList(
+                new Alarm(9, 6, 45, "晨跑", Alarm.Mode.WORKDAY, true)));
+
+        a.onImportedFromBackup(new ConfigBackup.Result(true, "已导入 1 个闹钟", 1));
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("第 2 页大字应跟着导入的数据走", "06:45",
+                ((TextView) a.findViewById(R.id.tv_time)).getText().toString());
+        assertEquals("应跳到第 3 页（权限）", 2,
+                ((ViewFlipper) a.findViewById(R.id.flipper)).getDisplayedChild());
+        assertEquals("末页主按钮应变「开始使用」", "开始使用",
+                ((TextView) a.findViewById(R.id.btn_next)).getText().toString());
     }
 }

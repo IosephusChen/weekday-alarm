@@ -64,36 +64,22 @@ public class SettingsActivity extends AppCompatActivity {
                         }
                     });
 
-    /** 导入配置（v1.20）：先校验格式，再让用户确认「整份覆盖」，最后才落盘。 */
+    /**
+     * 导入配置（v1.20；v1.47.0 起流程搬去 {@link BackupImporter}，引导页共用同一份）。
+     *
+     * <p>这里只留「导入成功之后做什么」：刷新本页并告诉用户回主界面看结果。
+     */
     private final ActivityResultLauncher<String[]> importLauncher =
-            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
-                    uri -> {
-                        if (uri == null) return;
-                        String json = readText(uri);
-                        if (json == null) {
-                            Toast.makeText(this, "读取文件失败，换一个文件试试", Toast.LENGTH_LONG).show();
-                            return;
-                        }
-                        ConfigBackup.Result check = ConfigBackup.validate(json);
-                        if (!check.ok) {
-                            new RoundedDialog.Builder(this)
-                                    .setTitle("这个文件不能导入")
-                                    .setMessage(check.message)
-                                    .setPositiveButton("知道了", null)
-                                    .show();
-                            return;
-                        }
-                        String summary = ConfigBackup.describe(json);
-                        new RoundedDialog.Builder(this)
-                                .setTitle("导入配置？")
-                                .setMessage("会用这份配置覆盖当前的全部设置：闹钟、排班基准、"
-                                        + "请假/加班标记、音量铃声、睡前提醒。\n\n"
-                                        + (summary.isEmpty() ? "" : summary + "\n\n")
-                                        + "覆盖后无法撤销，当前设置不会自动备份。")
-                                .setPositiveButton("覆盖导入", (d, w) -> doImport(json))
-                                .setNegativeButton("取消", null)
-                                .show();
-                    });
+            BackupImporter.register(this, result -> {
+                refreshAll();
+                new RoundedDialog.Builder(this)
+                        .setTitle("导入完成")
+                        .setMessage(result.message
+                                + "。\n\n已按新配置重新排程，返回主界面即可看到结果。")
+                        .setPositiveButton("知道了", null)
+                        .show();
+            }, false);
+
     /** 系统铃声选择器返回（v1.19.1）：选中的 Uri（null = 系统默认）。 */
     private final ActivityResultLauncher<Intent> ringtonePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -815,48 +801,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void importConfig() {
-        try {
-            // 不限定 MIME：不同文件管理器给 .json 报的类型五花八门（application/json、
-            // text/plain、octet-stream 都有），限定反而会让用户找不到自己刚导出的文件
-            importLauncher.launch(new String[]{"*/*"});
-        } catch (Exception e) {
+        if (!BackupImporter.pick(importLauncher)) {
             Toast.makeText(this, "没有可用的文件管理器，无法导入", Toast.LENGTH_LONG).show();
         }
     }
 
-    /** 读取所选文件内容（上限 512KB，配置只有几 KB，防止误选大文件把内存打爆）。 */
-    private String readText(Uri uri) {
-        try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
-            if (in == null) return null;
-            java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) > 0) {
-                bos.write(buf, 0, n);
-                if (bos.size() > 512 * 1024) return null;
-            }
-            return bos.toString("UTF-8");
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private void doImport(String json) {
-        ConfigBackup.Result r = ConfigBackup.importJson(this, json);
-        if (!r.ok) {
-            new RoundedDialog.Builder(this)
-                    .setTitle("导入失败")
-                    .setMessage(r.message + "\n\n当前设置没有被改动。")
-                    .setPositiveButton("知道了", null)
-                    .show();
-            return;
-        }
-        ConfigBackup.applyAfterImport(this);
-        refreshAll();
-        new RoundedDialog.Builder(this)
-                .setTitle("导入完成")
-                .setMessage(r.message + "。\n\n已按新配置重新排程，返回主界面即可看到结果。")
-                .setPositiveButton("知道了", null)
-                .show();
-    }
 }

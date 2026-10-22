@@ -39,6 +39,24 @@ public class AlarmService extends Service {
     /** 通知 id：StopReceiver 取消通知时要用到，故对外可见。 */
     public static final int NOTIF_ID = 1001;
 
+    /**
+     * 当前是否正在响铃（v1.47.1）。
+     *
+     * <p>存在的理由：响铃时能停止的入口只有两个——整屏响铃页和通知栏的「停止」按钮，
+     * 而这两个都可能被系统拦掉（后台拉起 Activity 受限 / 通知权限被关）。用户回到 App
+     * 却发现无处可按，只能强行停止。这个标志让主界面能无条件显示一个「停止」入口。
+     *
+     * <p>静态字段够用：响铃服务与主界面同进程；进程被杀时铃声也随之消失。
+     */
+    private static volatile boolean ringing;
+
+    public static boolean isRinging() {
+        return ringing;
+    }
+
+    /** 通知不可用时，响铃的最长时长（分钟）：没有停止入口，必须自己停（v1.47.1）。 */
+    static final int DEGRADED_MAX_MINUTES = 5;
+
     /** 铃声渐响：从静音线性升至设定音量的总时长与步进（v1.16）。 */
     private static final long FADE_IN_MS = 30_000;
     private static final long FADE_STEP_MS = 250;
@@ -124,6 +142,7 @@ public class AlarmService extends Service {
         boolean popup = intent == null || intent.getBooleanExtra(EXTRA_POPUP, true);
         startForeground(NOTIF_ID, buildNotification(dateStr, label, test, popup),
                 android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        ringing = true;
         startRinging();
         scheduleAutoStop();   // v1.18：设定了响铃时长时，到点自动停
         // v1.40.0：解锁使用中不整屏，弹一个 300dp 的小悬浮窗；挂不上去（没给悬浮窗权限）
@@ -173,8 +192,26 @@ public class AlarmService extends Service {
 
 
     /** 注册「响铃自动停止」闹钟：到点触发 StopReceiver，避免无人时一直响。 */
+    /**
+     * 本次响铃到底该响多久（分钟），0 = 不限。
+     *
+     * <p>v1.47.1：通知被关掉时，「停止」按钮就没了——整屏响铃页也可能被系统拦（后台拉起
+     * Activity 受限），没给悬浮窗就一条路都没有，用户只能强行停止 App。这种状态不能让铃声
+     * 无限响下去，所以强制封顶 {@link #DEGRADED_MAX_MINUTES}；用户设了更短的按用户的来。
+     *
+     * <p>包级可见是为了单测：这一条是「关不掉的闹钟」的唯一刹车。
+     */
+    static int effectiveRingMinutes(Context ctx) {
+        int minutes = Prefs.getRingMinutes(ctx);
+        if (!NotificationManagerCompat.from(ctx).areNotificationsEnabled()) {
+            minutes = minutes <= 0 ? DEGRADED_MAX_MINUTES
+                    : Math.min(minutes, DEGRADED_MAX_MINUTES);
+        }
+        return minutes;
+    }
+
     private void scheduleAutoStop() {
-        int minutes = Prefs.getRingMinutes(this);
+        int minutes = effectiveRingMinutes(this);
         if (minutes <= 0) return;
         LocalDateTime when = LocalDateTime.now().plusMinutes(minutes);
         // v1.19.9：记录实际注册日期。23:58 响铃 + 5 分钟自动停止会落到次日，
@@ -394,6 +431,7 @@ public class AlarmService extends Service {
 
     @Override
     public void onDestroy() {
+        ringing = false;
         stopRinging();
         NotificationManagerCompat.from(this).cancel(NOTIF_ID);
         super.onDestroy();

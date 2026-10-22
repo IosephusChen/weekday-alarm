@@ -111,6 +111,13 @@ public class MainActivity extends AppCompatActivity {
         // v1.46.2：使用说明 / 测试响铃 / 运行状态三块搬去设置页，
         // 首页只留每天要看的东西。见 SettingsActivity 的 row_help / row_test_ring / row_run_status。
         // v1.34：今天 / 明天并排，语义都由 DayOffAction 按当天实际班休决定
+        rowRinging = findViewById(R.id.row_ringing);
+        findViewById(R.id.btn_stop_ringing).setOnClickListener(v -> {
+            startService(new Intent(this, AlarmService.class)
+                    .setAction(AlarmService.ACTION_STOP));
+            // 服务销毁是异步的，这里立刻收起，避免用户以为没点上又按一次
+            rowRinging.setVisibility(View.GONE);
+        });
         btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
         btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
 
@@ -162,6 +169,9 @@ public class MainActivity extends AppCompatActivity {
      * <p>不这么做的话，用户正开着 App 点通知按钮，界面要等「退到桌面再进来」才更新——
      * 因为刷新只发生在 onResume。
      */
+    /** 响铃中的「停止」入口（v1.47.1）：不依赖通知与悬浮窗权限。 */
+    private View rowRinging;
+
     private final BroadcastReceiver refreshReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -508,6 +518,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void refreshAll() {
         refreshStatus();
+        // 响铃中才显示停止入口（v1.47.1）：响铃页 / 通知都可能被系统拦掉
+        rowRinging.setVisibility(AlarmService.isRinging() ? View.VISIBLE : View.GONE);
         renderAlarmList();
         // v1.34：日历回到首页，全局刷新时一起重画（跨天、改设置、标完标记都要重算）
         calendarPanel.refresh();

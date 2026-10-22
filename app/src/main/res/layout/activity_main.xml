@@ -74,6 +74,48 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- 响铃中的停止入口（v1.47.1）。
+             整屏响铃页和通知栏的「停止」按钮都可能被系统拦掉：后台拉起 Activity 受限、
+             通知权限被关，加上没给悬浮窗就一条路都没有——用户只能强行停止 App。
+             这一行不依赖任何权限，只有真的在响时才出现（默认 GONE，不影响平时布局）。 -->
+        <LinearLayout
+            android:id="@+id/row_ringing"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="闹钟正在响"
+                android:textColor="@color/danger"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btn_stop_ringing"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_time_outline"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="18dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="18dp"
+                android:paddingBottom="8dp"
+                android:text="停止"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- 今日状态 -->
         <LinearLayout
             android:layout_width="match_parent"

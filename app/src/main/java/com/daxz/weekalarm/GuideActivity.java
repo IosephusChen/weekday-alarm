@@ -366,6 +366,10 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.perm_exact).setOnClickListener(v -> openExactAlarmSettings());
         findViewById(R.id.perm_fsi).setOnClickListener(v -> openFullScreenIntentSettings());
         findViewById(R.id.perm_battery).setOnClickListener(v -> openBatterySettings());
+        // v1.47.1：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
+        // 只能给跳转。它比电池优化更关键：没有它，App 被划掉后闹钟到点广播直接被丢弃。
+        findViewById(R.id.perm_autostart).setOnClickListener(
+                v -> PermissionGuides.openAutoStart(this));
         // v1.45.0：悬浮窗权限。解锁响铃时那张贴顶横幅就是靠它挂上去的，
         // 没有它只能退回整屏——用户要的恰恰是「别整屏」
         findViewById(R.id.perm_overlay).setOnClickListener(v -> openOverlaySettings());
@@ -399,6 +403,11 @@ public class GuideActivity extends AppCompatActivity {
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
         boolean battery = isIgnoringBattery();
         setPermState(stNotif, notif);
+        // 通知不是「有更好」，是停止响铃的唯一常驻入口：关掉之后闹钟响了没有按钮可按
+        if (!notif) {
+            stNotif.setText("未开 · 闹钟响了关不掉");
+            stNotif.setTextColor(ContextCompat.getColor(this, R.color.danger));
+        }
         setPermState(stExact, exact);
         setPermState(stFsi, fsi);
         setPermState(stBattery, battery);

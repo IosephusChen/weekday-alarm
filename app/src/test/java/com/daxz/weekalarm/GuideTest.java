@@ -352,7 +352,9 @@ public class GuideTest {
         shadowOf(nm).setNotificationsEnabled(false);
 
         GuideActivity a = fresh();
-        assertEquals("通知没开时应该显示「去开启」", "去开启", text(a, R.id.st_notif));
+        // v1.47.1：通知不是「有更好」——关掉之后闹钟响了没有按钮可按，
+        // 所以这里不再写温吞的「去开启」，直接说后果
+        assertEquals("通知没开时要说清后果", "未开 · 闹钟响了关不掉", text(a, R.id.st_notif));
 
         shadowOf(nm).setNotificationsEnabled(true);
         a.onResume(); // 从系统设置回来
@@ -364,7 +366,7 @@ public class GuideTest {
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
         int[] ids = {R.id.perm_notif, R.id.perm_exact, R.id.perm_fsi, R.id.perm_battery,
-                R.id.perm_overlay, R.id.perm_lock};
+                R.id.perm_autostart, R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);
             assertNotNull("权限行缺失 " + id, row);

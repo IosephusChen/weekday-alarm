@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -22,6 +23,48 @@ import androidx.core.content.ContextCompat;
 final class PermissionGuides {
 
     private PermissionGuides() {
+    }
+
+    /**
+     * 跳「自启动 / 后台运行」白名单（v1.47.1）。
+     *
+     * <p>它不是 Android 权限，没有标准 API 能读状态，也没有标准入口——各厂商自己藏了一个页面。
+     * 这里按常见 ROM 依次尝试，全都不认（原生 / 三星等）就退回应用详情页。
+     *
+     * <p>为什么值得为它写一坨硬编码：小米 / 澎湃默认不给侧载应用自启动，App 被划掉后
+     * 闹钟到点广播直接被丢弃——闹钟「排着但不响」，而用户完全看不出原因。
+     */
+    static void openAutoStart(Activity activity) {
+        String[][] candidates = {
+                {"com.miui.securitycenter",
+                        "com.miui.permcenter.autostart.AutoStartManagementActivity"},
+                {"com.huawei.systemmanager",
+                        "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"},
+                {"com.hihonor.systemmanager",
+                        "com.hihonor.systemmanager.startupmgr.ui.StartupNormalAppListActivity"},
+                {"com.coloros.safecenter",
+                        "com.coloros.safecenter.permission.startup.StartupAppListActivity"},
+                {"com.oppo.safe",
+                        "com.oppo.safe.permission.startup.StartupAppListActivity"},
+                {"com.vivo.permissionmanager",
+                        "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"},
+                {"com.iqoo.secure",
+                        "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"},
+        };
+        for (String[] c : candidates) {
+            try {
+                Intent i = new Intent().setComponent(new ComponentName(c[0], c[1]));
+                if (activity.getPackageManager().resolveActivity(i, 0) != null) {
+                    activity.startActivity(i);
+                    return;
+                }
+            } catch (Exception ignore) {
+                // 换下一个候选
+            }
+        }
+        Toast.makeText(activity, "这台机器没有可直达的自启动页，请到「应用管理 → 打工人闹钟」里找",
+                Toast.LENGTH_LONG).show();
+        openAppDetails(activity);
     }
 
     /** Android 13+ 的通知权限。未授予时静默请求，不解释——系统弹窗自带说明。 */

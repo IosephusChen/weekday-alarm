@@ -33,6 +33,7 @@ import org.robolectric.shadows.ShadowNotificationManager;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -153,23 +154,55 @@ public class BedtimeNotificationTest {
     }
 
     /**
-     * 跨天之后打开 App：昨晚那条要撤掉，而不是按今天重算再刷。
+     * 跨过午夜、但还在凌晨：不撤，改成「今天」（v1.48.0）。
      *
-     * <p>昨晚写的是「明天 07:30 起床」，第二天上午还挂着时，它指的其实是今天早上——
-     * 内容已经错了，刷新只能把错误换个说法继续挂着。
+     * <p>昨晚写的是「明天 07:30 起床」，过了 00:00 它指的已经是今天——
+     * 同一句话差了一天，而这行字正对着睡醒前看手机的人。
      */
     @Test
-    public void refresh_dropsNoticeFromYesterday() {
+    public void refresh_afterMidnight_saysToday() {
         BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
         assertNotNull(shown());
 
-        // 把日期戳改成昨天，模拟「这条挂了整整一夜没人理」
+        // 日期戳是昨天 + 固定凌晨 01:00，模拟「这条挂过了午夜」
         Prefs.setBedtimeNoticeDay(ctx(), LocalDate.now().minusDays(1).toString());
+        BedtimeReminder.refreshIfShownAt(ctx(), LocalDate.now(), LocalTime.of(1, 0));
 
-        BedtimeReminder.refreshIfShown(ctx(),
-                model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull("凌晨还该留着", shown());
+        String text = shownText();
+        assertTrue("应改口成「今天」，实际：" + text, text.contains("今天"));
+        assertFalse("不该再说「明天」，实际：" + text, text.contains("明天"));
+    }
 
-        assertNull("昨天的提醒不该继续挂着", shown());
+    /**
+     * 跨天且已过 05:00：撤掉。正常情况它早被系统按过期时间移除了，
+     * 这条防的是不守 timeoutAfter 的 ROM。
+     */
+    @Test
+    public void refresh_afterMorning_dropsNotice() {
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        Prefs.setBedtimeNoticeDay(ctx(), LocalDate.now().minusDays(1).toString());
+        BedtimeReminder.refreshIfShownAt(ctx(), LocalDate.now(), LocalTime.of(9, 0));
+
+        assertNull("过了这一夜就不该留着", shown());
+    }
+
+    /**
+     * 文案里的相对词跟着日期走：说今天就是「今天」，说明天才是「明天」。
+     *
+     * <p>这条钉住的是「别再把词写死」——v1.48.0 之前 computeModel 里四处硬编码「明天」，
+     * 跨天之后无法改口。
+     */
+    @Test
+    public void computeModel_usesRelativeWordOfTargetDay() {
+        String today = BedtimeReminder.computeModel(ctx(), LocalDate.now()).text;
+        String tomorrow = BedtimeReminder.computeModel(ctx(), LocalDate.now().plusDays(1)).text;
+
+        assertTrue("按今天算应该是「今天」，实际：" + today, today.startsWith("今天"));
+        assertFalse("按今天算不该出现「明天」，实际：" + today, today.contains("明天"));
+        assertTrue("按明天算应该是「明天」，实际：" + tomorrow, tomorrow.startsWith("明天"));
     }
 
     /**
@@ -185,6 +218,32 @@ public class BedtimeNotificationTest {
         BedtimeReminder.cancelNotice(ctx());
 
         assertNull("响铃后不该还留着昨晚的提醒", shown());
+    }
+
+    /**
+     * 提前通知一出现，睡前提醒就该退场（v1.48.0）。
+     *
+     * <p>闹钟 05:00、提前 30 分钟，04:30 那条「即将响铃」出来时，05:00 的兜底还没到；
+     * 此时两条并排挂着，前者说「今天早上 05:00 起床」，后者说「还有 30 分钟」——
+     * 说的是同一件事，用户会以为是两个闹钟。
+     */
+    @Test
+    public void preNotice_cancelsBedtimeNotice() {
+        // 造一条 40 分钟后响的闹钟，并让系统里真的登记上（post 会检查 isAlarmRegistered）
+        java.time.LocalDateTime target = java.time.LocalDateTime.now()
+                .plusMinutes(40).withSecond(0).withNano(0);
+        Alarm a = new Alarm(7, target.getHour(), target.getMinute(), "起床",
+                Alarm.Mode.ONCE, true, target.toLocalDate().toString());
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(a));
+        ScheduleManager.rescheduleAll(ctx());
+
+        BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
+        assertNotNull(shown());
+
+        PreNoticeReceiver.post(ctx(), 7, "起床", target.toLocalDate(), 30,
+                target.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+
+        assertNull("提前通知出现后，昨晚那条该退场", shown());
     }
 
     // ---------- 界面外的变更要立刻反映到界面 ----------

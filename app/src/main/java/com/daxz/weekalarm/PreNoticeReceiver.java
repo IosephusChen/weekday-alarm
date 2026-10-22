@@ -199,6 +199,10 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         Notification n = nb.build();
         try {
             NotificationManagerCompat.from(ctx).notify(NOTIF_ID_BASE + alarmId, n);
+            // v1.48.0：提前通知一出现，昨晚那条睡前提醒就该退场——
+            // 它说的是「明早 05:00 起床」，而现在这条已经在说「还有 30 分钟」，
+            // 两条并排挂在栏里，前者既过时又容易被误读成今天的安排。
+            BedtimeReminder.cancelNotice(ctx);
         } catch (Exception ignore) {
         }
     }

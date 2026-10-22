@@ -43,6 +43,17 @@ public final class BedtimeReminder {
     /** 通知 id（取消 / 覆盖同一条）。 */
     public static final int NOTIF_ID = 3001;
 
+    /** 午夜刷新的 PendingIntent（与提醒本身分开，避免互相顶掉）。 */
+    public static final int MIDNIGHT_REQUEST_CODE = 999_002;
+
+    /**
+     * 这条提醒在第二天几点之后彻底失效（v1.48.0）。
+     *
+     * <p>与通知自带的过期时间同一个时刻：05:00 是这一夜结束、起床闹钟开始响的时段。
+     * 在此之前跨天要改口成「今天」，之后就该消失。
+     */
+    static final LocalTime MORNING_CUTOFF = LocalTime.of(5, 0);
+
     private BedtimeReminder() {
     }
 
@@ -100,21 +111,28 @@ public final class BedtimeReminder {
 
         boolean notify = Prefs.isBedtimeWorkdayOnly(ctx) ? workday : true;
 
+        // v1.48.0：相对词不能写死。22:00 发的时候说「明天」是对的；跨过午夜之后
+        // 同一条通知指的已经是「今天」，再写「明天 07:30」就错了一天。
+        // 词由目标日期与今天的关系决定，所以凌晨重发一次就能自动改口。
+        boolean isToday = tomorrow.equals(LocalDate.now());
+        String day = isToday ? "今天" : "明天";
+        String morning = isToday ? "今天早上" : "明早";
+
         String title;
         String text;
         if (vacation) {
-            title = "明天已请假";
-            text = "明天不用早起，闹钟不会响";
+            title = day + "已请假";
+            text = day + "不用早起，闹钟不会响";
         } else if (!workday) {
-            title = "明天休息";
-            text = "明天不用早起，闹钟不会响，放心睡";
+            title = day + "休息";
+            text = day + "不用早起，闹钟不会响，放心睡";
         } else if (hasAlarm) {
-            title = "明天要上班";
-            text = "明早 " + String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
+            title = day + "要上班";
+            text = morning + " " + String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
                     + " " + label + " 会响，早点睡";
         } else {
-            title = "明天要上班";
-            text = "明天没有会响的闹钟，记得加一个";
+            title = day + "要上班";
+            text = day + "没有会响的闹钟，记得加一个";
         }
         return new Model(tomorrow, vacation, workday, hasAlarm, label, hour, minute,
                 notify, title, text);
@@ -140,7 +158,31 @@ public final class BedtimeReminder {
      */
     public static void refreshIfShown(Context ctx) {
         if (ctx == null) return;
-        refreshIfShown(ctx, computeModel(ctx, LocalDate.now().plusDays(1)));
+        refreshIfShownAt(ctx, LocalDate.now(), LocalTime.now());
+    }
+
+    /**
+     * 刷新时按「现在是哪一天」决定该说什么（v1.48.0）。
+     *
+     * <p>三种情况：
+     * <ul>
+     *   <li>当天发的（22:00 之后）：说的仍是「明天」，照常按明天重算；</li>
+     *   <li>跨天但还在凌晨（05:00 前）：昨晚的「明天」就是今天，按**今天**重算，
+     *       文案自动从「明天 07:30」变成「今天早上 07:30」；</li>
+     *   <li>跨天且已过 05:00：这条提醒没有意义了，撤掉（正常情况早被系统按过期时间移除，
+     *       这里防的是不守 timeoutAfter 的 ROM）。</li>
+     * </ul>
+     *
+     * <p>拆出 today/now 两个参数是为了单测能固定时刻，不必去改系统时钟。
+     */
+    static void refreshIfShownAt(Context ctx, LocalDate today, LocalTime now) {
+        String postedDay = Prefs.getBedtimeNoticeDay(ctx);
+        boolean stale = postedDay != null && !postedDay.equals(today.toString());
+        if (stale && !now.isBefore(MORNING_CUTOFF)) {
+            cancelNotice(ctx);
+            return;
+        }
+        refreshIfShown(ctx, computeModel(ctx, stale ? today : today.plusDays(1)));
     }
 
     /** 用给定内容刷新（便于测试；生产走上面那个按当天实况计算的版本）。 */
@@ -159,15 +201,6 @@ public final class BedtimeReminder {
             return;     // 个别 ROM 限制查询时宁可不改，也不要误发一条新通知
         }
         if (!shown) return;
-
-        // v1.47.9：昨天的就撤掉，别按今天重算再刷。
-        // 昨晚那条写的是「明天 07:30 起床」，今天上午还挂着时它想说的是今天早上——
-        // 内容已经错了，刷新只会把错误换个说法继续挂着。
-        String postedDay = Prefs.getBedtimeNoticeDay(ctx);
-        if (postedDay != null && !postedDay.equals(LocalDate.now().toString())) {
-            cancelNotice(ctx);
-            return;
-        }
 
         if (!m.notify) {
             cancelNotice(ctx);
@@ -188,6 +221,52 @@ public final class BedtimeReminder {
             NotificationManagerCompat.from(ctx).cancel(NOTIF_ID);
         } catch (Throwable ignore) {
         }
+        cancelMidnightRefresh(ctx);
+    }
+
+    /**
+     * 排一次午夜刷新（v1.48.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
+     *
+     * <p>为什么不靠用户打开 App：这段时间用户在睡觉，通知就挂在锁屏上。
+     * 00:00 前后那句「明天 07:30」会突然变成错的——差一天，而它正对着用户的脸。
+     *
+     * <p>只排一次、触发后再由通知路径重排；没发通知时不会排。
+     */
+    static void scheduleMidnightRefresh(Context ctx) {
+        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        long ms = LocalDate.now().plusDays(1).atStartOfDay()
+                .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        try {
+            PendingIntent pi = midnightIntent(ctx, PendingIntent.FLAG_UPDATE_CURRENT);
+            if (ScheduleManager.canScheduleExactAlarms(ctx)) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, ms, pi);
+            } else {
+                // 没有精确闹钟权限就放宽 15 分钟：文案晚一刻钟改口，比不改好
+                am.setWindow(AlarmManager.RTC_WAKEUP, ms, 15 * 60_000L, pi);
+            }
+        } catch (Exception ignore) {
+            // ROM 限制不影响主流程：最坏情况是文案停在「明天」，05:00 通知照样消失
+        }
+    }
+
+    static void cancelMidnightRefresh(Context ctx) {
+        try {
+            AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+            PendingIntent pi = midnightIntent(ctx, PendingIntent.FLAG_NO_CREATE);
+            if (am != null && pi != null) {
+                am.cancel(pi);
+                pi.cancel();
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    private static PendingIntent midnightIntent(Context ctx, int flags) {
+        Intent i = new Intent(ctx, BedtimeReceiver.class)
+                .setAction(BedtimeReceiver.ACTION_MIDNIGHT);
+        return PendingIntent.getBroadcast(ctx, MIDNIGHT_REQUEST_CODE, i,
+                flags | PendingIntent.FLAG_IMMUTABLE);
     }
 
     /**

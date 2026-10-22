@@ -41,6 +41,14 @@ public class BedtimeReceiver extends BroadcastReceiver {
      * 1.31 那版组件实例的 PendingIntent 里还烧着它——升级后不认，用户点旧组件就没反应。
      */
     public static final String ACTION_TOGGLE_DAY = "com.daxz.weekalarm.TOGGLE_DAY";
+
+    /**
+     * 午夜刷新（v1.48.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
+     *
+     * <p>只在这一条通知还挂着时才由 {@link BedtimeReminder#scheduleMidnightRefresh} 排出来，
+     * 触发一次即结束——第二天晚上发新提醒时会重新排。
+     */
+    public static final String ACTION_MIDNIGHT = "com.daxz.weekalarm.BEDTIME_MIDNIGHT";
     public static final String EXTRA_DAY_OFFSET = "day_offset";
 
     @Override
@@ -56,6 +64,11 @@ public class BedtimeReceiver extends BroadcastReceiver {
         }
         if (ACTION_TOGGLE_DAY.equals(action)) {
             toggleDay(context, intent.getIntExtra(EXTRA_DAY_OFFSET, 1));
+            return;
+        }
+        if (ACTION_MIDNIGHT.equals(action)) {
+            // 跨天了：昨晚的「明天」就是今天，重算一次让文案改口（不再是「明天」）
+            BedtimeReminder.refreshIfShown(context);
             return;
         }
         if (!ACTION_BEDTIME.equals(action)) return;
@@ -123,6 +136,8 @@ public class BedtimeReceiver extends BroadcastReceiver {
             NotificationManagerCompat.from(ctx).notify(BedtimeReminder.NOTIF_ID, nb.build());
             // 记下「这条属于哪一天」，App 下次打开时据此判断是不是昨天的（refreshIfShown）
             Prefs.setBedtimeNoticeDay(ctx, LocalDate.now().toString());
+            // 00:00 一到就改口：这段时间用户在睡觉，不会打开 App 触发刷新
+            BedtimeReminder.scheduleMidnightRefresh(ctx);
         } catch (Exception ignore) {
         }
     }

@@ -280,6 +280,25 @@ public class ChangelogTest {
         }
     }
 
+    /**
+     * 接线测试：滚动到底部附近必须真的追加下一批，而不只是 appendInto 本身正确。
+     */
+    @Test
+    public void scrollingNearBottom_appendsNextChunk() {
+        ActivityController<ChangelogActivity> ctl =
+                Robolectric.buildActivity(ChangelogActivity.class).setup();
+        ChangelogActivity a = ctl.get();
+        LinearLayout box = a.findViewById(R.id.ll_changelog);
+        android.widget.ScrollView sv = a.findViewById(R.id.sv_changelog);
+        assertEquals(Changelog.PAGE_SIZE, box.getChildCount());
+
+        sv.scrollTo(0, Math.max(0, box.getHeight()));
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("滚到底部应再追加一批", Changelog.PAGE_SIZE * 2, box.getChildCount());
+        ctl.pause().stop().destroy();
+    }
+
     @Test
     public void appendInto_returnsEndIndexAndStopsAtTail() {
         List<Changelog.Entry> all = Changelog.all();

@@ -10,8 +10,8 @@ android {
         applicationId "com.daxz.weekalarm"
         minSdk 26
         targetSdk 34
-        versionCode 129
-        versionName "1.47.6"
+        versionCode 130
+        versionName "1.47.7"
     }
 
     signingConfigs {
@@ -60,4 +60,14 @@ dependencies {
     // Robolectric：在 JVM 上跑真实 Android framework，用于复现界面点击路径的崩溃
     testImplementation 'org.robolectric:robolectric:4.14.1'
     testImplementation 'androidx.test:core:1.6.1'
+}
+
+// v1.47.7：文档也算单测的输入。
+// DocsConsistencyTest 会去读 docs/ 下的更新日志与使用说明，但 Gradle 默认只把
+// 源码/资源当输入——改完文档再跑测试会被判「UP-TO-DATE」直接跳过，检查等于没做。
+// 声明之后，任何文档改动都会让 testDebugUnitTest 重跑。
+tasks.withType(Test).configureEach {
+    inputs.dir(rootProject.file("docs"))
+            .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
+            .optional()
 }

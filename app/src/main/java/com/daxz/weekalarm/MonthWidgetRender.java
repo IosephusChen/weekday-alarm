@@ -158,6 +158,15 @@ final class MonthWidgetRender {
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
         }
 
+        // 今天 / 明天请假：与 4×2 那套同一个实现，切到整月后按钮不能消失
+        WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
+        WeekScheduleWidget.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
+                R.id.widget_today_action, R.id.widget_today_action_on,
+                R.id.wrap_today_action, 22);
+        WeekScheduleWidget.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
+                R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
+                R.id.wrap_tomorrow_action, 23);
+
         Intent open = new Intent(ctx, MainActivity.class);
         open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,

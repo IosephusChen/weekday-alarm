@@ -158,19 +158,7 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         rv.setTextViewText(R.id.widget_week_title, m.title);
         rv.setTextViewText(R.id.widget_week_sub, m.subtitle);
 
-        for (int i = 0; i < 7 && i < m.days.size(); i++) {
-            DayCell c = m.days.get(i);
-            rv.setTextViewText(DAY_IDS[i], c.dayLetter);
-            rv.setTextViewText(LABEL_IDS[i], c.label);
-            rv.setTextColor(LABEL_IDS[i], labelColor(ctx, c));
-            // 今天：显示半透明白底那一层；其他天隐藏。
-            // 不用 setInt(..., "setBackgroundResource", ...) —— 那是反射调用，
-            // 部分启动器上会让整次 RemoteViews 应用失败，组件停在旧内容
-            rv.setViewVisibility(HIGHLIGHT_IDS[i], c.today ? android.view.View.VISIBLE
-                    : android.view.View.GONE);
-            rv.setTextColor(DAY_IDS[i], ContextCompat.getColor(ctx,
-                    c.today ? R.color.white : R.color.widget_dim));
-        }
+        fillWeekCells(rv, ctx, m);
 
         Intent open = new Intent(ctx, MainActivity.class);
         open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -189,12 +177,35 @@ public class WeekScheduleWidget extends AppWidgetProvider {
     }
 
     /**
+     * 把七格填进任意布局（v1.49.12）。
+     *
+     * <p>本来这段写在 {@link #buildViews} 里，只服务 4×2 的班表组件。
+     * 4×4 的「闹钟 + 本周」合并版也要同一批格子，抽出来一份，
+     * 两边的 id 数组因此必须一致（day_0..6 / label_0..6 / hl_0..6）。
+     */
+    static void fillWeekCells(RemoteViews rv, Context ctx, WeekModel m) {
+        for (int i = 0; i < 7 && i < m.days.size(); i++) {
+            DayCell c = m.days.get(i);
+            rv.setTextViewText(DAY_IDS[i], c.dayLetter);
+            rv.setTextViewText(LABEL_IDS[i], c.label);
+            rv.setTextColor(LABEL_IDS[i], labelColor(ctx, c));
+            // 今天：显示半透明白底那一层；其他天隐藏。
+            // 不用 setInt(..., "setBackgroundResource", ...) —— 那是反射调用，
+            // 部分启动器上会让整次 RemoteViews 应用失败，组件停在旧内容
+            rv.setViewVisibility(HIGHLIGHT_IDS[i], c.today ? android.view.View.VISIBLE
+                    : android.view.View.GONE);
+            rv.setTextColor(DAY_IDS[i], ContextCompat.getColor(ctx,
+                    c.today ? R.color.white : R.color.widget_dim));
+        }
+    }
+
+    /**
      * 绑定一个「今天 / 明天不上班」按钮。
      *
      * <p>点击挂在最外层的 FrameLayout 上，而不是内层 TextView：两层叠着，只有外层
      * 能保证点哪儿都响应。
      */
-    private static void bindAction(RemoteViews rv, Context ctx, String text, boolean marked,
+    static void bindAction(RemoteViews rv, Context ctx, String text, boolean marked,
                                    int dayOffset, int offId, int onId, int wrapId, int reqCode) {
         rv.setTextViewText(offId, text);
         rv.setTextViewText(onId, text);
@@ -248,11 +259,17 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         mgr.updateAppWidget(id, buildViews(ctx, computeModel(ctx)));
     }
 
-    /** 高度够不够铺整月。4×2 是 118dp，4×3 约 180dp，4×4 约 250dp——取 200 作分界。 */
+    /**
+     * 高度够不够铺整月。
+     *
+     * <p>4×2 是 118dp，4×3 约 190dp，4×4 约 250dp。分界取 240：
+     * 4×3 铺不下「六行格子 + 两个按钮」——强行塞会把日期和班/休压到重叠，
+     * 那一档继续用本周七格，拉高只是格子变大，但按钮还在（v1.49.12）。
+     */
     private static boolean isTall(AppWidgetManager mgr, int id) {
         android.os.Bundle o = mgr.getAppWidgetOptions(id);
         if (o == null) return false;
-        return o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) >= 200;
+        return o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) >= 240;
     }
 
     /**

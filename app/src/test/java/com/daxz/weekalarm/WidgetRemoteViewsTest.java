@@ -161,4 +161,42 @@ public class WidgetRemoteViewsTest {
         assertTrue("明天按钮必须可点",
                 root.findViewById(R.id.wrap_tomorrow_action).isClickable());
     }
+
+    // ================= 大尺寸分档（v1.49.12）=================
+
+    /** 4×3 起：闹钟 + 本周七格，按钮先不出现。 */
+    @Test
+    public void tallLayout_showsWeekCellsWithoutActions() {
+        NextAlarmWidget.WidgetModel m =
+                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
+        View v = NextAlarmWidget.buildTall(ctx(), m, false).apply(ctx(), new FrameLayout(ctx()));
+
+        assertNotNull("大尺寸要有七格", v.findViewById(R.id.day_0));
+        assertNotNull(v.findViewById(R.id.label_6));
+        assertEquals("不够高时按钮先不出来",
+                View.GONE, v.findViewById(R.id.action_row).getVisibility());
+    }
+
+    /** 4×4：再多一行请假按钮。 */
+    @Test
+    public void tallLayout_showsActionsWhenTall() {
+        NextAlarmWidget.WidgetModel m =
+                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
+        View v = NextAlarmWidget.buildTall(ctx(), m, true).apply(ctx(), new FrameLayout(ctx()));
+
+        assertEquals(View.VISIBLE, v.findViewById(R.id.action_row).getVisibility());
+        assertNotNull(v.findViewById(R.id.wrap_today_action));
+        assertNotNull(v.findViewById(R.id.wrap_tomorrow_action));
+    }
+
+    /** 整月版也必须有请假按钮——v1.49.10 切到整月后这两个按钮一度消失。 */
+    @Test
+    public void monthLayout_keepsLeaveButtons() {
+        View v = MonthWidgetRender.build(ctx(), MonthWidgetRender.compute(ctx(), LocalDate.now()))
+                .apply(ctx(), new FrameLayout(ctx()));
+
+        assertNotNull("整月版不能丢请假按钮", v.findViewById(R.id.wrap_today_action));
+        assertNotNull(v.findViewById(R.id.wrap_tomorrow_action));
+        assertNotNull(v.findViewById(R.id.widget_today_action));
+    }
 }

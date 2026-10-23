@@ -74,7 +74,68 @@ public class NextAlarmWidget extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context ctx, AppWidgetManager mgr, int id) {
-        mgr.updateAppWidget(id, buildViews(ctx, computeModel(ctx)));
+        mgr.updateAppWidget(id, buildFor(ctx, mgr, id, computeModel(ctx)));
+    }
+
+    /** 4×3 起换大布局，4×4 再多一行按钮（v1.49.12）。 */
+    private static final int H_TALL = 150;
+    private static final int H_FULL = 220;
+
+    /**
+     * 按当前尺寸挑布局。
+     *
+     * <p>4×2 只有闹钟，拉高后下面一大片空白——所以 4×3 起补上本周七格，
+     * 4×4 再加「今天 / 明天不上班」。每一档都比上一档多东西，
+     * 拖动时不会出现「拉高了但什么都没变」。
+     */
+    private static RemoteViews buildFor(Context ctx, AppWidgetManager mgr, int id, WidgetModel m) {
+        int h = 0;
+        android.os.Bundle o = mgr.getAppWidgetOptions(id);
+        if (o != null) h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
+        if (h < H_TALL) return buildViews(ctx, m);
+        return buildTall(ctx, m, h >= H_FULL);
+    }
+
+    /** 大尺寸：闹钟 + 本周七格（+ 可选的两个请假按钮）。 */
+    static RemoteViews buildTall(Context ctx, WidgetModel m, boolean withActions) {
+        RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm_tall);
+        rv.setTextViewText(R.id.widget_status, "已开启");
+        rv.setTextViewText(R.id.widget_title, m.title);
+        rv.setTextViewText(R.id.widget_sub, m.subtitle);
+
+        WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
+        WeekScheduleWidget.fillWeekCells(rv, ctx, week);
+
+        rv.setViewVisibility(R.id.action_row,
+                withActions ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (withActions) {
+            WeekScheduleWidget.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
+                    R.id.widget_today_action, R.id.widget_today_action_on,
+                    R.id.wrap_today_action, 22);
+            WeekScheduleWidget.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
+                    R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
+                    R.id.wrap_tomorrow_action, 23);
+        }
+
+        Intent open = new Intent(ctx, MainActivity.class);
+        open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        rv.setOnClickPendingIntent(R.id.widget_root, pi);
+        return rv;
+    }
+
+    /**
+     * 拖动改尺寸时重排（v1.49.12）。
+     *
+     * <p>原来没实现这个回调，宿主给多大尺寸都返回同一份视图，
+     * 拉高就是「内容贴着顶、下面一片空」。
+     */
+    @Override
+    public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr,
+                                          int id, android.os.Bundle newOptions) {
+        if (mgr == null) return;
+        updateAppWidget(ctx, mgr, id);
     }
 
     /** 主 App 在关键时机主动推送刷新（开关、设置变更、响铃后重排、开机恢复）。 */
@@ -93,8 +154,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
         int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, NextAlarmWidget.class));
         if (ids == null || ids.length == 0) return;   // 桌面没放小组件：一次模型都不算
         WidgetModel m = computeModel(ctx, next, count);
-        RemoteViews rv = buildViews(ctx, m);
-        for (int id : ids) mgr.updateAppWidget(id, rv);
+        for (int id : ids) mgr.updateAppWidget(id, buildFor(ctx, mgr, id, m));
     }
 
     @Override

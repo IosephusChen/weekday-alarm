@@ -5,8 +5,8 @@ import android.content.Context;
 /**
  * 桌面小组件的统一刷新入口（v1.20）：主 App 只调这一个方法，避免漏刷某一个组件。
  *
- * <p>v1.51.0 起是三个（4×2 闹钟 / 4×2 本周 / 4×4 本月），这里按「一个都不漏」的原则
- * 全部列出来。每个调用各自 try-catch：某个组件的数据算炸了，不能连带另外两个一起停刷。
+ * <p>v1.51.1 起是五个（4×2 闹钟 / 4×2 本周 / 本月班表三个变体），这里按「一个都不漏」的原则
+ * 全部列出来。每个调用各自 try-catch：某个组件的数据算炸了，不能连带其它组件一起停刷。
  */
 public final class Widgets {
 
@@ -25,6 +25,14 @@ public final class Widgets {
         }
         try {
             MonthScheduleWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthCompactWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthMinimalWidget.updateAll(ctx);
         } catch (Throwable ignore) {
         }
     }
@@ -51,6 +59,14 @@ public final class Widgets {
         }
         try {
             MonthScheduleWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthCompactWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthMinimalWidget.updateAll(ctx);
         } catch (Throwable ignore) {
         }
     }

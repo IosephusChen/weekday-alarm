@@ -148,9 +148,26 @@ final class MonthWidgetRender {
         return m;
     }
 
+    /** 4×4 完整版（带按钮、闹钟按设置开关）。 */
     static RemoteViews build(Context ctx, Model m) {
-        RemoteViews rv = new RemoteViews(ctx.getPackageName(),
-                R.layout.widget_week_schedule_month);
+        return build(ctx, m, R.layout.widget_week_schedule_month, true,
+                Prefs.isMonthWidgetAlarm(ctx));
+    }
+
+    /**
+     * 三个变体共用这一个渲染入口（v1.51.1）。
+     *
+     * <p>变体只在「哪份布局 / 有没有请假按钮 / 有没有闹钟」上不同，42 格的算与画完全一样。
+     * 分成三个类各写一遍渲染，等于把同一段代码复制三份——改一处颜色要改三处。
+     *
+     * @param layout       4×4 用 {@code widget_week_schedule_month}，
+     *                     4×3 用 {@code widget_month_compact}
+     * @param withActions  是否显示底部「今天 / 明天不上班」
+     * @param withAlarm    是否显示下一个闹钟（设置里的全局开关）
+     */
+    static RemoteViews build(Context ctx, Model m, int layout,
+                             boolean withActions, boolean withAlarm) {
+        RemoteViews rv = new RemoteViews(ctx.getPackageName(), layout);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
 
@@ -170,14 +187,20 @@ final class MonthWidgetRender {
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
         }
 
+        bindAlarm(rv, ctx, layout, withAlarm);
+
         // 今天 / 明天请假：与 4×2 那套同一个实现，切到整月后按钮不能消失
-        WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
-        WeekScheduleWidget.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
-                R.id.widget_today_action, R.id.widget_today_action_on,
-                R.id.wrap_today_action, 22);
-        WeekScheduleWidget.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
-                R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
-                R.id.wrap_tomorrow_action, 23);
+        rv.setViewVisibility(R.id.widget_month_actions,
+                withActions ? View.VISIBLE : View.GONE);
+        if (withActions) {
+            WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
+            WeekScheduleWidget.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
+                    R.id.widget_today_action, R.id.widget_today_action_on,
+                    R.id.wrap_today_action, 22);
+            WeekScheduleWidget.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
+                    R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
+                    R.id.wrap_tomorrow_action, 23);
+        }
 
         Intent open = new Intent(ctx, MainActivity.class);
         open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -185,5 +208,24 @@ final class MonthWidgetRender {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.widget_month_root, pi);
         return rv;
+    }
+
+    /**
+     * 闹钟那一行的显隐。
+     *
+     * <p>两份布局的摆法不同：4×4 里闹钟是独立一行，{@code widget_month_sub} 照常显示；
+     * 4×3 里闹钟和「本周 · 大周」叠在标题行右侧的同一个 FrameLayout 里，只能二选一。
+     */
+    private static void bindAlarm(RemoteViews rv, Context ctx, int layout, boolean withAlarm) {
+        boolean compact = layout == R.layout.widget_month_compact;
+        if (withAlarm) {
+            NextAlarmWidget.WidgetModel next = NextAlarmWidget.computeModel(ctx);
+            rv.setTextViewText(R.id.widget_month_alarm, next.title);
+            rv.setViewVisibility(R.id.widget_month_alarm, View.VISIBLE);
+            if (compact) rv.setViewVisibility(R.id.widget_month_sub, View.GONE);
+        } else {
+            rv.setViewVisibility(R.id.widget_month_alarm, View.GONE);
+            if (compact) rv.setViewVisibility(R.id.widget_month_sub, View.VISIBLE);
+        }
     }
 }

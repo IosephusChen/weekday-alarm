@@ -30,7 +30,7 @@ import java.util.Set;
 /**
  * 四个固定尺寸小组件的配置契约（v1.50.0）。
  *
- * <p>v1.51.0 起是三个组件（4×2 闹钟 / 4×2 本周 / 4×4 本月）。
+ * <p>v1.51.1 起是五个组件（4×2 闹钟 / 4×2 本周 / 本月班表三个变体）。
  *
  * <p>为什么要有这个测试：v1.49.13 用 {@code maxResizeHeight} 想锁尺寸，白试一版；
  * v1.49.14 改成 {@code resizeMode="none"} 之后，唯一的验证手段是「装到手机上长按看菜单」——
@@ -50,11 +50,13 @@ public class WidgetProviderConfigTest {
         return ApplicationProvider.getApplicationContext();
     }
 
-    /** 三个组件：provider XML、类名、label、目标格子数。 */
+    /** 五个组件：provider XML、类名、label、目标格子数。 */
     private static final Object[][] PROVIDERS = {
             {R.xml.next_alarm_widget_info, "NextAlarmWidget", "下一个闹钟", 4, 2},
             {R.xml.week_schedule_widget_info, "WeekScheduleWidget", "本周班表", 4, 2},
-            {R.xml.month_schedule_widget_info, "MonthScheduleWidget", "本月班表", 4, 4},
+            {R.xml.month_schedule_widget_info, "MonthScheduleWidget", "本月班表 · 完整 4×4", 4, 4},
+            {R.xml.month_compact_widget_info, "MonthCompactWidget", "本月班表 · 紧凑 4×3", 4, 3},
+            {R.xml.month_minimal_widget_info, "MonthMinimalWidget", "本月班表 · 极简 4×3", 4, 3},
     };
 
     private AttributeSet attrs(int xmlRes) throws Exception {
@@ -106,8 +108,22 @@ public class WidgetProviderConfigTest {
      */
     @Test
     public void monthProvider_minHeightIsFourRows() throws Exception {
-        assertEquals("本月班表 的最小高度",
+        assertEquals("本月班表 · 完整 的最小高度",
                 250f, dp(attrs(R.xml.month_schedule_widget_info), "minHeight"), 0.5f);
+    }
+
+    /**
+     * 两个 4×3 变体的最小高度必须 ≥200dp。
+     *
+     * <p>六行日历 + 表头 + 按钮在 190dp 以下会把日期和「班/休」压到重叠（v1.49.12 踩过）。
+     * 200 是「4×3 标准 206dp」留 6dp 余量的结果。
+     */
+    @Test
+    public void compactMonthProviders_minHeightFitsSixRows() throws Exception {
+        assertEquals("本月班表 · 紧凑 的最小高度",
+                200f, dp(attrs(R.xml.month_compact_widget_info), "minHeight"), 0.5f);
+        assertEquals("本月班表 · 极简 的最小高度",
+                200f, dp(attrs(R.xml.month_minimal_widget_info), "minHeight"), 0.5f);
     }
 
     /**
@@ -168,7 +184,7 @@ public class WidgetProviderConfigTest {
 
         List<String> expected = new ArrayList<>();
         for (Object[] row : PROVIDERS) expected.add((String) row[1]);
-        assertEquals("应有三个小组件 receiver 注册：" + expected,
+        assertEquals("应有五个小组件 receiver 注册：" + expected,
                 new HashSet<>(expected), classes);
         assertEquals("组件的名字不能重复（列表里会分不清）", PROVIDERS.length, labels.size());
     }
@@ -184,11 +200,23 @@ public class WidgetProviderConfigTest {
         assertNotNull("4×2 闹钟卡必须有七格", a.findViewById(R.id.label_0));
         assertNotNull(a.findViewById(R.id.label_6));
 
-        View m = inflate(MonthScheduleWidget.buildViews(ctx()));
+        View m = inflate(MonthScheduleWidget.build(ctx()));
         assertNotNull(m);
         assertNotNull(m.findViewById(R.id.widget_month_title));
         assertNotNull(m.findViewById(R.id.m_num_0));
         assertNotNull(m.findViewById(R.id.m_num_41));
+        assertNotNull(m.findViewById(R.id.widget_month_actions));
+
+        // 两个 4×3 变体：同一份布局，区别只在按钮显不显示
+        View compact = inflate(MonthCompactWidget.build(ctx()));
+        assertNotNull(compact.findViewById(R.id.m_num_41));
+        assertEquals("紧凑版要有请假按钮", View.VISIBLE,
+                compact.findViewById(R.id.widget_month_actions).getVisibility());
+
+        View minimal = inflate(MonthMinimalWidget.build(ctx()));
+        assertNotNull(minimal.findViewById(R.id.m_num_41));
+        assertEquals("极简版不要请假按钮", View.GONE,
+                minimal.findViewById(R.id.widget_month_actions).getVisibility());
     }
 
     /** 把 RemoteViews 真正 inflate 成 View 树；失败会抛 InflateException。 */

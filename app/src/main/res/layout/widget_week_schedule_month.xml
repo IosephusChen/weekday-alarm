@@ -42,6 +42,20 @@
             android:textSize="10sp" />
     </LinearLayout>
 
+    <!-- 下一个闹钟（v1.51.1，可在设置里关）。4×4 有空间，单独占一行；
+         4×3 那份没有这个余量，闹钟放在标题行右侧。 -->
+    <TextView
+        android:id="@+id/widget_month_alarm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text=""
+        android:textColor="#E6E4FF"
+        android:textSize="10sp"
+        android:visibility="gone" />
+
     <!-- 表头：文字由 MonthWidgetRender.build() 按「每周第一天」设置写，
          不能在布局里写死。v1.50.0 之前这里硬编码「一 二 三 四 五 六 日」，
          而格子按 Prefs.isSundayFirst 排——设成周日开头时整月日历错位一格。 -->
@@ -1677,6 +1691,7 @@
     <!-- 今天 / 明天请假（v1.49.12）：4×2 那套本来就有，切到整月后一度消失了。
          这里是同一份结构、同一批 id，MonthWidgetRender 直接复用 bindAction。 -->
     <LinearLayout
+        android:id="@+id/widget_month_actions"
         android:layout_width="match_parent"
         android:layout_height="20dp"
         android:layout_marginTop="4dp"

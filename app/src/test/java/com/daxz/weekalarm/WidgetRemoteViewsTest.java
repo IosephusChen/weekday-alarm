@@ -246,4 +246,40 @@ public class WidgetRemoteViewsTest {
         assertNotNull("找不到视图 " + id, tv);
         return tv.getText().toString();
     }
+
+    /**
+     * 「本月班表显示闹钟」开关必须同时管住三个变体（v1.51.1）。
+     *
+     * <p>4×4 的闹钟是独立一行；4×3 和「本周 · 大周」叠在标题行右侧的同一个
+     * FrameLayout 里，只能二选一——这里把两个布局的差异一起钉住。
+     */
+    @Test
+    public void monthAlarmRow_followsGlobalSwitch() {
+        Context c = ctx();
+        try {
+            Prefs.setMonthWidgetAlarm(c, true);
+            View on4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
+            assertEquals("4×4 闹钟行该显示", View.VISIBLE,
+                    on4.findViewById(R.id.widget_month_alarm).getVisibility());
+
+            View on3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
+            assertEquals("4×3 闹钟该显示", View.VISIBLE,
+                    on3.findViewById(R.id.widget_month_alarm).getVisibility());
+            assertEquals("4×3 显示闹钟时「本周 · 大周」要让位", View.GONE,
+                    on3.findViewById(R.id.widget_month_sub).getVisibility());
+
+            Prefs.setMonthWidgetAlarm(c, false);
+            View off4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
+            assertEquals("关掉后 4×4 闹钟行该隐藏", View.GONE,
+                    off4.findViewById(R.id.widget_month_alarm).getVisibility());
+
+            View off3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
+            assertEquals("关掉后 4×3 闹钟该隐藏", View.GONE,
+                    off3.findViewById(R.id.widget_month_alarm).getVisibility());
+            assertEquals("关掉后「本周 · 大周」要回来", View.VISIBLE,
+                    off3.findViewById(R.id.widget_month_sub).getVisibility());
+        } finally {
+            Prefs.setMonthWidgetAlarm(c, true);
+        }
+    }
 }

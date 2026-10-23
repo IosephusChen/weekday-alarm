@@ -167,17 +167,42 @@
                 android:resource="@xml/week_schedule_widget_info" />
         </receiver>
 
-        <!-- 桌面小组件（v1.50.0）：本月班表，固定 4×4，整月 42 格。 -->
+        <!-- 桌面小组件（v1.50.0，v1.51.1 起三个变体）：本月班表，整月 42 格。
+             三个变体试用中，用户用一段时间后删掉落选的两个。 -->
         <receiver
             android:name=".MonthScheduleWidget"
             android:exported="false"
-            android:label="本月班表">
+            android:label="本月班表 · 完整 4×4">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/month_schedule_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".MonthCompactWidget"
+            android:exported="false"
+            android:label="本月班表 · 紧凑 4×3">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/month_compact_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".MonthMinimalWidget"
+            android:exported="false"
+            android:label="本月班表 · 极简 4×3">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/month_minimal_widget_info" />
         </receiver>
 
         <receiver

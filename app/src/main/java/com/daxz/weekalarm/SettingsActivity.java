@@ -40,6 +40,8 @@ public class SettingsActivity extends AppCompatActivity {
     /** 周休制度三行（v1.46.3 从首页「排班」卡搬来）。 */
     private TextView tvWeekMode;
     private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
+    /** 本月班表是否显示闹钟（v1.51.1，三个整月变体共用）。 */
+    private SwitchCompat swMonthAlarm;
     private SwitchCompat swChristian;
     /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
@@ -132,6 +134,7 @@ public class SettingsActivity extends AppCompatActivity {
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
         swLunar = findViewById(R.id.switch_lunar);
+        swMonthAlarm = findViewById(R.id.switch_month_alarm);
         swChristian = findViewById(R.id.switch_christian);
         swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
         swBedtime = findViewById(R.id.switch_bedtime);
@@ -222,6 +225,14 @@ public class SettingsActivity extends AppCompatActivity {
         // v1.22.3：更新日志——每版改了什么都能翻，不联网
         bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
         bind(R.id.row_pin_widget, v -> showPinWidgetDialog());
+        // v1.51.1：本月班表要不要显示下一个闹钟。三个整月变体共用这个开关——
+        // 做成「显示/不显示」两个组件的话，小部件列表里会有六个「本月班表」。
+        bind(R.id.row_month_alarm, v -> { if (swMonthAlarm != null) swMonthAlarm.toggle(); });
+        if (swMonthAlarm != null) swMonthAlarm.setOnCheckedChangeListener((v, checked) -> {
+            if (swAttaching) return;
+            Prefs.setMonthWidgetAlarm(this, checked);
+            Widgets.updateAll(this);   // 立刻生效，不用等下一次刷新周期
+        });
 
         // ===== v1.46.2：从首页搬来的三块 =====
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
@@ -282,6 +293,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
         if (swLunar != null) swLunar.setChecked(Prefs.isLunarFestivals(this));
+        if (swMonthAlarm != null) swMonthAlarm.setChecked(Prefs.isMonthWidgetAlarm(this));
         if (swChristian != null) swChristian.setChecked(Prefs.isChristianFestivals(this));
         if (swBedtimeWorkday != null) swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
         if (swPreNotice != null) swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
@@ -661,7 +673,9 @@ public class SettingsActivity extends AppCompatActivity {
                 .setItems(new String[]{
                                 "下一个闹钟（4×2）",
                                 "本周班表（4×2）",
-                                "本月班表（4×4）"},
+                                "本月班表 · 完整（4×4）",
+                                "本月班表 · 紧凑（4×3）",
+                                "本月班表 · 极简（4×3）"},
                         (d, which) -> {
                             switch (which) {
                                 case 0:
@@ -670,8 +684,14 @@ public class SettingsActivity extends AppCompatActivity {
                                 case 1:
                                     pinWidget(WeekScheduleWidget.class, 118);
                                     break;
-                                default:
+                                case 2:
                                     pinWidget(MonthScheduleWidget.class, 250);
+                                    break;
+                                case 3:
+                                    pinWidget(MonthCompactWidget.class, 200);
+                                    break;
+                                default:
+                                    pinWidget(MonthMinimalWidget.class, 200);
                                     break;
                             }
                         })

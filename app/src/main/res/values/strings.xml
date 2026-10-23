@@ -3,5 +3,7 @@
     <string name="app_name">打工人闹钟</string>
     <string name="widget_next_alarm_desc">下一个闹钟 + 本周班表：什么时候响、这周哪天上班，一张卡看完</string>
     <string name="widget_week_schedule_desc">本周班表：一眼看清这周哪天上班、哪天休息</string>
-    <string name="widget_month_schedule_desc">本月班表：整月哪天上班、哪天休息，节日名直接写在格子里</string>
+    <string name="widget_month_schedule_desc">本月班表 · 完整（4×4）：整月哪天上班、哪天休息，顶部带下一个闹钟</string>
+    <string name="widget_month_compact_desc">本月班表 · 紧凑（4×3）：整月班表压到三行格子，底部带请假按钮</string>
+    <string name="widget_month_minimal_desc">本月班表 · 极简（4×3）：整月班表，不要请假按钮、格子更宽松</string>
 </resources>

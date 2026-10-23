@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「本月班表 · 紧凑」4×3（v1.51.1）。
+
+     4×4 那份用户反馈「有些浪费」——日历行高 28dp、上下留白多。
+     4×3 把高度收到三行格子，行高自然压到 20~24dp，信息量没少。
+
+     206dp 是 4×3 的标准高度（74×3−16）。设 200 是为了不被启动器取整后
+     压到 190 以下——190 时六行日历只剩 18dp/行，日期和「班/休」会重叠。 -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="200dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/widget_month_compact_preview"
+    android:previewLayout="@layout/widget_month_compact"
+    android:initialLayout="@layout/widget_month_compact"
+    android:description="@string/widget_month_compact_desc"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen" />

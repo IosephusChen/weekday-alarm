@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「本月班表 · 极简」4×3（v1.51.1）。
+
+     和「紧凑」同一份布局，只是不显示底部两个请假按钮：省下的 24dp 全给日历行，
+     格子更高、日期更好认。请假点卡片进 App，不是没有入口。
+
+     单独注册一个 provider 而不是加开关：两个都要在桌面小部件列表里能选到，
+     用户试用期就是靠「各放一个」来比较的。 -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="200dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/widget_month_minimal_preview"
+    android:previewLayout="@layout/widget_month_compact"
+    android:initialLayout="@layout/widget_month_compact"
+    android:description="@string/widget_month_minimal_desc"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen" />

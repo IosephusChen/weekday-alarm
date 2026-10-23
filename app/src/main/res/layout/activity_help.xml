@@ -213,7 +213,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="· 长按桌面空白处 →「小组件」→ 找到「打工人闹钟」，可添加「下一个闹钟」和「本周班表」两个。" />
+                android:text="· 添加路径：长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。「下一个闹钟」和「本周班表」都是 4×2，加完可以拉大。澎湃把第三方小部件统一收在这个二级列表里，所以不在「推荐」里。" />
 
             <TextView
                 style="@style/HelpItem"

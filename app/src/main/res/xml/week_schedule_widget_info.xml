@@ -14,7 +14,7 @@
     android:minResizeWidth="200dp"
     android:minResizeHeight="110dp"
     android:updatePeriodMillis="1800000"
-    android:previewImage="@drawable/ic_launcher_foreground"
+    android:previewImage="@drawable/widget_week_schedule_preview"
     android:previewLayout="@layout/widget_week_schedule"
     android:initialLayout="@layout/widget_week_schedule"
     android:description="@string/widget_week_schedule_desc"

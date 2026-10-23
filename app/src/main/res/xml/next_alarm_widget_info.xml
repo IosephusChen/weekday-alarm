@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 更新策略：主 App 在开关/改设置/响铃/开机时主动推送；
+<!-- previewImage 换成按布局画的 4×2 预览图（v1.49.8）。
+     原来指向 ic_launcher_foreground——小部件列表里显示成一个白卡 + 时钟图标，
+     用户看不出它长什么样。previewLayout 在 Android 12+ 才是首选，
+     但澎湃的「安卓小部件」列表不渲染它，只看 previewImage。
+
+     更新策略：主 App 在开关/改设置/响铃/开机时主动推送；
      v1.19.9 起再加 30 分钟（系统允许的最小值）的周期刷新兜底——
      否则长期不打开 App 时，小组件会一直停在上次写入的「下一个闹钟」，
      过了那天就变成过期信息。 -->
@@ -11,7 +16,7 @@
     android:minResizeWidth="180dp"
     android:minResizeHeight="80dp"
     android:updatePeriodMillis="1800000"
-    android:previewImage="@drawable/ic_launcher_foreground"
+    android:previewImage="@drawable/widget_next_alarm_preview"
     android:previewLayout="@layout/widget_next_alarm"
     android:initialLayout="@layout/widget_next_alarm"
     android:description="@string/widget_next_alarm_desc"

@@ -238,7 +238,34 @@ public class WeekScheduleWidget extends AppWidgetProvider {
     }
 
     private static void updateAppWidget(Context ctx, AppWidgetManager mgr, int id) {
+        // v1.49.10：按高度换布局。4×4（约 250dp 高）铺整月，4×2 仍然只显示本周七格。
+        // 原来只有一套布局，拉到 4×4 是被拉伸、拉到 3×2 是被裁切。
+        if (isTall(mgr, id)) {
+            mgr.updateAppWidget(id, MonthWidgetRender.build(ctx,
+                    MonthWidgetRender.compute(ctx, LocalDate.now())));
+            return;
+        }
         mgr.updateAppWidget(id, buildViews(ctx, computeModel(ctx)));
+    }
+
+    /** 高度够不够铺整月。4×2 是 118dp，4×3 约 180dp，4×4 约 250dp——取 200 作分界。 */
+    private static boolean isTall(AppWidgetManager mgr, int id) {
+        android.os.Bundle o = mgr.getAppWidgetOptions(id);
+        if (o == null) return false;
+        return o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) >= 200;
+    }
+
+    /**
+     * 拖动改变尺寸时立刻换布局（v1.49.10）。
+     *
+     * <p>不实现这个回调的话，宿主只在添加时问一次尺寸，之后拉大拉小都沿用旧视图，
+     * 表现就是「拉伸」或「裁切」。
+     */
+    @Override
+    public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr,
+                                          int id, android.os.Bundle newOptions) {
+        if (mgr == null) return;
+        updateAppWidget(ctx, mgr, id);
     }
 
     /** 主 App 在关键时机主动推送刷新。 */

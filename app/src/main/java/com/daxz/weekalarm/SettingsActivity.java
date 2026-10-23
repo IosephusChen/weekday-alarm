@@ -668,15 +668,47 @@ public class SettingsActivity extends AppCompatActivity {
         android.appwidget.AppWidgetManager mgr =
                 android.appwidget.AppWidgetManager.getInstance(this);
         if (!mgr.isRequestPinAppWidgetSupported()) {
-            new RoundedDialog.Builder(this)
-                    .setTitle("这台机器不支持一键添加")
-                    .setMessage("长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
-                            + "「安卓小部件」→ 找「打工人闹钟」。")
-                    .setPositiveButton("知道了", null)
-                    .show();
+            showPinFallback();
             return;
         }
-        mgr.requestPinAppWidget(new android.content.ComponentName(this, provider), null, null);
+        // 带上默认尺寸：部分启动器对 null options 直接丢弃请求
+        android.os.Bundle opts = new android.os.Bundle();
+        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
+        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110);
+        boolean asked = mgr.requestPinAppWidget(
+                new android.content.ComponentName(this, provider), opts, null);
+        if (!asked) {
+            showPinFallback();
+            return;
+        }
+        // 返回 true 只代表请求发出去了。小米桌面可能收下但不弹确认框，
+        // 所以这句话必须说清「没反应的话该怎么办」。
+        Toast.makeText(this, "已请求添加到桌面；如果桌面没有弹出确认框，请用下面的路径手动添加",
+                Toast.LENGTH_LONG).show();
+        showPinFallbackDelayed();
+    }
+
+    /** 请求发出去了但桌面没反应时的兜底说明（v1.49.10）。 */
+    private void showPinFallback() {
+        new RoundedDialog.Builder(this)
+                .setTitle("请手动添加")
+                .setMessage("长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
+                        + "「安卓小部件」→ 找「打工人闹钟」。")
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    /**
+     * 请求已发出后，给一句「万一没弹」的提示。
+     *
+     * <p>延迟 1.2 秒：系统确认框通常立刻出现，弹了就不用再打扰；
+     * 只在没弹的时候补一句路径。这里无法真正检测「弹没弹」，
+     * 所以用 Toast 而不是对话框——用户看到确认框时它只是一闪而过。
+     */
+    private void showPinFallbackDelayed() {
+        new android.os.Handler(getMainLooper()).postDelayed(() ->
+                Toast.makeText(this, "没看到确认框？长按桌面 → 小部件 → 全部应用 → 安卓小部件",
+                        Toast.LENGTH_LONG).show(), 1200);
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */

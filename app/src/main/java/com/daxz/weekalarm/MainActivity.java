@@ -603,8 +603,7 @@ public class MainActivity extends AppCompatActivity {
         WeekSchedule.Rule rule = Prefs.getRule(this);
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
         boolean vacation = Prefs.isVacation(this, today);   // 个人请假：当天全部闹钟跳过
-        boolean baseWork = todayType == WeekSchedule.DayType.WORK
-                || todayType == WeekSchedule.DayType.MAKEUP_WORK;
+        boolean baseWork = DayOffAction.isWorkDay(todayType);
         // 个人加班（v1.15）：休息日 / 节假日标记加班后按上班日响「仅上班日」闹钟
         boolean overtime = !vacation && !baseWork && Prefs.isOvertime(this, today);
         boolean work = (baseWork && !vacation) || overtime;

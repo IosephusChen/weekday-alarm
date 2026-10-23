@@ -118,8 +118,7 @@ final class WeekWidgetRender {
         for (int i = 0; i < 7; i++) {
             LocalDate d = start.plusDays(i);
             WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-            boolean baseWork = type == WeekSchedule.DayType.WORK
-                    || type == WeekSchedule.DayType.MAKEUP_WORK;
+            boolean baseWork = DayOffAction.isWorkDay(type);
             boolean vacation = baseWork && vacations.contains(d);
             boolean overtime = !baseWork && overtimes.contains(d);
             String label = vacation ? "请假" : overtime ? "加班" : type.label;
@@ -147,9 +146,8 @@ final class WeekWidgetRender {
     /** 上班 / 补班日看请假集合，休息 / 法定假看加班集合——与日历格子同一套口径。 */
     private static boolean isMarked(WeekSchedule.DayType type, LocalDate d,
                                     Set<LocalDate> vacations, Set<LocalDate> overtimes) {
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
-        return work ? vacations.contains(d) : overtimes.contains(d);
+        return DayOffAction.isWorkDay(type)
+                ? vacations.contains(d) : overtimes.contains(d);
     }
 
     /**

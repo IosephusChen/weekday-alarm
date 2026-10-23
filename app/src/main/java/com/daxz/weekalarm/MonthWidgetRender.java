@@ -114,8 +114,7 @@ final class MonthWidgetRender {
             m.nums[i] = String.valueOf(day);
 
             WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-            boolean work = type == WeekSchedule.DayType.WORK
-                    || type == WeekSchedule.DayType.MAKEUP_WORK;
+            boolean work = DayOffAction.isWorkDay(type);
             boolean leave = Prefs.isVacation(ctx, d);
             boolean overtime = Prefs.isOvertime(ctx, d);
 

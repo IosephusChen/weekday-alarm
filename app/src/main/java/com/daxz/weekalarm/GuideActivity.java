@@ -49,7 +49,7 @@ public class GuideActivity extends AppCompatActivity {
     /** 导入旧备份（v1.47.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSingleDay;
-    private TextView optBig, optSmall, optRestSun, optRestSat, tvSingleSub;
+    private TextView optBig, optSmall, optRestSun, optRestSat;
     private final List<View> modeCards = new ArrayList<>();
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
@@ -81,7 +81,6 @@ public class GuideActivity extends AppCompatActivity {
         rowSingleDay = findViewById(R.id.row_singleday);
         optRestSun = findViewById(R.id.opt_rest_sun);
         optRestSat = findViewById(R.id.opt_rest_sat);
-        tvSingleSub = findViewById(R.id.tv_single_sub);
 
         stNotif = findViewById(R.id.st_notif);
         stFsi = findViewById(R.id.st_fsi);
@@ -217,10 +216,6 @@ public class GuideActivity extends AppCompatActivity {
             boolean sun = current == WeekSchedule.Mode.SINGLE_REST_SUN;
             optRestSun.setSelected(sun);
             optRestSat.setSelected(!sun);
-            // 副标题直接写明「哪天休、哪天上班」，省得用户回头猜自己选的是哪种
-            tvSingleSub.setText(sun ? "周日休 · 周六上班" : "周六休 · 周日上班");
-        } else {
-            tvSingleSub.setText("每周只休一天");
         }
     }
 

@@ -125,7 +125,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="选一次，之后每周自动往后推；法定节假日、调休补班自动覆盖。"
+                    android:text="选一次就行。之后每周的班自动排，法定节假日和调休补班也会算进去。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -221,7 +221,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="每周只休一天"
+                        android:text="每周固定休一天"
                         android:textColor="@color/sub"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -305,7 +305,7 @@
                         android:paddingTop="8dp"
                         android:paddingEnd="16dp"
                         android:paddingBottom="8dp"
-                        android:text="休周日"
+                        android:text="周日休"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
 
@@ -321,7 +321,7 @@
                         android:paddingTop="8dp"
                         android:paddingEnd="16dp"
                         android:paddingBottom="8dp"
-                        android:text="休周六"
+                        android:text="周六休"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -613,7 +613,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="国产系统会限制后台。点每一项去开启，回到这里会自动打勾。"
+                    android:text="国内厂商的系统会限制后台。点每一项去开启，开完回来这里会自动打勾。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -867,7 +867,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="没全开也能用，只是可能不响、或者只躺在通知栏里。"
+                    android:text="没全开也能用，只是可能不响，或者只在通知栏出现、不弹满屏。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 

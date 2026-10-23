@@ -320,58 +320,112 @@ public class SettingsActivity extends AppCompatActivity {
      */
     private void showWeekModeDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_week_mode, null);
-        RadioGroup rgMode = view.findViewById(R.id.rg_mode);
-        RadioGroup rgWeekBig = view.findViewById(R.id.rg_week_big);
-        RadioGroup rgSmallRest = view.findViewById(R.id.rg_small_rest);
-        RadioGroup rgSingleRest = view.findViewById(R.id.rg_single_rest);
-        View boxBigSmall = view.findViewById(R.id.box_big_small);
-        View boxSingle = view.findViewById(R.id.box_single);
+        ViewGroup groupMode = view.findViewById(R.id.rg_mode);
+        View cardBigSmall = view.findViewById(R.id.rb_big_small);
+        View cardDouble = view.findViewById(R.id.rb_double);
+        View cardSingle = view.findViewById(R.id.rb_single);
+        ViewGroup boxBigSmall = view.findViewById(R.id.box_big_small);
+        ViewGroup boxSingle = view.findViewById(R.id.box_single);
+        ViewGroup groupWeekBig = view.findViewById(R.id.rg_week_big);
+        ViewGroup groupSmallRest = view.findViewById(R.id.rg_small_rest);
+        ViewGroup groupSingleRest = view.findViewById(R.id.rg_single_rest);
 
-        WeekSchedule.Mode cur = Prefs.getWeekMode(this);
-        boolean single = cur == WeekSchedule.Mode.SINGLE_REST_SAT
-                || cur == WeekSchedule.Mode.SINGLE_REST_SUN;
-        rgMode.check(cur == WeekSchedule.Mode.BIG_SMALL ? R.id.rb_big_small
-                : cur == WeekSchedule.Mode.DOUBLE_REST ? R.id.rb_double : R.id.rb_single);
-        rgWeekBig.check(Prefs.isWeekBig(this) ? R.id.rb_big : R.id.rb_small);
-        rgSmallRest.check(Prefs.isSmallRestSat(this) ? R.id.rb_rest_sat : R.id.rb_rest_sun);
-        // 单休的初值：正在单休就看当前值，否则看上次记住的（默认周日，即 false）
-        rgSingleRest.check(Prefs.isSmallRestSat(this) ? R.id.rb_single_sat : R.id.rb_single_sun);
+        // 小周休哪天与单休休哪天共用一份记忆（smallRestSat）：在单休里选过周六，
+        // 切到大小周时小周也按周六休，不用重选一遍。
+        final boolean[] restSat = {Prefs.isSmallRestSat(this)};
+        final boolean[] big = {Prefs.isWeekBig(this)};
+        final WeekSchedule.Mode[] mode = {Prefs.getWeekMode(this)};
 
-        Runnable syncBoxes = () -> {
-            int id = rgMode.getCheckedRadioButtonId();
-            boxBigSmall.setVisibility(id == R.id.rb_big_small ? View.VISIBLE : View.GONE);
-            boxSingle.setVisibility(id == R.id.rb_single ? View.VISIBLE : View.GONE);
+        Runnable refresh = () -> {
+            boolean isBigSmall = mode[0] == WeekSchedule.Mode.BIG_SMALL;
+            boolean isSingle = mode[0] == WeekSchedule.Mode.SINGLE_REST_SAT
+                    || mode[0] == WeekSchedule.Mode.SINGLE_REST_SUN;
+            markOnly(groupMode, isBigSmall ? cardBigSmall : isSingle ? cardSingle : cardDouble);
+            boxBigSmall.setVisibility(isBigSmall ? View.VISIBLE : View.GONE);
+            boxSingle.setVisibility(isSingle ? View.VISIBLE : View.GONE);
+            markOnly(groupWeekBig, groupWeekBig.getChildAt(big[0] ? 0 : 1));
+            markOnly(groupSmallRest, groupSmallRest.getChildAt(restSat[0] ? 1 : 0));
+            markOnly(groupSingleRest, groupSingleRest.getChildAt(restSat[0] ? 1 : 0));
         };
-        rgMode.setOnCheckedChangeListener((g, id) -> syncBoxes.run());
-        syncBoxes.run();
+
+        cardBigSmall.setOnClickListener(v -> {
+            mode[0] = WeekSchedule.Mode.BIG_SMALL;
+            refresh.run();
+        });
+        cardDouble.setOnClickListener(v -> {
+            mode[0] = WeekSchedule.Mode.DOUBLE_REST;
+            refresh.run();
+        });
+        cardSingle.setOnClickListener(v -> {
+            mode[0] = restSat[0] ? WeekSchedule.Mode.SINGLE_REST_SAT
+                    : WeekSchedule.Mode.SINGLE_REST_SUN;
+            refresh.run();
+        });
+        groupWeekBig.getChildAt(0).setOnClickListener(v -> {
+            big[0] = true;
+            refresh.run();
+        });
+        groupWeekBig.getChildAt(1).setOnClickListener(v -> {
+            big[0] = false;
+            refresh.run();
+        });
+        groupSmallRest.getChildAt(0).setOnClickListener(v -> {
+            restSat[0] = false;
+            refresh.run();
+        });
+        groupSmallRest.getChildAt(1).setOnClickListener(v -> {
+            restSat[0] = true;
+            refresh.run();
+        });
+        groupSingleRest.getChildAt(0).setOnClickListener(v -> {
+            restSat[0] = false;
+            mode[0] = WeekSchedule.Mode.SINGLE_REST_SUN;
+            refresh.run();
+        });
+        groupSingleRest.getChildAt(1).setOnClickListener(v -> {
+            restSat[0] = true;
+            mode[0] = WeekSchedule.Mode.SINGLE_REST_SAT;
+            refresh.run();
+        });
+        refresh.run();
 
         new RoundedDialog.Builder(this)
                 .setView(view)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确定", (d, w) -> {
-                    int id = rgMode.getCheckedRadioButtonId();
-                    if (id == R.id.rb_big_small) {
+                    if (mode[0] == WeekSchedule.Mode.BIG_SMALL) {
                         Prefs.setWeekMode(this, WeekSchedule.Mode.BIG_SMALL);
-                        boolean big = rgWeekBig.getCheckedRadioButtonId() == R.id.rb_big;
-                        Prefs.setWeekBig(this, big);
+                        Prefs.setWeekBig(this, big[0]);
                         // anchor 始终是「最近的一个大周周六」
                         LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
-                        Prefs.setAnchor(this, big ? sat : sat.minusWeeks(1));
-                        Prefs.setSmallRestSat(this,
-                                rgSmallRest.getCheckedRadioButtonId() == R.id.rb_rest_sat);
-                    } else if (id == R.id.rb_double) {
+                        Prefs.setAnchor(this, big[0] ? sat : sat.minusWeeks(1));
+                        Prefs.setSmallRestSat(this, restSat[0]);
+                    } else if (mode[0] == WeekSchedule.Mode.DOUBLE_REST) {
                         Prefs.setWeekMode(this, WeekSchedule.Mode.DOUBLE_REST);
                     } else {
-                        boolean sat = rgSingleRest.getCheckedRadioButtonId() == R.id.rb_single_sat;
-                        Prefs.setWeekMode(this, sat ? WeekSchedule.Mode.SINGLE_REST_SAT
+                        Prefs.setWeekMode(this, restSat[0] ? WeekSchedule.Mode.SINGLE_REST_SAT
                                 : WeekSchedule.Mode.SINGLE_REST_SUN);
                         // 同时记进 smallRestSat：下次再从双休切回单休时能沿用
-                        Prefs.setSmallRestSat(this, sat);
+                        Prefs.setSmallRestSat(this, restSat[0]);
                     }
                     updateWeekModeUi();
                     applySettingsNow();
                 })
                 .show();
+    }
+
+    /**
+     * 一组里只选中一个（v1.49.5）。
+     *
+     * <p>卡片与胶囊不再是 RadioGroup，选中态改由 {@code setSelected} 驱动
+     * {@code bg_guide_option} 的 selector。不能靠遍历子 View 改背景——
+     * 那样深色模式和按下态都要再写一遍。
+     */
+    private static void markOnly(ViewGroup group, View chosen) {
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            child.setSelected(child == chosen);
+        }
     }
 
 

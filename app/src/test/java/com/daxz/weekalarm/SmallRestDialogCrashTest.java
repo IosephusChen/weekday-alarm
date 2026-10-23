@@ -79,11 +79,11 @@ public class SmallRestDialogCrashTest {
         // 打开周休制度对话框，选「大小周」让小周休哪天的选项出现
         androidx.appcompat.app.AlertDialog dialog = openWeekModeDialog(activity);
         assertNotNull("对话框应已弹出", dialog);
-        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_big_small)).performClick();
+        dialog.findViewById(R.id.rb_big_small).performClick();
 
         // 点「周日休」再点「周六休」——与用户操作相同
-        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_rest_sun)).performClick();
-        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_rest_sat)).performClick();
+        dialog.findViewById(R.id.rb_rest_sun).performClick();
+        dialog.findViewById(R.id.rb_rest_sat).performClick();
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 

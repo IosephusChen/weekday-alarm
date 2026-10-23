@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.view.View;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -195,8 +196,8 @@ public class WeekModeTest {
                 (androidx.appcompat.app.AlertDialog) org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
         assertNotNull("应弹出周休制度对话框", d);
         // 先选「大小周」，条件块才会出现；再选「小周」
-        ((android.widget.RadioButton) d.findViewById(R.id.rb_big_small)).performClick();
-        ((android.widget.RadioButton) d.findViewById(R.id.rb_small)).performClick();
+        d.findViewById(R.id.rb_big_small).performClick();
+        d.findViewById(R.id.rb_small).performClick();
         d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
@@ -265,7 +266,7 @@ public class WeekModeTest {
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
         assertNotNull(d);
-        android.widget.RadioGroup rg = d.findViewById(R.id.rg_mode);
+        android.view.ViewGroup rg = d.findViewById(R.id.rg_mode);
         assertNotNull(rg);
         assertEquals("大类应正好三个", 3, rg.getChildCount());
     }
@@ -280,7 +281,7 @@ public class WeekModeTest {
 
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
-        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+        d.findViewById(R.id.rb_single).performClick();
         d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
@@ -297,7 +298,7 @@ public class WeekModeTest {
 
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
-        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+        d.findViewById(R.id.rb_single).performClick();
         d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
@@ -315,11 +316,66 @@ public class WeekModeTest {
     public void singleRestOptions_sayOnlyTheRestDay() {
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
-        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+        d.findViewById(R.id.rb_single).performClick();
 
         assertEquals("周日休",
-                ((android.widget.RadioButton) d.findViewById(R.id.rb_single_sun)).getText().toString());
+                ((android.widget.TextView) d.findViewById(R.id.rb_single_sun)).getText().toString());
         assertEquals("周六休",
-                ((android.widget.RadioButton) d.findViewById(R.id.rb_single_sat)).getText().toString());
+                ((android.widget.TextView) d.findViewById(R.id.rb_single_sat)).getText().toString());
+    }
+
+    // ================= 与引导页同一套卡片（v1.49.5）=================
+
+    /**
+     * 大类是三张卡，不是三个单选行。
+     *
+     * <p>换成卡片后选中态不再由 RadioGroup 维护，是手写的 {@code setSelected}。
+     * 这条同时钉住「形态」和「两句副标题与引导页一字不差」——两处界面漂移，
+     * 用户就会以为设置里的和引导里的不是同一个东西。
+     */
+    @Test
+    public void modeDialog_usesSameCardsAsGuide() {
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+
+        View card = d.findViewById(R.id.rb_big_small);
+        assertNotNull(card);
+        assertTrue("大类应是卡片（可装标题 + 副标题）", card instanceof android.view.ViewGroup);
+        assertFalse("不该再是单选按钮", card instanceof android.widget.RadioButton);
+
+        String all = collectText(d.getWindow().getDecorView());
+        assertTrue("大小周副标题应与引导页一致", all.contains("一周双休、一周单休，两周循环"));
+        assertTrue("双休副标题应与引导页一致", all.contains("每周六、周日都休"));
+        assertTrue("单休副标题应与引导页一致", all.contains("每周固定休一天"));
+    }
+
+    /** 三张卡里同时只有一张是选中态——手写单选最容易漏掉「把别人取消」。 */
+    @Test
+    public void modeDialog_marksOnlyOneCard() {
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+
+        d.findViewById(R.id.rb_double).performClick();
+        assertTrue(d.findViewById(R.id.rb_double).isSelected());
+        assertFalse("选了双休，大小周要取消", d.findViewById(R.id.rb_big_small).isSelected());
+        assertFalse("选了双休，单休要取消", d.findViewById(R.id.rb_single).isSelected());
+
+        d.findViewById(R.id.rb_single).performClick();
+        assertTrue(d.findViewById(R.id.rb_single).isSelected());
+        assertFalse(d.findViewById(R.id.rb_double).isSelected());
+    }
+
+    /** 递归收集可见文案。 */
+    private static String collectText(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof android.widget.TextView) {
+            CharSequence t = ((android.widget.TextView) v).getText();
+            if (t != null) sb.append(t).append('\n');
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(collectText(g.getChildAt(i)));
+        }
+        return sb.toString();
     }
 }

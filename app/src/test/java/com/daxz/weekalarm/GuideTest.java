@@ -146,11 +146,12 @@ public class GuideTest {
         assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
         assertTrue(a.findViewById(R.id.opt_rest_sun).isSelected());
         assertFalse(a.findViewById(R.id.opt_rest_sat).isSelected());
-        assertEquals("副标题要写明哪天休、哪天上班", "周日休 · 周六上班",
-                text(a, R.id.tv_single_sub));
+        // v1.49.5：副标题固定说这一句，不再随选择变——下面两个胶囊已经表明选的是哪天，
+        // 再来一句「周日休 · 周六上班」是把结论重复一遍
+        assertEquals("副标题应固定", "每周固定休一天", text(a, R.id.tv_single_sub));
     }
 
-    /** 改子选项：立刻换制度，副标题跟着变。 */
+    /** 改子选项：立刻换制度，胶囊选中态跟着换。 */
     @Test
     public void chooseRestSaturday_writesSingleRestSat() {
         GuideActivity a = fresh();
@@ -160,7 +161,7 @@ public class GuideTest {
         assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
         assertTrue(a.findViewById(R.id.opt_rest_sat).isSelected());
         assertFalse(a.findViewById(R.id.opt_rest_sun).isSelected());
-        assertEquals("周六休 · 周日上班", text(a, R.id.tv_single_sub));
+        assertEquals("副标题不跟着变", "每周固定休一天", text(a, R.id.tv_single_sub));
         assertTrue("卡片本身仍是选中态，不能因为换了子选项就掉",
                 a.findViewById(R.id.mode_single).isSelected());
     }

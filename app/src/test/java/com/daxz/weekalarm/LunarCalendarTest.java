@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -57,6 +58,31 @@ public class LunarCalendarTest {
         assertEquals("重阳", LunarCalendar.festival(LocalDate.of(2026, 10, 18)));
     }
 
+    /**
+     * v1.55.0 补的四个农历节日。
+     *
+     * <p>日期由寿星天文历 sxtwl 反查：二月初二 / 七月十五 / 十月初一 / 腊月廿三与廿四。
+     * 小年在 2027 年落在公历 1 月 30、31 日——「腊月」可能横跨公历两年，别写成 12 月。
+     */
+    @Test
+    public void addedFestivals_2026And2027() {
+        assertEquals("龙抬头", LunarCalendar.festival(LocalDate.of(2026, 3, 20)));
+        assertEquals("中元", LunarCalendar.festival(LocalDate.of(2026, 8, 27)));
+        assertEquals("寒衣", LunarCalendar.festival(LocalDate.of(2026, 11, 9)));
+
+        // 小年两天都算：北方廿三、南方廿四
+        assertEquals("小年", LunarCalendar.festival(LocalDate.of(2026, 2, 10)));
+        assertEquals("小年", LunarCalendar.festival(LocalDate.of(2026, 2, 11)));
+        assertEquals("小年", LunarCalendar.festival(LocalDate.of(2027, 1, 30)));
+        assertEquals("小年", LunarCalendar.festival(LocalDate.of(2027, 1, 31)));
+
+        // 2027 年的其余三个
+        assertEquals("龙抬头", LunarCalendar.festival(LocalDate.of(2027, 3, 9)));
+        assertEquals("中元", LunarCalendar.festival(LocalDate.of(2027, 8, 16)));
+        assertEquals("寒衣", LunarCalendar.festival(LocalDate.of(2027, 10, 29)));
+    }
+
+    /** 小年不与腊八、除夕抢同一天：腊月最少廿九天，除夕最晚廿九，廿三/廿四永远不是除夕。 */
     @Test
     public void newYearsEve_isLastDayOfTwelfthMonth() {
         // 2026 除夕是腊月廿九（该年腊月为小月），不是固定的「三十」
@@ -65,6 +91,9 @@ public class LunarCalendarTest {
         assertEquals(12, l.month);
         assertEquals(29, l.day);
         assertEquals("除夕", LunarCalendar.festival(LocalDate.of(2026, 2, 16)));
+        // 小年那两天不能被除夕的规则截走
+        assertNotEquals("除夕", LunarCalendar.festival(LocalDate.of(2026, 2, 10)));
+        assertNotEquals("除夕", LunarCalendar.festival(LocalDate.of(2026, 2, 11)));
     }
 
     @Test

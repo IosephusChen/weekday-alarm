@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -236,25 +237,31 @@ public class WidgetRemoteViewsTest {
     }
 
     /**
-     * 节气要进整月格子，并且受开关控制（v1.51.2）。
+     * 节气不进整月格子（v1.55.0）。
      *
-     * <p>2026-10-23 是霜降，周一开头时落在下标 25（(23−1)+3）。
-     * 关掉开关后应该退回「班 / 休」——不是空着。
+     * <p>2026-10-23 是霜降。v1.51.2 起它会占掉这一格、把「班 / 休」顶掉——桌面日历上
+     * 就看不出那天上不上班，只能靠颜色猜。现在节气只在 App 内日历（CalendarPanel）和
+     * 首页今日信息里显示，小部件格子无论开关开还是关都不写节气。
+     *
+     * <p>顺便钉住「小部件不再读这个开关」：开关开与关的计算结果必须一致，
+     * 否则说明代码又偷偷把节气接回了格子。
      */
     @Test
-    public void monthCell_showsSolarTermAndRespectsSwitch() {
+    public void monthCell_neverShowsSolarTerm() {
         Context c = ctx();
         LocalDate d = LocalDate.of(2026, 10, 23);
         Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);
         try {
             Prefs.setSolarTerms(c, true);
             MonthWidgetRender.Model on = MonthWidgetRender.compute(c, d);
-            assertEquals("霜降", on.tags[25]);
+            assertNotEquals("霜降", on.tags[25]);
+            assertTrue("节气退出后应显示班/休，实际是「" + on.tags[25] + "」",
+                    "班".equals(on.tags[25]) || "休".equals(on.tags[25]));
 
             Prefs.setSolarTerms(c, false);
             MonthWidgetRender.Model off = MonthWidgetRender.compute(c, d);
-            assertTrue("关掉节气后应退回班/休，实际是「" + off.tags[25] + "」",
-                    "班".equals(off.tags[25]) || "休".equals(off.tags[25]));
+            assertEquals("开关开与关的结果必须一致——小部件格子根本不看这个开关",
+                    on.tags[25], off.tags[25]);
         } finally {
             Prefs.setSolarTerms(c, true);
             Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);

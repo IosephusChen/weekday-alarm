@@ -20,6 +20,9 @@ import java.time.YearMonth;
  *
  * <p>格子里第二行优先写节日名（国庆 / 中秋 / 圣诞），没有节日才写班 / 休；
  * 上班还是休息由文字颜色表达，所以换成节日名不丢信息。
+ *
+ * <p>节气不写进格子（v1.55.0）：它会把「班 / 休」顶掉，让人看不出那天上不上班。
+ * 节气在 App 内日历和首页显示。
  */
 final class MonthWidgetRender {
 
@@ -135,16 +138,16 @@ final class MonthWidgetRender {
                         ? HolidayData.holidayName(d) : null;
                 String lunar = (Prefs.isLunarFestivals(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
                         ? LunarCalendar.festival(d) : null;
-                // 节气（v1.51.2）：排在农历节日之后。重阳、中秋这类「过节」比「霜降」更值得占位；
-                // 但比基督教节日靠前——节气和农历同属中国历法体系，优先级接近。
-                String term = (Prefs.isSolarTerms(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
-                        ? SolarTerm.termOf(d) : null;
+                // 节气不进小部件格子（v1.55.0）。
+                // 原来它排在农历节日之后、基督教之前，于是「霜降」会顶掉「班 / 休」——
+                // 格子上看不出那天上不上班，只能靠颜色猜。节气是知识性信息、一整天都不着急看，
+                // 上班与否是决策性信息，两者不该抢同一个位置。
+                // 节气仍在 App 内日历（CalendarPanel）和首页今日信息里显示。
                 String christian = (Prefs.isChristianFestivals(ctx)
                         && type != WeekSchedule.DayType.MAKEUP_WORK)
                         ? ChristianCalendar.festival(d) : null;
                 if (legal != null) m.tags[i] = legal;
                 else if (lunar != null) m.tags[i] = lunar;
-                else if (term != null) m.tags[i] = term;
                 else if (christian != null) m.tags[i] = christian;
                 else m.tags[i] = work ? "班" : "休";
             }

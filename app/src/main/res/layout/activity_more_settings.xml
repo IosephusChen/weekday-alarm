@@ -429,7 +429,7 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_marginTop="2dp"
-                                        android:text="霜降、惊蛰这些日子在日历里显示名字；覆盖 2020–2040" />
+                                        android:text="霜降、惊蛰这些日子在日历里显示名字；只影响 App 内，不占桌面小组件的格子" />
                                 </LinearLayout>
 
                                 <androidx.appcompat.widget.SwitchCompat

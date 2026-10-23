@@ -187,6 +187,18 @@ public final class LunarCalendar {
      *
      * 只收传统节日，不含二十四节气——清明等节气日期由 {@link HolidayData} 的
      * 法定安排负责，两套体系不重复。
+     *
+     * <p>v1.55.0 补了四个：龙抬头（二月初二）、中元（七月十五）、寒衣（十月初一）、
+     * 小年（腊月廿三 / 廿四）。原来只有八个，翻日历翻到七月半、十月初一一片空白，
+     * 不像正经农历。这四个都是固定农历日期，判断成本为零。
+     *
+     * <p>两个取舍：
+     * <ul>
+     *   <li><b>小年两天都显示</b>：北方廿三、南方廿四，App 不区分地区，两天都写「小年」
+     *       比只认一天更不容易被说错。腊月若只有廿九天，廿四仍是小年、除夕是廿九，不冲突。</li>
+     *   <li><b>龙抬头是三个字</b>：唯一一个超过两字的。没有通用的两字简称（「龙节」「龙头」
+     *       都不成词），硬缩反而看不懂，所以照写三字——格子标签是 8.5sp，三字仍在格宽内。</li>
+     * </ul>
      */
     public static String festival(LocalDate d) {
         LunarDate l = fromSolar(d);
@@ -194,11 +206,15 @@ public final class LunarCalendar {
         if (l.leap) return null;   // 闰月不过节
         if (l.month == 1 && l.day == 1) return "春节";
         if (l.month == 1 && l.day == 15) return "元宵";
+        if (l.month == 2 && l.day == 2) return "龙抬头";
         if (l.month == 5 && l.day == 5) return "端午";
         if (l.month == 7 && l.day == 7) return "七夕";
+        if (l.month == 7 && l.day == 15) return "中元";
         if (l.month == 8 && l.day == 15) return "中秋";
         if (l.month == 9 && l.day == 9) return "重阳";
+        if (l.month == 10 && l.day == 1) return "寒衣";
         if (l.month == 12 && l.day == 8) return "腊八";
+        if (l.month == 12 && (l.day == 23 || l.day == 24)) return "小年";
         // 除夕 = 腊月最后一天（廿九或三十，随该年腊月大小而定）
         if (l.month == 12 && l.day == monthDays(l.year, 12)) return "除夕";
         return null;

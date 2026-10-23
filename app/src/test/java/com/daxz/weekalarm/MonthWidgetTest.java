@@ -69,12 +69,79 @@ public class MonthWidgetTest {
         assertEquals("", m.nums[3 + 31]);    // 之后留空
     }
 
-    /** 法定节假日优先于周休制度：10/1 国庆，双休下也该是「休」。 */
+    /**
+     * 法定节假日名优先于「休」（v1.49.11）。
+     *
+     * <p>颜色仍然是「休」的淡紫——上班还是休息靠颜色说，字换成节日名不丢信息。
+     * 这一点与日历页一致：那边也是底色表达班休、文字写节日。
+     */
     @Test
-    public void holidayOverridesWeekRule() {
+    public void holidayNameReplacesRestLabel() {
         MonthWidgetRender.Model m = oct2026();
         assertEquals("1", m.nums[3]);
-        assertEquals("休", m.tags[3]);
+        assertEquals("国庆", m.tags[3]);
+        assertEquals("国庆那天仍按休息着色", 0xFFC9C4FF, m.colors[3]);
+    }
+
+    /**
+     * 农历节日跟着设置里的开关走。
+     *
+     * <p>用「七夕」而不是「中秋」：中秋在 2026 年放假，属于法定节假日，
+     * 走的是另一条更高优先级的路径，关掉农历开关也照样显示——那是应该的。
+     */
+    @Test
+    public void lunarFestival_followsSetting() {
+        java.time.LocalDate qixi = null;
+        for (int d = 1; d <= 31; d++) {
+            java.time.LocalDate x = java.time.LocalDate.of(2026, 8, d);
+            if ("七夕".equals(LunarCalendar.festival(x))) { qixi = x; break; }
+        }
+        assertNotNull("2026 年 8 月应能找到七夕", qixi);
+        assertTrue("七夕不是法定假日，才能测到开关",
+                WeekSchedule.dayType(qixi, Prefs.getRule(ctx())) != WeekSchedule.DayType.HOLIDAY);
+
+        setFlag(Prefs.KEY_LUNAR_FESTIVALS, false);
+        MonthWidgetRender.Model off = MonthWidgetRender.compute(ctx(), qixi);
+        assertTrue("关了就不该出现节日名", !"七夕".equals(off.tags[indexOf(off, qixi)]));
+
+        setFlag(Prefs.KEY_LUNAR_FESTIVALS, true);
+        MonthWidgetRender.Model on = MonthWidgetRender.compute(ctx(), qixi);
+        assertEquals("七夕", on.tags[indexOf(on, qixi)]);
+    }
+
+    /** 基督教节日同理。 */
+    @Test
+    public void christianFestival_followsSetting() {
+        java.time.LocalDate xmas = java.time.LocalDate.of(2026, 12, 25);
+        assertEquals("圣诞", ChristianCalendar.festival(xmas));
+
+        setFlag(Prefs.KEY_CHRISTIAN_FESTIVALS, false);
+        MonthWidgetRender.Model off = MonthWidgetRender.compute(ctx(), xmas);
+        assertTrue(!("圣诞".equals(off.tags[indexOf(off, xmas)])));
+
+        setFlag(Prefs.KEY_CHRISTIAN_FESTIVALS, true);
+        MonthWidgetRender.Model on = MonthWidgetRender.compute(ctx(), xmas);
+        assertEquals("圣诞", on.tags[indexOf(on, xmas)]);
+    }
+
+    /**
+     * 直接写 SharedPreferences 并 commit。
+     *
+     * <p>不在测试里用 {@code Prefs.setXxx}：那边是 {@code apply()}，
+     * Robolectric 下紧接着读会拿到旧值，测试就会假绿或假红。
+     */
+    private void setFlag(String key, boolean v) {
+        ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE)
+                .edit().putBoolean(key, v).commit();
+    }
+
+    /** 42 格里找某一天的下标。 */
+    private static int indexOf(MonthWidgetRender.Model m, java.time.LocalDate d) {
+        String want = String.valueOf(d.getDayOfMonth());
+        for (int i = 0; i < 42; i++) {
+            if (want.equals(m.nums[i]) && !m.tags[i].isEmpty()) return i;
+        }
+        return -1;
     }
 
     @Test

@@ -17,6 +17,9 @@ import java.time.YearMonth;
  *
  * <p>42 格固定 6 行。月份 28~31 天浮动，行数一变格子高度就跳，
  * 桌面上一会儿高一会儿矮；空出来的格子留白，对齐比占满更重要。
+ *
+ * <p>格子里第二行优先写节日名（国庆 / 中秋 / 圣诞），没有节日才写班 / 休；
+ * 上班还是休息由文字颜色表达，所以换成节日名不丢信息。
  */
 final class MonthWidgetRender {
 
@@ -108,6 +111,11 @@ final class MonthWidgetRender {
             boolean leave = Prefs.isVacation(ctx, d);
             boolean overtime = Prefs.isOvertime(ctx, d);
 
+            // 颜色始终表达上班 / 休息；文字在有节日时换成节日名（v1.49.11）。
+            // 与日历页同一套优先级：法定节假日 > 农历节日 > 基督教节日 > 班 / 休。
+            // 补班日一律不覆盖——「补」比节日名要紧，用户得知道那天得上班。
+            m.colors[i] = work ? C_WORK : C_REST;
+
             if (leave && overtime) {
                 m.tags[i] = "假加";
                 m.colors[i] = C_LEAVE;
@@ -117,12 +125,18 @@ final class MonthWidgetRender {
             } else if (overtime) {
                 m.tags[i] = "加";
                 m.colors[i] = C_OT;
-            } else if (work) {
-                m.tags[i] = "班";
-                m.colors[i] = C_WORK;
             } else {
-                m.tags[i] = "休";
-                m.colors[i] = C_REST;
+                String legal = type == WeekSchedule.DayType.HOLIDAY
+                        ? HolidayData.holidayName(d) : null;
+                String lunar = (Prefs.isLunarFestivals(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
+                        ? LunarCalendar.festival(d) : null;
+                String christian = (Prefs.isChristianFestivals(ctx)
+                        && type != WeekSchedule.DayType.MAKEUP_WORK)
+                        ? ChristianCalendar.festival(d) : null;
+                if (legal != null) m.tags[i] = legal;
+                else if (lunar != null) m.tags[i] = lunar;
+                else if (christian != null) m.tags[i] = christian;
+                else m.tags[i] = work ? "班" : "休";
             }
             m.today[i] = d.equals(today);
         }

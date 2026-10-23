@@ -529,12 +529,15 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 节假日数据（v1.19.7 由主界面迁入）=================
 
-    /** 节假日数据行摘要：内置兜底 + 远程版本（远程较新则展示远程年份与发布日期）。 */
+    /** 节假日数据行摘要：内置覆盖范围 / 远程版本。 */
     private void updateHolidayDataText() {
-        int year = HolidayData.effectiveYear();
-        String published = HolidayData.effectivePublished();
-        tvHolidayData.setText(year + " 年 · " + (HolidayData.hasRemote() ? "在线" : "内置")
-                + " · " + published + " 发布");
+        if (HolidayData.hasRemote()) {
+            tvHolidayData.setText(HolidayData.effectiveYear() + " 年 · 在线 · "
+                    + HolidayData.effectivePublished() + " 发布");
+        } else {
+            tvHolidayData.setText(HolidayData.BUILT_IN_FIRST_YEAR + "–"
+                    + HolidayData.BUILT_IN_YEAR + " 年 · 内置");
+        }
     }
 
     /** 手动检查节假日数据更新（点击「节假日数据」行）。 */
@@ -574,9 +577,9 @@ public class SettingsActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setTitle("在线检查未成功")
                 .setMessage("原因：" + reason + "\n\n"
-                        + "当前仍在用内置的 " + HolidayData.effectiveYear() + " 年节假日数据（"
-                        + HolidayData.effectivePublished() + " 发布），全年放假与调休补班都完整，"
-                        + "排班推算不受影响。\n\n"
+                        + "当前仍在用内置的 " + HolidayData.BUILT_IN_FIRST_YEAR + "–"
+                        + HolidayData.BUILT_IN_YEAR + " 年节假日数据，这些年份的放假与调休补班"
+                        + "都完整，排班推算不受影响。\n\n"
                         + "换到 Wi-Fi 或信号更好的地方可以再试一次。")
                 .setPositiveButton("重试", (d, w) -> checkHolidayUpdate())
                 .setNegativeButton("知道了", null)
@@ -643,7 +646,8 @@ public class SettingsActivity extends AppCompatActivity {
         }
         sb.append("\n\n").append(HolidayData.hasRemote()
                 ? "节假日数据已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
-                : "已内置 " + HolidayData.BUILT_IN_YEAR + " 年节假日安排（放假与调休自动优先于周休制度）");
+                : "已内置 " + HolidayData.BUILT_IN_FIRST_YEAR + "–" + HolidayData.BUILT_IN_YEAR
+                        + " 年节假日安排（放假与调休自动优先于周休制度）");
 
         new RoundedDialog.Builder(this)
                 .setTitle("运行状态")

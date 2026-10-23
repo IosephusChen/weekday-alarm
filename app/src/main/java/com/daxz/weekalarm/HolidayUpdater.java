@@ -9,34 +9,54 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.Map;
 
 /**
  * 节假日数据在线更新。
  *
- * 数据源是公开可读的 JSON（见 {@link #DATA_URL}），格式见 {@link HolidayData#applyRemoteJson}。
- * 拉取失败（无网络 / 404 / 解析失败）时静默保留内置数据，不打扰用户。
+ * <p><b>数据源</b>：github.com/NateScarlet/holiday-cn —— 社区维护的国务院放假安排，
+ * 每年通知发布后几天内更新，每个文件带 {@code papers} 指向 gov.cn 原文。
+ * 两个镜像：jsDelivr（国内有节点，快）→ raw.githubusercontent（兜底）。
  *
- * 更新时机：
- * - 启动时静默检查：距上次检查 ≥ {@link #AUTO_CHECK_INTERVAL_MS}（7 天）才发起；
- * - 用户点「节假日数据」行手动检查：立即发起。
+ * <p><b>只拉两年</b>：今年（可能有修正）和明年（11 月发布）。历史年份已内置在
+ * {@link HolidayData} 里，不需要拉；更远的年份还没发布，拉了也是空文件。
+ *
+ * <p><b>空年份不覆盖</b>：holiday-cn 会提前建好明年的文件但 {@code days} 为空，
+ * 等国务院发通知才填。解析层（{@link HolidayData#applyHolidayCnJson}）遇到空数组
+ * 只当「未发布」，绝不清空已有数据——否则会把整年判成工作日，比不更新更糟。
+ *
+ * <p>拉取失败（无网络 / 404 / 解析失败）时静默保留内置数据，不打扰用户。
+ *
+ * <p>更新时机：
+ * <ul>
+ *   <li>启动时静默检查：距上次检查 ≥ {@link #AUTO_CHECK_INTERVAL_MS}（7 天）才发起；</li>
+ *   <li>用户点「节假日数据」行手动检查：立即发起。</li>
+ * </ul>
  */
 public final class HolidayUpdater {
 
-    /**
-     * 数据文件地址（公开 raw 文件，无需鉴权）。
-     * 维护者更新该文件即全量生效；地址不可达时 App 静默回退内置数据（双通道兜底）。
-     * 注意：当前实例托管在公共粘贴服务，仅作在线通道的可用实例；生产主通道是
-     * App 新版的内置数据（每年 11 月随节假日安排发布更新）。
-     */
-    public static final String DATA_URL = "https://paste.rs/xg7r0";
+    /** 主源：jsDelivr CDN，国内可直连，实测 30~40ms。 */
+    private static final String URL_CDN =
+            "https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/%d.json";
+
+    /** 备源：GitHub raw。CDN 被墙或缓存异常时兜底。 */
+    private static final String URL_RAW =
+            "https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/%d.json";
+
+    private static final String[] SOURCES = {URL_CDN, URL_RAW};
 
     private static final long AUTO_CHECK_INTERVAL_MS = 7L * 24 * 60 * 60 * 1000;
 
     private static final String KEY_LAST_CHECK = "holiday_last_check";
-    private static final String KEY_REMOTE_JSON = "holiday_remote_json";
     private static final String KEY_PENDING_NOTICE = "holiday_pending_notice";
+    /** 按年缓存原始 JSON：{@code holiday_cn_2027}。 */
+    private static final String KEY_CACHED_PREFIX = "holiday_cn_";
+    /** 缓存格式版本：1 = 旧的单文件自定义格式（已废弃），2 = 按年 holiday-cn。 */
+    private static final String KEY_SCHEMA = "holiday_schema";
+    private static final int SCHEMA_VERSION = 2;
 
-    /** 最近一次失败的可读原因（成功时为空串），用于给用户具体提示（v1.19.8）。 */
+    /** 最近一次失败的可读原因（成功时为空串），用于给用户具体提示。 */
     private static volatile String lastFailure = "";
     /** 最近一次失败是否值得重试（域名解析失败重试也没用，超时则值得重试）。 */
     private static volatile boolean lastFailureRetryable = false;
@@ -50,11 +70,10 @@ public final class HolidayUpdater {
         FAILED
     }
 
-
     private HolidayUpdater() {
     }
 
-    /** 最近一次失败的可读原因；上次检查成功时为空串（v1.19.8）。 */
+    /** 最近一次失败的可读原因；上次检查成功时为空串。 */
     public static String lastFailureReason() {
         return lastFailure;
     }
@@ -100,91 +119,113 @@ public final class HolidayUpdater {
         lastFailure = "";
         lastFailureRetryable = false;
 
-        Result r = fetchOnce(ctx);
-        // 弱网下首次请求常卡在 DNS 或 TLS 握手上（尤其手机刚切网络时），
-        // 网络类失败退避 1 秒再试一次；HTTP 404 / 数据格式错这类失败重试无意义。
-        if (r == Result.FAILED && lastFailureRetryable) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignore) {
-                Thread.currentThread().interrupt();
-            }
-            r = fetchOnce(ctx);
+        int thisYear = LocalDate.now().getYear();
+        boolean anyOk = false;
+        boolean anyUpdated = false;
+
+        // 今年（可能有修正）+ 明年（11 月发布）。历史年份已内置，不拉。
+        for (int year : new int[]{thisYear, thisYear + 1}) {
+            Result r = fetchYear(ctx, year);
+            if (r == Result.FAILED) continue;
+            anyOk = true;
+            if (r == Result.UPDATED) anyUpdated = true;
         }
+
         markChecked(ctx);
-        return r;
-    }
-
-    private static Result fetchOnce(Context ctx) {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(DATA_URL);
-            conn = (HttpURLConnection) url.openConnection();
-            // 数据源在境外，境内访问延迟波动大（实测 2~9 秒，弱网下更久）。
-            // 手动检查有进度提示，超时放宽到 20s/30s，宁可多等也不误报失败。
-            conn.setConnectTimeout(20000);
-            conn.setReadTimeout(30000);
-            conn.setRequestMethod("GET");
-            // 部分网络/代理对空 UA 的请求直接拒绝，带上 UA 更稳
-            conn.setRequestProperty("User-Agent", userAgent(ctx));
-            conn.setRequestProperty("Accept", "text/plain");
-            conn.setInstanceFollowRedirects(true);
-
-            int code = conn.getResponseCode();
-            if (code != HttpURLConnection.HTTP_OK) {
-                lastFailure = "服务器返回 HTTP " + code;
-                lastFailureRetryable = code >= 500;
-                return Result.FAILED;
-            }
-            String body = readAll(conn.getInputStream());
-            if (body == null || body.trim().isEmpty()) {
-                lastFailure = "服务器返回了空内容";
-                lastFailureRetryable = true;
-                return Result.FAILED;
-            }
-
-            boolean changed = HolidayData.applyRemoteJson(body);
-            // v1.19.9：用解析结果标志判断，而不是「有没有远程数据」——后者在已缓存过
-            // 远程数据时永远为 true，会把解析失败误判成「已是最新」并缓存坏内容
-            if (!HolidayData.lastApplyOk()) {
-                lastFailure = "返回内容不是可识别的节假日数据";
-                lastFailureRetryable = false;
-                return Result.FAILED;
-            }
-            // 内容有变化才值得提示用户；无变化也缓存，避免下次进入时空转
-            prefs(ctx).edit().putString(KEY_REMOTE_JSON, body).apply();
-            return changed ? Result.UPDATED : Result.ALREADY_LATEST;
-        } catch (java.net.UnknownHostException e) {
-            lastFailure = "域名解析失败，当前网络可能无法访问该地址";
-            lastFailureRetryable = false;
-            return Result.FAILED;
-        } catch (java.net.SocketTimeoutException e) {
-            lastFailure = "连接超时，当前网络较慢";
-            lastFailureRetryable = true;
-            return Result.FAILED;
-        } catch (javax.net.ssl.SSLException e) {
-            lastFailure = "安全连接（TLS）建立失败";
-            lastFailureRetryable = true;
-            return Result.FAILED;
-        } catch (java.io.IOException e) {
-            lastFailure = "网络中断（" + e.getClass().getSimpleName() + "）";
-            lastFailureRetryable = true;
-            return Result.FAILED;
-        } catch (Exception e) {
-            lastFailure = "未知错误（" + e.getClass().getSimpleName() + "）";
-            lastFailureRetryable = false;
-            return Result.FAILED;
-        } finally {
-            if (conn != null) conn.disconnect();
+        if (!anyOk) return Result.FAILED;
+        if (anyUpdated) {
+            lastFailure = "";
+            return Result.UPDATED;
         }
+        return Result.ALREADY_LATEST;
     }
 
+    /**
+     * 拉取某一年的数据，两个源依次尝试。
+     *
+     * @return UPDATED / ALREADY_LATEST / FAILED（两个源都不可达）
+     */
+    private static Result fetchYear(Context ctx, int year) {
+        String lastErr = null;
+        boolean anyNotFound = false;
+        for (String tpl : SOURCES) {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(String.format(java.util.Locale.US, tpl, year));
+                conn = (HttpURLConnection) url.openConnection();
+                // 数据在 CDN / GitHub，正常几十毫秒；8s/10s 足够，弱网也不至于卡太久
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(10000);
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", userAgent(ctx));
+                conn.setInstanceFollowRedirects(true);
 
-    /** 启动时把上次缓存的远程数据先合入（保证离线时也用得上已更新过的数据）。 */
+                int code = conn.getResponseCode();
+                if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                    // 该年份文件还没建（更远的将来）。不立刻下结论——CDN 可能缓存了
+                    // 旧的 404，另一个源说不定已经有了，试完再说。
+                    anyNotFound = true;
+                    lastErr = "HTTP 404";
+                    continue;
+                }
+                if (code != HttpURLConnection.HTTP_OK) {
+                    lastErr = "HTTP " + code;
+                    continue;
+                }
+                String body = readAll(conn.getInputStream());
+                if (body == null || body.trim().isEmpty()) {
+                    lastErr = "返回了空内容";
+                    continue;
+                }
+
+                boolean changed = HolidayData.applyHolidayCnJson(body);
+                // 用解析结果标志判断，而不是「有没有远程数据」——后者在已缓存过
+                // 远程数据时永远为 true，会把解析失败误判成「已是最新」并缓存坏内容
+                if (!HolidayData.lastApplyOk()) {
+                    lastErr = "返回内容不是可识别的节假日数据";
+                    continue;
+                }
+                // 空年份（days 为空）也会走到这里：解析成功、无变化，缓存它没有意义但无害
+                prefs(ctx).edit().putString(KEY_CACHED_PREFIX + year, body).apply();
+                return changed ? Result.UPDATED : Result.ALREADY_LATEST;
+            } catch (java.net.UnknownHostException e) {
+                lastErr = "域名解析失败";
+            } catch (java.net.SocketTimeoutException e) {
+                lastErr = "连接超时";
+            } catch (javax.net.ssl.SSLException e) {
+                lastErr = "TLS 握手失败";
+            } catch (java.io.IOException e) {
+                lastErr = "网络中断（" + e.getClass().getSimpleName() + "）";
+            } catch (Exception e) {
+                lastErr = "未知错误（" + e.getClass().getSimpleName() + "）";
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+        }
+        // 两个源都说「没有这个文件」= 该年份确实还没发布，不是网络故障
+        if (anyNotFound) return Result.ALREADY_LATEST;
+        lastFailure = year + " 年数据获取失败（" + lastErr + "）";
+        lastFailureRetryable = true;
+        return Result.FAILED;
+    }
+
+    /**
+     * 启动时把缓存的远程数据先合入（保证离线时也用得上已更新过的数据）。
+     *
+     * <p>缓存格式从「单文件自定义格式」换成「按年 holiday-cn」时，旧缓存无法解析，
+     * 用 {@link #KEY_SCHEMA} 做一次性迁移：版本不符就整份清掉，让首次启动重新拉。
+     */
     public static void loadCached(Context ctx) {
-        String json = prefs(ctx).getString(KEY_REMOTE_JSON, null);
-        if (json != null && !json.isEmpty()) {
-            HolidayData.applyRemoteJson(json);
+        SharedPreferences sp = prefs(ctx);
+        if (sp.getInt(KEY_SCHEMA, 0) != SCHEMA_VERSION) {
+            sp.edit().clear().putInt(KEY_SCHEMA, SCHEMA_VERSION).apply();
+            return;
+        }
+        for (Map.Entry<String, ?> e : sp.getAll().entrySet()) {
+            if (!e.getKey().startsWith(KEY_CACHED_PREFIX)) continue;
+            if (e.getValue() instanceof String) {
+                HolidayData.applyHolidayCnJson((String) e.getValue());
+            }
         }
     }
 

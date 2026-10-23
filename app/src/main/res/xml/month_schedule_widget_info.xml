@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「本月班表」4×4（v1.50.0）。
+
+     原来这是「本周班表」拉到 4×4 时才出现的整月布局（v1.49.10）。
+     尺寸锁定后做成独立组件：42 格固定 6 行，行数不随月份天数跳。
+
+     250dp 是 4×4 的常见高度；内容是「标题 + 六行格子 + 底部两个按钮」，
+     比 4×2 那份多了整月信息，所以不能再压到 4×3——那一档会把日期和班/休压到重叠。 -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="250dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="4"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/widget_week_schedule_month_preview"
+    android:previewLayout="@layout/widget_week_schedule_month"
+    android:initialLayout="@layout/widget_week_schedule_month"
+    android:description="@string/widget_month_schedule_desc"
+    android:resizeMode="none"
+    android:widgetCategory="home_screen" />

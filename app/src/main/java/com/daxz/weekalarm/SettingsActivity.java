@@ -658,23 +658,43 @@ public class SettingsActivity extends AppCompatActivity {
     private void showPinWidgetDialog() {
         new RoundedDialog.Builder(this)
                 .setTitle("添加到桌面")
-                .setItems(new String[]{"下一个闹钟（4×2）", "本周班表（4×2）"},
-                        (d, which) -> pinWidget(which == 0
-                                ? NextAlarmWidget.class : WeekScheduleWidget.class))
+                .setItems(new String[]{
+                                "下一个闹钟（4×2）",
+                                "下一个闹钟和本周（4×4）",
+                                "本周班表（4×2）",
+                                "本月班表（4×4）"},
+                        (d, which) -> {
+                            switch (which) {
+                                case 0:
+                                    pinWidget(NextAlarmWidget.class, 110);
+                                    break;
+                                case 1:
+                                    pinWidget(NextAlarmWeekWidget.class, 250);
+                                    break;
+                                case 2:
+                                    pinWidget(WeekScheduleWidget.class, 118);
+                                    break;
+                                default:
+                                    pinWidget(MonthScheduleWidget.class, 250);
+                                    break;
+                            }
+                        })
                 .show();
     }
 
-    private void pinWidget(Class<?> provider) {
+    private void pinWidget(Class<?> provider, int heightDp) {
         android.appwidget.AppWidgetManager mgr =
                 android.appwidget.AppWidgetManager.getInstance(this);
         if (!mgr.isRequestPinAppWidgetSupported()) {
             showPinFallback();
             return;
         }
-        // 带上默认尺寸：部分启动器对 null options 直接丢弃请求
+        // 带上默认尺寸：部分启动器对 null options 直接丢弃请求。
+        // v1.50.0：高度按组件给——4×4 那两份写 110 会被系统按 4×2 摆，
+        // 固定尺寸的组件一旦初始框给小了，内容当场就被裁。
         android.os.Bundle opts = new android.os.Bundle();
         opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
-        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110);
+        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, heightDp);
         boolean asked = mgr.requestPinAppWidget(
                 new android.content.ComponentName(this, provider), opts, null);
         if (!asked) {

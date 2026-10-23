@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- previewImage 换成按布局画的 4×2 预览图（v1.49.8）。
-     原来指向 ic_launcher_foreground——小部件列表里显示成一个白卡 + 时钟图标，
-     用户看不出它长什么样。previewLayout 在 Android 12+ 才是首选，
-     但澎湃的「安卓小部件」列表不渲染它，只看 previewImage。
+<!-- 「下一个闹钟」4×2（v1.50.0 起固定尺寸）。
 
-     更新策略：主 App 在开关/改设置/响铃/开机时主动推送；
-     v1.19.9 起再加 30 分钟（系统允许的最小值）的周期刷新兜底——
-     否则长期不打开 App 时，小组件会一直停在上次写入的「下一个闹钟」，
-     过了那天就变成过期信息。 -->
+     与 v1.49.14 的区别只在语义：这一版把它当成四个固定尺寸组件之一，
+     不再靠「拉高换布局」表达更多信息——要更多信息就加另一个 4×4 组件。
+     resizeMode="none" 是固定尺寸的唯一开关（maxResizeHeight 管不了菜单项，
+     v1.49.13 已经试过）。 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"

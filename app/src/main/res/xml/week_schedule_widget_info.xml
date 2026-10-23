@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 本周班表小组件（v1.20；v1.34.0 抬高最小高度）。
+<!-- 本周班表小组件（v1.20；v1.34.0 抬高最小高度；v1.50.0 固定尺寸）。
      尺寸按「一行 7 个格子」设计：4×2 时每格约 44dp 宽，2 字标签（请假/加班）也放得下；
      更窄时系统会等比压缩，因此 minWidth 不宜再小。
 
      高度：内容 = 七格（每格 13sp 数字 + 9.5sp 标签 ≈ 35dp）+ 底部两个按钮 + 内边距。
      原来 minResizeHeight 96dp，扣掉内边距只剩 22dp 给七格，格子被压扁到标签被裁；
-     现在按实测内容高度给到 110dp，默认 minHeight 118dp（4×2 的常见高度）。 -->
+     现在按实测内容高度给到 118dp（4×2 的常见高度）。
+
+     v1.50.0：resizeMode 从 horizontal|vertical 改成 none，minResize* 一并去掉——
+     尺寸锁死之后这两个下限属性不起作用；而真锁不住时也轮不到它们
+     （v1.49.13 的 maxResizeHeight 已经证明国产桌面不认这类上下限）。 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="118dp"
     android:targetCellWidth="4"
     android:targetCellHeight="2"
-    android:minResizeWidth="200dp"
-    android:minResizeHeight="110dp"
     android:updatePeriodMillis="1800000"
     android:previewImage="@drawable/widget_week_schedule_preview"
     android:previewLayout="@layout/widget_week_schedule"
     android:initialLayout="@layout/widget_week_schedule"
     android:description="@string/widget_week_schedule_desc"
-    android:resizeMode="horizontal|vertical"
+    android:resizeMode="none"
     android:widgetCategory="home_screen" />

@@ -2,7 +2,12 @@ package com.daxz.weekalarm;
 
 import android.content.Context;
 
-/** 桌面小组件的统一刷新入口（v1.20）：主 App 只调这一个方法，避免漏刷某一个组件。 */
+/**
+ * 桌面小组件的统一刷新入口（v1.20）：主 App 只调这一个方法，避免漏刷某一个组件。
+ *
+ * <p>v1.50.0 起组件从两个变成四个（4×2 / 4×4 各两份），这里按「一个都不漏」的原则
+ * 全部列出来。每个调用各自 try-catch：某个组件的数据算炸了，不能连带另外三个一起停刷。
+ */
 public final class Widgets {
 
     private Widgets() {
@@ -15,7 +20,15 @@ public final class Widgets {
         } catch (Throwable ignore) {
         }
         try {
+            NextAlarmWeekWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
             WeekScheduleWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthScheduleWidget.updateAll(ctx);
         } catch (Throwable ignore) {
         }
     }
@@ -27,6 +40,8 @@ public final class Widgets {
      * PendingIntent 探测（跨进程 IPC）。小组件再算一遍，等于每次刷新多付一次同样的钱。
      * 桌面没放小组件时 {@code getAppWidgetIds} 为空、本来就跳过，所以收益只落在
      * 「真的放了小组件」的用户身上——而那正是最在意这个 App 的人。
+     *
+     * <p>只有两个「闹钟」组件吃这份结果；两个班表组件算的是另一套东西，照旧自己算。
      */
     public static void updateAll(Context ctx, ScheduleManager.NextAlarm next, int count) {
         if (ctx == null) return;
@@ -35,7 +50,15 @@ public final class Widgets {
         } catch (Throwable ignore) {
         }
         try {
+            NextAlarmWeekWidget.updateAll(ctx, next, count);
+        } catch (Throwable ignore) {
+        }
+        try {
             WeekScheduleWidget.updateAll(ctx);
+        } catch (Throwable ignore) {
+        }
+        try {
+            MonthScheduleWidget.updateAll(ctx);
         } catch (Throwable ignore) {
         }
     }

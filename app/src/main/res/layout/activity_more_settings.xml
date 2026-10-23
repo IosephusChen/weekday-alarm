@@ -394,6 +394,53 @@
                             </LinearLayout>
 
                             <View style="@style/SettingsDivider" />
+
+                            <!-- v1.51.2：节气单独一个开关，不并进「农历节日」——
+                                 农历那个管的是重阳、寒衣这类节日名，节气是另一类信息。 -->
+                            <LinearLayout
+                                android:id="@+id/row_solar_terms"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="64dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="16dp"
+                                android:paddingTop="10dp"
+                                android:paddingEnd="14dp"
+                                android:paddingBottom="10dp">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        style="@style/SettingsTitle"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="二十四节气" />
+
+                                    <TextView
+                                        style="@style/SettingsSummary"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="2dp"
+                                        android:text="霜降、惊蛰这些日子在日历里显示名字；覆盖 2020–2040" />
+                                </LinearLayout>
+
+                                <androidx.appcompat.widget.SwitchCompat
+                                    android:id="@+id/switch_solar_terms"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:clickable="false"
+                                    android:focusable="false" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
                             <LinearLayout
                                 android:id="@+id/row_christian"
                                 android:layout_width="match_parent"

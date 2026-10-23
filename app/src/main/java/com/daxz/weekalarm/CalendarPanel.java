@@ -132,6 +132,8 @@ final class CalendarPanel {
         // 农历 / 基督教节日开关只读一次（42 个格子逐个读 SharedPreferences 是白花 42 次读）
         boolean lunar = Prefs.isLunarFestivals(host);
         boolean christian = Prefs.isChristianFestivals(host);
+        // v1.51.2：节气开关也只读一次，理由同上
+        boolean solarTerms = Prefs.isSolarTerms(host);
         LocalDate first = LocalDate.of(year, month, 1);
         // 一周开始日可设为周一或周日，网格首列与表头一起旋转；只影响显示，不影响班/休判定
         boolean sundayFirst = Prefs.isSundayFirst(host);
@@ -185,12 +187,16 @@ final class CalendarPanel {
                             ? HolidayData.holidayName(d) : null;
                     String fest = (lunar && type != WeekSchedule.DayType.MAKEUP_WORK)
                             ? LunarCalendar.festival(d) : null;
+                    String term = (solarTerms && type != WeekSchedule.DayType.MAKEUP_WORK)
+                            ? SolarTerm.termOf(d) : null;
                     String christ = (christian && type != WeekSchedule.DayType.MAKEUP_WORK)
                             ? ChristianCalendar.festival(d) : null;
                     if (legal != null) {
                         label = legal;
                     } else if (fest != null) {
                         label = fest;
+                    } else if (term != null) {
+                        label = term;
                     } else if (christ != null) {
                         label = christ;
                     } else {

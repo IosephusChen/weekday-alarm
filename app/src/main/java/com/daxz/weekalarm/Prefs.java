@@ -166,6 +166,26 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_MONTH_WIDGET_ALARM, on).apply();
     }
 
+    // ================= 二十四节气（v1.51.2）=================
+
+    /**
+     * 节气开关，与「农历节日」分开。
+     *
+     * <p>不并进农历开关：农历那个管的是「重阳」「寒衣」这类传统节日名，
+     * 节气（霜降、惊蛰）是另一类信息——有人只想要节气、不想要传统节日名。
+     *
+     * <p>默认打开：节气是日历常识，且只在当天那一格显示两个字，不占地方。
+     */
+    public static final String KEY_SOLAR_TERMS = "solar_terms";
+
+    public static boolean isSolarTerms(Context c) {
+        return sp(c).getBoolean(KEY_SOLAR_TERMS, true);
+    }
+
+    public static void setSolarTerms(Context c, boolean on) {
+        sp(c).edit().putBoolean(KEY_SOLAR_TERMS, on).apply();
+    }
+
     public static int getAlarmHour(Context c) {
         return sp(c).getInt(KEY_ALARM_HOUR, 7);
     }

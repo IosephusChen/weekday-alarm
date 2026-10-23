@@ -241,6 +241,32 @@ public class WidgetRemoteViewsTest {
         }
     }
 
+    /**
+     * 节气要进整月格子，并且受开关控制（v1.51.2）。
+     *
+     * <p>2026-10-23 是霜降，周一开头时落在下标 25（(23−1)+3）。
+     * 关掉开关后应该退回「班 / 休」——不是空着。
+     */
+    @Test
+    public void monthCell_showsSolarTermAndRespectsSwitch() {
+        Context c = ctx();
+        LocalDate d = LocalDate.of(2026, 10, 23);
+        Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);
+        try {
+            Prefs.setSolarTerms(c, true);
+            MonthWidgetRender.Model on = MonthWidgetRender.compute(c, d);
+            assertEquals("霜降", on.tags[25]);
+
+            Prefs.setSolarTerms(c, false);
+            MonthWidgetRender.Model off = MonthWidgetRender.compute(c, d);
+            assertTrue("关掉节气后应退回班/休，实际是「" + off.tags[25] + "」",
+                    "班".equals(off.tags[25]) || "休".equals(off.tags[25]));
+        } finally {
+            Prefs.setSolarTerms(c, true);
+            Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);
+        }
+    }
+
     private static String text(View root, int id) {
         TextView tv = root.findViewById(id);
         assertNotNull("找不到视图 " + id, tv);

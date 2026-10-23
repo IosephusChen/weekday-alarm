@@ -135,11 +135,16 @@ final class MonthWidgetRender {
                         ? HolidayData.holidayName(d) : null;
                 String lunar = (Prefs.isLunarFestivals(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
                         ? LunarCalendar.festival(d) : null;
+                // 节气（v1.51.2）：排在农历节日之后。重阳、中秋这类「过节」比「霜降」更值得占位；
+                // 但比基督教节日靠前——节气和农历同属中国历法体系，优先级接近。
+                String term = (Prefs.isSolarTerms(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
+                        ? SolarTerm.termOf(d) : null;
                 String christian = (Prefs.isChristianFestivals(ctx)
                         && type != WeekSchedule.DayType.MAKEUP_WORK)
                         ? ChristianCalendar.festival(d) : null;
                 if (legal != null) m.tags[i] = legal;
                 else if (lunar != null) m.tags[i] = lunar;
+                else if (term != null) m.tags[i] = term;
                 else if (christian != null) m.tags[i] = christian;
                 else m.tags[i] = work ? "班" : "休";
             }

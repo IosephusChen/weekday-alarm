@@ -603,6 +603,8 @@ public class MainActivity extends AppCompatActivity {
         boolean lunarOn = Prefs.isLunarFestivals(this);
         String lunarText = lunarOn ? LunarCalendar.fullText(today) : "";
         String fest = lunarOn ? LunarCalendar.festival(today) : null;
+        // v1.51.2：节气排在农历节日之后、基督教节日之前
+        String term = Prefs.isSolarTerms(this) ? SolarTerm.termOf(today) : null;
         String christ = Prefs.isChristianFestivals(this) ? ChristianCalendar.festival(today) : null;
         StringBuilder sub = new StringBuilder();
         if (legal != null) sub.append(legal);
@@ -614,6 +616,10 @@ public class MainActivity extends AppCompatActivity {
         if (fest != null && !fest.equals(legal)) {
             if (sub.length() > 0) sub.append(" · ");
             sub.append(fest);
+        }
+        if (term != null && !term.equals(legal) && !term.equals(fest)) {
+            if (sub.length() > 0) sub.append(" · ");
+            sub.append(term);
         }
         if (christ != null && !christ.equals(legal) && !christ.equals(fest)) {
             if (sub.length() > 0) sub.append(" · ");

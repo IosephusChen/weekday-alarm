@@ -42,6 +42,8 @@ public class SettingsActivity extends AppCompatActivity {
     private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
     /** 本月班表是否显示闹钟（v1.51.1，三个整月变体共用）。 */
     private SwitchCompat swMonthAlarm;
+    /** 二十四节气开关（v1.51.2）。 */
+    private SwitchCompat swSolarTerms;
     private SwitchCompat swChristian;
     /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
@@ -135,6 +137,7 @@ public class SettingsActivity extends AppCompatActivity {
         swVibrate = findViewById(R.id.switch_vibrate);
         swLunar = findViewById(R.id.switch_lunar);
         swMonthAlarm = findViewById(R.id.switch_month_alarm);
+        swSolarTerms = findViewById(R.id.switch_solar_terms);
         swChristian = findViewById(R.id.switch_christian);
         swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
         swBedtime = findViewById(R.id.switch_bedtime);
@@ -210,6 +213,13 @@ public class SettingsActivity extends AppCompatActivity {
         if (swLunar != null) swLunar.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setLunarFestivals(this, checked);
+        });
+        // v1.51.2：二十四节气开关（只影响日历显示）
+        bind(R.id.row_solar_terms, v -> { if (swSolarTerms != null) swSolarTerms.toggle(); });
+        if (swSolarTerms != null) swSolarTerms.setOnCheckedChangeListener((v, checked) -> {
+            if (swAttaching) return;
+            Prefs.setSolarTerms(this, checked);
+            Widgets.updateAll(this);   // 三个整月组件都会用到，立刻刷一次
         });
         // v1.21：基督教节日开关（同样只影响日历显示）
         bind(R.id.row_christian, v -> { if (swChristian != null) swChristian.toggle(); });
@@ -294,6 +304,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
         if (swLunar != null) swLunar.setChecked(Prefs.isLunarFestivals(this));
         if (swMonthAlarm != null) swMonthAlarm.setChecked(Prefs.isMonthWidgetAlarm(this));
+        if (swSolarTerms != null) swSolarTerms.setChecked(Prefs.isSolarTerms(this));
         if (swChristian != null) swChristian.setChecked(Prefs.isChristianFestivals(this));
         if (swBedtimeWorkday != null) swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
         if (swPreNotice != null) swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);

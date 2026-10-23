@@ -303,4 +303,23 @@ public class WeekModeTest {
 
         assertEquals("应沿用上次的周六休", WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(c));
     }
+
+    /**
+     * 「单休休哪天」的选项只写哪天休，不写哪天上班（v1.49.4）。
+     *
+     * <p>原来写「周日休（周六上班）」。休一天，另一天自然要上班，括号是把
+     * 结论重复一遍；同一个对话框里「小周休哪天」也没写，两处还不一致。
+     * 这条钉住，免得下次又有人「顺手补全」。
+     */
+    @Test
+    public void singleRestOptions_sayOnlyTheRestDay() {
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+
+        assertEquals("周日休",
+                ((android.widget.RadioButton) d.findViewById(R.id.rb_single_sun)).getText().toString());
+        assertEquals("周六休",
+                ((android.widget.RadioButton) d.findViewById(R.id.rb_single_sat)).getText().toString());
+    }
 }

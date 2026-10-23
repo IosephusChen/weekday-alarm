@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">打工人闹钟</string>
-    <string-array name="small_rest_options">
-        <item>小周休周日（周六上班）</item>
-        <item>小周休周六（周日上班）</item>
-    </string-array>
     <string name="widget_next_alarm_desc">在桌面一眼看到下一个闹钟</string>
     <string name="widget_week_schedule_desc">本周班表：一眼看清这周哪天上班、哪天休息</string>
 </resources>

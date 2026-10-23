@@ -175,7 +175,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:minHeight="40dp"
-                    android:text="周日休（周六上班）" />
+                    android:text="周日休" />
 
                 <RadioButton
                     android:id="@+id/rb_single_sat"
@@ -184,7 +184,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:minHeight="40dp"
-                    android:text="周六休（周日上班）" />
+                    android:text="周六休" />
             </RadioGroup>
         </LinearLayout>
     </LinearLayout>

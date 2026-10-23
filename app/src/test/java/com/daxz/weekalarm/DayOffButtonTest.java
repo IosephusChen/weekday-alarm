@@ -165,14 +165,14 @@ public class DayOffButtonTest {
         MainActivity a = launch();
         TextView btn = a.findViewById(R.id.btn_day_off);
         int white = ContextCompat.getColor(ctx(), R.color.white);
-        int indigoDark = ContextCompat.getColor(ctx(), R.color.indigo_dark);
+        int heroText = ContextCompat.getColor(ctx(), R.color.hero_text);
 
         assertEquals("未标记时是白字", white, btn.getCurrentTextColor());
         Object idleBg = btn.getBackground();
 
         btn.performClick();
         assertNotSame("标记后背景应换成「已生效」那一张", idleBg, btn.getBackground());
-        assertEquals("标记后是紫字（实白底上才读得清）", indigoDark, btn.getCurrentTextColor());
+        assertEquals("标记后是紫字（实白底上才读得清）", heroText, btn.getCurrentTextColor());
 
         btn.performClick();
         assertEquals("撤销后字色要回到白", white, btn.getCurrentTextColor());

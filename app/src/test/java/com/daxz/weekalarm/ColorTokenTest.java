@@ -38,8 +38,15 @@ public class ColorTokenTest {
      * 明确不需要夜间版本的色。
      *
      * <p>只允许一种情况：这个色<b>永远画在一个不随明暗变化的底上</b>。
-     * 目前只有班表小组件——它的底色是固定的紫色渐变（{@code bg_hero}），
-     * 深色模式下也一样，所以标签色不需要跟着变。
+     * v1.56.0 起有两组：
+     * <ul>
+     *   <li>{@code widget_*}：班表小组件的标签色，压在固定紫色渐变（{@code bg_hero}）上</li>
+     *   <li>{@code hero_start / hero_end / hero_text}：v1.56.0 紫色卡片事故后新立的固定 token。
+     *       渐变是这套 UI 的识别色、不是主题色，深浅模式下都该是同一个紫；
+     *       在此之前它们引用 {@code indigo / violet / indigo_dark}，这三个色有夜间版，
+     *       深色模式下三张卡（两个小部件根背景 + 首页「今日状态」卡）一起变成淡粉紫。
+     *       详见 {@code values/colors.xml} 里同名字段的注释。</li>
+     * </ul>
      */
     private static final Set<String> NIGHTLESS = new LinkedHashSet<>();
 
@@ -50,6 +57,9 @@ public class ColorTokenTest {
         NIGHTLESS.add("widget_makeup");
         NIGHTLESS.add("widget_vacation");
         NIGHTLESS.add("widget_overtime");
+        NIGHTLESS.add("hero_start");
+        NIGHTLESS.add("hero_end");
+        NIGHTLESS.add("hero_text");
     }
 
     @Test

@@ -555,8 +555,11 @@ public class MainActivity extends AppCompatActivity {
         // v1.34.1：标记生效后换「实白底 + 紫字」，跟桌面小组件同一个状态同一套视觉。
         // 之前只有文案尾巴多个 ✓，压在紫色渐变上几乎看不出来——用户点完不确定到底生效没有。
         // 两处都显式设置，不靠布局默认值：撤销时必须能换回来。
+        // v1.56.0：紫字从 indigo_dark 换成 hero_text。这按钮压在首页紫卡（bg_hero_full）上，
+        // 而那张卡的底已经改成固定渐变（hero_start → hero_end），字色跟着固定才压得住；
+        // indigo_dark 有夜间版（#4F46E5），深色模式下会亮一档，白底上发飘。
         btn.setBackgroundResource(marked ? R.drawable.bg_hero_pill_on : R.drawable.bg_hero_pill);
-        btn.setTextColor(ContextCompat.getColor(this, marked ? R.color.indigo_dark : R.color.white));
+        btn.setTextColor(ContextCompat.getColor(this, marked ? R.color.hero_text : R.color.white));
         // selected 只是语义标记（供无障碍与以后接 selector 用），真正生效的是上面两行
         btn.setSelected(marked);
     }

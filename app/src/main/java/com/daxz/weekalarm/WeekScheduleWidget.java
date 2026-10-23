@@ -131,7 +131,9 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         }
         // 标题取显示周的最后一天（周六）：周一 / 周日起始下都落在同一周，不会差一周
         String title = WeekSchedule.describe(rule, start.plusDays(6));
-        String sub = "闹钟已开启";
+        // v1.52.0：原来这里写死「闹钟已开启」，闹钟全关也照样这么显示。
+        // 与三个本月变体共用同一句状态，桌面上几张卡不会各说各话。
+        String sub = Widgets.alarmStatusText(ctx);
 
         // 底部两个按钮：今天和明天各一个。早上关心「今天能不能不去」，
         // 睡前关心「明早能不能不去」——同一件事的两个时间点，都放在手边

@@ -276,8 +276,8 @@ public class WidgetRemoteViewsTest {
     /**
      * 「本月班表显示闹钟」开关必须同时管住三个变体（v1.51.1）。
      *
-     * <p>4×4 的闹钟是独立一行；4×3 和「本周 · 大周」叠在标题行右侧的同一个
-     * FrameLayout 里，只能二选一——这里把两个布局的差异一起钉住。
+     * <p>v1.52.0 起两份布局结构一致：闹钟并进标题行、只报状态不报时刻，
+     * 且不再把「本周 · 大周」挤掉。这里把这两点一起钉住。
      */
     @Test
     public void monthAlarmRow_followsGlobalSwitch() {
@@ -285,27 +285,51 @@ public class WidgetRemoteViewsTest {
         try {
             Prefs.setMonthWidgetAlarm(c, true);
             View on4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("4×4 闹钟行该显示", View.VISIBLE,
+            assertEquals("4×4 闹钟状态该显示", View.VISIBLE,
                     on4.findViewById(R.id.widget_month_alarm).getVisibility());
+            assertEquals("4×4 闹钟只报状态，不报具体时刻",
+                    "闹钟已开启", text(on4, R.id.widget_month_alarm));
 
             View on3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("4×3 闹钟该显示", View.VISIBLE,
+            assertEquals("4×3 闹钟状态该显示", View.VISIBLE,
                     on3.findViewById(R.id.widget_month_alarm).getVisibility());
-            assertEquals("4×3 显示闹钟时「本周 · 大周」要让位", View.GONE,
+            assertEquals("4×3 的周次不该被闹钟挤掉", View.VISIBLE,
                     on3.findViewById(R.id.widget_month_sub).getVisibility());
 
             Prefs.setMonthWidgetAlarm(c, false);
             View off4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("关掉后 4×4 闹钟行该隐藏", View.GONE,
+            assertEquals("关掉后 4×4 闹钟状态该隐藏", View.GONE,
                     off4.findViewById(R.id.widget_month_alarm).getVisibility());
 
             View off3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("关掉后 4×3 闹钟该隐藏", View.GONE,
+            assertEquals("关掉后 4×3 闹钟状态该隐藏", View.GONE,
                     off3.findViewById(R.id.widget_month_alarm).getVisibility());
-            assertEquals("关掉后「本周 · 大周」要回来", View.VISIBLE,
+            assertEquals("关掉后周次照旧显示", View.VISIBLE,
                     off3.findViewById(R.id.widget_month_sub).getVisibility());
         } finally {
             Prefs.setMonthWidgetAlarm(c, true);
+        }
+    }
+
+    /**
+     * 状态要跟着实际走：闹钟全关时不能还写「已开启」（v1.52.0）。
+     *
+     * <p>4×2 本周班表那行原来是布局里写死的常量，关掉所有闹钟照样显示「闹钟已开启」。
+     * 既然这次把整月卡改成一句话，就顺手做成真的。
+     */
+    @Test
+    public void alarmStatus_reflectsActualState() {
+        Context c = ctx();
+        try {
+            Prefs.setAlarms(c, new java.util.ArrayList<Alarm>());
+            assertEquals("闹钟未开启", Widgets.alarmStatusText(c));
+
+            Prefs.setAlarms(c, new java.util.ArrayList<>(
+                    java.util.Collections.singletonList(
+                            new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true))));
+            assertEquals("闹钟已开启", Widgets.alarmStatusText(c));
+        } finally {
+            resetPrefs();
         }
     }
 }

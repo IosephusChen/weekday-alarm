@@ -17,10 +17,13 @@ import java.time.LocalDate;
  *
  * <table>
  *   <tr><th>变体</th><th>尺寸</th><th>按钮</th></tr>
- *   <tr><td>{@link MonthScheduleWidget}</td><td>4×4</td><td>有，闹钟独立一行</td></tr>
- *   <tr><td>{@link MonthCompactWidget}</td><td>4×3</td><td>有，闹钟在标题行右侧</td></tr>
+ *   <tr><td>{@link MonthScheduleWidget}</td><td>4×4</td><td>有</td></tr>
+ *   <tr><td>{@link MonthCompactWidget}</td><td>4×3</td><td>有</td></tr>
  *   <tr><td>{@link MonthMinimalWidget}</td><td>4×3</td><td>无</td></tr>
  * </table>
+ *
+ * <p>v1.52.0 起闹钟不再占独立一行，三个变体的标题行结构一致（月份 + 周次 + 闹钟状态），
+ * 差异只剩尺寸和底部按钮。
  *
  * <p>三个变体只在这两处不同，42 格的算与画全部走 {@link MonthWidgetRender}。
  * 试用期结束后删掉落选的两个，这个基类跟着删。

@@ -192,7 +192,7 @@ final class MonthWidgetRender {
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
         }
 
-        bindAlarm(rv, ctx, layout, withAlarm);
+        bindAlarm(rv, ctx, withAlarm);
 
         // 今天 / 明天请假：与 4×2 那套同一个实现，切到整月后按钮不能消失
         rv.setViewVisibility(R.id.widget_month_actions,
@@ -216,21 +216,19 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 闹钟那一行的显隐。
+     * 闹钟状态那一格（v1.52.0 收成一句话）。
      *
-     * <p>两份布局的摆法不同：4×4 里闹钟是独立一行，{@code widget_month_sub} 照常显示；
-     * 4×3 里闹钟和「本周 · 大周」叠在标题行右侧的同一个 FrameLayout 里，只能二选一。
+     * <p>v1.51.x 写的是「10月24日 周六 07:30」，4×4 还单独占一整行。用户反馈
+     * 「多余的信息太多，像 4×2 那样显示个闹钟已开启就行」——整月日历本来就在看日期，
+     * 再报一遍具体时刻是重复；要不要知道几点几分，4×2 的闹钟卡更合适。
+     *
+     * <p>两份布局现在结构一致：标题行 = 月份 + 周次 + 闹钟状态，42 格从第二行起。
+     * 4×4 因此省下整整一行，格子反而更舒展。
      */
-    private static void bindAlarm(RemoteViews rv, Context ctx, int layout, boolean withAlarm) {
-        boolean compact = layout == R.layout.widget_month_compact;
-        if (withAlarm) {
-            NextAlarmWidget.WidgetModel next = NextAlarmWidget.computeModel(ctx);
-            rv.setTextViewText(R.id.widget_month_alarm, next.title);
-            rv.setViewVisibility(R.id.widget_month_alarm, View.VISIBLE);
-            if (compact) rv.setViewVisibility(R.id.widget_month_sub, View.GONE);
-        } else {
-            rv.setViewVisibility(R.id.widget_month_alarm, View.GONE);
-            if (compact) rv.setViewVisibility(R.id.widget_month_sub, View.VISIBLE);
-        }
+    private static void bindAlarm(RemoteViews rv, Context ctx, boolean withAlarm) {
+        rv.setTextViewText(R.id.widget_month_alarm, Widgets.alarmStatusText(ctx));
+        rv.setViewVisibility(R.id.widget_month_alarm, withAlarm ? View.VISIBLE : View.GONE);
+        // 「小周 · 休1天」不再给闹钟让位：两者现在并排，各自都有位置
+        rv.setViewVisibility(R.id.widget_month_sub, View.VISIBLE);
     }
 }

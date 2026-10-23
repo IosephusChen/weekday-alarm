@@ -34,30 +34,30 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- 「本周 · 大周」和闹钟二选一：开关关掉显示前者，打开显示后者 -->
-        <FrameLayout
+        <!-- 周次和闹钟状态并排（v1.52.0）：原来叠在同一个 FrameLayout 里二选一，
+             显示闹钟时「本周 · 大周」就没了。现在两个都要，一句话占不了多宽。 -->
+        <TextView
+            android:id="@+id/widget_month_sub"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="本周 · 大周"
+            android:textColor="#E6E4FF"
+            android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/widget_month_sub"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="本周 · 大周"
-                android:textColor="#E6E4FF"
-                android:textSize="10sp" />
-
-            <TextView
-                android:id="@+id/widget_month_alarm"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text=""
-                android:textColor="#E6E4FF"
-                android:textSize="10sp"
-                android:visibility="gone" />
-        </FrameLayout>
+        <TextView
+            android:id="@+id/widget_month_alarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="闹钟已开启"
+            android:textColor="#E6E4FF"
+            android:textSize="10sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- 表头：文字由 MonthWidgetRender.build() 按「每周第一天」设置写，

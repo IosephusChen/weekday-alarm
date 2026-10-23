@@ -37,24 +37,27 @@
             android:id="@+id/widget_month_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="本周 · 大周"
             android:textColor="#E6E4FF"
             android:textSize="10sp" />
-    </LinearLayout>
 
-    <!-- 下一个闹钟（v1.51.1，可在设置里关）。4×4 有空间，单独占一行；
-         4×3 那份没有这个余量，闹钟放在标题行右侧。 -->
-    <TextView
-        android:id="@+id/widget_month_alarm"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text=""
-        android:textColor="#E6E4FF"
-        android:textSize="10sp"
-        android:visibility="gone" />
+        <!-- 闹钟状态（v1.52.0）：原来单独占一行、写「10月24日 周六 07:30」，
+             用户嫌信息太多。收成一句话并进标题行，和 4×2 本周班表一个样子。 -->
+        <TextView
+            android:id="@+id/widget_month_alarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="闹钟已开启"
+            android:textColor="#E6E4FF"
+            android:textSize="10sp"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <!-- 表头：文字由 MonthWidgetRender.build() 按「每周第一天」设置写，
          不能在布局里写死。v1.50.0 之前这里硬编码「一 二 三 四 五 六 日」，

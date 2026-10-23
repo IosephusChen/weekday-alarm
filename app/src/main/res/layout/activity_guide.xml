@@ -34,7 +34,7 @@
             android:visibility="invisible" />
 
         <!-- v1.47.0：右上角两个出口并排。「导入」只在第 1 页出现（见 updateChrome）——
-             换机的人看到「你的班表是哪一种？」那一刻，正是他犹豫要不要重填的时候；
+             换机的人看到「你的周休制度是哪一种？」那一刻，正是他犹豫要不要重填的时候；
              点完导入会直接跳到第 3 页开权限，而不是进主界面（新手机没权限 = 闹钟不响）。 -->
         <LinearLayout
             android:layout_width="wrap_content"
@@ -114,7 +114,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp"
                     android:gravity="center"
-                    android:text="你的班表是哪一种？"
+                    android:text="你的周休制度是哪一种？"
                     android:textColor="@color/ink"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -750,7 +750,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="必开 · 划掉 App 后还能响"
+                            android:text="手动开启 · 划掉 App 后还能响"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
                     </LinearLayout>

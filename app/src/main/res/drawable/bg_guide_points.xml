@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- 引导页要点卡片（v1.22.1）：白底 + 大圆角，让三条要点的左边缘成为可见边界。
-     此前要点直接铺在浅灰背景上，左对齐的文字和居中的标题对不齐，看着像排版错位。 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/card" />
-    <corners android:radius="16dp" />
-</shape>

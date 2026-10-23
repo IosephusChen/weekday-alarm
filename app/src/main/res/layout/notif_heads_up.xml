@@ -63,6 +63,6 @@
         android:paddingEnd="14dp"
         android:paddingTop="7dp"
         android:paddingBottom="7dp"
-        android:text="关闭闹钟"
+        android:text="这次不响"
         android:textSize="13sp" />
 </LinearLayout>

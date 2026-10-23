@@ -275,7 +275,7 @@ public class PreNoticeTest {
         assertNull("还没到提醒时刻，不该提前发", preNoticeNotification());
     }
 
-    /** 常驻通知：点进详情不会消失，也不能被划掉；按钮叫「关闭闹钟」。 */
+    /** 常驻通知：点进详情不会消失，也不能被划掉；按钮叫「这次不响」。 */
     @Test
     public void preNotice_isOngoingWithCloseAction() {
         reset();
@@ -290,7 +290,7 @@ public class PreNoticeTest {
         assertEquals("点通知进详情后不该自动消失",
                 0, n.flags & Notification.FLAG_AUTO_CANCEL);
         assertNotNull("应有操作按钮", n.actions);
-        assertEquals("关闭闹钟", n.actions[0].title.toString());
+        assertEquals("这次不响", n.actions[0].title.toString());
         // v1.23.3：icon 传 0 时 MIUI / 澎湃会整条 action 都不渲染，
         // 通知栏里只剩文字，按钮永远看不见
         assertNotNull("按钮必须带图标，否则 ROM 不显示这个按钮", n.actions[0].getIcon());
@@ -320,7 +320,7 @@ public class PreNoticeTest {
         // 必须真的把 RemoteViews 应用出来看，才能验到运行时塞进去的字
         View card = n.contentView.apply(ctx(), new android.widget.FrameLayout(ctx()));
         TextView action = card.findViewById(R.id.nc_action);
-        assertEquals("关闭闹钟", action.getText().toString());
+        assertEquals("这次不响", action.getText().toString());
         assertEquals("只有一个操作，第二个药丸应隐藏",
                 View.GONE, card.findViewById(R.id.nc_action2).getVisibility());
     }

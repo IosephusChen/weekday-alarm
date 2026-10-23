@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -89,7 +90,11 @@ public class HelpActivityTest {
         String all = allText(a);
 
         assertTrue("不该再出现「第一次用」这种会误导的文案", !all.contains("第一次用"));
-        assertTrue("应指路到设置页里的引导入口", all.contains("设置 → 新手引导与权限"));
+        // v1.49.3：引导在「更多设置」里，路径少写一层用户会找不到。
+        // 断言整条路径而不是「设置 → 新手引导与权限」——后者是前者的子串，
+        // 写成那样连旧文案也能通过。
+        assertTrue("应指路到设置页里的引导入口",
+                all.contains("设置 → 更多设置 → 新手引导与权限"));
         // 点页面里任何地方都不该跳走：本页只有返回键一个动作
         assertNull("说明页不该再有自己的跳转按钮",
                 Shadows.shadowOf(a).getNextStartedActivity());
@@ -157,5 +162,22 @@ public class HelpActivityTest {
                 collect(g.getChildAt(i), sb);
             }
         }
+    }
+
+    /**
+     * 说明页不能指向已经不存在的入口（v1.49.3）。
+     *
+     * <p>这两句是 v1.46.3 / v1.49.2 遗留下来的：周休制度早从首页「排班」卡搬进设置，
+     * 「小周休哪天」也已经并进周休制度对话框。文案没跟着改，用户照着找会扑空。
+     * 单独断言而不是靠人眼复查——文档类文案最容易在改结构时被忘掉。
+     */
+    @Test
+    public void helpPage_doesNotPointToRemovedEntries() {
+        HelpActivity a = launch();
+        String all = allText(a);
+
+        assertFalse("周休制度不在首页「排班」卡里了", all.contains("首页「排班」卡"));
+        assertFalse("「小周休哪天」已并进周休制度对话框，不再是独立入口",
+                all.contains("再点「小周休哪天」"));
     }
 }

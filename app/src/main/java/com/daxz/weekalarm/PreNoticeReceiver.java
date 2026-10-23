@@ -160,7 +160,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 // 没有图标，干脆不渲染——通知栏里始终看不到「关闭闹钟」按钮。
                 .addAction(new Notification.Action.Builder(
                         Icon.createWithResource(ctx, R.drawable.ic_notif_close),
-                        "关闭闹钟", cancelPi).build());
+                        "这次不响", cancelPi).build());
         // v1.45.0：这条通知**不再显示读秒倒计时**（用户要求）。
         //
         // 卡片里的 Chronometer 每秒跳一次，眼睛会一直往那儿瞟，反而比「14:10 响铃」
@@ -185,7 +185,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 设了 customContentView，折叠态就是我们的布局，按钮直接躺在卡片上。
         nb.setCustomContentView(
                 NotifCard.build(ctx, label + " 即将响铃", sub, 0, popupPi,
-                        NotifCard.Button.primary("关闭闹钟", cancelPi)));
+                        NotifCard.Button.primary("这次不响", cancelPi)));
         // v1.23.4：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
         // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，
         // 而「还有 10 分钟」比「14:10」更能让人马上起身。

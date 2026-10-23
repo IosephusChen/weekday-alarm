@@ -3,7 +3,7 @@
      参考澎湃系统闹钟的分层：主页只放高频项，其余按领域进二级页。
      主页 8 项：
        闹钟    —— 音量（就地滑块）、铃声、更多响铃设置 ›
-       排程    —— 周休制度、节假日数据
+       排班    —— 周休制度、节假日数据
        提醒    —— 睡前提醒、响铃前提醒（行尾开关）
        其他    —— 更多设置 ›
      版式沿用原有语言（居中顶栏、行间 1dp 分隔线、左标题右值），
@@ -173,14 +173,14 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== 排程与节假日 ===== -->
+        <!-- ===== 排班与节假日 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="8dp"
-            android:text="排程与节假日" />
+            android:text="排班与节假日" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -392,7 +392,7 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 更多设置（v1.49.0）：排程校准、检查与工具、备份，共 14 项 -->
+            <!-- 更多设置（v1.49.0）：排班与显示、睡前提醒条件、检查与帮助、备份，共 12 项 -->
             <LinearLayout
                 android:id="@+id/row_more"
                 android:layout_width="match_parent"
@@ -417,7 +417,7 @@
                     style="@style/SettingsSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="校准 · 检查 · 备份" />
+                    android:text="排班 · 检查 · 备份" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>

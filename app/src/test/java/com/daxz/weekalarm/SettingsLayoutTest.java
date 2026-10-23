@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -211,5 +212,43 @@ public class SettingsLayoutTest {
         assertEquals("再打开要回到 21:30", 21 * 60 + 30, Prefs.getBedtimeMinutes(ctx()));
 
         ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 二级页的分区名要能自解释（v1.49.3）。
+     *
+     * <p>原来那三段叫「排程 / 检查与工具 / 备份与恢复」：第一段里装着一周开始日、
+     * 提醒范围、节日开关，「检查与工具」里装着使用说明和更新日志——名字和内容对不上。
+     * 改名后顺手钉住，免得下次加功能又往回塞。
+     */
+    @Test
+    public void morePage_sectionTitlesMatchContent() {
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity a = ctl.get();
+
+        String all = collectText(a.getWindow().getDecorView());
+        assertTrue("应有「排班与显示」", all.contains("排班与显示"));
+        assertTrue("应有「睡前提醒」（只在明天上班时提醒归这里）", all.contains("睡前提醒"));
+        assertTrue("应有「检查与帮助」", all.contains("检查与帮助"));
+        assertTrue("应有「备份与恢复」", all.contains("备份与恢复"));
+        assertFalse("「排程」既指排班又指闹钟排程，已不用", all.contains("排程"));
+
+        ctl.pause().stop().destroy();
+    }
+
+    /** 递归收集可见文案，避免逐条 findViewById。 */
+    private static String collectText(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof android.widget.TextView) {
+            CharSequence t = ((android.widget.TextView) v).getText();
+            if (t != null) sb.append(t).append('\n');
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(collectText(g.getChildAt(i)));
+        }
+        return sb.toString();
     }
 }

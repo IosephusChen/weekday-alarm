@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.view.View;
 import android.content.SharedPreferences;
 import android.view.KeyEvent;
 import android.widget.TextView;
@@ -175,5 +176,33 @@ public class RingerSettingsTest {
                         .putExtra(AlarmActivity.EXTRA_LABEL, "起床")
                         .putExtra(AlarmActivity.EXTRA_DATE, java.time.LocalDate.now().toString())
                         .putExtra(AlarmActivity.EXTRA_ALARM_ID, 1)).setup().get();
+    }
+
+    /**
+     * 按键选项说「关闭这次响铃」，不说「关闭闹钟」（v1.49.3）。
+     *
+     * <p>按下键只是关掉这一轮响铃，闹钟本身照旧、明天还会响。写「关闭闹钟」
+     * 会让人以为把那个闹钟停了——和通知栏按钮有同样的问题。
+     */
+    @Test
+    public void keyDialog_optionsSayCloseThisRingOnly() {
+        View v = android.view.LayoutInflater.from(ctx())
+                .inflate(R.layout.dialog_keys, null);
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        collectRadios(v, labels);
+
+        assertEquals("音量键和电源键各三个选项", 6, labels.size());
+        assertTrue("应说「关闭这次响铃」", labels.contains("关闭这次响铃"));
+        assertFalse("不该再说「关闭闹钟」", labels.contains("关闭闹钟"));
+    }
+
+    private static void collectRadios(View v, java.util.List<String> out) {
+        if (v instanceof android.widget.RadioButton) {
+            out.add(((android.widget.RadioButton) v).getText().toString());
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) collectRadios(g.getChildAt(i), out);
+        }
     }
 }

@@ -274,8 +274,8 @@ public class AlarmActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         // 不允许直接返回关闭，必须显式选择停止 / 小睡；间隔按用户设置显示（可自定义）
-        Toast.makeText(this, "请选择「停止响铃」或「"
-                + Math.max(1, Prefs.getSnoozeMinutes(this)) + "分钟后再响」",
+        Toast.makeText(this, "请滑到底停止，或点「"
+                + Math.max(1, Prefs.getSnoozeMinutes(this)) + " 分钟后再响」",
                 Toast.LENGTH_SHORT).show();
     }
 

@@ -71,7 +71,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="· 周休制度在首页「排班」卡里选：双休、单休、大小周。选了大小周，再点「小周休哪天」定小周休周日还是周六。" />
+                android:text="· 周休制度在「设置 → 排班与节假日 → 周休制度」里改。点开先选大类：大小周、双休、单休；选完下面才展开细节——大小周可定本周是大周还是小周、小周休周六还是周日，单休可定休周六还是周日。" />
 
             <TextView
                 style="@style/HelpItem"
@@ -130,7 +130,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="· 响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：稍后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v1.41.0 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
+                android:text="· 响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：N 分钟后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v1.41.0 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
 
             <TextView
                 style="@style/HelpItem"
@@ -244,7 +244,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="· 音量、铃声、响铃时长、稍后提醒、响铃前提醒、睡前提醒，都在右上角「设置」里；一周开始日、提醒范围也在那。" />
+                android:text="· 设置分三层：音量、铃声、周休制度、睡前提醒与响铃前提醒在设置主页；响铃时长、渐响、震动、稍后提醒、按键在「更多响铃设置」；一周开始日、提醒范围、节日开关、备份与恢复在「更多设置」。" />
 
             <TextView
                 style="@style/HelpItem"
@@ -280,6 +280,6 @@
             android:layout_marginBottom="6dp"
             android:gravity="center"
             android:lineSpacingExtra="2dp"
-            android:text="使用说明随版本更新，入口在首页最底部\n想重看新手引导或检查权限：设置 → 新手引导与权限" />
+            android:text="使用说明随版本更新，入口在设置 → 更多设置 → 使用说明\n想重看新手引导或检查权限：设置 → 更多设置 → 新手引导与权限" />
     </LinearLayout>
 </ScrollView>

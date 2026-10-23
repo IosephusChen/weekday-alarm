@@ -103,7 +103,7 @@ public class AlarmService extends Service {
             // 用户仍能从通知栏无限续睡。次数用尽时忽略操作并提示。
             LocalDate d = parseDate(intent.getStringExtra(EXTRA_DATE));
             if (!ScheduleManager.canSnooze(this, alarmId, d)) {
-                Toast.makeText(this, "稍后提醒次数已用完，请停止响铃",
+                Toast.makeText(this, "稍后提醒次数已用完，请滑动停止",
                         Toast.LENGTH_SHORT).show();
                 return START_NOT_STICKY;
             }

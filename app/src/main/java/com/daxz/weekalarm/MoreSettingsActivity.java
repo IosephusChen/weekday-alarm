@@ -38,6 +38,6 @@ public class MoreSettingsActivity extends SettingsActivity {
         boolean ring = SECTION_RING.equals(getIntent().getStringExtra(EXTRA_SECTION));
         findViewById(R.id.sec_ring).setVisibility(ring ? View.VISIBLE : View.GONE);
         findViewById(R.id.sec_all).setVisibility(ring ? View.GONE : View.VISIBLE);
-        ((TextView) findViewById(R.id.tv_title)).setText(ring ? "响铃" : "更多");
+        ((TextView) findViewById(R.id.tv_title)).setText(ring ? "更多响铃设置" : "更多设置");
     }
 }

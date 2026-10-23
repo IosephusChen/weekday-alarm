@@ -97,7 +97,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="仅休息日（双休=周末，单休=那一天）" />
+            android:text="仅休息日（双休休周末，单休休那一天）" />
 
         <RadioButton
             android:id="@+id/rb_mode_once"

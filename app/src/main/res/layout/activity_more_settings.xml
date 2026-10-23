@@ -3,7 +3,7 @@
      参考澎湃系统闹钟的分层：主页只留高频项，其余按领域收进这里。
      一个布局承载两段，由 MoreSettingsActivity 按 intent extra 显示其中一段：
        ring —— 响铃（时长 / 渐响 / 震动 / 稍后提醒 / 按键）
-       all  —— 排程、检查与工具、备份与恢复
+       all  —— 排班与显示、睡前提醒、检查与帮助、备份与恢复
      两段共用布局是有意的：结构相同，只有内容不同，没必要维护两份几乎一样的 XML。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -217,7 +217,7 @@
                                     style="@style/SettingsValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="5 分钟 × 1 次" />
+                                    android:text="5 分钟 × 3 次" />
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
@@ -266,7 +266,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== 更多（排程 / 检查 / 备份）===== -->
+        <!-- ===== 更多（排班 / 检查 / 备份）===== -->
         <LinearLayout
             android:id="@+id/sec_all"
             android:layout_width="match_parent"
@@ -279,7 +279,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="排程" />
+                android:text="排班与显示" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -437,6 +437,25 @@
                                     android:clickable="false"
                                     android:focusable="false" />
                             </LinearLayout>
+            </LinearLayout>
+
+            <!-- 睡前提醒的发送条件（v1.49.3）。
+                 原来附在「排班」卡末尾，既没有分隔线、语义也不在那一段——
+                 它管的是睡前提醒发不发，不是哪天上班。 -->
+            <TextView
+                style="@style/SectionTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="8dp"
+                android:text="睡前提醒" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card"
+                android:clipToOutline="true"
+                android:orientation="vertical">
 
                 <LinearLayout
                     android:id="@+id/row_bedtime_workday"
@@ -488,7 +507,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
                 android:layout_marginBottom="8dp"
-                android:text="检查与工具" />
+                android:text="检查与帮助" />
 
             <LinearLayout
                 android:layout_width="match_parent"

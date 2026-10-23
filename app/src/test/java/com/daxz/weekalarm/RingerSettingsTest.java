@@ -205,4 +205,34 @@ public class RingerSettingsTest {
             for (int i = 0; i < g.getChildCount(); i++) collectRadios(g.getChildAt(i), out);
         }
     }
+
+    /**
+     * 音量 0 的文案要说清还震不震（v1.49.6）。
+     *
+     * <p>用户真机反馈：关掉「响铃时震动」后，设置页仍写着「静音（仅震动）」——
+     * 那时既没声也不震，文案在说假话。四个组合逐个钉。
+     */
+    @Test
+    public void volumeText_saysWhetherVibrationStaysOn() {
+        assertEquals("80%", PrefDialogs.volumeText(80, true));
+        assertEquals("80%", PrefDialogs.volumeText(80, false));
+        assertEquals("静音（仅震动）", PrefDialogs.volumeText(0, true));
+        assertEquals("静音（不震动）", PrefDialogs.volumeText(0, false));
+    }
+
+    /** 设置页那一行跟着震动开关走，不是硬编码。 */
+    @Test
+    public void volumeRow_reflectsVibrateSwitch() {
+        Prefs.setVolume(ctx(), 0);
+        Prefs.setVibrate(ctx(), true);
+        SettingsActivity on = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertEquals("静音（仅震动）",
+                ((TextView) on.findViewById(R.id.tv_volume)).getText().toString());
+
+        Prefs.setVibrate(ctx(), false);
+        SettingsActivity off = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertEquals("关了震动就不能再说「仅震动」",
+                "静音（不震动）",
+                ((TextView) off.findViewById(R.id.tv_volume)).getText().toString());
+    }
 }

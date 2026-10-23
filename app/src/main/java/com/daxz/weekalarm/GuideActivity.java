@@ -310,7 +310,7 @@ public class GuideActivity extends AppCompatActivity {
 
     private void refreshRing() {
         int v = Prefs.getVolume(this);
-        tvVolume.setText(v == 0 ? "静音（仅震动）" : v + "%");
+        tvVolume.setText(PrefDialogs.volumeText(v, Prefs.isVibrate(this)));
         tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
         tvSnooze.setText(PrefDialogs.snoozeText(this));
         tvPreNotice.setText(PrefDialogs.preNoticeText(this));
@@ -322,11 +322,11 @@ public class GuideActivity extends AppCompatActivity {
         android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
         TextView value = view.findViewById(R.id.tv_volume_value);
         seek.setProgress(Prefs.getVolume(this));
-        value.setText(volumeText(seek.getProgress()));
+        value.setText(PrefDialogs.volumeText(seek.getProgress(), Prefs.isVibrate(this)));
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(volumeText(progress));
+                value.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(GuideActivity.this)));
             }
 
             @Override
@@ -345,10 +345,6 @@ public class GuideActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("取消", null)
                 .show();
-    }
-
-    private static String volumeText(int v) {
-        return v == 0 ? "静音（仅震动）" : v + "%";
     }
 
     // ================= 第 3 页：权限清单 =================

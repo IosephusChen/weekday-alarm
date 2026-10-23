@@ -102,14 +102,20 @@
                         android:text="80%" />
                 </LinearLayout>
 
+                <!-- v1.49.6：padding 不能再是 0——滑块滚到 0 时左半会被自身边界裁掉，
+                     截图上就是一个「半月形」。9dp = 滑块半径，正好够整个圆画出来。 -->
                 <SeekBar
                     android:id="@+id/seek_volume_embed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:max="100"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="0dp" />
+                    android:minHeight="36dp"
+                    android:paddingStart="9dp"
+                    android:paddingEnd="9dp"
+                    android:progressDrawable="@drawable/seek_track"
+                    android:splitTrack="false"
+                    android:thumb="@drawable/seek_thumb" />
             </LinearLayout>
 
             <View style="@style/SettingsDivider" />

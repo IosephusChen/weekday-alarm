@@ -181,7 +181,7 @@ public class SettingsActivity extends AppCompatActivity {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                     if (!fromUser || tvVolume == null) return;
-                    tvVolume.setText(progress == 0 ? "静音（仅震动）" : progress + "%");
+                    tvVolume.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(SettingsActivity.this)));
                 }
 
                 @Override
@@ -239,6 +239,8 @@ public class SettingsActivity extends AppCompatActivity {
         if (swVibrate != null) swVibrate.setOnCheckedChangeListener((v, checked) -> {
             if (swAttaching) return;
             Prefs.setVibrate(this, checked);
+            // 音量行在另一页，但两页共用这份刷新；0 时文案要跟着变（仅震动 / 不震动）
+            if (tvVolume != null) updateVolumeText();
         });
 
         refreshAll();
@@ -637,10 +639,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 闹钟音量（v1.19.7 由主界面迁入）=================
 
-    /** 音量行文案：0 显示为「静音（仅震动）」。 */
+    /** 音量行文案：0 时要说清到底还震不震，见 {@link PrefDialogs#volumeText}。 */
     private void updateVolumeText() {
-        int v = Prefs.getVolume(this);
-        tvVolume.setText(v == 0 ? "静音（仅震动）" : v + "%");
+        tvVolume.setText(PrefDialogs.volumeText(Prefs.getVolume(this), Prefs.isVibrate(this)));
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */
@@ -650,11 +651,11 @@ public class SettingsActivity extends AppCompatActivity {
         TextView value = view.findViewById(R.id.tv_volume_value);
         int cur = Prefs.getVolume(this);
         seek.setProgress(cur);
-        value.setText(cur == 0 ? "静音（仅震动）" : cur + "%");
+        value.setText(PrefDialogs.volumeText(cur, Prefs.isVibrate(this)));
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(progress == 0 ? "静音（仅震动）" : progress + "%");
+                value.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(SettingsActivity.this)));
             }
 
             @Override

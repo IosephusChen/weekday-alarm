@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 音量条滑块（v1.49.6）。
+
+     18dp 白底 + 2dp 主色描边，比系统默认的实心圆更轻，压在 4dp 轨道上不会显得头重脚轻。
+     用白底而不是纯色，是因为音量条横跨整张白卡片：实心紫点在浅色模式太抢眼，
+     描边圆既能看到位置，又不至于把注意力从「闹钟音量」这四个字上拉走。
+
+     注意：SeekBar 必须留出 >= 9dp 的左右 padding，否则滑块滚到 0 时
+     左半会被自己的边界裁掉——截图上那个「半月形」就是这么来的。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/card" />
+    <stroke
+        android:width="2dp"
+        android:color="@color/indigo" />
+    <size
+        android:width="18dp"
+        android:height="18dp" />
+</shape>

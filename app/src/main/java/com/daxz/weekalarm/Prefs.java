@@ -32,7 +32,7 @@ public final class Prefs {
     public static final String KEY_LAST_RUN_VERSION = "last_run_version"; // 上次运行的 versionCode（升级后自动重排用）
     public static final String KEY_VACATION_DATES = "vacation_dates"; // 个人请假日期集合（yyyy-MM-dd）
     public static final String KEY_OVERTIME_DATES = "overtime_dates"; // 个人加班日期集合（yyyy-MM-dd）
-    public static final String KEY_VOLUME = "alarm_volume";           // 闹钟音量 0-100（0 = 静音仅震动）
+    public static final String KEY_VOLUME = "alarm_volume";           // 闹钟音量 0-100（0 = 静音，震动独立开关）
     public static final String KEY_VOLKEY_ACTION = "volkey_action";   // 音量键作用：0 无 / 1 稍后提醒 / 2 关闭
     public static final String KEY_POWERKEY_ACTION = "powerkey_action"; // 电源键作用：同上
     public static final String KEY_FADE_IN = "fade_in";               // 铃声渐响（约 30 秒到设定音量）
@@ -386,7 +386,7 @@ public final class Prefs {
 
     // ================= 响铃设置（v1.16 起）=================
 
-    /** 闹钟音量 0-100；0 = 静音（仅震动）。默认 80。 */
+    /** 闹钟音量 0-100；0 = 静音（是否震动另由 {@link #isVibrate} 决定）。默认 80。 */
     public static int getVolume(Context c) {
         return sp(c).getInt(KEY_VOLUME, 80);
     }

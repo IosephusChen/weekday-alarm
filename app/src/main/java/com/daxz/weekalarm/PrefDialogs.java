@@ -172,4 +172,15 @@ public final class PrefDialogs {
         if (id == R.id.rb_pre_60) return 60;
         return 0;
     }
+
+    /**
+     * 音量行的文案（v1.49.6）。
+     *
+     * <p>0 不能一律写「静音（仅震动）」——震动开关是独立的，关掉之后既没声也不震，
+     * 还写「仅震动」就是在说假话。用户真机反馈：关了震动，设置页仍显示「静音（仅震动）」。
+     */
+    public static String volumeText(int v, boolean vibrate) {
+        if (v > 0) return v + "%";
+        return vibrate ? "静音（仅震动）" : "静音（不震动）";
+    }
 }

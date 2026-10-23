@@ -12,12 +12,19 @@
         android:layout_height="wrap_content"
         android:text="闹钟音量" />
 
+    <!-- 与设置主页那条同一套轨道与滑块（v1.49.6）；padding 留出滑块半径，否则贴到 0 就被裁 -->
     <SeekBar
         android:id="@+id/seek_volume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:max="100" />
+        android:max="100"
+        android:minHeight="36dp"
+        android:paddingStart="9dp"
+        android:paddingEnd="9dp"
+        android:progressDrawable="@drawable/seek_track"
+        android:splitTrack="false"
+        android:thumb="@drawable/seek_thumb" />
 
     <TextView
         android:id="@+id/tv_volume_value"
@@ -34,7 +41,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:text="拖到 0 = 静音，仅震动提醒"
+        android:text="拖到 0 = 静音，响铃时不发声（震不震看「响铃时震动」）"
         android:textColor="@color/sub"
         android:textSize="12sp" />
 

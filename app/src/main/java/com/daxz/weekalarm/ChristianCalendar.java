@@ -95,10 +95,15 @@ public final class ChristianCalendar {
      * 某天对应的基督教节日简称（2 字）；不是节日时返回 null。
      *
      * 固定日期优先：12/25 无论如何都是圣诞。
+     *
+     * <p>1583 年以前只认固定节日：复活节算法（Meeus/Jones/Butcher）只对格里高利历
+     * 成立，移动节日全部跳过——与 {@link SolarTerm}（1900 前）、{@link LunarCalendar}
+     * （越界年份）一样返回 null，不让异常冒到日历渲染层。
      */
     public static String festival(LocalDate d) {
         String fixed = FIXED.get(MonthDay.from(d));
         if (fixed != null) return fixed;
+        if (d.getYear() < 1583) return null;
         // 移动节日都落在复活节前后 50 天内，先做粗筛省掉一次跨年计算
         long off = ChronoUnit.DAYS.between(easter(d.getYear()), d);
         if (off < -50 || off > 50) return null;

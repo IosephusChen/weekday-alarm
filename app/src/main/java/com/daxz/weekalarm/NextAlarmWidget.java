@@ -68,7 +68,10 @@ public class NextAlarmWidget extends AppWidgetProvider {
      */
     static RemoteViews buildViews(Context ctx, WidgetModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm);
-        rv.setTextViewText(R.id.widget_status, "已开启");
+        // v1.58.0：状态跟着实际走。原来写死「已开启」——闹钟全关时这张卡显示
+        // 「已开启 + 暂无提醒」，自相矛盾。整月两张卡 v1.52.0 就接上了
+        // Widgets.alarmStatusText，4×2 漏接，这次补上，几张卡一个口径。
+        rv.setTextViewText(R.id.widget_status, Widgets.alarmStatusText(ctx));
         rv.setTextViewText(R.id.widget_title, m.title);
         rv.setTextViewText(R.id.widget_sub, m.subtitle);
 

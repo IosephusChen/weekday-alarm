@@ -317,22 +317,25 @@ public final class ScheduleManager {
      * 注册一条「提前通知」闹钟（v1.17）：到点推送安静的通知栏提醒，带「关闭这次响铃」操作。
      * 用 setExactAndAllowWhileIdle 而非 setAlarmClock——后者会在状态栏显示闹钟图标，
      * 提前 N 分钟就挂上图标反而打扰。
+     *
+     * <p><b>编码一律按响铃日 {@code ringDate}，不是提醒时刻 {@code when}</b>（v1.58.0 修复）：
+     * 之前 URI / EXTRA_DATE / requestCode 全用 {@code when.toLocalDate()}，而主闹钟登记与
+     * {@link #cancelAll} 取消都按响铃日。闹钟 00:30 + 提前 60 分钟时提醒落前一天 23:30，
+     * 于是：触发时 {@code isAlarmRegistered} 拿前一天日期查不中、通知被静默丢弃；
+     * {@code cancelAll} 也取消不掉它，残留到自然触发（触发时同样被拦下，自愈）。
+     * 触发时刻仍用 {@code when}（提醒时刻），只是「身份标识」换成响铃日。
+     *
+     * <p>提前量最大 999 分钟（16 小时 39 分）&lt; 24h，所以提醒日期最多比响铃日早一天。
      */
     public static void setPreNotice(Context ctx, LocalDateTime when, int alarmId,
-                                    String label, int minutes) {
+                                    String label, int minutes, LocalDate ringDate) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
         try {
-            Intent i = new Intent(ctx, PreNoticeReceiver.class)
-                    .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
-                    .setData(Uri.parse("daxz://prenotice/" + alarmId + "/" + when.toLocalDate()))
-                    .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, alarmId)
-                    .putExtra(PreNoticeReceiver.EXTRA_LABEL, label)
-                    .putExtra(PreNoticeReceiver.EXTRA_DATE, when.toLocalDate().toString())
-                    .putExtra(PreNoticeReceiver.EXTRA_MINUTES, minutes)
-                    .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT, a_timeText(alarmId, ctx));
+            Intent i = preNoticeIntent(ctx, alarmId, label, ringDate, minutes,
+                    a_timeText(alarmId, ctx));
             PendingIntent pi = PendingIntent.getBroadcast(ctx,
-                    PreNoticeReceiver.preNoticeRequestCode(alarmId, when.toLocalDate()), i,
+                    preNoticeRequestCode(alarmId, ringDate), i,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             if (canScheduleExactAlarms(ctx)) {
@@ -342,6 +345,25 @@ public final class ScheduleManager {
             }
         } catch (Exception ignore) {
         }
+    }
+
+    /**
+     * 提前通知闹钟的 Intent（v1.58.0 抽出，供守门测试断言编码）。
+     *
+     * <p>「身份」三件套——data URI、{@code EXTRA_DATE}、requestCode——一律按响铃日
+     * {@code ringDate} 编码，与主闹钟登记、{@code cancelAll} 取消同一套日期。
+     * 回归测试见 {@code BugfixRegressionTest.preNoticeIntent_encodesRingDayNotPreDay}。
+     */
+    static Intent preNoticeIntent(Context ctx, int alarmId, String label,
+                                  LocalDate ringDate, int minutes, String timeText) {
+        return new Intent(ctx, PreNoticeReceiver.class)
+                .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
+                .setData(Uri.parse("daxz://prenotice/" + alarmId + "/" + ringDate))
+                .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, alarmId)
+                .putExtra(PreNoticeReceiver.EXTRA_LABEL, label)
+                .putExtra(PreNoticeReceiver.EXTRA_DATE, ringDate.toString())
+                .putExtra(PreNoticeReceiver.EXTRA_MINUTES, minutes)
+                .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT, timeText);
     }
 
     /** 查闹钟显示用时间文本（HH:mm），取不到就用空串。 */
@@ -510,7 +532,9 @@ public final class ScheduleManager {
             if (preNotice > 0) {
                 LocalDateTime pre = when.minusMinutes(preNotice);
                 if (pre.isAfter(now2)) {   // 提前时刻已过就别排了，免得补一条过期通知
-                    setPreNotice(ctx, pre, a.id, a.label, preNotice);
+                    // ringDate 用响铃日：提前提醒的「身份」（requestCode / URI / EXTRA_DATE）
+                    // 必须与主闹钟登记、cancelAll 取消同一套日期，跨午夜才不会失效（v1.58.0）
+                    setPreNotice(ctx, pre, a.id, a.label, preNotice, when.toLocalDate());
                 }
             }
         }

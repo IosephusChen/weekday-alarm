@@ -370,8 +370,23 @@ public class AlarmService extends Service {
         }
     }
 
-    private Notification buildNotification(String dateStr, String label, boolean test, boolean popup) {
-        Intent full = new Intent(this, AlarmActivity.class);
+    /**
+     * 通知栏「稍后提醒」按钮的 PendingIntent（v1.58.0 抽出，供守门测试直接拿）。
+     *
+     * <p>必须带 {@code FLAG_UPDATE_CURRENT}：requestCode 固定为 2，PendingIntent 匹配
+     * 不看 extras，少了这个 flag 第一次创建后 extras 就冻住了——之后任何闹钟响铃，
+     * 点小睡小睡的都是第一个闹钟。回归测试见 {@code BugfixRegressionTest}。
+     */
+    static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr) {
+        return PendingIntent.getService(ctx, 2,
+                new Intent(ctx, AlarmService.class).setAction(ACTION_SNOOZE)
+                        .putExtra(EXTRA_ALARM_ID, alarmId)
+                        .putExtra(EXTRA_LABEL, label)
+                        .putExtra(EXTRA_DATE, dateStr),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private Notification buildNotification(String dateStr, String label, boolean test, boolean popup) {        Intent full = new Intent(this, AlarmActivity.class);
         full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
         full.putExtra(AlarmActivity.EXTRA_TEST, test);
         full.putExtra(AlarmActivity.EXTRA_ALARM_ID, currentAlarmId);
@@ -387,12 +402,14 @@ public class AlarmService extends Service {
                 PendingIntent.FLAG_IMMUTABLE);
         // v1.19.9：补上 EXTRA_DATE。之前漏传，点通知栏小睡时日期回退成「今天」，
         // 跨零点（23:58 响、00:02 点小睡）会把次数记到新的一天，原日期的计数不生效
-        PendingIntent snoozePi = PendingIntent.getService(this, 2,
-                new Intent(this, AlarmService.class).setAction(ACTION_SNOOZE)
-                        .putExtra(EXTRA_ALARM_ID, currentAlarmId)
-                        .putExtra(EXTRA_LABEL, label)
-                        .putExtra(EXTRA_DATE, ringDate != null ? ringDate.toString() : null),
-                PendingIntent.FLAG_IMMUTABLE);
+        // v1.58.0：补 FLAG_UPDATE_CURRENT。PendingIntent 的匹配只看 requestCode +
+        // 组件，**不看 extras**——requestCode 固定为 2，第一个闹钟响铃时创建的这个
+        // PendingIntent 会把 extras 永久冻住，之后任何闹钟再响，点通知栏小睡小睡的
+        // 都是第一次那个闹钟（计数也记到旧 id / 旧日期）。同函数的 fpi 一直带着
+        // UPDATE_CURRENT，这里属漏写。有了它，每次 post 通知都会把 extras 刷成当前闹钟。
+        // 抽成静态方法供守门测试直接拿（BugfixRegressionTest）。
+        PendingIntent snoozePi = snoozePi(this, currentAlarmId, label,
+                ringDate != null ? ringDate.toString() : null);
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
         // v1.40.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉

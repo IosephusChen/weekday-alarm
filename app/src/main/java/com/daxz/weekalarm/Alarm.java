@@ -312,10 +312,14 @@ public final class Alarm {
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.getJSONObject(i);
+                // v1.58.0：hour / minute 必须夹到合法区间。配置文件是纯文本 JSON，
+                // 用户手改编坏（"hour": 99）是现实场景——optInt 原样收下的话，
+                // 之后任何一处 LocalTime.of(hour, minute)（排程 / 结算 / 统计）
+                // 都会抛 DateTimeException 把 App 带崩，而且是在主线程。
                 Alarm a = new Alarm(
                         o.optInt("id", i + 1),
-                        o.optInt("hour", 7),
-                        o.optInt("minute", 30),
+                        clamp(o.optInt("hour", 7), 0, 23),
+                        clamp(o.optInt("minute", 30), 0, 59),
                         o.optString("label", "闹钟"),
                         Mode.fromOrdinal(o.optInt("mode", 0)),
                         o.optBoolean("enabled", true),
@@ -329,5 +333,9 @@ public final class Alarm {
             return new ArrayList<>();
         }
         return out;
+    }
+
+    private static int clamp(int v, int lo, int hi) {
+        return Math.max(lo, Math.min(hi, v));
     }
 }

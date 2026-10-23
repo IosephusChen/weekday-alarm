@@ -219,11 +219,22 @@ public class MainActivity extends AppCompatActivity {
             }
             // v1.28：这里不再单独 refreshAll——onResume 末尾会统一刷一次。
             // 旧写法在升级那次启动要刷两遍（42 个日历格子 + 两个小组件各重建一次）。
-            ScheduleManager.rescheduleAll(this);
-            // v1.22.3：升级后弹一次本次更新内容，看过即不再弹（last 已写成当前版本）
-            if (upgraded) {
-                maybeShowChangelog(current);
-            }
+            // v1.58.0：重排挪后台。它是数百次跨进程 IPC（项目自述「累计可达数百毫秒
+            // 到数秒」），同步跑在 onResume 上有 ANR 风险；AlarmReceiver /
+            // BedtimeReceiver / BootReceiver 三个入口早就 goAsync 了，只剩这里漏了。
+            // 更新日志弹窗回主线程——Dialog 只能在 UI 线程建。
+            final boolean showChangelog = upgraded;
+            final int version = current;
+            final Context app = getApplicationContext();
+            new Thread(() -> {
+                try {
+                    ScheduleManager.rescheduleAll(app);
+                } catch (Throwable ignore) {
+                }
+                if (showChangelog) {
+                    runOnUiThread(() -> maybeShowChangelog(version));
+                }
+            }, "upgrade-reschedule").start();
         }
         // 启动时静默检查若拿到新数据，此时提示用户（避免冷启动时 Toast 被桌面盖住）
         if (HolidayUpdater.consumePendingNotice(this)) {

@@ -55,7 +55,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_SKIP_TOMORROW.equals(action)) {
-            skipTomorrow(context);
+            skipTomorrow(context, intent);
             return;
         }
         if (ACTION_TOGGLE_TOMORROW.equals(action)) {
@@ -108,8 +108,13 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setOnlyAlertOnce(quiet)
                 .setPriority(Notification.PRIORITY_DEFAULT);
 
-        // 「明天请假」只在「明天真要上班」时给：休息日/已请假时这个按钮没有意义
+        // 「请假」按钮的文案跟着目标日期走（v1.58.0 修复）：
+        // 跨午夜后这条通知说的已是「今天早上 07:30」（v1.48.0 的改口），按钮再写
+        // 「明天请假」就会标错一天——用户想拦今早的闹钟，标的却是明天，今早照响。
+        // data URI 一直带着真实目标日期（showNotification 里按 m.tomorrow 生成），
+        // 这里从 URI 解析；解析不了才回退「明天」（旧版本烧死的 PendingIntent 没有日期）。
         boolean canSkip = m.workday && !m.vacation;
+        String dayWord = m.tomorrow.isAfter(LocalDate.now()) ? "明天" : "今天";
         PendingIntent skipPi = null;
         if (canSkip) {
             Intent skip = new Intent(ctx, BedtimeReceiver.class)
@@ -119,7 +124,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             nb.addAction(new Notification.Action.Builder(
                     Icon.createWithResource(ctx, R.drawable.ic_notif_calendar),
-                    "明天请假", skipPi).build());
+                    dayWord + "请假", skipPi).build());
         }
         // v1.38.0：折叠态换自绘卡片。
         //
@@ -127,7 +132,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
         // 锁屏和刚弹出来时用户看到的是一张没有按钮的卡片，等于这句话没兑现。
         // 和提前提醒（v1.23.6）、响铃（本版）一样把按钮画进布局里，说了就要能点。
         nb.setCustomContentView(NotifCard.build(ctx, m.title, m.text, 0, contentPi,
-                canSkip ? NotifCard.Button.primary("明天请假", skipPi) : null));
+                canSkip ? NotifCard.Button.primary(dayWord + "请假", skipPi) : null));
         // v1.47.9：这条提醒只对「今晚」有效。用户不点也不划，它会一直挂到第二天白天，
         // 那时内容已经错了——写着「明天 07:30 起床」，其实说的是今天早上。
         // 让它自带过期时间：到次日 05:00 由系统移除，App 从没被打开也一样。
@@ -173,20 +178,36 @@ public class BedtimeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 一键「明天请假」：把明天标为个人请假，取消明天已排的全部闹钟。
+     * 一键「请假」：把通知指向的那天标为个人请假，取消那天已排的全部闹钟。
      *
-     * 重排是上百次 IPC，不能占着广播主线程（10 秒上限），因此走 goAsync + 后台线程；
+     * <p><b>目标日期从 intent 的 data URI 取，不再硬编码「明天」</b>（v1.58.0 修复）：
+     * 跨午夜后 v1.48.0 的午夜刷新会把通知改口成「今天早上 07:30」，按钮也跟着变成
+     * 「今天请假」——此时点的就是今天。旧实现写死 {@code now + 1}，凌晨点下去标的是
+     * 明天，今早的闹钟照响，按钮与行为对不上。
+     *
+     * <p>解析失败（旧版本烧死的 PendingIntent 没有日期）才回退「明天」。
+     *
+     * <p>重排是上百次 IPC，不能占着广播主线程（10 秒上限），因此走 goAsync + 后台线程；
      * 界面上的 Toast 先给，用户立刻有反馈。
      */
-    private void skipTomorrow(Context ctx) {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        Prefs.addVacation(ctx, tomorrow);
+    private void skipTomorrow(Context ctx, Intent intent) {
+        LocalDate target = LocalDate.now().plusDays(1);
+        try {
+            if (intent != null && intent.getData() != null) {
+                String last = intent.getData().getLastPathSegment();
+                if (last != null) target = LocalDate.parse(last);
+            }
+        } catch (Exception ignore) {
+            // 解析不了就按「明天」——旧 PendingIntent 的容错
+        }
+        Prefs.addVacation(ctx, target);
         try {
             NotificationManagerCompat.from(ctx).cancel(BedtimeReminder.NOTIF_ID);
         } catch (Exception ignore) {
         }
         try {
-            Toast.makeText(ctx, "已把明天标记为请假，闹钟不会响", Toast.LENGTH_SHORT).show();
+            Toast.makeText(ctx, "已把" + (target.isAfter(LocalDate.now()) ? "明天" : "今天")
+                    + "标记为请假，闹钟不会响", Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
         // v1.46.7：同上——用户正看着 App 时点了通知，界面必须当场变

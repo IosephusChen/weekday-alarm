@@ -221,6 +221,7 @@ public class SettingsActivity extends AppCompatActivity {
         bind(R.id.row_onboard, v -> startActivity(new Intent(this, GuideActivity.class)));
         // v1.22.3：更新日志——每版改了什么都能翻，不联网
         bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
+        bind(R.id.row_pin_widget, v -> showPinWidgetDialog());
 
         // ===== v1.46.2：从首页搬来的三块 =====
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
@@ -642,6 +643,40 @@ public class SettingsActivity extends AppCompatActivity {
     /** 音量行文案：0 时要说清到底还震不震，见 {@link PrefDialogs#volumeText}。 */
     private void updateVolumeText() {
         tvVolume.setText(PrefDialogs.volumeText(Prefs.getVolume(this), Prefs.isVibrate(this)));
+    }
+
+    /**
+     * 「添加到桌面」（v1.49.9）。
+     *
+     * <p>澎湃把第三方小部件统一收进「安卓小部件」二级列表，用户要翻三层才找得到。
+     * {@code requestPinAppWidget} 能让系统直接弹「是否添加到桌面」，点一下就放上去。
+     * 这是标准 API（26+），不需要任何权限，也不需要接入澎湃自家规范。
+     *
+     * <p>但小米可能没实现这个能力，所以先问 {@code isRequestPinAppWidgetSupported}；
+     * 不支持就退回手动路径，而不是点了没反应。
+     */
+    private void showPinWidgetDialog() {
+        new RoundedDialog.Builder(this)
+                .setTitle("添加到桌面")
+                .setItems(new String[]{"下一个闹钟（4×2）", "本周班表（4×2）"},
+                        (d, which) -> pinWidget(which == 0
+                                ? NextAlarmWidget.class : WeekScheduleWidget.class))
+                .show();
+    }
+
+    private void pinWidget(Class<?> provider) {
+        android.appwidget.AppWidgetManager mgr =
+                android.appwidget.AppWidgetManager.getInstance(this);
+        if (!mgr.isRequestPinAppWidgetSupported()) {
+            new RoundedDialog.Builder(this)
+                    .setTitle("这台机器不支持一键添加")
+                    .setMessage("长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
+                            + "「安卓小部件」→ 找「打工人闹钟」。")
+                    .setPositiveButton("知道了", null)
+                    .show();
+            return;
+        }
+        mgr.requestPinAppWidget(new android.content.ComponentName(this, provider), null, null);
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */

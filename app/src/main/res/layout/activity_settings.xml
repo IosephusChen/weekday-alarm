@@ -398,7 +398,7 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 更多设置（v1.49.0）：排班与显示、睡前提醒条件、检查与帮助、备份，共 12 项 -->
+            <!-- 更多设置（v1.49.0）：排班与显示、睡前提醒条件、检查与帮助、桌面小组件、备份，共 13 项 -->
             <LinearLayout
                 android:id="@+id/row_more"
                 android:layout_width="match_parent"

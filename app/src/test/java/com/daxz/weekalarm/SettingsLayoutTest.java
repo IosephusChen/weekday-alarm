@@ -251,4 +251,28 @@ public class SettingsLayoutTest {
         }
         return sb.toString();
     }
+
+    /**
+     * 「添加到桌面」这一行（v1.49.9）。
+     *
+     * <p>澎湃把第三方小部件收进「安卓小部件」二级列表，用户要翻三层。
+     * 这行调 requestPinAppWidget 让系统直接弹确认框——点一下就能放上去。
+     * 这里只钉「行存在且点了有反应」，真正的固定动作交给系统。
+     */
+    @Test
+    public void morePage_hasPinWidgetRow() {
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity a = ctl.get();
+
+        assertNotNull("「更多设置」里应有「添加到桌面」", a.findViewById(R.id.row_pin_widget));
+        a.findViewById(R.id.row_pin_widget).performClick();
+        ShadowLooper.idleMainLooper();
+
+        android.app.Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("点「添加到桌面」应弹出选择哪个小组件的对话框", d);
+
+        ctl.pause().stop().destroy();
+    }
 }

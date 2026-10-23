@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -165,28 +166,36 @@ public class WidgetRemoteViewsTest {
     // ================= 大尺寸分档（v1.49.12）=================
 
     /** 4×3 起：闹钟 + 本周七格，按钮先不出现。 */
+    // ================= 4×2 固定布局（v1.51.0）=================
+
+    /**
+     * 4×2 卡必须带本周七格。
+     *
+     * <p>v1.50.0 这张卡只有两行文字，七格是「高度 ≥150dp 才出现」的第二档。
+     * 用户实际看到的是巧合——卡片实测 165dp，正好跨过阈值。现在固化成一份布局，
+     * 这条断言守住「不管高度多少，七格都在」。
+     */
     @Test
-    public void tallLayout_showsWeekCellsWithoutActions() {
+    public void compactLayout_alwaysHasWeekCells() {
         NextAlarmWidget.WidgetModel m =
                 new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
-        View v = NextAlarmWidget.buildTall(ctx(), m, false).apply(ctx(), new FrameLayout(ctx()));
+        View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
-        assertNotNull("大尺寸要有七格", v.findViewById(R.id.day_0));
+        assertNotNull("4×2 卡要有七格", v.findViewById(R.id.day_0));
         assertNotNull(v.findViewById(R.id.label_6));
-        assertEquals("不够高时按钮先不出来",
-                View.GONE, v.findViewById(R.id.action_row).getVisibility());
+        assertNotNull(v.findViewById(R.id.widget_title));
+        assertNotNull(v.findViewById(R.id.widget_sub));
     }
 
-    /** 4×4：再多一行请假按钮。 */
+    /** 4×2 卡不放请假按钮——那是整月卡的事，塞进来会把七格挤没。 */
     @Test
-    public void tallLayout_showsActionsWhenTall() {
+    public void compactLayout_hasNoLeaveButtons() {
         NextAlarmWidget.WidgetModel m =
                 new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
-        View v = NextAlarmWidget.buildTall(ctx(), m, true).apply(ctx(), new FrameLayout(ctx()));
+        View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
-        assertEquals(View.VISIBLE, v.findViewById(R.id.action_row).getVisibility());
-        assertNotNull(v.findViewById(R.id.wrap_today_action));
-        assertNotNull(v.findViewById(R.id.wrap_tomorrow_action));
+        assertNull("4×2 不放请假按钮", v.findViewById(R.id.wrap_today_action));
+        assertNull(v.findViewById(R.id.wrap_tomorrow_action));
     }
 
     /** 整月版也必须有请假按钮——v1.49.10 切到整月后这两个按钮一度消失。 */
@@ -198,5 +207,43 @@ public class WidgetRemoteViewsTest {
         assertNotNull("整月版不能丢请假按钮", v.findViewById(R.id.wrap_today_action));
         assertNotNull(v.findViewById(R.id.wrap_tomorrow_action));
         assertNotNull(v.findViewById(R.id.widget_today_action));
+    }
+
+    /**
+     * 整月表头必须跟「每周第一天」设置联动。
+     *
+     * <p>v1.50.0 的 bug：表头在布局里写死「一 二 三 四 五 六 日」，
+     * 而格子按 Prefs.isSundayFirst 排。设成周日开头时，1 号落在第 5 列，
+     * 表头第 5 列却写着「五」——整月日历错位一格。
+     *
+     * <p>2026-10-01 是周四，用它做锚点：周日开头落在下标 4，周一开头落在下标 3。
+     */
+    @Test
+    public void monthHeader_followsWeekStartSetting() {
+        Context c = ctx();
+        LocalDate anchor = LocalDate.of(2026, 10, 23);
+        try {
+            Prefs.setWeekStart(c, Prefs.WEEK_START_SUNDAY);
+            View sun = MonthWidgetRender.build(c, MonthWidgetRender.compute(c, anchor))
+                    .apply(c, new FrameLayout(c));
+            assertEquals("周日开头时第一列表头", "日", text(sun, R.id.m_head_0));
+            assertEquals("2026-10-01 应在下标 4", "1", text(sun, R.id.m_num_4));
+            assertEquals("第 5 列表头必须与 1 号所在列一致", "四", text(sun, R.id.m_head_4));
+
+            Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);
+            View mon = MonthWidgetRender.build(c, MonthWidgetRender.compute(c, anchor))
+                    .apply(c, new FrameLayout(c));
+            assertEquals("周一开头时第一列表头", "一", text(mon, R.id.m_head_0));
+            assertEquals("2026-10-01 应在下标 3", "1", text(mon, R.id.m_num_3));
+            assertEquals("第 4 列表头必须与 1 号所在列一致", "四", text(mon, R.id.m_head_3));
+        } finally {
+            Prefs.setWeekStart(c, Prefs.WEEK_START_MONDAY);
+        }
+    }
+
+    private static String text(View root, int id) {
+        TextView tv = root.findViewById(id);
+        assertNotNull("找不到视图 " + id, tv);
+        return tv.getText().toString();
     }
 }

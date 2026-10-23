@@ -30,6 +30,8 @@ import java.util.Set;
 /**
  * 四个固定尺寸小组件的配置契约（v1.50.0）。
  *
+ * <p>v1.51.0 起是三个组件（4×2 闹钟 / 4×2 本周 / 4×4 本月）。
+ *
  * <p>为什么要有这个测试：v1.49.13 用 {@code maxResizeHeight} 想锁尺寸，白试一版；
  * v1.49.14 改成 {@code resizeMode="none"} 之后，唯一的验证手段是「装到手机上长按看菜单」——
  * 那是人肉验证，每次改动都可能悄悄回退，而且没人会记得重验。
@@ -48,10 +50,9 @@ public class WidgetProviderConfigTest {
         return ApplicationProvider.getApplicationContext();
     }
 
-    /** 四个组件：provider XML、类名、label、目标格子数。 */
+    /** 三个组件：provider XML、类名、label、目标格子数。 */
     private static final Object[][] PROVIDERS = {
             {R.xml.next_alarm_widget_info, "NextAlarmWidget", "下一个闹钟", 4, 2},
-            {R.xml.next_alarm_week_widget_info, "NextAlarmWeekWidget", "下一个闹钟和本周", 4, 4},
             {R.xml.week_schedule_widget_info, "WeekScheduleWidget", "本周班表", 4, 2},
             {R.xml.month_schedule_widget_info, "MonthScheduleWidget", "本月班表", 4, 4},
     };
@@ -104,11 +105,23 @@ public class WidgetProviderConfigTest {
      * v1.49.12 已经踩过一次：强行塞会把日期和班/休压到重叠。
      */
     @Test
-    public void tallProviders_minHeightIsFourRows() throws Exception {
-        assertEquals("下一个闹钟和本周 的最小高度",
-                250f, dp(attrs(R.xml.next_alarm_week_widget_info), "minHeight"), 0.5f);
+    public void monthProvider_minHeightIsFourRows() throws Exception {
         assertEquals("本月班表 的最小高度",
                 250f, dp(attrs(R.xml.month_schedule_widget_info), "minHeight"), 0.5f);
+    }
+
+    /**
+     * 4×2 组件的 minHeight 不能低于 118dp。
+     *
+     * <p>v1.51.0 把七格并进 4×2 之后，110dp 会让七格被压成一条线；
+     * 118dp 是实测「闹钟两行 + 七格」不裁字的下限。
+     */
+    @Test
+    public void compactProviders_minHeightFitsWeekCells() throws Exception {
+        assertEquals("下一个闹钟 的最小高度",
+                118f, dp(attrs(R.xml.next_alarm_widget_info), "minHeight"), 0.5f);
+        assertEquals("本周班表 的最小高度",
+                118f, dp(attrs(R.xml.week_schedule_widget_info), "minHeight"), 0.5f);
     }
 
     /**
@@ -124,9 +137,9 @@ public class WidgetProviderConfigTest {
         return Float.parseFloat(raw.replaceAll("[^0-9.]", ""));
     }
 
-    /** 四个组件都要在清单里注册，并且 label 各不相同——列表里同名等于没法选。 */
+    /** 三个组件都要在清单里注册，并且 label 各不相同——列表里同名等于没法选。 */
     @Test
-    public void fourProviders_registeredWithDistinctLabels() {
+    public void allProviders_registeredWithDistinctLabels() {
         Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
         List<ResolveInfo> found = ctx().getPackageManager()
                 .queryBroadcastReceivers(intent, 0);
@@ -155,19 +168,21 @@ public class WidgetProviderConfigTest {
 
         List<String> expected = new ArrayList<>();
         for (Object[] row : PROVIDERS) expected.add((String) row[1]);
-        assertEquals("应有四个小组件 receiver 注册：" + expected,
+        assertEquals("应有三个小组件 receiver 注册：" + expected,
                 new HashSet<>(expected), classes);
-        assertEquals("四个组件的名字不能重复（列表里会分不清）", 4, labels.size());
+        assertEquals("组件的名字不能重复（列表里会分不清）", PROVIDERS.length, labels.size());
     }
 
-    /** 两个新组件必须真的能 inflate，不能只是「编译通过」。 */
+    /** 组件必须真的能 inflate，不能只是「编译通过」。 */
     @Test
-    public void newProviders_buildViewsCanInflate() {
-        View a = inflate(NextAlarmWeekWidget.buildViews(ctx()));
+    public void allProviders_buildViewsCanInflate() {
+        // 4×2 闹钟：v1.51.0 起带七格，但没有请假按钮（按钮只在整月那张卡上）
+        View a = inflate(NextAlarmWidget.buildViews(ctx(),
+                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响")));
         assertNotNull(a);
         assertNotNull(a.findViewById(R.id.widget_title));
-        assertNotNull(a.findViewById(R.id.label_0));
-        assertNotNull(a.findViewById(R.id.wrap_today_action));
+        assertNotNull("4×2 闹钟卡必须有七格", a.findViewById(R.id.label_0));
+        assertNotNull(a.findViewById(R.id.label_6));
 
         View m = inflate(MonthScheduleWidget.buildViews(ctx()));
         assertNotNull(m);

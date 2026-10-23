@@ -19,7 +19,7 @@ import java.time.LocalDate;
  */
 public class MonthScheduleWidget extends AppWidgetProvider {
 
-    /** 与 {@link NextAlarmWeekWidget} 同一个退路，理由也同：真锁不住时宁可退回 4×2。 */
+    /** 尺寸兜底：真锁不住、被拉到 4×2 高度时，宁可隐藏内容也不让日历被裁半截。 */
     private static final int H_MIN = 220;
 
     private static boolean tooSmall(AppWidgetManager mgr, int id) {

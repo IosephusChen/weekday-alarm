@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">打工人闹钟</string>
-    <string name="widget_next_alarm_desc">在桌面一眼看到下一个闹钟</string>
+    <string name="widget_next_alarm_desc">下一个闹钟 + 本周班表：什么时候响、这周哪天上班，一张卡看完</string>
     <string name="widget_week_schedule_desc">本周班表：一眼看清这周哪天上班、哪天休息</string>
-    <string name="widget_next_alarm_week_desc">下一个闹钟 + 本周班表：既看什么时候响，也看这周哪天上班</string>
     <string name="widget_month_schedule_desc">本月班表：整月哪天上班、哪天休息，节日名直接写在格子里</string>
 </resources>

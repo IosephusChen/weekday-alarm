@@ -25,6 +25,11 @@ final class MonthWidgetRender {
 
     private static final int CELLS = 42;
 
+    private static final int[] HEAD_IDS = {
+            R.id.m_head_0, R.id.m_head_1, R.id.m_head_2, R.id.m_head_3,
+            R.id.m_head_4, R.id.m_head_5, R.id.m_head_6,
+    };
+
     private static final int[] NUM_IDS = {
             R.id.m_num_0, R.id.m_num_1, R.id.m_num_2, R.id.m_num_3, R.id.m_num_4, R.id.m_num_5,
             R.id.m_num_6, R.id.m_num_7, R.id.m_num_8, R.id.m_num_9, R.id.m_num_10, R.id.m_num_11,
@@ -148,6 +153,13 @@ final class MonthWidgetRender {
                 R.layout.widget_week_schedule_month);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
+
+        // 表头跟着「每周第一天」设置走，顺序必须和 compute() 里的 lead 一致。
+        // 原来这里靠布局写死「一 二 三 四 五 六 日」，设成周日开头时整月错位一格。
+        String[] heads = WeekSchedule.weekLetters(Prefs.isSundayFirst(ctx));
+        for (int i = 0; i < HEAD_IDS.length && i < heads.length; i++) {
+            rv.setTextViewText(HEAD_IDS[i], heads[i]);
+        }
 
         for (int i = 0; i < CELLS; i++) {
             rv.setTextViewText(NUM_IDS[i], m.nums[i]);

@@ -660,18 +660,14 @@ public class SettingsActivity extends AppCompatActivity {
                 .setTitle("添加到桌面")
                 .setItems(new String[]{
                                 "下一个闹钟（4×2）",
-                                "下一个闹钟和本周（4×4）",
                                 "本周班表（4×2）",
                                 "本月班表（4×4）"},
                         (d, which) -> {
                             switch (which) {
                                 case 0:
-                                    pinWidget(NextAlarmWidget.class, 110);
+                                    pinWidget(NextAlarmWidget.class, 118);
                                     break;
                                 case 1:
-                                    pinWidget(NextAlarmWeekWidget.class, 250);
-                                    break;
-                                case 2:
                                     pinWidget(WeekScheduleWidget.class, 118);
                                     break;
                                 default:

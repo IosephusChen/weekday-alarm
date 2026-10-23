@@ -368,7 +368,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="2dp"
-                                    android:text="响铃前先发一条通知" />
+                                    android:text="响铃前先在通知栏提醒一次" />
                             </LinearLayout>
 
                             <androidx.appcompat.widget.SwitchCompat
@@ -398,7 +398,9 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 更多设置（v1.49.0）：排班与显示、睡前提醒条件、检查与帮助、桌面小组件、备份，共 13 项 -->
+            <!-- 更多设置（v1.49.0）：排班与显示、响铃、睡前提醒条件、检查与帮助、桌面小组件、备份与恢复。
+                 项数随版本增减，别在注释里写死——写死的数字过期也没人记得改，
+                 以页面实际为准。 -->
             <LinearLayout
                 android:id="@+id/row_more"
                 android:layout_width="match_parent"
@@ -423,7 +425,7 @@
                     style="@style/SettingsSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="排班 · 检查 · 备份" />
+                    android:text="排班 · 小组件 · 检查 · 备份" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>

@@ -959,7 +959,14 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void updateBedtimeText() {
         int cur = Prefs.getBedtimeMinutes(this);
-        tvBedtime.setText(BedtimeReminder.timeText(cur));
+        // v1.58.0：副标题带上「仅明天上班」条件。这个条件在二级页，而它决定提醒发不发——
+        // 主页只写「21:30」的话，用户以为每天到点都有通知，其实休息日被静默跳过。
+        // 不动页面结构（把条件并进来要重做交互），让主页这行自己把状态说全。
+        String text = BedtimeReminder.timeText(cur);
+        if (cur != Prefs.BEDTIME_OFF && Prefs.isBedtimeWorkdayOnly(this)) {
+            text = text + " · 仅明天上班";
+        }
+        tvBedtime.setText(text);
         // 睡前提醒关着时，「仅在明天上班时提醒」没有意义——压暗并禁用，
         // 免得用户以为改了它就会开始提醒
         boolean on = cur != Prefs.BEDTIME_OFF;

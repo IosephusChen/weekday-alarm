@@ -63,9 +63,13 @@
         <item name="android:paddingBottom">3dp</item>
     </style>
 
+    <!-- 分区标题（「闹钟 / 排班与节假日 / 提醒 / 其他」）。
+         v1.58.0 之前与行标题（SettingsTitle）同为 15sp 粗体 ink 色——分组头混在行里
+         认不出，设置页像一张没有结构的平铺列表。现在学 iOS 设置页的做法：
+         分区头降到 13sp + 次级灰，行标题保持 15sp 深色，层级一眼可辨。 -->
     <style name="SectionTitle">
-        <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 

@@ -192,6 +192,9 @@
                                     android:clickable="false"
                                     android:focusable="false" />
                             </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
+
                             <LinearLayout
                                 android:id="@+id/row_snooze"
                                 android:layout_width="match_parent"
@@ -337,7 +340,7 @@
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_weight="1"
-                                    android:text="提醒范围" />
+                                    android:text="闹钟排到多远" />
 
                                 <TextView
                                     android:id="@+id/tv_horizon"
@@ -429,7 +432,7 @@
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:layout_marginTop="2dp"
-                                        android:text="霜降、惊蛰这些日子在日历里显示名字；只影响 App 内，不占桌面小组件的格子" />
+                                        android:text="日历里显示霜降、冬至这类节气名" />
                                 </LinearLayout>
 
                                 <androidx.appcompat.widget.SwitchCompat
@@ -823,7 +826,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="4×4 单独占一行，4×3 显示在标题右侧；关掉后日历用满高度" />
+                            android:text="完整版单独占一行，极简版放标题右侧；关掉后日历格子更高" />
                     </LinearLayout>
 
                     <androidx.appcompat.widget.SwitchCompat

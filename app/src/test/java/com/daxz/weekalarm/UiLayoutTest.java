@@ -232,19 +232,18 @@ public class UiLayoutTest {
     public void scheduleCard_livesInSettings_notOnHome() {
         MainActivity a = launch();
         assertNull("首页不该再有周休制度行", a.findViewById(R.id.row_week_mode));
-        assertNull("首页不该再有「本周是」行", a.findViewById(R.id.row_week_big));
-        assertNull("首页不该再有「小周休哪天」行", a.findViewById(R.id.row_small_rest));
 
-        // v1.49.0：周休制度留在设置主页，本周是 / 小周休哪天进了「更多设置」
+        // v1.49.2：周休制度留在设置主页；「本周是」「休哪天」不再各占一行，
+        // 而是并进同一个对话框，按选中的大类条件显示
         SettingsActivity home = Robolectric.buildActivity(SettingsActivity.class).setup().get();
         assertNotNull("设置主页应有周休制度行", home.findViewById(R.id.row_week_mode));
 
-        SettingsActivity more = Robolectric.buildActivity(MoreSettingsActivity.class,
-                MoreSettingsActivity.intent(
-                        androidx.test.core.app.ApplicationProvider.getApplicationContext(), false))
-                .setup().get();
-        assertNotNull("「本周是」在更多设置里", more.findViewById(R.id.row_week_big));
-        assertNotNull("「小周休哪天」在更多设置里", more.findViewById(R.id.row_small_rest));
+        home.findViewById(R.id.row_week_mode).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+        Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("应弹出周休制度对话框", d);
+        assertNotNull("对话框里应有大周 / 小周的选择", d.findViewById(R.id.rg_week_big));
+        assertNotNull("对话框里应有单休休哪天的选择", d.findViewById(R.id.rg_single_rest));
     }
 
     /**

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 周休制度（v1.49.2）：制度、本周是大周还是小周、单休休哪天，一次选完。
+
+     v1.49.0 之前这里是 4 个平铺选项（大小周 / 双休 / 单休·周日 / 单休·周六），
+     用户反馈「单休和大小周的细节不该跟大类混在一起」——于是拆成：
+     上面选大类，下面按选中的大类条件显示细节。
+
+     为什么不是三级菜单：这些都是一次定下来、之后很少改的东西，
+     但改错就会整月算错班，所以宁可在一个对话框里全看完。
+     新手引导第 1 页仍然只问大类，那里不需要校准「本周是大周还是小周」。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="周休制度"
+            android:textColor="@color/ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingMultiplier="1.2"
+            android:text="决定哪天要上班、哪天休息，日历和闹钟都按它推算。改错会整天算错班。"
+            android:textColor="@color/sub"
+            android:textSize="12sp" />
+
+        <!-- 大类：三选一 -->
+        <RadioGroup
+            android:id="@+id/rg_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/rb_big_small"
+                style="@style/WeekRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:text="大小周（一周双休、一周单休）" />
+
+            <RadioButton
+                android:id="@+id/rb_double"
+                style="@style/WeekRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:text="双休（每周六、周日都休）" />
+
+            <RadioButton
+                android:id="@+id/rb_single"
+                style="@style/WeekRadio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="44dp"
+                android:text="单休（每周固定休一天）" />
+        </RadioGroup>
+
+        <!-- 仅大小周：本周算大周还是小周 + 小周休哪天 -->
+        <LinearLayout
+            android:id="@+id/box_big_small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="本周实际是大周还是小周"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+
+            <RadioGroup
+                android:id="@+id/rg_week_big"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_big"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="大周（休2天）" />
+
+                <RadioButton
+                    android:id="@+id/rb_small"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="小周（休1天）" />
+            </RadioGroup>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="小周休哪天"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+
+            <RadioGroup
+                android:id="@+id/rg_small_rest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_rest_sun"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="周日休" />
+
+                <RadioButton
+                    android:id="@+id/rb_rest_sat"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="周六休" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <!-- 仅单休：固定休哪天 -->
+        <LinearLayout
+            android:id="@+id/box_single"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="单休休哪天"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+
+            <RadioGroup
+                android:id="@+id/rg_single_rest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_single_sun"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="周日休（周六上班）" />
+
+                <RadioButton
+                    android:id="@+id/rb_single_sat"
+                    style="@style/WeekRadio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minHeight="40dp"
+                    android:text="周六休（周日上班）" />
+            </RadioGroup>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

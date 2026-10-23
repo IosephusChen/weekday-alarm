@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
@@ -57,43 +58,38 @@ public class SmallRestDialogCrashTest {
                 .putBoolean("enabled", true)
                 .putInt("horizon_days", 365)
                 .apply();
-        // v1.49.0：「小周休哪天」搬进了二级页
-        ActivityController<MoreSettingsActivity> controller =
-                Robolectric.buildActivity(MoreSettingsActivity.class,
-                        MoreSettingsActivity.intent(
-                                androidx.test.core.app.ApplicationProvider.getApplicationContext(), false));
+        // v1.49.2：周休制度（含「小周休哪天」）在设置主页的一个对话框里
+        ActivityController<SettingsActivity> controller =
+                Robolectric.buildActivity(SettingsActivity.class);
         controller.setup();
         return controller.get();
     }
 
-    /** 反射调用私有的 showSmallRestDialog()。 */
-    private static void openSmallRestDialog(SettingsActivity activity) throws Exception {
-        java.lang.reflect.Method m = SettingsActivity.class.getDeclaredMethod("showSmallRestDialog");
-        m.setAccessible(true);
-        m.invoke(activity);
+    /** 打开周休制度对话框（v1.49.2 起「休哪天」并进这里）。 */
+    private static androidx.appcompat.app.AlertDialog openWeekModeDialog(SettingsActivity activity) {
+        activity.findViewById(R.id.row_week_mode).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+        return (androidx.appcompat.app.AlertDialog) ShadowAlertDialog.getLatestDialog();
     }
 
     @Test
     public void clickSmallRestOption_doesNotCrash() throws Exception {
         SettingsActivity activity = setupSettingsLikeUser();
 
-        // 打开「小周休哪天」对话框
-        openSmallRestDialog(activity);
-        androidx.appcompat.app.AlertDialog dialog =
-                (androidx.appcompat.app.AlertDialog) ShadowAlertDialog.getLatestDialog();
+        // 打开周休制度对话框，选「大小周」让小周休哪天的选项出现
+        androidx.appcompat.app.AlertDialog dialog = openWeekModeDialog(activity);
         assertNotNull("对话框应已弹出", dialog);
+        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_big_small)).performClick();
 
-        // 点击第一个选项（小周休周日）——与用户操作相同
-        ListView list = dialog.getListView();
-        assertNotNull("单选列表应存在", list);
-        list.performItemClick(null, 0, 0);
+        // 点「周日休」再点「周六休」——与用户操作相同
+        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_rest_sun)).performClick();
+        ((android.widget.RadioButton) dialog.findViewById(R.id.rb_rest_sat)).performClick();
+        dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
-        // 再打开点第二个选项（小周休周六）
-        openSmallRestDialog(activity);
-        androidx.appcompat.app.AlertDialog dialog2 =
-                (androidx.appcompat.app.AlertDialog) ShadowAlertDialog.getLatestDialog();
-        ListView list2 = dialog2.getListView();
-        list2.performItemClick(null, 1, 1);
+        // 不崩，且落盘的是「周六休」
+        assertTrue("应记住周六休", Prefs.isSmallRestSat(
+                ApplicationProvider.getApplicationContext()));
     }
 
     @Test

@@ -185,22 +185,19 @@ public class WeekModeTest {
         Context c = ApplicationProvider.getApplicationContext();
         c.getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
 
-        // v1.49.0：「本周是」搬进了二级页（更多设置），所以在这里打开它
-        SettingsActivity a = org.robolectric.Robolectric.buildActivity(
-                MoreSettingsActivity.class,
-                MoreSettingsActivity.intent(
-                        androidx.test.core.app.ApplicationProvider.getApplicationContext(), false))
-                .setup().get();
-        java.lang.reflect.Method m = SettingsActivity.class.getDeclaredMethod("showWeekBigDialog");
-        m.setAccessible(true);
-        m.invoke(a);
+        // v1.49.2：「本周是」「小周休哪天」并进了周休制度对话框，不再有独立入口
+        SettingsActivity a = org.robolectric.Robolectric
+                .buildActivity(SettingsActivity.class).setup().get();
+        a.findViewById(R.id.row_week_mode).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
         androidx.appcompat.app.AlertDialog d =
                 (androidx.appcompat.app.AlertDialog) org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
-        assertNotNull("应弹出「本周是」对话框", d);
-        // 第 2 项 = 小周
-        d.getListView().performItemClick(null, 1, 1);
+        assertNotNull("应弹出周休制度对话框", d);
+        // 先选「大小周」，条件块才会出现；再选「小周」
+        ((android.widget.RadioButton) d.findViewById(R.id.rb_big_small)).performClick();
+        ((android.widget.RadioButton) d.findViewById(R.id.rb_small)).performClick();
+        d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
 
         assertFalse(Prefs.isWeekBig(c));
@@ -238,5 +235,72 @@ public class WeekModeTest {
         assertFalse(WeekSchedule.Mode.DOUBLE_REST.needsAnchor());
         assertFalse(WeekSchedule.Mode.SINGLE_REST_SUN.needsAnchor());
         assertFalse(WeekSchedule.Mode.SINGLE_REST_SAT.needsAnchor());
+    }
+
+    // ================= 对话框分层（v1.49.2）=================
+
+    private static final String SP = "daxz_alarm";
+
+    private static SettingsActivity openSettings() {
+        Prefs.setGuideSeen(ApplicationProvider.getApplicationContext(), true);
+        Prefs.setOnboardDone(ApplicationProvider.getApplicationContext(), true);
+        return org.robolectric.Robolectric.buildActivity(SettingsActivity.class).setup().get();
+    }
+
+    private static androidx.appcompat.app.AlertDialog openModeDialog(SettingsActivity a) {
+        a.findViewById(R.id.row_week_mode).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+        return (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+    }
+
+    /**
+     * 大类只有三个：大小周 / 双休 / 单休。
+     *
+     * <p>v1.49.2 之前是四个（单休拆成周日休、周六休两条），用户要求把具体日子
+     * 收到下面条件区，大类不掺细节。
+     */
+    @Test
+    public void dialogOffersThreeCategories() {
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+        assertNotNull(d);
+        android.widget.RadioGroup rg = d.findViewById(R.id.rg_mode);
+        assertNotNull(rg);
+        assertEquals("大类应正好三个", 3, rg.getChildCount());
+    }
+
+    /** 从双休切到「单休」不指定日子时，默认周日休。 */
+    @Test
+    public void singleRest_defaultsToSunday() {
+        Context c = ApplicationProvider.getApplicationContext();
+        c.getSharedPreferences(SP, Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setWeekMode(c, WeekSchedule.Mode.DOUBLE_REST);
+        Prefs.setSmallRestSat(c, false);
+
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+        d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+
+        assertEquals("单休默认周日", WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(c));
+    }
+
+    /** 上次单休选过周六，切走再切回来应沿用，而不是重置成周日。 */
+    @Test
+    public void singleRest_remembersLastChoice() {
+        Context c = ApplicationProvider.getApplicationContext();
+        c.getSharedPreferences(SP, Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setWeekMode(c, WeekSchedule.Mode.DOUBLE_REST);
+        Prefs.setSmallRestSat(c, true);      // 模拟上次单休选的是周六
+
+        SettingsActivity a = openSettings();
+        androidx.appcompat.app.AlertDialog d = openModeDialog(a);
+        ((android.widget.RadioButton) d.findViewById(R.id.rb_single)).performClick();
+        d.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+
+        assertEquals("应沿用上次的周六休", WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(c));
     }
 }

@@ -28,16 +28,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 四个固定尺寸小组件的配置契约（v1.50.0）。
+ * 三个固定尺寸小组件的配置契约（v1.50.0）。
  *
- * <p>v1.51.1 起是五个组件（4×2 闹钟 / 4×2 本周 / 本月班表三个变体）。
+ * <p>v1.51.1 曾扩到五个（4×2 闹钟 / 4×2 本周 / 本月班表三个变体），
+ * v1.53.0 用户试用后删到三个：4×2 闹钟 + 本月班表 4×4 完整 / 4×3 极简。
  *
  * <p>为什么要有这个测试：v1.49.13 用 {@code maxResizeHeight} 想锁尺寸，白试一版；
  * v1.49.14 改成 {@code resizeMode="none"} 之后，唯一的验证手段是「装到手机上长按看菜单」——
  * 那是人肉验证，每次改动都可能悄悄回退，而且没人会记得重验。
  *
  * <p>这里能守住的是「我们这一侧」：APK 里编译出来的 resizeMode 必须是 0、
- * 每个组件的格子数必须是它自己那一档、四个组件都得注册上。
+ * 每个组件的格子数必须是它自己那一档、三个组件都得注册上。
  * 守不住的是「桌面认不认」——那只能真机看，见交接文档 5.5。
  */
 @RunWith(RobolectricTestRunner.class)
@@ -50,12 +51,10 @@ public class WidgetProviderConfigTest {
         return ApplicationProvider.getApplicationContext();
     }
 
-    /** 五个组件：provider XML、类名、label、目标格子数。 */
+    /** 三个组件（v1.53.0 从五个删到三个）：provider XML、类名、label、目标格子数。 */
     private static final Object[][] PROVIDERS = {
             {R.xml.next_alarm_widget_info, "NextAlarmWidget", "下一个闹钟", 4, 2},
-            {R.xml.week_schedule_widget_info, "WeekScheduleWidget", "本周班表", 4, 2},
             {R.xml.month_schedule_widget_info, "MonthScheduleWidget", "本月班表 · 完整 4×4", 4, 4},
-            {R.xml.month_compact_widget_info, "MonthCompactWidget", "本月班表 · 紧凑 4×3", 4, 3},
             {R.xml.month_minimal_widget_info, "MonthMinimalWidget", "本月班表 · 极简 4×3", 4, 3},
     };
 
@@ -113,21 +112,19 @@ public class WidgetProviderConfigTest {
     }
 
     /**
-     * 两个 4×3 变体的最小高度必须 ≥200dp。
+     * 4×3 极简的最小高度必须 ≥200dp。
      *
      * <p>六行日历 + 表头 + 按钮在 190dp 以下会把日期和「班/休」压到重叠（v1.49.12 踩过）。
      * 200 是「4×3 标准 206dp」留 6dp 余量的结果。
      */
     @Test
     public void compactMonthProviders_minHeightFitsSixRows() throws Exception {
-        assertEquals("本月班表 · 紧凑 的最小高度",
-                200f, dp(attrs(R.xml.month_compact_widget_info), "minHeight"), 0.5f);
         assertEquals("本月班表 · 极简 的最小高度",
                 200f, dp(attrs(R.xml.month_minimal_widget_info), "minHeight"), 0.5f);
     }
 
     /**
-     * 4×2 组件的 minHeight 不能低于 118dp。
+     * 4×2 闹钟的 minHeight 不能低于 118dp。
      *
      * <p>v1.51.0 把七格并进 4×2 之后，110dp 会让七格被压成一条线；
      * 118dp 是实测「闹钟两行 + 七格」不裁字的下限。
@@ -136,8 +133,6 @@ public class WidgetProviderConfigTest {
     public void compactProviders_minHeightFitsWeekCells() throws Exception {
         assertEquals("下一个闹钟 的最小高度",
                 118f, dp(attrs(R.xml.next_alarm_widget_info), "minHeight"), 0.5f);
-        assertEquals("本周班表 的最小高度",
-                118f, dp(attrs(R.xml.week_schedule_widget_info), "minHeight"), 0.5f);
     }
 
     /**
@@ -207,12 +202,7 @@ public class WidgetProviderConfigTest {
         assertNotNull(m.findViewById(R.id.m_num_41));
         assertNotNull(m.findViewById(R.id.widget_month_actions));
 
-        // 两个 4×3 变体：同一份布局，区别只在按钮显不显示
-        View compact = inflate(MonthCompactWidget.build(ctx()));
-        assertNotNull(compact.findViewById(R.id.m_num_41));
-        assertEquals("紧凑版要有请假按钮", View.VISIBLE,
-                compact.findViewById(R.id.widget_month_actions).getVisibility());
-
+        // 4×3 极简：和 4×4 同一份布局，只是不显示按钮（v1.53.0 删掉了中间的紧凑版）
         View minimal = inflate(MonthMinimalWidget.build(ctx()));
         assertNotNull(minimal.findViewById(R.id.m_num_41));
         assertEquals("极简版不要请假按钮", View.GONE,

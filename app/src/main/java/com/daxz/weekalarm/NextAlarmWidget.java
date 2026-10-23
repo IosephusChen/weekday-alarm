@@ -72,8 +72,8 @@ public class NextAlarmWidget extends AppWidgetProvider {
         rv.setTextViewText(R.id.widget_title, m.title);
         rv.setTextViewText(R.id.widget_sub, m.subtitle);
 
-        WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
-        WeekScheduleWidget.fillWeekCells(rv, ctx, week);
+        WeekWidgetRender.WeekModel week = WeekWidgetRender.computeModel(ctx);
+        WeekWidgetRender.fillWeekCells(rv, ctx, week);
 
         // 点击整卡打开 App（v1.19）
         Intent open = new Intent(ctx, MainActivity.class);

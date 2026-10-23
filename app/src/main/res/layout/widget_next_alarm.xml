@@ -13,7 +13,7 @@
      NextAlarmWidget 里那套 H_TALL / H_FULL 分档一并删掉。
 
      七格沿用班表组件的 id（day_0..6 / label_0..6 / hl_0..6），
-     渲染直接调 WeekScheduleWidget.fillWeekCells，不复制一份逻辑。 -->
+     渲染直接调 WeekWidgetRender.fillWeekCells，不复制一份逻辑。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"

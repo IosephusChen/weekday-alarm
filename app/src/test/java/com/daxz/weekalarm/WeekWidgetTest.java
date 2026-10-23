@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 本周班表小组件（v1.20）。
+ * 七格班表模型（v1.20 引入，v1.53.0 随 4×2 本周班表组件删除而改测共享渲染类）。
  *
- * 组件本身只是「7 个格子」，真正会错的是这 7 天的判定：必须和 App 内日历同源，
- * 所以这里逐条核对星期顺序、今天高亮、请假/加班覆盖，以及大周/小周标题。
+ * <p>原来这个文件测的是 {@code WeekScheduleWidget}。那个组件删了，但 7 天的判定还在用
+ * （4×2 闹钟卡的七格、4×4 与 4×3 的按钮），逻辑搬到了 {@link WeekWidgetRender}。
+ * 真正会错的仍是这 7 天：必须和 App 内日历同源，所以逐条核对星期顺序、今天高亮、
+ * 请假/加班覆盖，以及大周/小周标题。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -46,7 +48,7 @@ public class WeekWidgetTest {
 
     @Test
     public void model_isMondayToSundayWithTodayFlagged() {
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         assertEquals(7, m.days.size());
         String[] letters = {"一", "二", "三", "四", "五", "六", "日"};
         int todayIndex = LocalDate.now().getDayOfWeek().getValue() - 1;
@@ -63,8 +65,8 @@ public class WeekWidgetTest {
 
     @Test
     public void model_labelsCoverAllDayTypes() {
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        for (WeekScheduleWidget.DayCell c : m.days) {
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        for (WeekWidgetRender.DayCell c : m.days) {
             assertNotNull(c.label);
             assertFalse("标签不能为空，否则格子里会缺字", c.label.isEmpty());
             assertTrue("标签最多 2 字（格子宽度只够 2 字）",
@@ -76,7 +78,7 @@ public class WeekWidgetTest {
 
     @Test
     public void model_titleMatchesBigOrSmallWeek() {
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(ctx()));
         // v1.22.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休2天」，格子窄，前缀留给制度
         assertTrue(big ? m.title.startsWith("大周") : m.title.startsWith("小周"));
@@ -85,7 +87,7 @@ public class WeekWidgetTest {
 
     @Test
     public void model_subtitleSaysAlarmsOn() {
-        assertTrue(WeekScheduleWidget.computeModel(ctx()).subtitle.contains("已开启"));
+        assertTrue(WeekWidgetRender.computeModel(ctx()).subtitle.contains("已开启"));
     }
 
     /** 本周内找一个上班日 / 休息日（一周里两者必然都有）。 */
@@ -101,7 +103,7 @@ public class WeekWidgetTest {
         throw new IllegalStateException("本周找不到目标类型的一天");
     }
 
-    private WeekScheduleWidget.DayCell cellOf(WeekScheduleWidget.WeekModel m, LocalDate d) {
+    private WeekWidgetRender.DayCell cellOf(WeekWidgetRender.WeekModel m, LocalDate d) {
         LocalDate today = LocalDate.now();
         LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1);
         int idx = (int) java.time.temporal.ChronoUnit.DAYS.between(monday, d);
@@ -112,7 +114,7 @@ public class WeekWidgetTest {
     public void model_vacationOverridesWorkdayLabel() {
         LocalDate workday = findInThisWeek(true);
         Prefs.addVacation(ctx(), workday);
-        WeekScheduleWidget.DayCell c = cellOf(WeekScheduleWidget.computeModel(ctx()), workday);
+        WeekWidgetRender.DayCell c = cellOf(WeekWidgetRender.computeModel(ctx()), workday);
         assertTrue(c.vacation);
         assertEquals("请假", c.label);
     }
@@ -121,7 +123,7 @@ public class WeekWidgetTest {
     public void model_overtimeOverridesRestDayLabel() {
         LocalDate rest = findInThisWeek(false);
         Prefs.addOvertime(ctx(), rest);
-        WeekScheduleWidget.DayCell c = cellOf(WeekScheduleWidget.computeModel(ctx()), rest);
+        WeekWidgetRender.DayCell c = cellOf(WeekWidgetRender.computeModel(ctx()), rest);
         assertTrue(c.overtime);
         assertEquals("加班", c.label);
     }
@@ -137,10 +139,10 @@ public class WeekWidgetTest {
 
     @Test
     public void updateEntryPoints_areNullSafe() {
-        WeekScheduleWidget w = new WeekScheduleWidget();
+        NextAlarmWidget w = new NextAlarmWidget();
         w.onUpdate(ctx(), null, new int[]{});
         w.onUpdate(ctx(), android.appwidget.AppWidgetManager.getInstance(ctx()), new int[]{});
-        WeekScheduleWidget.updateAll(ctx());
-        Widgets.updateAll(ctx());   // 两个组件一起刷（无实例时也必须是空操作）
+        NextAlarmWidget.updateAll(ctx());
+        Widgets.updateAll(ctx());   // 三个组件一起刷（无实例时也必须是空操作）
     }
 }

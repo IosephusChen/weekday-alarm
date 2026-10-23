@@ -1,9 +1,6 @@
 package com.daxz.weekalarm;
 
 import android.app.PendingIntent;
-import android.appwidget.AppWidgetManager;
-import android.appwidget.AppWidgetProvider;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
@@ -16,19 +13,19 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 桌面小组件（v1.20）：本周班表。
+ * 七格班表的算与画（v1.53.0）。
  *
- * 「下一个闹钟」小组件回答「什么时候响」，这个回答「这一周哪天上班」——
- * 大小周最容易记混的就是「这周六到底上不上班」，扫一眼桌面就能确认，
- * 不用打开 App 翻日历。
+ * <p>这段原来长在 {@code WeekScheduleWidget} 里。那个类同时干两件事：既是桌面上的
+ * 4×2 本周班表组件，又是整月卡、闹钟卡共用的渲染工具——{@link #computeModel} 算七格，
+ * {@link #fillWeekCells} 把格子填进任意布局，{@link #bindAction} 绑「今天 / 明天不上班」。
  *
- * 与 App 内日历完全同源：同样走 {@link WeekSchedule#dayType} + 个人请假/加班标记，
+ * <p>v1.53.0 用户要求删掉 4×2 本周班表：组件没了，但工具还得用——4×2 闹钟卡的
+ * 七格、4×4 与 4×3 的底部按钮都靠它。所以把工具部分单独搬到这里，组件类整个删除。
+ *
+ * <p>与 App 内日历完全同源：同样走 {@link WeekSchedule#dayType} + 个人请假/加班标记，
  * 因此节假日、调休补班、请假、加班都会如实体现在这 7 个格子里。
- *
- * 更新策略：主 App 主动推送（改设置 / 响铃后重排 / 开机）+ 30 分钟周期兜底
- * （跨天后「今天」高亮要跟着走，长期不开 App 也不能停在旧的一周）。
  */
-public class WeekScheduleWidget extends AppWidgetProvider {
+final class WeekWidgetRender {
 
     /** 「今天」的高亮底：单独一层 View，用 setViewVisibility 切换（RemoteViews 原生支持）。 */
     private static final int[] HIGHLIGHT_IDS = {
@@ -132,7 +129,7 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         // 标题取显示周的最后一天（周六）：周一 / 周日起始下都落在同一周，不会差一周
         String title = WeekSchedule.describe(rule, start.plusDays(6));
         // v1.52.0：原来这里写死「闹钟已开启」，闹钟全关也照样这么显示。
-        // 与三个本月变体共用同一句状态，桌面上几张卡不会各说各话。
+        // 与整月变体共用同一句状态，桌面上几张卡不会各说各话。
         String sub = Widgets.alarmStatusText(ctx);
 
         // 底部两个按钮：今天和明天各一个。早上关心「今天能不能不去」，
@@ -155,35 +152,11 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         return work ? vacations.contains(d) : overtimes.contains(d);
     }
 
-    static RemoteViews buildViews(Context ctx, WeekModel m) {
-        RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_week_schedule);
-        rv.setTextViewText(R.id.widget_week_title, m.title);
-        rv.setTextViewText(R.id.widget_week_sub, m.subtitle);
-
-        fillWeekCells(rv, ctx, m);
-
-        Intent open = new Intent(ctx, MainActivity.class);
-        open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        rv.setOnClickPendingIntent(R.id.widget_week_root, pi);
-
-        // v1.33：底部两个按钮（今天 / 明天）。文案两层都写，靠 visibility 切换
-        // 「半透明白底」和「实白底紫字」——不换背景资源，避免反射式调用在部分启动器上炸掉
-        bindAction(rv, ctx, m.todayAction, m.todayMarked, 0,
-                R.id.widget_today_action, R.id.widget_today_action_on, R.id.wrap_today_action, 22);
-        bindAction(rv, ctx, m.tomorrowAction, m.tomorrowMarked, 1,
-                R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
-                R.id.wrap_tomorrow_action, 23);
-        return rv;
-    }
-
     /**
      * 把七格填进任意布局（v1.49.12）。
      *
-     * <p>本来这段写在 {@link #buildViews} 里，只服务 4×2 的班表组件。
-     * 4×4 的「闹钟 + 本周」合并版也要同一批格子，抽出来一份，
-     * 两边的 id 数组因此必须一致（day_0..6 / label_0..6 / hl_0..6）。
+     * <p>本来这段只服务 4×2 的班表组件。4×4 的「闹钟 + 本周」合并版也要同一批格子，
+     * 抽出来一份，两边的 id 数组因此必须一致（day_0..6 / label_0..6 / hl_0..6）。
      */
     static void fillWeekCells(RemoteViews rv, Context ctx, WeekModel m) {
         for (int i = 0; i < 7 && i < m.days.size(); i++) {
@@ -208,7 +181,7 @@ public class WeekScheduleWidget extends AppWidgetProvider {
      * 能保证点哪儿都响应。
      */
     static void bindAction(RemoteViews rv, Context ctx, String text, boolean marked,
-                                   int dayOffset, int offId, int onId, int wrapId, int reqCode) {
+                           int dayOffset, int offId, int onId, int wrapId, int reqCode) {
         rv.setTextViewText(offId, text);
         rv.setTextViewText(onId, text);
         rv.setViewVisibility(offId, marked ? android.view.View.GONE : android.view.View.VISIBLE);
@@ -250,55 +223,6 @@ public class WeekScheduleWidget extends AppWidgetProvider {
         return ContextCompat.getColor(ctx, res);
     }
 
-    private static void updateAppWidget(Context ctx, AppWidgetManager mgr, int id) {
-        // v1.49.10：按高度换布局。4×4（约 250dp 高）铺整月，4×2 仍然只显示本周七格。
-        // 原来只有一套布局，拉到 4×4 是被拉伸、拉到 3×2 是被裁切。
-        if (isTall(mgr, id)) {
-            mgr.updateAppWidget(id, MonthWidgetRender.build(ctx,
-                    MonthWidgetRender.compute(ctx, LocalDate.now())));
-            return;
-        }
-        mgr.updateAppWidget(id, buildViews(ctx, computeModel(ctx)));
-    }
-
-    /**
-     * 高度够不够铺整月。
-     *
-     * <p>4×2 是 118dp，4×3 约 190dp，4×4 约 250dp。分界取 240：
-     * 4×3 铺不下「六行格子 + 两个按钮」——强行塞会把日期和班/休压到重叠，
-     * 那一档继续用本周七格，拉高只是格子变大，但按钮还在（v1.49.12）。
-     */
-    private static boolean isTall(AppWidgetManager mgr, int id) {
-        android.os.Bundle o = mgr.getAppWidgetOptions(id);
-        if (o == null) return false;
-        return o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) >= 240;
-    }
-
-    /**
-     * 拖动改变尺寸时立刻换布局（v1.49.10）。
-     *
-     * <p>不实现这个回调的话，宿主只在添加时问一次尺寸，之后拉大拉小都沿用旧视图，
-     * 表现就是「拉伸」或「裁切」。
-     */
-    @Override
-    public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr,
-                                          int id, android.os.Bundle newOptions) {
-        if (mgr == null) return;
-        updateAppWidget(ctx, mgr, id);
-    }
-
-    /** 主 App 在关键时机主动推送刷新。 */
-    public static void updateAll(Context ctx) {
-        AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
-        if (mgr == null) return;
-        int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, WeekScheduleWidget.class));
-        if (ids == null) return;
-        for (int id : ids) updateAppWidget(ctx, mgr, id);
-    }
-
-    @Override
-    public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids) {
-        if (mgr == null || ids == null) return;
-        for (int id : ids) updateAppWidget(ctx, mgr, id);
+    private WeekWidgetRender() {
     }
 }

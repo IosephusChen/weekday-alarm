@@ -299,8 +299,12 @@ public class OnceAlarmTest {
                 yesterday.toString(), 0);
 
         assertTrue("改完要开启", spent.enabled);
-        assertTrue("日期必须顺延到未来，实际：" + spent.onceDate,
-                spent.parseOnceDate().isAfter(LocalDate.now()));
+        // 断言「顺延后的时刻在未来」，而不是「日期晚于今天」：凌晨 0 点到闹钟点之间
+        // 顺延结果就是今天（今天 6:30 还没到，照样会响），旧断言在这个时段必红。
+        java.time.LocalDateTime due = java.time.LocalDateTime.of(
+                spent.parseOnceDate(), java.time.LocalTime.of(6, 30));
+        assertTrue("顺延后的时刻必须在未来，否则是哑弹，实际：" + spent.onceDate,
+                due.isAfter(java.time.LocalDateTime.now()));
         assertNotNull("顺延了要当面说，否则用户不知道日期变了", tip);
         assertTrue("提示要说清改到了哪天，实际：" + tip, tip.contains("已改到"));
     }

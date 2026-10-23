@@ -164,6 +164,10 @@ public class BedtimeNotificationTest {
      */
     @Test
     public void refresh_afterMidnight_saysToday() {
+        // 这条测的是「跨天之后文案要改口成今天」，跟「只在工作日提醒」无关。
+        // 关掉工作日过滤，否则测试会隐式依赖「今天恰好是工作日」——周六跑必红。
+        Prefs.setBedtimeWorkdayOnly(ctx(), false);
+
         BedtimeReceiver.repost(ctx(), model(true, "明天要上班", "明早 07:30 起床 会响"));
         assertNotNull(shown());
 

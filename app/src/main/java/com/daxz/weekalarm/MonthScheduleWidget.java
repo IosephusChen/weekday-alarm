@@ -10,7 +10,7 @@ import android.widget.RemoteViews;
  * v1.50.0 独立成组件。v1.51.1 加了「下一个闹钟」一行（设置里可关），
  * 和另外两个 4×3 变体一起试用。
  *
- * <p>渲染交给 {@link MonthWidgetRender}，三个变体共用。
+ * <p>渲染交给 {@link MonthWidgetRender}，两个变体共用。
  */
 public class MonthScheduleWidget extends MonthWidgetBase {
 

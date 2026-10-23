@@ -153,22 +153,10 @@
                 android:resource="@xml/next_alarm_widget_info" />
         </receiver>
 
-        <!-- 桌面小组件（v1.20）：本周班表，一眼看清这周哪天上班。
-             v1.50.0 起固定 4×2，整月那份是下面的 MonthScheduleWidget。 -->
-        <receiver
-            android:name=".WeekScheduleWidget"
-            android:exported="false"
-            android:label="本周班表">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/week_schedule_widget_info" />
-        </receiver>
-
-        <!-- 桌面小组件（v1.50.0，v1.51.1 起三个变体）：本月班表，整月 42 格。
-             三个变体试用中，用户用一段时间后删掉落选的两个。 -->
+        <!-- 桌面小组件（v1.50.0，v1.51.1 起三个变体，v1.53.0 定稿为两个）：
+             本月班表，整月 42 格。
+             v1.53.0 用户实际试用后定了：留 4×4 完整（带按钮）和 4×3 极简（无按钮），
+             删掉 4×3 紧凑（和极简只差底部按钮，冗余）。 -->
         <receiver
             android:name=".MonthScheduleWidget"
             android:exported="false"
@@ -179,18 +167,6 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/month_schedule_widget_info" />
-        </receiver>
-
-        <receiver
-            android:name=".MonthCompactWidget"
-            android:exported="false"
-            android:label="本月班表 · 紧凑 4×3">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/month_compact_widget_info" />
         </receiver>
 
         <receiver

@@ -42,30 +42,30 @@ public class WidgetLeaveTest {
 
     @Test
     public void actionText_workDay_offersLeave() {
-        assertEquals("明天不上班", WeekScheduleWidget.actionText(WeekSchedule.DayType.WORK, false));
+        assertEquals("明天不上班", WeekWidgetRender.actionText(WeekSchedule.DayType.WORK, false));
         assertEquals("明天已请假",
-                WeekScheduleWidget.actionText(WeekSchedule.DayType.WORK, true));
+                WeekWidgetRender.actionText(WeekSchedule.DayType.WORK, true));
     }
 
     /** 调休补班日也是上班日：那天照样要早起，按钮不该变成「明天要加班」。 */
     @Test
     public void actionText_makeupWorkDay_alsoOffersLeave() {
         assertEquals("明天不上班",
-                WeekScheduleWidget.actionText(WeekSchedule.DayType.MAKEUP_WORK, false));
+                WeekWidgetRender.actionText(WeekSchedule.DayType.MAKEUP_WORK, false));
     }
 
     @Test
     public void actionText_restDay_offersOvertime() {
         assertEquals("明天要加班",
-                WeekScheduleWidget.actionText(WeekSchedule.DayType.REST, false));
+                WeekWidgetRender.actionText(WeekSchedule.DayType.REST, false));
         assertEquals("明天已加班",
-                WeekScheduleWidget.actionText(WeekSchedule.DayType.REST, true));
+                WeekWidgetRender.actionText(WeekSchedule.DayType.REST, true));
     }
 
     @Test
     public void actionText_legalHoliday_offersOvertime() {
         assertEquals("明天要加班",
-                WeekScheduleWidget.actionText(WeekSchedule.DayType.HOLIDAY, false));
+                WeekWidgetRender.actionText(WeekSchedule.DayType.HOLIDAY, false));
     }
 
     /** 今天 / 明天两个按钮的文案都要和当前标记一致，否则点完看到的还是旧字。 */
@@ -82,9 +82,9 @@ public class WidgetLeaveTest {
         boolean tomorrowWork = tomorrowType == WeekSchedule.DayType.WORK
                 || tomorrowType == WeekSchedule.DayType.MAKEUP_WORK;
 
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        assertEquals(WeekScheduleWidget.actionText("今天", todayType, false), m.todayAction);
-        assertEquals(WeekScheduleWidget.actionText("明天", tomorrowType, false), m.tomorrowAction);
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        assertEquals(WeekWidgetRender.actionText("今天", todayType, false), m.todayAction);
+        assertEquals(WeekWidgetRender.actionText("明天", tomorrowType, false), m.tomorrowAction);
         assertFalse(m.todayMarked);
         assertFalse(m.tomorrowMarked);
 
@@ -98,11 +98,11 @@ public class WidgetLeaveTest {
         } else {
             Prefs.addOvertime(ctx(), tomorrow);
         }
-        m = WeekScheduleWidget.computeModel(ctx());
-        assertEquals("今天标记后文案要变", WeekScheduleWidget.actionText("今天", todayType, true),
+        m = WeekWidgetRender.computeModel(ctx());
+        assertEquals("今天标记后文案要变", WeekWidgetRender.actionText("今天", todayType, true),
                 m.todayAction);
         assertEquals("明天标记后文案要变",
-                WeekScheduleWidget.actionText("明天", tomorrowType, true), m.tomorrowAction);
+                WeekWidgetRender.actionText("明天", tomorrowType, true), m.tomorrowAction);
         assertTrue(m.todayMarked);
         assertTrue(m.tomorrowMarked);
     }
@@ -120,7 +120,7 @@ public class WidgetLeaveTest {
         } else {
             Prefs.addOvertime(ctx(), today);
         }
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         assertTrue(m.todayMarked);
         assertFalse("明天不该被连带标记", m.tomorrowMarked);
     }

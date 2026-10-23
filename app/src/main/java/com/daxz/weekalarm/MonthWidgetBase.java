@@ -10,23 +10,21 @@ import android.widget.RemoteViews;
 import java.time.LocalDate;
 
 /**
- * 三个「本月班表」变体的共同实现（v1.51.1）。
+ * 两个「本月班表」变体的共同实现（v1.51.1 引入，v1.53.0 定稿为两个）。
  *
  * <p>为什么有变体：4×4 用户反馈「有些浪费」——一个月的日历用不着四行格子那么高。
- * 但「多高才合适」是主观的，所以先做三个版本让用户实际用一段时间再决定：
+ * 但「多高才合适」是主观的，所以 v1.51.1 先做三个版本让用户实际用一段时间再决定。
+ * v1.53.0 用户试用后定了：留 4×4 完整（带按钮）和 4×3 极简（无按钮），
+ * 删掉中间的紧凑版——它和极简只差底部两个按钮，没必要并存。
  *
  * <table>
  *   <tr><th>变体</th><th>尺寸</th><th>按钮</th></tr>
  *   <tr><td>{@link MonthScheduleWidget}</td><td>4×4</td><td>有</td></tr>
- *   <tr><td>{@link MonthCompactWidget}</td><td>4×3</td><td>有</td></tr>
  *   <tr><td>{@link MonthMinimalWidget}</td><td>4×3</td><td>无</td></tr>
  * </table>
  *
- * <p>v1.52.0 起闹钟不再占独立一行，三个变体的标题行结构一致（月份 + 周次 + 闹钟状态），
- * 差异只剩尺寸和底部按钮。
- *
- * <p>三个变体只在这两处不同，42 格的算与画全部走 {@link MonthWidgetRender}。
- * 试用期结束后删掉落选的两个，这个基类跟着删。
+ * <p>v1.52.0 起闹钟不再占独立一行，两个变体的标题行结构一致（月份 + 周次 + 闹钟状态），
+ * 差异只剩尺寸和底部按钮。42 格的算与画全部走 {@link MonthWidgetRender}。
  */
 abstract class MonthWidgetBase extends AppWidgetProvider {
 
@@ -36,44 +34,22 @@ abstract class MonthWidgetBase extends AppWidgetProvider {
     /** 要不要底部「今天 / 明天不上班」。 */
     abstract boolean withActions();
 
-    /**
-     * 尺寸兜底：真锁不住、被压到 4×2 高度时，宁可退回「本周班表」，
-     * 也不让六行日历被裁掉半截。
-     *
-     * <p>阈值取 180：4×3 是 206dp、4×4 是 280dp，都在这之上；
-     * 低于 180 说明宿主没按 targetCell 给高度。
-     */
-    private static final int H_MIN = 180;
-
-    private static boolean tooSmall(AppWidgetManager mgr, int id) {
-        Bundle o = mgr == null ? null : mgr.getAppWidgetOptions(id);
-        int h = o == null ? 0 : o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0);
-        return h > 0 && h < H_MIN;
-    }
-
     RemoteViews buildViews(Context ctx) {
         return MonthWidgetRender.build(ctx, MonthWidgetRender.compute(ctx, LocalDate.now()),
                 layoutRes(), withActions(), Prefs.isMonthWidgetAlarm(ctx));
     }
 
-    RemoteViews buildFor(Context ctx, AppWidgetManager mgr, int id) {
-        if (tooSmall(mgr, id)) {
-            return WeekScheduleWidget.buildViews(ctx, WeekScheduleWidget.computeModel(ctx));
-        }
-        return buildViews(ctx);
-    }
-
     @Override
     public void onUpdate(Context ctx, AppWidgetManager mgr, int[] ids) {
         if (mgr == null || ids == null) return;
-        for (int id : ids) mgr.updateAppWidget(id, buildFor(ctx, mgr, id));
+        for (int id : ids) mgr.updateAppWidget(id, buildViews(ctx));
     }
 
     @Override
     public void onAppWidgetOptionsChanged(Context ctx, AppWidgetManager mgr,
                                           int id, Bundle newOptions) {
         if (mgr == null) return;
-        mgr.updateAppWidget(id, buildFor(ctx, mgr, id));
+        mgr.updateAppWidget(id, buildViews(ctx));
     }
 
     /** 推给「自己这个子类」在桌面上的所有实例。 */
@@ -82,6 +58,6 @@ abstract class MonthWidgetBase extends AppWidgetProvider {
         if (mgr == null) return;
         int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, getClass()));
         if (ids == null || ids.length == 0) return;   // 桌面没放：一次模型都不算
-        for (int id : ids) mgr.updateAppWidget(id, buildFor(ctx, mgr, id));
+        for (int id : ids) mgr.updateAppWidget(id, buildViews(ctx));
     }
 }

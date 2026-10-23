@@ -128,7 +128,7 @@ public class WeekStartTest {
     @Test
     public void widget_followsWeekStart() {
         Prefs.setWeekStart(ctx(), Prefs.WEEK_START_SUNDAY);
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         assertEquals("日", m.days.get(0).dayLetter);
         assertEquals("六", m.days.get(6).dayLetter);
 

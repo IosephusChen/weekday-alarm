@@ -55,14 +55,6 @@ public class WidgetRemoteViewsTest {
     }
 
     @Test
-    public void weekWidget_inflates() {
-        resetPrefs();
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
-        assertNotNull("应能按 id 找到标题", root.findViewById(R.id.widget_week_title));
-    }
-
-    @Test
     public void nextWidget_inflates() {
         resetPrefs();
         NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
@@ -70,12 +62,12 @@ public class WidgetRemoteViewsTest {
         assertEquals(m.title, ((TextView) root.findViewById(R.id.widget_title)).getText().toString());
     }
 
-    /** 两个按钮的文案要真的写进 RemoteViews，而不是只存在于模型里。 */
+    /** 4×4 整月卡的底部两个按钮：文案要真的写进 RemoteViews，而不是只存在于模型里。 */
     @Test
-    public void weekWidget_actionButtonsShowText() {
+    public void monthWidget_actionButtonsShowText() {
         resetPrefs();
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        View root = inflate(MonthScheduleWidget.build(ctx()));
 
         TextView today = root.findViewById(R.id.widget_today_action);
         TextView tomorrow = root.findViewById(R.id.widget_tomorrow_action);
@@ -91,7 +83,7 @@ public class WidgetRemoteViewsTest {
 
     /** 未标记时显示半透明层、藏起实底层；标记后反过来。 */
     @Test
-    public void weekWidget_markedSwitchesLayer() {
+    public void monthWidget_markedSwitchesLayer() {
         resetPrefs();
         LocalDate today = LocalDate.now();
         WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(ctx()));
@@ -103,8 +95,7 @@ public class WidgetRemoteViewsTest {
             Prefs.addOvertime(ctx(), today);
         }
 
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        View root = inflate(MonthScheduleWidget.build(ctx()));
         assertEquals("今天已标记：实底层可见", View.VISIBLE,
                 root.findViewById(R.id.widget_today_action_on).getVisibility());
         assertEquals("半透明层应隐藏", View.GONE,
@@ -114,12 +105,16 @@ public class WidgetRemoteViewsTest {
         assertEquals(View.GONE, root.findViewById(R.id.widget_tomorrow_action_on).getVisibility());
     }
 
-    /** 今天那一格的高亮层可见，其余六格不可见——高亮靠的就是这几个 View 的 visibility。 */
+    /**
+     * 今天那一格的高亮层可见，其余六格不可见——高亮靠的就是这几个 View 的 visibility。
+     *
+     * <p>v1.53.0 起七格只剩 4×2 闹钟卡这一处，跟着搬过去测。
+     */
     @Test
-    public void weekWidget_highlightsOnlyToday() {
+    public void nextWidget_highlightsOnlyToday() {
         resetPrefs();
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        View root = inflate(NextAlarmWidget.buildViews(ctx(), NextAlarmWidget.computeModel(ctx())));
         int[] ids = {R.id.hl_0, R.id.hl_1, R.id.hl_2, R.id.hl_3,
                 R.id.hl_4, R.id.hl_5, R.id.hl_6};
         int todayIndex = -1;
@@ -137,13 +132,13 @@ public class WidgetRemoteViewsTest {
 
     /** 七格的文字也要写进去（班 / 休 / 假 / 补）。 */
     @Test
-    public void weekWidget_writesAllSevenCells() {
+    public void nextWidget_writesAllSevenCells() {
         resetPrefs();
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        View root = inflate(NextAlarmWidget.buildViews(ctx(), NextAlarmWidget.computeModel(ctx())));
         int[] ids = {R.id.label_0, R.id.label_1, R.id.label_2, R.id.label_3,
                 R.id.label_4, R.id.label_5, R.id.label_6};
-        List<WeekScheduleWidget.DayCell> days = m.days;
+        List<WeekWidgetRender.DayCell> days = m.days;
         for (int i = 0; i < ids.length; i++) {
             TextView label = root.findViewById(ids[i]);
             assertNotNull(label);
@@ -153,10 +148,9 @@ public class WidgetRemoteViewsTest {
 
     /** 两个按钮都要可点（点击挂在最外层容器上，内层只负责显示）。 */
     @Test
-    public void weekWidget_actionWrappersAreClickable() {
+    public void monthWidget_actionWrappersAreClickable() {
         resetPrefs();
-        WeekScheduleWidget.WeekModel m = WeekScheduleWidget.computeModel(ctx());
-        View root = inflate(WeekScheduleWidget.buildViews(ctx(), m));
+        View root = inflate(MonthScheduleWidget.build(ctx()));
         assertTrue("今天按钮必须可点",
                 root.findViewById(R.id.wrap_today_action).isClickable());
         assertTrue("明天按钮必须可点",
@@ -274,7 +268,7 @@ public class WidgetRemoteViewsTest {
     }
 
     /**
-     * 「本月班表显示闹钟」开关必须同时管住三个变体（v1.51.1）。
+     * 「本月班表显示闹钟」开关必须同时管住两个变体（v1.51.1 三个，v1.53.0 定为两个）。
      *
      * <p>v1.52.0 起两份布局结构一致：闹钟并进标题行、只报状态不报时刻，
      * 且不再把「本周 · 大周」挤掉。这里把这两点一起钉住。
@@ -290,7 +284,7 @@ public class WidgetRemoteViewsTest {
             assertEquals("4×4 闹钟只报状态，不报具体时刻",
                     "闹钟已开启", text(on4, R.id.widget_month_alarm));
 
-            View on3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
+            View on3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
             assertEquals("4×3 闹钟状态该显示", View.VISIBLE,
                     on3.findViewById(R.id.widget_month_alarm).getVisibility());
             assertEquals("4×3 的周次不该被闹钟挤掉", View.VISIBLE,
@@ -301,7 +295,7 @@ public class WidgetRemoteViewsTest {
             assertEquals("关掉后 4×4 闹钟状态该隐藏", View.GONE,
                     off4.findViewById(R.id.widget_month_alarm).getVisibility());
 
-            View off3 = MonthCompactWidget.build(c).apply(c, new FrameLayout(c));
+            View off3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
             assertEquals("关掉后 4×3 闹钟状态该隐藏", View.GONE,
                     off3.findViewById(R.id.widget_month_alarm).getVisibility());
             assertEquals("关掉后周次照旧显示", View.VISIBLE,

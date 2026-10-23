@@ -160,7 +160,7 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 三个变体共用这一个渲染入口（v1.51.1）。
+     * 两个变体共用这一个渲染入口（v1.51.1 三个，v1.53.0 定为两个）。
      *
      * <p>变体只在「哪份布局 / 有没有请假按钮 / 有没有闹钟」上不同，42 格的算与画完全一样。
      * 分成三个类各写一遍渲染，等于把同一段代码复制三份——改一处颜色要改三处。
@@ -198,11 +198,11 @@ final class MonthWidgetRender {
         rv.setViewVisibility(R.id.widget_month_actions,
                 withActions ? View.VISIBLE : View.GONE);
         if (withActions) {
-            WeekScheduleWidget.WeekModel week = WeekScheduleWidget.computeModel(ctx);
-            WeekScheduleWidget.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
+            WeekWidgetRender.WeekModel week = WeekWidgetRender.computeModel(ctx);
+            WeekWidgetRender.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
                     R.id.widget_today_action, R.id.widget_today_action_on,
                     R.id.wrap_today_action, 22);
-            WeekScheduleWidget.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
+            WeekWidgetRender.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
                     R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
                     R.id.wrap_tomorrow_action, 23);
         }

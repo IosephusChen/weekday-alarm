@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.pm.PackageInfoCompat;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -254,10 +255,12 @@ public class SettingsActivity extends AppCompatActivity {
 
     /** 设置项改动后：立即重排（旧闹钟自动清除重设）再刷新本页。 */
     private void applySettingsNow() {
-        ScheduleManager.rescheduleAll(this);
-        refreshAll();
-        // v1.46.7：改完设置（尤其是「只在上班日提醒」）通知栏那条要跟着变 / 该撤就撤
-        BedtimeReminder.refreshIfShown(this);
+        Reschedule.run(this, () -> {
+            if (isFinishing() || isDestroyed()) return;
+            refreshAll();
+            // v1.46.7：改完设置（尤其是「只在上班日提醒」）通知栏那条要跟着变 / 该撤就撤
+            BedtimeReminder.refreshIfShown(this);
+        });
     }
 
     // ================= 周休制度（v1.46.3 由主界面迁入）=================
@@ -794,8 +797,8 @@ public class SettingsActivity extends AppCompatActivity {
                     .getPackageInfo(getPackageName(), 0);
             TextView v = findViewById(R.id.tv_version);
             if (v == null) return;
-            v.setText(
-                    "版本 " + pi.versionName + " (" + pi.getLongVersionCode() + ")");
+            v.setText("版本 " + pi.versionName + " ("
+                    + PackageInfoCompat.getLongVersionCode(pi) + ")");
             // 「更新日志」行右侧直接显示版本号，一眼看出日志是不是这一版
             ((TextView) findViewById(R.id.tv_changelog_version))
                     .setText("v" + pi.versionName);

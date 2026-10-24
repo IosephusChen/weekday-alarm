@@ -144,7 +144,6 @@ final class FloatingAlarm {
 
     /** 能不能挂悬浮窗：Android 8.0+ 的 TYPE_APPLICATION_OVERLAY 需要用户授权。 */
     static boolean canFloat(Context c) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
         try {
             return Settings.canDrawOverlays(c);
         } catch (Exception e) {

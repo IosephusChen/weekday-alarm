@@ -67,6 +67,17 @@ public class AlarmTest {
     }
 
     @Test
+    public void fromJson_oneBadItem_skipsOnlyThatItem() {
+        List<Alarm> out = Alarm.fromJson(
+                "[{\"id\":1,\"hour\":7,\"minute\":30,\"label\":\"起床\"},"
+                        + "\"这条不是对象\","
+                        + "{\"id\":3,\"hour\":9,\"minute\":0,\"label\":\"周末\"}]");
+        assertEquals("坏一条不该连带丢掉其余闹钟", 2, out.size());
+        assertEquals(1, out.get(0).id);
+        assertEquals(3, out.get(1).id);
+    }
+
+    @Test
     public void fromJson_missingFields_usesDefaults() {
         List<Alarm> out = Alarm.fromJson("[{\"id\":5}]");
         assertEquals(1, out.size());

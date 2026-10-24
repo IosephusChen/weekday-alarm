@@ -6,6 +6,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.pm.PackageInfoCompat;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +53,11 @@ public final class Changelog {
      * 真想知道为什么，去项目里的使用说明。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(168, "1.63.0", "2026/10/25", "发布前加固：崩溃、卡顿、备份边界",
+                    "铃声播放失败时兜底闹钟铃声（原来兜底成来电铃声，还会漏关旧播放器）；启动前台服务被系统拦下时改发通知兜底，不再静默失联",
+                    "改设置、点日期、导备份、引导完成这些会触发全量重排的操作，全部挪到后台线程，界面不再卡住",
+                    "导入手改编坏的配置文件不再整个文件作废：单条坏数据只跳过那一条；节假日数据下载加了 1MB 上限",
+                    "备份补上此前漏掉的「二十四节气」开关，覆盖全部偏好项"),
             new Entry(167, "1.62.0", "2026/10/24", "4×2 小组件重排信息层级",
                     "主信息只放时刻（07:00），不再被日期、星期连成一长串",
                     "副信息改成「今天 / 明天 / 月日 星期 · 闹钟名」，去掉「未来 90 天共 N 个提醒」这类统计",
@@ -742,8 +749,8 @@ public final class Changelog {
     /** 安装包的 versionCode；读不到返回 0。 */
     public static int installedCode(Context c) {
         try {
-            return (int) c.getPackageManager()
-                    .getPackageInfo(c.getPackageName(), 0).getLongVersionCode();
+            return (int) PackageInfoCompat.getLongVersionCode(
+                    c.getPackageManager().getPackageInfo(c.getPackageName(), 0));
         } catch (Exception e) {
             return 0;
         }

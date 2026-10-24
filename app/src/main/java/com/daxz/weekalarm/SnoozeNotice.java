@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -47,6 +48,7 @@ final class SnoozeNotice {
      * <p>必须在小睡闹钟已经排好之后调用：这条通知承诺「还会响」，而真正兑现承诺的是
      * {@link ScheduleManager#snooze} 注册的那个闹钟。排程失败时发这条通知就是骗人。
      */
+    @SuppressLint("MissingPermission") // POST_NOTIFICATIONS 可能被用户拒绝；下面的 try-catch 兜底
     static void post(Context ctx, int alarmId, String label, int minutes) {
         int mins = Math.max(1, minutes);
         LocalDateTime at = LocalDateTime.now().plusMinutes(mins);

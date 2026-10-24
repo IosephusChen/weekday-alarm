@@ -299,30 +299,40 @@ public final class Alarm {
         return arr.toString();
     }
 
-    /** 解析失败返回空列表（调用方负责补默认闹钟）。 */
+    /**
+     * 解析闹钟列表。整份 JSON 坏了返回空列表；单条坏了只跳过那一条。
+     *
+     * <p>不能因为一条脏数据把整列闹钟丢掉：备份文件是纯文本，用户手改、或从别的版本
+     * 导入时格式有差异，坏一条不代表其余几条也不是用户的闹钟。整份解析失败才返回空，
+     * 由调用方补默认闹钟。
+     */
     public static List<Alarm> fromJson(String json) {
         List<Alarm> out = new ArrayList<>();
         if (json == null || json.isEmpty()) return out;
         try {
             JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
-                // v1.58.0：hour / minute 必须夹到合法区间。配置文件是纯文本 JSON，
-                // 用户手改编坏（"hour": 99）是现实场景——optInt 原样收下的话，
-                // 之后任何一处 LocalTime.of(hour, minute)（排程 / 结算 / 统计）
-                // 都会抛 DateTimeException 把 App 带崩，而且是在主线程。
-                Alarm a = new Alarm(
-                        o.optInt("id", i + 1),
-                        clamp(o.optInt("hour", 7), 0, 23),
-                        clamp(o.optInt("minute", 30), 0, 59),
-                        o.optString("label", "闹钟"),
-                        Mode.fromOrdinal(o.optInt("mode", 0)),
-                        o.optBoolean("enabled", true),
-                        // 老版本没有这个键：optString 默认给 null，
-                        // ONCE 遇到 null 就视为不响（见字段注释）
-                        o.optString("onceDate", null));
-                a.color = clampColor(o.optInt("color", 0));
-                out.add(a);
+                try {
+                    JSONObject o = arr.getJSONObject(i);
+                    // v1.58.0：hour / minute 必须夹到合法区间。配置文件是纯文本 JSON，
+                    // 用户手改编坏（"hour": 99）是现实场景——optInt 原样收下的话，
+                    // 之后任何一处 LocalTime.of(hour, minute)（排程 / 结算 / 统计）
+                    // 都会抛 DateTimeException 把 App 带崩，而且是在主线程。
+                    Alarm a = new Alarm(
+                            o.optInt("id", i + 1),
+                            clamp(o.optInt("hour", 7), 0, 23),
+                            clamp(o.optInt("minute", 30), 0, 59),
+                            o.optString("label", "闹钟"),
+                            Mode.fromOrdinal(o.optInt("mode", 0)),
+                            o.optBoolean("enabled", true),
+                            // 老版本没有这个键：optString 默认给 null，
+                            // ONCE 遇到 null 就视为不响（见字段注释）
+                            o.optString("onceDate", null));
+                    a.color = clampColor(o.optInt("color", 0));
+                    out.add(a);
+                } catch (Exception skip) {
+                    // 单条坏数据跳过，别连带丢掉其余闹钟
+                }
             }
         } catch (Exception e) {
             return new ArrayList<>();

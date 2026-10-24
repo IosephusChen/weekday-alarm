@@ -87,6 +87,7 @@ public final class ConfigBackup {
             p.put(Prefs.KEY_BEDTIME_MINUTES, Prefs.getBedtimeMinutes(ctx));
             p.put(Prefs.KEY_BEDTIME_WORKDAY_ONLY, Prefs.isBedtimeWorkdayOnly(ctx));
             p.put(Prefs.KEY_LUNAR_FESTIVALS, Prefs.isLunarFestivals(ctx));
+            p.put(Prefs.KEY_SOLAR_TERMS, Prefs.isSolarTerms(ctx));
             p.put(Prefs.KEY_CHRISTIAN_FESTIVALS, Prefs.isChristianFestivals(ctx));
 
             root.put("prefs", p);
@@ -234,6 +235,8 @@ public final class ConfigBackup {
                 p.optBoolean(Prefs.KEY_BEDTIME_WORKDAY_ONLY, Prefs.isBedtimeWorkdayOnly(ctx)));
         ed.putBoolean(Prefs.KEY_LUNAR_FESTIVALS,
                 p.optBoolean(Prefs.KEY_LUNAR_FESTIVALS, Prefs.isLunarFestivals(ctx)));
+        ed.putBoolean(Prefs.KEY_SOLAR_TERMS,
+                p.optBoolean(Prefs.KEY_SOLAR_TERMS, Prefs.isSolarTerms(ctx)));
         ed.putBoolean(Prefs.KEY_CHRISTIAN_FESTIVALS,
                 p.optBoolean(Prefs.KEY_CHRISTIAN_FESTIVALS, Prefs.isChristianFestivals(ctx)));
         ed.commit();   // 同步落盘：紧接着要按新配置重排，读到半份数据会排错
@@ -274,9 +277,12 @@ public final class ConfigBackup {
 
     /** 导入完成后的统一收尾：按新配置重排 + 刷新小组件 + 睡前提醒。 */
     public static void applyAfterImport(Context ctx) {
-        BedtimeReminder.reschedule(ctx);
-        ScheduleManager.rescheduleAll(ctx);
-        Widgets.updateAll(ctx);
+        // v1.63.0：重排是上百次 IPC，导入又在主线程，同步跑会卡住「导入成功」的反馈
+        final Context app = ctx.getApplicationContext();
+        Reschedule.run(ctx, () -> {
+            BedtimeReminder.reschedule(app);
+            ScheduleManager.rescheduleAll(app);
+        }, () -> Widgets.updateAll(app));
     }
 
     /** 摘要文案（导入前二次确认用）。 */

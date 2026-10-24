@@ -19,6 +19,7 @@
         android:layout_height="72dp"
         android:background="@drawable/bg_hero"
         android:padding="16dp"
+        android:contentDescription="@null"
         android:src="@drawable/ic_clock_white" />
 
     <TextView

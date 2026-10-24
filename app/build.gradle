@@ -10,8 +10,8 @@ android {
         applicationId "com.daxz.weekalarm"
         minSdk 26
         targetSdk 34
-        versionCode 167
-        versionName "1.62.0"
+        versionCode 168
+        versionName "1.63.0"
     }
 
     signingConfigs {

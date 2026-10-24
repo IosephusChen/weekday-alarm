@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -90,6 +91,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
         showNotification(ctx, m, true);
     }
 
+    @SuppressLint("MissingPermission") // POST_NOTIFICATIONS 可能被用户拒绝；下面的 try-catch 兜底
     private static void showNotification(Context ctx, BedtimeReminder.Model m, boolean quiet) {
         Intent open = new Intent(ctx, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);

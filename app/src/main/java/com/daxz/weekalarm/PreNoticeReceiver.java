@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -65,13 +66,18 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         int minutes = intent.getIntExtra(EXTRA_MINUTES, Prefs.getPreNoticeMinutes(ctx));
         String timeText = intent.getStringExtra(EXTRA_TIME_TEXT);
         String dateStr = intent.getStringExtra(EXTRA_DATE);
-        LocalDate d;
-        if (dateStr != null) {
-            d = LocalDate.parse(dateStr);
-        } else {
-            d = LocalDate.now();
-        }
+        LocalDate d = parseDateOrToday(dateStr);
         post(ctx, alarmId, label, d, minutes, timeText);
+    }
+
+    /** intent extra 里的日期；为空或坏数据时退回今天，别让广播崩掉。 */
+    private static LocalDate parseDateOrToday(String s) {
+        if (s == null || s.isEmpty()) return LocalDate.now();
+        try {
+            return LocalDate.parse(s);
+        } catch (Exception e) {
+            return LocalDate.now();
+        }
     }
 
     /**
@@ -81,6 +87,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      * 算出来的提醒时刻 14:31 已经过去，注册时会被「pre 已过就别排了」跳过，
      * 这一次就永远收不到提前通知。重排时补一条，行为才和「早点设好」一致。
      */
+    @SuppressLint("MissingPermission") // POST_NOTIFICATIONS 可能被用户拒绝；下面的 try-catch 兜底
     static void post(Context ctx, int alarmId, String label, LocalDate d,
                      int minutes, String timeText) {
         if (label == null || label.isEmpty()) label = "闹钟";
@@ -330,7 +337,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     private void cancelThisAlarm(Context ctx, Intent intent) {
         int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
         String dateStr = intent.getStringExtra(EXTRA_DATE);
-        LocalDate d = dateStr != null ? LocalDate.parse(dateStr) : LocalDate.now();
+        LocalDate d = parseDateOrToday(dateStr);
         cancelThis(ctx, alarmId, d);
         try {
             Toast.makeText(ctx, "已关闭这次响铃", Toast.LENGTH_SHORT).show();

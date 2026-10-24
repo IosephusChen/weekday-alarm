@@ -53,7 +53,13 @@ public class AlarmReceiver extends BroadcastReceiver {
         svc.putExtra(AlarmService.EXTRA_DATE, dateStr);
         svc.putExtra(AlarmService.EXTRA_ALARM_ID, alarmId);
         svc.putExtra(AlarmService.EXTRA_LABEL, label);
-        ContextCompat.startForegroundService(context, svc);
+        try {
+            ContextCompat.startForegroundService(context, svc);
+        } catch (Exception startFailure) {
+            // Android 12+ 在后台启动前台服务会被拒（精确闹钟降级成 setWindow 时最常见）。
+            // 不接住 = 广播崩溃 + 闹钟不响；兜底成一条带全屏 intent 的通知。
+            AlarmService.postFallbackNotification(context, alarmId, label, dateStr, popup);
+        }
         // 触发后按当前排班重排，保证窗口始终有闹钟。
         // v1.19.9：重排要取消并重新注册上百个系统闹钟（每次都是跨进程 IPC，累计可达数百毫秒
         // 到数秒），放在广播主线程会拖慢响铃、极端情况下还会广播超时。改用 goAsync 挪到

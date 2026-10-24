@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -254,10 +255,16 @@ public final class HolidayUpdater {
 
     private static String readAll(InputStream in) throws Exception {
         StringBuilder sb = new StringBuilder();
+        long total = 0;
         try (BufferedReader r = new BufferedReader(
                 new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String line;
-            while ((line = r.readLine()) != null) sb.append(line);
+            while ((line = r.readLine()) != null) {
+                total += line.length() + 1;
+                // 节假日 JSON 只有几 KB；异常响应体可能是无限流，别把它读进内存
+                if (total > 1024 * 1024) throw new IOException("节假日数据超过 1MB，已放弃");
+                sb.append(line);
+            }
         }
         return sb.toString();
     }

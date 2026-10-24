@@ -209,7 +209,10 @@ public class BedtimeNotificationTest {
 
         assertTrue("按今天算应该是「今天」，实际：" + today, today.startsWith("今天"));
         assertFalse("按今天算不该出现「明天」，实际：" + today, today.contains("明天"));
-        assertTrue("按明天算应该是「明天」，实际：" + tomorrow, tomorrow.startsWith("明天"));
+        // 明天是工作日时正文以「明早」开头，休息日以「明天」开头——都不能说成「今天」
+        assertTrue("按明天算应说明天，实际：" + tomorrow,
+                tomorrow.startsWith("明天") || tomorrow.startsWith("明早"));
+        assertFalse("按明天算不该出现「今天」，实际：" + tomorrow, tomorrow.startsWith("今天"));
     }
 
     /**

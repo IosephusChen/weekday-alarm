@@ -19,6 +19,7 @@
   宽度不在这里写死：FloatingAlarm 按屏幕宽度减去左右各 8dp 算好塞进 LayoutParams。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_float_card"
@@ -81,7 +82,7 @@
         android:padding="11dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_float_snooze"
-        android:tint="@color/float_card_icon" />
+        app:tint="@color/float_card_icon" />
 
     <ImageButton
         android:id="@+id/fa_stop"
@@ -93,5 +94,5 @@
         android:padding="11dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_float_stop"
-        android:tint="@color/white" />
+        app:tint="@color/white" />
 </LinearLayout>

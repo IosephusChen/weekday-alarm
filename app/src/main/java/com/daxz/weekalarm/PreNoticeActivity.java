@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -34,7 +35,10 @@ public class PreNoticeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 锁屏上也能显示；不主动点亮屏幕——提前提醒没重要到把睡着的人晃醒
-        setShowWhenLocked(true);
+        // setShowWhenLocked 是 API 27 的；minSdk 26，老系统走 Manifest 属性
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+        }
         setContentView(R.layout.activity_pre_notice);
 
         alarmId = getIntent().getIntExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 0);

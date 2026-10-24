@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -10,6 +11,7 @@ import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -142,8 +144,29 @@ public class AlarmService extends Service {
         boolean test = ACTION_TEST.equals(action);
         // 缺省 true：老路径（测试响铃直接起服务）没有带这个 extra，保持原来的全屏行为
         boolean popup = intent == null || intent.getBooleanExtra(EXTRA_POPUP, true);
-        startForeground(NOTIF_ID, buildNotification(dateStr, label, test, popup),
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        Notification notif = buildNotification(dateStr, label, test, popup);
+        // startForeground(id, notification, type) 是 API 29 的；minSdk 26，老系统用两参数重载
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIF_ID, notif,
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+            } else {
+                startForeground(NOTIF_ID, notif);
+            }
+        } catch (Exception startFailure) {
+            // Android 12+ 后台启动前台服务可能被系统拒绝（精确闹钟降级到 setWindow 时）。
+            // 崩在这里 = 闹钟到点闪退且不响，所以兜底成一条带全屏 intent 的通知。
+            postFallbackNotification(this, currentAlarmId, label, dateStr, popup);
+            // 必须 stopForeground 再 stopSelf：startForegroundService 起的服务若在
+            // onStartCommand 里没成功置前台就退，系统会补一个
+            // "did not then call Service.startForeground()" 的 RemoteServiceException
+            try {
+                stopForeground(true);
+            } catch (Exception ignore) {
+            }
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         ringing = true;
         startRinging();
         scheduleAutoStop();   // v1.18：设定了响铃时长时，到点自动停
@@ -268,8 +291,23 @@ public class AlarmService extends Service {
             player.prepare();
             applyVolumeAndStart(targetVol, fadeIn);
         } catch (Exception e) {
+            // 自定义铃声失效（备份还原到新设备后 Uri 不存在最常见）：先收尾失败的 player，
+            // 否则它被下面的兜底覆盖，MediaPlayer 一直不 release
             try {
-                player = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE));
+                if (player != null) {
+                    player.release();
+                    player = null;
+                }
+            } catch (Exception ignore) {
+            }
+            try {
+                // 兜底用闹钟铃，不是来电铃——响铃页是闹钟，用户听到电话铃声会愣一下
+                Uri fallback = RingtoneManager.getActualDefaultRingtoneUri(this,
+                        RingtoneManager.TYPE_ALARM);
+                if (fallback == null) {
+                    fallback = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                }
+                player = MediaPlayer.create(this, fallback);
                 if (player != null) {
                     player.setLooping(true);
                     applyVolumeAndStart(targetVol, fadeIn);
@@ -465,6 +503,52 @@ public class AlarmService extends Service {
                 NotifCard.Button.primary(test ? "结束测试" : "停止", stopPi),
                 canSnooze ? NotifCard.Button.secondary(snoozeMins + " 分钟后再响", snoozePi) : null));
         return nb.build();
+    }
+
+    /**
+     * 前台服务起不来时的兜底通知（v1.63.0）。
+     *
+     * <p>精确闹钟权限被关掉后，{@code ScheduleManager} 会降级成 {@code setWindow}。
+     * 那条闹钟触发时 App 不在「闹钟白名单」里，Android 12+ 的
+     * {@code startForegroundService} / {@code startForeground} 会抛异常。
+     * 不接住就是「闹钟到点闪退且不响」——所以这里至少留一条能点开、能停的通知。
+     * 响铃本身起不来，但用户知道到点了，也不会以为手机坏了。
+     */
+    @SuppressLint("MissingPermission") // POST_NOTIFICATIONS 可能被用户拒绝；下面 try-catch 兜底
+    public static void postFallbackNotification(Context ctx, int alarmId, String label,
+                                                String dateStr, boolean popup) {
+        try {
+            String name = label == null || label.isEmpty() ? "闹钟" : label;
+            Intent full = new Intent(ctx, AlarmActivity.class);
+            full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
+            full.putExtra(AlarmActivity.EXTRA_TEST, false);
+            full.putExtra(AlarmActivity.EXTRA_ALARM_ID, alarmId);
+            full.putExtra(AlarmActivity.EXTRA_LABEL, name);
+            full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // requestCode 带 alarmId：PendingIntent 匹配不看 extras，不带 id 会冻结成第一个闹钟
+            PendingIntent fpi = PendingIntent.getActivity(ctx, 900 + alarmId, full,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            PendingIntent stopPi = PendingIntent.getService(ctx, 1900 + alarmId,
+                    new Intent(ctx, AlarmService.class).setAction(ACTION_STOP),
+                    PendingIntent.FLAG_IMMUTABLE);
+            Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_ALARM)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(name + "时间到了")
+                    .setContentText("点此停止")
+                    .setContentIntent(fpi)
+                    .setCategory(Notification.CATEGORY_ALARM)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setVisibility(Notification.VISIBILITY_PUBLIC)
+                    .setOngoing(true)
+                    .setAutoCancel(false)
+                    .setFullScreenIntent(fpi, true)
+                    .addAction(new Notification.Action.Builder(
+                            Icon.createWithResource(ctx, R.drawable.ic_notif_close),
+                            "停止", stopPi).build());
+            NotificationManagerCompat.from(ctx).notify(NOTIF_ID, nb.build());
+        } catch (Exception ignore) {
+            // 通知权限也没给：这一步再没什么可做的，交给下一条 / 用户自己发现
+        }
     }
 
     @Override

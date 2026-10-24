@@ -61,6 +61,7 @@ public class ConfigBackupTest {
                 .putBoolean(Prefs.KEY_FADE_IN, true)
                 .putInt(Prefs.KEY_BEDTIME_MINUTES, 22 * 60)
                 .putBoolean(Prefs.KEY_LUNAR_FESTIVALS, false)
+                .putBoolean(Prefs.KEY_SOLAR_TERMS, false)
                 .putStringSet(Prefs.KEY_VACATION_DATES,
                         new java.util.HashSet<>(java.util.Arrays.asList("2026-10-21", "2026-10-22")))
                 .putStringSet(Prefs.KEY_OVERTIME_DATES,
@@ -124,6 +125,7 @@ public class ConfigBackupTest {
         assertTrue(Prefs.isFadeIn(ctx()));
         assertEquals(22 * 60, Prefs.getBedtimeMinutes(ctx()));
         assertFalse(Prefs.isLunarFestivals(ctx()));
+        assertFalse("节气显示开关也要进备份", Prefs.isSolarTerms(ctx()));
         assertEquals(2, Prefs.getVacationDates(ctx()).size());
         assertTrue(Prefs.isVacation(ctx(), LocalDate.of(2026, 10, 21)));
         assertTrue(Prefs.isOvertime(ctx(), LocalDate.of(2026, 10, 24)));

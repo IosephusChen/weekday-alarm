@@ -133,8 +133,7 @@ final class PermissionGuides {
     static void showPopupGuideIfNeeded(Activity activity) {
         if (Prefs.isPopupGuided(activity)) return;
         boolean needFsi = !ScheduleManager.canUseFullScreenIntent(activity);
-        boolean needOverlay = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && !Settings.canDrawOverlays(activity);
+        boolean needOverlay = !Settings.canDrawOverlays(activity);
         if (!needFsi && !needOverlay) return;
 
         StringBuilder sb = new StringBuilder();

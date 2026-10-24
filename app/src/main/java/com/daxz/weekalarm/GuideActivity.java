@@ -1,5 +1,6 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -257,7 +258,7 @@ public class GuideActivity extends AppCompatActivity {
         first.hour = hour;
         first.minute = minute;
         Prefs.setAlarms(this, alarms);
-        ScheduleManager.rescheduleAll(this);
+        Reschedule.run(this, null);
     }
 
     /**
@@ -597,10 +598,12 @@ public class GuideActivity extends AppCompatActivity {
         boolean firstRun = !Prefs.isOnboardDone(this);
         ensureAlarm();
         Prefs.setOnboardDone(this, true);
-        ScheduleManager.rescheduleAll(this);
-        String tip = firstRun
+        final String tip = firstRun
                 ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";
+        // v1.63.0：重排挪后台，但引导页要立刻关闭——Executor 用的是 application
+        // context，活动finish后照样会把闹钟排完
+        Reschedule.run(this, null);
         Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
         finish();
     }
@@ -609,6 +612,7 @@ public class GuideActivity extends AppCompatActivity {
      * 返回键 = 中途退出，不写标记：下次启动还会出现。
      * 想彻底关掉，点「跳过」——那才算「我知道了」。
      */
+    @SuppressLint("MissingSuperCall") // 返回键 = 中途退出，不写「已引导」标记
     @Override
     public void onBackPressed() {
         finish();

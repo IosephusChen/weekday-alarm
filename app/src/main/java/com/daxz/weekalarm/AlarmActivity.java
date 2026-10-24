@@ -1,6 +1,8 @@
 package com.daxz.weekalarm;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -45,8 +47,11 @@ public class AlarmActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setShowWhenLocked(true);
-        setTurnScreenOn(true);
+        // setShowWhenLocked / setTurnScreenOn 是 API 27 的；minSdk 26，老系统走 Manifest 属性
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        }
         // v1.40.0：小悬浮窗是独立窗口，会盖在 Activity 上面。用户点小窗进来看详情时，
         // 得先把小窗撤掉，否则整屏页上还浮着一张卡片。
         FloatingAlarm.hide();
@@ -265,6 +270,7 @@ public class AlarmActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
+    @SuppressLint("MissingSuperCall") // 响铃页不允许直接返回关闭，必须显式停止 / 小睡
     @Override
     public void onBackPressed() {
         // 不允许直接返回关闭，必须显式选择停止 / 小睡；间隔按用户设置显示（可自定义）

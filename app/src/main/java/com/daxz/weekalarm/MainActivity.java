@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         // v1.34：日历回到首页、默认展开。面板自己找容器里的子 View，主界面只提供
         // 「改完标记之后要我干什么」——重排 + 刷新首页（面板也会跟着重画）。
         calendarPanel = new CalendarPanel(this, findViewById(R.id.calendar_card),
-                this::applySettingsNow);
+                this::onCalendarMarkChanged);
 
         loadPrefs();
 
@@ -472,15 +472,18 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-        if (anyEnabled) {
-            ScheduleManager.rescheduleAll(this);
-        } else {
-            ScheduleManager.cancelAllIncludingTransient(this);
-        }
-        refreshAll();
-        // v1.46.7：睡前提醒可能还挂在通知栏上说着旧话（「明天没有会响的闹钟」），
-        // 用户刚加的闹钟要立刻反映到那条通知上
-        BedtimeReminder.refreshIfShown(this);
+        // v1.63.0：重排是上百次跨进程 IPC，挪后台。串行执行，避免两次重排交错
+        final Context app = getApplicationContext();
+        Runnable work = anyEnabled
+                ? () -> ScheduleManager.rescheduleAll(app)
+                : () -> ScheduleManager.cancelAllIncludingTransient(app);
+        Reschedule.run(this, work, () -> {
+            if (isFinishing() || isDestroyed()) return;
+            refreshAll();
+            // v1.46.7：睡前提醒可能还挂在通知栏上说着旧话（「明天没有会响的闹钟」），
+            // 用户刚加的闹钟要立刻反映到那条通知上
+            BedtimeReminder.refreshIfShown(this);
+        });
     }
 
     /** 切换单个闹钟的启停：停用即从系统取消该闹钟已排程的实例；启用则重排全部。 */
@@ -514,11 +517,25 @@ public class MainActivity extends AppCompatActivity {
         AlarmEditor.show(this, alarms, target, this::applySettingsNow);
     }
 
-    /** 设置项改动后调用：立即重排（旧闹钟自动清除重设）再刷新界面。 */
-    private void applySettingsNow() {
-        ScheduleManager.rescheduleAll(this);
+    /**
+     * 日历上标了请假 / 加班：界面先刷新，重排挪后台。
+     *
+     * <p>不能等重排完再刷——点完格子上立刻要出现「假 / 加」，晚一秒就像没点上。
+     * 重排是上百次 IPC，本来就该在后台做。
+     */
+    private void onCalendarMarkChanged() {
         refreshAll();
         BedtimeReminder.refreshIfShown(this);
+        Reschedule.run(this, null);
+    }
+
+    /** 设置项改动后调用：立即重排（旧闹钟自动清除重设）再刷新界面。 */
+    private void applySettingsNow() {
+        Reschedule.run(this, () -> {
+            if (isFinishing() || isDestroyed()) return;
+            refreshAll();
+            BedtimeReminder.refreshIfShown(this);
+        });
     }
 
     private void refreshAll() {
@@ -588,7 +605,9 @@ public class MainActivity extends AppCompatActivity {
     private void toggleDayOff(int dayOffset) {
         String msg = DayOffAction.toggle(this, dayOffset);
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-        applySettingsNow();
+        // 按钮状态先回，重排挪后台——「点了没反应」比晚一点排好更难受
+        updateDayOffButton();
+        Reschedule.run(this, null);
     }
 
     private void refreshStatus() {

@@ -15,7 +15,8 @@ import java.time.LocalDateTime;
  * 桌面小组件（v1.19）：在桌面一眼看到「下一个闹钟」。
  * 计算逻辑完全复用主 App 的 ScheduleManager，保证与 App 内状态一致。
  * 更新策略：以主 App 主动推送为主（开关 / 设置变更 / 响铃后重排 / 开机恢复），
- * 故 AppWidgetProviderInfo 的 updatePeriodMillis 设为 0，不依赖系统周期性刷新。
+ * provider 的 updatePeriodMillis 为 30 分钟兜底（不是 0）——长期不打开 App 时，
+ * 跨天后「今天」高亮最长会错约 30 分钟，Doze 期间更久，但没有即时 DATE_CHANGED 通道。
  */
 public class NextAlarmWidget extends AppWidgetProvider {
 

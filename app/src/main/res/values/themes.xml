@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.DaxiaoWeekAlarm" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/indigo</item>
@@ -26,7 +27,8 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <!-- API 27 起支持；老系统忽略该属性，不会崩 -->
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 
     <!-- 锁屏显示自测页（v1.45.0）：固定深底，不跟随日夜。

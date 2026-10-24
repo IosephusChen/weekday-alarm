@@ -382,8 +382,10 @@
                                     style="@style/SettingsValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
                                     android:gravity="end"
-                                    android:maxLines="2"
+                                    android:maxLines="1"
+                                    android:ellipsize="end"
                                     android:text="@string/more_calendar_content_default" />
 
                                 <TextView style="@style/SettingsChevron" />
@@ -405,43 +407,6 @@
                 android:clipToOutline="true"
                 android:orientation="vertical">
 
-                            <LinearLayout
-                                android:id="@+id/row_test_ring"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:background="?attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:focusable="true"
-                                android:gravity="center_vertical"
-                                android:minHeight="54dp"
-                                android:orientation="horizontal"
-                                android:paddingStart="16dp"
-                                android:paddingEnd="14dp"
-                                android:paddingTop="10dp"
-                                android:paddingBottom="10dp">
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        style="@style/SettingsTitle"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="@string/more_test_ring_title" />
-
-                                    <TextView
-                                        style="@style/SettingsSummary"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="2dp"
-                                        android:text="@string/more_test_ring_summary" />
-                                </LinearLayout>
-
-                                <TextView style="@style/SettingsChevron" />
-                            </LinearLayout>
 
                             <View style="@style/SettingsDivider" />
                             <LinearLayout

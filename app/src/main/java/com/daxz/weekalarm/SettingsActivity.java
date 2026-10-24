@@ -63,11 +63,9 @@ public class SettingsActivity extends AppCompatActivity {
                             Toast.makeText(this, getString(R.string.toast_export_done),
                                     Toast.LENGTH_LONG).show();
                         } catch (Exception e) {
-                            new RoundedDialog.Builder(this)
-                                    .setTitle(getString(R.string.dialog_export_failed_title))
-                                    .setMessage(String.valueOf(e.getMessage()))
-                                    .setPositiveButton("知道了", null)
-                                    .show();
+                            DialogKit.showMessage(this,
+                                    getString(R.string.dialog_export_failed_title),
+                                    String.valueOf(e.getMessage()));
                         }
                     });
 
@@ -79,26 +77,10 @@ public class SettingsActivity extends AppCompatActivity {
     private final ActivityResultLauncher<String[]> importLauncher =
             BackupImporter.register(this, result -> {
                 refreshAll();
-                new RoundedDialog.Builder(this)
-                        .setTitle(getString(R.string.dialog_import_done_title))
-                        .setMessage(result.message
-                                + "。\n\n" + getString(R.string.import_done_tail))
-                        .setPositiveButton("知道了", null)
-                        .show();
+                DialogKit.showMessage(this,
+                        getString(R.string.dialog_import_done_title),
+                        result.message + "。\n\n" + getString(R.string.import_done_tail));
             }, false);
-
-    /** 系统铃声选择器返回（v1.19.1）：选中的 Uri（null = 系统默认）。 */
-    private final ActivityResultLauncher<Intent> ringtonePickerLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    result -> {
-                        if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                            Uri uri = result.getData().getParcelableExtra(
-                                    RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri.class);
-                            Prefs.setRingtoneUri(this, uri);
-                            persistRingtoneUri(uri);
-                            updateRingtoneText();
-                        }
-                    });
 
     /**
      * 本页布局（v1.49.0）。
@@ -210,7 +192,6 @@ public class SettingsActivity extends AppCompatActivity {
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
         // 日历少被推远 190dp。三块的语义没有变，只是换了地方。
         bind(R.id.row_help, v -> startActivity(new Intent(this, HelpActivity.class)));
-        bind(R.id.row_test_ring, v -> testAlarm());
         bind(R.id.row_run_status, v -> showRunStatusDialog());
 
         // 铃声渐响 / 振动：整行点击转发给开关切换（开关自身不消费点击，避免与整行点击冲突）
@@ -423,22 +404,25 @@ public class SettingsActivity extends AppCompatActivity {
     /**
      * 一周开始日：周一 / 周日。只影响日历与「本周班表」的列顺序，
      * 排班（大小周 / 双休 / 单休）与闹钟时间都不动，所以不需要重排。
+     *
+     * <p>v1.61.0 换成 {@link DialogKit#showPick}：系统单选列表在 MIUI 主题下不渲染，
+     * 且与 App 里其它对话框不是一套视觉。副标题把「选了之后班表怎么排」写在明处。
      */
     private void showWeekStartDialog() {
-        String[] options = {"周一", "周日"};
-        int checked = Prefs.isSundayFirst(this) ? 1 : 0;
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.more_week_start_title))
-                .setSingleChoiceItems(options, checked, (dialog, which) -> {
-                    dialog.dismiss();
+        boolean sunday = Prefs.isSundayFirst(this);
+        DialogKit.showPick(this,
+                getString(R.string.more_week_start_title),
+                "只影响日历和「本周班表」的列顺序，排班与闹钟时间都不变",
+                new String[]{"周一", "周日"},
+                new String[]{"工作日排在前面", "周日是每周第一天"},
+                sunday ? 1 : 0,
+                which -> {
                     Prefs.setWeekStart(this, which == 1
                             ? Prefs.WEEK_START_SUNDAY : Prefs.WEEK_START_MONDAY);
                     updateWeekStartText();
                     // 桌面「本周班表」按同一个设置排列，改完顺手刷新
                     Widgets.updateAll(this);
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                });
     }
 
     private void updateHorizonText() {
@@ -527,19 +511,32 @@ public class SettingsActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    /** 行右侧的值：勾了什么就列什么，全没勾写「都不显示」（v1.60.0）。 */
+    /**
+     * 行右侧的值：勾了什么就列什么，全没勾写「都不显示」（v1.60.0）。
+     *
+     * <p>v1.60.0 第一版用全名（农历节日、二十四节气、基督教节日），16 个字把
+     * 标题挤成一团——用户截图反馈。行内值改用短名（农历 / 节气 / 基督教），
+     * 全名留在对话框里，那里有地方展开。
+     */
     private void refreshCalendarContentValue() {
         TextView tv = findViewById(R.id.tv_calendar_content);
         if (tv == null) return;
-        StringBuilder sb = new StringBuilder();
-        if (Prefs.isLunarFestivals(this)) sb.append("农历节日");
-        if (Prefs.isSolarTerms(this)) {
-            if (sb.length() > 0) sb.append("、");
-            sb.append("二十四节气");
+        boolean lunar = Prefs.isLunarFestivals(this);
+        boolean solar = Prefs.isSolarTerms(this);
+        boolean christian = Prefs.isChristianFestivals(this);
+        if (lunar && solar && christian) {
+            tv.setText("全部显示");
+            return;
         }
-        if (Prefs.isChristianFestivals(this)) {
+        StringBuilder sb = new StringBuilder();
+        if (lunar) sb.append("农历");
+        if (solar) {
             if (sb.length() > 0) sb.append("、");
-            sb.append("基督教节日");
+            sb.append("节气");
+        }
+        if (christian) {
+            if (sb.length() > 0) sb.append("、");
+            sb.append("基督教");
         }
         tv.setText(sb.length() == 0 ? "都不显示" : sb.toString());
     }
@@ -591,38 +588,18 @@ public class SettingsActivity extends AppCompatActivity {
     private void showCheckFailedDialog() {
         String reason = HolidayUpdater.lastFailureReason();
         if (reason == null || reason.isEmpty()) reason = "网络请求未成功";
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.dialog_holiday_check_failed_title))
-                .setMessage("原因：" + reason + "\n\n"
+        DialogKit.showMessage(this,
+                getString(R.string.dialog_holiday_check_failed_title),
+                "原因：" + reason + "\n\n"
                         + "当前仍在用内置的 " + HolidayData.BUILT_IN_FIRST_YEAR + "–"
                         + HolidayData.BUILT_IN_YEAR + " 年节假日数据，这些年份的放假与调休补班"
                         + "都完整，排班推算不受影响。\n\n"
-                        + "换到 Wi-Fi 或信号更好的地方可以再试一次。")
-                .setPositiveButton("重试", (d, w) -> checkHolidayUpdate())
-                .setNegativeButton("知道了", null)
-                .show();
+                        + "换到 Wi-Fi 或信号更好的地方可以再试一次。",
+                "重试", (d, w) -> checkHolidayUpdate(),
+                "知道了", null);
     }
 
     // ================= v1.46.2：从首页搬来的三块 =================
-
-    /**
-     * 测试响铃（原在首页）。
-     *
-     * <p>逻辑原样搬过来：沿用主闹钟的名称，与正式提醒的呈现完全一致；
-     * 测试是用户主动点的，页面直接打开，通知走低优先级渠道，不再叠一条横幅。
-     */
-    private void testAlarm() {
-        Alarm primary = AlarmEditor.primaryAlarm(Prefs.getAlarms(this));
-        String label = primary != null ? primary.label : "闹钟";
-        Intent svc = new Intent(this, AlarmService.class);
-        svc.setAction(AlarmService.ACTION_TEST);
-        svc.putExtra(AlarmService.EXTRA_LABEL, label);
-        androidx.core.content.ContextCompat.startForegroundService(this, svc);
-        Intent full = new Intent(this, AlarmActivity.class);
-        full.putExtra(AlarmActivity.EXTRA_TEST, true);
-        full.putExtra(AlarmActivity.EXTRA_LABEL, label);
-        startActivity(full);
-    }
 
     /**
      * 运行状态（原为首页底部默认收起的折叠卡，v1.46.2 改成设置页一行 + 对话框）。
@@ -665,11 +642,7 @@ public class SettingsActivity extends AppCompatActivity {
                 : "已内置 " + HolidayData.BUILT_IN_FIRST_YEAR + "–" + HolidayData.BUILT_IN_YEAR
                         + " 年节假日安排（放假与调休自动优先于周休制度）");
 
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.dialog_run_status_title))
-                .setMessage(sb.toString())
-                .setPositiveButton("知道了", null)
-                .show();
+        DialogKit.showMessage(this, getString(R.string.dialog_run_status_title), sb.toString());
     }
 
     /** 运行状态行右侧的一句话摘要：不点开也能看出「开着没、几个提醒」。 */
@@ -703,26 +676,25 @@ public class SettingsActivity extends AppCompatActivity {
      * 但结果反馈从「一闪而过的 Toast」升级成一个说全两种可能的对话框。
      */
     private void showPinWidgetDialog() {
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.more_pin_widget_title))
-                .setItems(new String[]{
-                                "下一个闹钟（4×2）",
-                                "本月班表 · 完整（4×4）",
-                                "本月班表 · 极简（4×3）"},
-                        (d, which) -> {
-                            switch (which) {
-                                case 0:
-                                    pinWidget(NextAlarmWidget.class, 118);
-                                    break;
-                                case 1:
-                                    pinWidget(MonthScheduleWidget.class, 250);
-                                    break;
-                                default:
-                                    pinWidget(MonthMinimalWidget.class, 200);
-                                    break;
-                            }
-                        })
-                .show();
+        DialogKit.showPick(this,
+                getString(R.string.more_pin_widget_title),
+                "选一个组件加到桌面",
+                new String[]{"下一个闹钟（4×2）", "本月班表 · 完整（4×4）", "本月班表 · 极简（4×3）"},
+                new String[]{"只看下一次响铃", "整月班表 + 图例", "整月班表，格子更小"},
+                -1,
+                which -> {
+                    switch (which) {
+                        case 0:
+                            pinWidget(NextAlarmWidget.class, 118);
+                            break;
+                        case 1:
+                            pinWidget(MonthScheduleWidget.class, 250);
+                            break;
+                        default:
+                            pinWidget(MonthMinimalWidget.class, 200);
+                            break;
+                    }
+                });
     }
 
     /** 小米桌面（HyperOS / MIUI）：实测不支持一键添加，直接给手动路径。 */
@@ -767,29 +739,20 @@ public class SettingsActivity extends AppCompatActivity {
         // 请求发出去了。弹没弹框无法检测（API 无回调），所以一次说全两种可能：
         // 弹了 → 点确认；没弹 → 手动路径。v1.49.x 用 Toast，用户实测「只弹文案」，
         // Toast 会被桌面盖住也看不清步骤，换成对话框。
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.pin_confirm_title))
-                .setMessage(getString(R.string.pin_confirm_message))
-                .setPositiveButton("知道了", null)
-                .show();
+        DialogKit.showMessage(this, getString(R.string.pin_confirm_title),
+                getString(R.string.pin_confirm_message));
     }
 
     /** 小米桌面的手动引导（v1.59.0）：说清为什么不能一键加。 */
     private void showPinManualGuide() {
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.pin_manual_title))
-                .setMessage(getString(R.string.pin_manual_message))
-                .setPositiveButton("知道了", null)
-                .show();
+        DialogKit.showMessage(this, getString(R.string.pin_manual_title),
+                getString(R.string.pin_manual_message));
     }
 
     /** 请求发出不去的兜底说明（v1.49.10）。 */
     private void showPinFallback() {
-        new RoundedDialog.Builder(this)
-                .setTitle(getString(R.string.pin_manual_title_plain))
-                .setMessage(getString(R.string.pin_manual_message_plain))
-                .setPositiveButton("知道了", null)
-                .show();
+        DialogKit.showMessage(this, getString(R.string.pin_manual_title_plain),
+                getString(R.string.pin_manual_message_plain));
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */
@@ -888,26 +851,22 @@ public class SettingsActivity extends AppCompatActivity {
         tvRingtone.setText(uri == null ? "系统默认" : ringtoneName(uri));
     }
 
-    /** 打开系统铃声选择器：仅列闹钟类铃声、不允许静音（v1.19.1）。 */
+    /**
+     * 打开铃声选择（v1.61.0 起自绘，替掉系统铃声选择器）。
+     *
+     * <p>系统选择器弹出来的是系统自己的一套界面，各 ROM 两副面孔，列表还是「一行灰字」，
+     * 跟 App 里其它对话框完全不搭。自绘版本保留它最关键的那个体验——点一下就试听——
+     * 并把试听和生效分成两步（点卡片试听，「确定」才写入）。
+     *
+     * <p>自绘列表只列媒体库里的闹钟铃声，拿不到读取权限时至少还有「系统默认」那一项，
+     * 所以不再需要 {@code ActivityResultLauncher} 那套回调，也顺手去掉了
+     * {@link #persistRingtoneUri}——媒体库 Uri 不需要跨重启授权。
+     */
     private void openRingtonePicker() {
-        Intent intent = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "选择闹钟铃声");
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true);
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
-                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
-        intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Prefs.getRingtoneUri(this));
-        ringtonePickerLauncher.launch(intent);
-    }
-
-    /** 跨重启持久化铃声 Uri 的读取权限（仅对 Documents / 外部文件类 Uri 有效，媒体库 Uri 忽略）。 */
-    private void persistRingtoneUri(Uri uri) {
-        if (uri == null) return;
-        try {
-            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        } catch (Exception ignore) {
-        }
+        RingtoneDialog.show(this, Prefs.getRingtoneUri(this), uri -> {
+            Prefs.setRingtoneUri(this, uri);
+            updateRingtoneText();
+        });
     }
 
     /** 取铃声显示名；取不到时回退到通用文案（v1.19.1）。 */

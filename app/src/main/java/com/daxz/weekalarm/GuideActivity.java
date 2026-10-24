@@ -487,12 +487,8 @@ public class GuideActivity extends AppCompatActivity {
                 + "缺一个锁屏时都看不到响铃页。\n\n"
                 + "点「开始测试」后马上按电源键锁屏，6 秒后屏幕自己亮一下："
                 + "亮起并显示绿勾就是没问题，没亮就是至少有一个没开。";
-        new RoundedDialog.Builder(this)
-                .setTitle("试一下锁屏响铃")
-                .setMessage(msg)
-                .setPositiveButton("开始测试", (d, w) -> startLockProbe())
-                .setNegativeButton("取消", null)
-                .show();
+        DialogKit.showMessage(this, "试一下锁屏响铃", msg,
+                "开始测试", (d, w) -> startLockProbe(), "取消", null);
     }
 
     /** 发起自测：写「待测」并安排 6 秒后拉起测试页，然后当面把步骤再说一遍。 */

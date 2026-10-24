@@ -381,18 +381,23 @@ public class MainActivity extends AppCompatActivity {
      *
      * <p>只放两项：复制、删除。改时间 / 改规则仍然走点击行打开编辑框——那是「调整」，
      * 需要一个能看全当前值的界面；而复制和删除是「一步就能定」的操作，不该让人先进编辑框。
+     *
+     * <p>v1.61.0 换成 {@link DialogKit#showPick}：系统 {@code setItems} 是「一行灰字」，
+     * 跟 App 里其它对话框不是一套东西；副标题还能把「复制出来的副本叫什么」说在明处。
      */
     private void showAlarmRowMenu(Alarm a) {
-        new RoundedDialog.Builder(this)
-                .setTitle(a.timeText() + "  " + a.label)
-                .setItems(new String[]{"复制这个闹钟", "删除这个闹钟"}, (d, which) -> {
+        DialogKit.showPick(this, a.timeText() + "  " + a.label,
+                null,
+                new String[]{"复制这个闹钟", "删除这个闹钟"},
+                new String[]{"时间和规则照搬，名字加「副本」", "删掉后不再提醒，不可撤销"},
+                -1,
+                which -> {
                     if (which == 0) {
                         duplicateAlarm(a);
                     } else {
                         confirmDeleteAlarm(a);
                     }
-                })
-                .show();
+                });
     }
 
     /**
@@ -429,12 +434,9 @@ public class MainActivity extends AppCompatActivity {
 
     /** 长按菜单里的删除：确认一次再删（删除不可撤销，值得多问一句）。 */
     private void confirmDeleteAlarm(Alarm a) {
-        new RoundedDialog.Builder(this)
-                .setTitle("删除「" + a.label + "」？")
-                .setMessage("删除后该闹钟不再提醒，已排程的实例会一并取消。")
-                .setPositiveButton("删除", (d, w) -> removeAlarm(a))
-                .setNegativeButton("取消", null)
-                .show();
+        DialogKit.showMessage(this, "删除「" + a.label + "」？",
+                "删除后该闹钟不再提醒，已排程的实例会一并取消。",
+                "删除", (d, w) -> removeAlarm(a), "取消", null);
     }
 
     /**

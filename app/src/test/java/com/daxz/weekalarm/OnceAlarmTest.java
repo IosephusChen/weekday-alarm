@@ -269,7 +269,7 @@ public class OnceAlarmTest {
     public void editingDisabledAlarm_turnsItBackOn() {
         Alarm off = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
 
-        AlarmEditor.applyEdit(ctx(), off, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0);
+        AlarmEditor.applyEdit(ctx(), off, 7, 45, "起床", Alarm.Mode.WORKDAY, null);
 
         assertTrue("改完必须自动开启", off.enabled);
         assertEquals(7, off.hour);
@@ -282,7 +282,7 @@ public class OnceAlarmTest {
         Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, false);
 
         assertNull("没什么异常就别弹提示",
-                AlarmEditor.applyEdit(ctx(), a, 7, 45, "起床", Alarm.Mode.WORKDAY, null, 0));
+                AlarmEditor.applyEdit(ctx(), a, 7, 45, "起床", Alarm.Mode.WORKDAY, null));
     }
 
     /**
@@ -296,7 +296,7 @@ public class OnceAlarmTest {
         Alarm spent = new Alarm(2, 6, 30, "赶车", Alarm.Mode.ONCE, false, yesterday.toString());
 
         String tip = AlarmEditor.applyEdit(ctx(), spent, 6, 30, "赶车", Alarm.Mode.ONCE,
-                yesterday.toString(), 0);
+                yesterday.toString());
 
         assertTrue("改完要开启", spent.enabled);
         // 断言「顺延后的时刻在未来」，而不是「日期晚于今天」：凌晨 0 点到闹钟点之间

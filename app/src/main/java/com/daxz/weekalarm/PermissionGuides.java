@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
@@ -146,13 +147,13 @@ final class PermissionGuides {
             sb.append("\n· 显示悬浮窗（可选，开启后使用手机时也能直接弹出）");
         }
         sb.append("\n\n以上都不开也能响铃，只是需要下拉通知栏点通知来操作。");
-        new RoundedDialog.Builder(activity)
-                .setTitle("开启自动弹出权限")
-                .setMessage(sb.toString())
-                .setPositiveButton("去设置", (d, w) -> openAppDetails(activity))
-                .setNeutralButton("我已开启", (d, w) -> Prefs.setPopupGuided(activity, true))
-                .setNegativeButton("暂不", null)
-                .show();
+        View view = DialogKit.messageView(activity, "开启自动弹出权限", sb.toString());
+        RoundedDialog.Builder b = new RoundedDialog.Builder(activity);
+        b.setView(view);
+        b.setPositiveButton("去设置", (d, w) -> openAppDetails(activity));
+        b.setNeutralButton("我已开启", (d, w) -> Prefs.setPopupGuided(activity, true));
+        b.setNegativeButton("暂不", null);
+        b.show();
     }
 
     /** 打开本应用的系统设置详情页。 */

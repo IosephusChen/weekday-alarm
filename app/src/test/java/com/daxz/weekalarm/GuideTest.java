@@ -508,10 +508,17 @@ public class GuideTest {
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
         assertNotNull("应弹出锁屏响铃测试对话框", d);
-        TextView msg = d.findViewById(android.R.id.message);
-        assertNotNull("对话框应有正文", msg);
-        assertTrue("对话框要说明「两个开关都开」",
-                msg.getText().toString().contains("两个开关"));
+        // v1.61.0 起正文走 DialogKit 的自绘布局（message_body 里按段放 TextView），
+        // 不再是系统的 android.R.id.message
+        LinearLayout body = d.findViewById(R.id.message_body);
+        assertNotNull("对话框应有正文容器", body);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < body.getChildCount(); i++) {
+            View v = body.getChildAt(i);
+            if (v instanceof TextView) sb.append(((TextView) v).getText());
+        }
+        assertTrue("对话框要说明「两个开关都开」，实际：" + sb,
+                sb.toString().contains("两个开关"));
         assertTrue("对话框要有「开始测试」",
                 d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).getText().toString()
                         .contains("开始测试"));

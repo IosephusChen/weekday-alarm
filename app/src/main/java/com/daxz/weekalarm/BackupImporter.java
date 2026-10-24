@@ -50,26 +50,19 @@ public final class BackupImporter {
                     }
                     ConfigBackup.Result check = ConfigBackup.validate(json);
                     if (!check.ok) {
-                        new RoundedDialog.Builder(activity)
-                                .setTitle("这个文件不能导入")
-                                .setMessage(check.message)
-                                .setPositiveButton("知道了", null)
-                                .show();
+                        DialogKit.showMessage(activity, "这个文件不能导入", check.message);
                         return;
                     }
                     String summary = ConfigBackup.describe(json);
-                    new RoundedDialog.Builder(activity)
-                            .setTitle("导入配置？")
-                            .setMessage("会用这份配置覆盖当前的全部设置：闹钟、排班基准、"
+                    DialogKit.showMessage(activity, "导入配置？",
+                            "会用这份配置覆盖当前的全部设置：闹钟、排班基准、"
                                     + "请假/加班标记、音量铃声、睡前提醒。"
                                     + (fromGuide ? "\n\n包括你刚才选的班表。" : "")
                                     + "\n\n"
                                     + (summary.isEmpty() ? "" : summary + "\n\n")
-                                    + "覆盖后无法撤销，当前设置不会自动备份。")
-                            .setPositiveButton("覆盖导入", (d, w) ->
-                                    importNow(activity, json, callback))
-                            .setNegativeButton("取消", null)
-                            .show();
+                                    + "覆盖后无法撤销，当前设置不会自动备份。",
+                            "覆盖导入", (d, w) -> importNow(activity, json, callback),
+                            "取消", null);
                 });
     }
 
@@ -91,11 +84,8 @@ public final class BackupImporter {
     private static void importNow(AppCompatActivity activity, String json, OnImported callback) {
         ConfigBackup.Result r = ConfigBackup.importJson(activity, json);
         if (!r.ok) {
-            new RoundedDialog.Builder(activity)
-                    .setTitle("导入失败")
-                    .setMessage(r.message + "\n\n当前设置没有被改动。")
-                    .setPositiveButton("知道了", null)
-                    .show();
+            DialogKit.showMessage(activity, "导入失败",
+                    r.message + "\n\n当前设置没有被改动。");
             return;
         }
         ConfigBackup.applyAfterImport(activity);

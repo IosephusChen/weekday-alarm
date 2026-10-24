@@ -89,7 +89,7 @@ public class SettingsLayoutTest {
         assertNotNull("音量滑块应在主页", a.findViewById(R.id.seek_volume_embed));
 
         int[] moved = {R.id.row_snooze, R.id.row_keys, R.id.row_ring_duration,
-                R.id.row_test_ring, R.id.row_export, R.id.row_calendar_content};
+                R.id.row_export, R.id.row_calendar_content};
         for (int id : moved) {
             assertNull("这一项已经搬去二级页", a.findViewById(id));
         }
@@ -153,8 +153,10 @@ public class SettingsLayoutTest {
 
         assertEquals(View.GONE, a.findViewById(R.id.sec_ring).getVisibility());
         assertEquals(View.VISIBLE, a.findViewById(R.id.sec_all).getVisibility());
-        assertNotNull("这一页应有测试响铃", a.findViewById(R.id.row_test_ring));
+        // v1.61.0：「测试响铃」已删——与引导页第 3 页的「试听一下响铃」是同一件事，
+        // 留着两处入口是重复。想试的话走「新手引导与权限 → 重看」。
         assertNotNull("这一页应有导出", a.findViewById(R.id.row_export));
+        assertNotNull("这一页应有运行状态", a.findViewById(R.id.row_run_status));
 
         ctl.pause().stop().destroy();
     }
@@ -317,7 +319,8 @@ public class SettingsLayoutTest {
 
         android.widget.TextView tv = a.findViewById(R.id.tv_calendar_content);
         assertNotNull("应有「日历显示内容」这一行", tv);
-        assertEquals("只勾了节气，值就只写节气", "二十四节气", tv.getText().toString());
+        assertEquals("只勾了节气，值就只写节气（短名，全名在对话框里）",
+                "节气", tv.getText().toString());
 
         ctl.pause().stop().destroy();
     }

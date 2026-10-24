@@ -9,9 +9,27 @@
     android:padding="20dp">
 
     <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_keys_title"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingMultiplier="1.2"
+        android:text="@string/dialog_keys_message"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
+    <TextView
         style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
         android:text="音量键（响铃时按）" />
 
     <RadioGroup

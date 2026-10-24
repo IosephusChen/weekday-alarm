@@ -1,16 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 稍后提醒设置对话框（v1.17）：间隔（分钟）+ 最多几次。
      自绘 RadioGroup：setSingleChoiceItems 在 MIUI 主题下可能不渲染（已实测复现）。 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="20dp">
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dialog_snooze_title"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingMultiplier="1.2"
+        android:text="@string/dialog_snooze_message"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
 
     <TextView
         style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
         android:text="间隔" />
 
     <RadioGroup
@@ -123,4 +145,5 @@
         android:text="提示：次数用完后响铃界面只提供「滑动停止响铃」，需手动关闭；计数按「闹钟 × 日期」分别统计，次日自动重置。"
         android:textColor="@color/sub"
         android:textSize="12sp" />
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

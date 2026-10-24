@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  纯消息对话框（v1.61.0）。
+
+  替掉 AlertDialog 的 setMessage：系统那条消息是 16sp 的正文色，在 App 的卡片上
+  又大又重，多段之间只能靠 "\n\n" 挤出两个空行，段落在不同 ROM 上松紧还不一样。
+  这里按 App 既有对话框的版式来（与 dialog_horizon / dialog_week_mode 同一套）：
+  标题 17sp 粗体主文字色，正文 12sp 次要文字色，段落之间用 10dp 间距而不是空行。
+
+  正文由 DialogKit.messageView 分段填入，布局里只放容器。
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tv_message_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/message_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+    </LinearLayout>
+</ScrollView>

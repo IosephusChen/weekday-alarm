@@ -50,8 +50,6 @@
     <string name="more_calendar_content_title">日历显示内容</string>
     <string name="more_calendar_content_default">都不显示</string>
     <string name="more_section_check">检查与帮助</string>
-    <string name="more_test_ring_title">测试响铃</string>
-    <string name="more_test_ring_summary">立刻响一次，确认音量与铃声</string>
     <string name="more_run_status_title">运行状态</string>
     <string name="more_run_status_default">—</string>
     <string name="more_onboard_title">新手引导与权限</string>
@@ -112,4 +110,17 @@
     <string name="dialog_bedtime_custom">其他时间…</string>
     <string name="dialog_bedtime_workday_only">仅在明天上班时提醒</string>
     <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知，免得打扰</string>
+    <!-- v1.61.0：剩下几个 RadioGroup 对话框原来只有一个 13sp 的字段标签当标题，
+         弹出来「不知道这是什么设置」。统一补上「17sp 粗体标题 + 12sp 说明」，
+         与 dialog_bedtime / dialog_horizon / dialog_week_mode 同一套版式。 -->
+    <string name="dialog_volume_title">闹钟音量</string>
+    <string name="dialog_volume_message">拖动调节，下次响铃即用新音量。调到 0 就是静音，届时只震动、不响铃。</string>
+    <string name="dialog_snooze_title">稍后提醒</string>
+    <string name="dialog_snooze_message">响铃时按音量键（或通知上的按钮）会推迟多久再响、最多推迟几次。</string>
+    <string name="dialog_pre_notice_title">响铃前提醒</string>
+    <string name="dialog_pre_notice_message">响铃前先在通知栏提醒一次，可以提前把这一个闹钟关掉。选「关闭」则只在响铃时提醒。</string>
+    <string name="dialog_keys_title">按键设置</string>
+    <string name="dialog_keys_message">响铃界面里，按音量键或电源键分别会做什么。</string>
+    <string name="dialog_ring_duration_title">响铃时长</string>
+    <string name="dialog_ring_duration_message">不手动停止的话，响多久之后自己停下来。</string>
 </resources>

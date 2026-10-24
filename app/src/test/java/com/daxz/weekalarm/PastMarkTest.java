@@ -12,7 +12,6 @@ import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -81,31 +80,47 @@ public class PastMarkTest {
         m.invoke(panel, d);
     }
 
-    /** 点开某天弹出的列表式对话框；没有对话框时返回 null。 */
+    /**
+     * 点开某天弹出的列表式对话框；没有对话框时返回 null。
+     *
+     * <p>v1.61.0 起这张列表是自绘的（{@code DialogKit.showPick} 往 {@code dlg_pick_list}
+     * 里加卡片），不再是 AlertDialog 的 {@code setItems} 系统列表——按卡片点击、
+     * 按位置取文案。
+     */
     private AlertDialog latestDialog() {
         return (AlertDialog) ShadowAlertDialog.getLatestDialog();
     }
 
-    /** 点列表对话框的第 index 项（setItems 的选项就是这个 ListView 的 item）。 */
+    /** 对话框里的选项卡容器。 */
+    private LinearLayout listOf(AlertDialog d) {
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertNotNull("自绘列表应有容器", list);
+        return list;
+    }
+
+    /** 点列表对话框的第 index 项。 */
     private void clickItem(AlertDialog d, int index) {
-        ListView lv = d.getListView();
-        assertNotNull("列表式对话框应有 ListView", lv);
-        lv.performItemClick(null, index, lv.getItemIdAtPosition(index));
+        listOf(d).getChildAt(index).performClick();
         ShadowLooper.idleMainLooper();
     }
 
+    /** 选项卡主文案（卡片第一个子视图是文字列，列里第一个 TextView 是主文案）。 */
+    private static String optionTitle(View card) {
+        ViewGroup col = (ViewGroup) ((ViewGroup) card).getChildAt(0);
+        return String.valueOf(((TextView) col.getChildAt(0)).getText());
+    }
+
     private String[] itemsOf(AlertDialog d) {
-        ListView lv = d.getListView();
-        assertNotNull(lv);
-        int n = lv.getAdapter().getCount();
+        LinearLayout list = listOf(d);
+        int n = list.getChildCount();
         String[] out = new String[n];
-        for (int i = 0; i < n; i++) out[i] = String.valueOf(lv.getAdapter().getItem(i));
+        for (int i = 0; i < n; i++) out[i] = optionTitle(list.getChildAt(i));
         return out;
     }
 
-    /** 取对话框标题文本（AppCompat 的标题 TextView 用 alertTitle 这个 id）。 */
+    /** 取对话框标题文本（自绘布局里标题是 tv_pick_title）。 */
     private CharSequence titleOf(AlertDialog d) {
-        View t = d.findViewById(androidx.appcompat.R.id.alertTitle);
+        View t = d.findViewById(R.id.tv_pick_title);
         return t instanceof TextView ? ((TextView) t).getText() : null;
     }
 

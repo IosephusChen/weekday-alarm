@@ -10,8 +10,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -105,6 +105,13 @@ public class QuickActionsTest {
 
     // ---------- 长按菜单 ----------
 
+    /** 自绘选项卡的主文案（卡片第一个子视图是文字列，列里第一个 TextView 是主文案）。 */
+    private static String optionTitle(View card) {
+        ViewGroup col = (ViewGroup) ((ViewGroup) card).getChildAt(0);
+        return String.valueOf(((TextView) col.getChildAt(0)).getText());
+    }
+
+
     private Alarm seedOneAlarm() {
         Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true);
         List<Alarm> list = new ArrayList<>();
@@ -126,10 +133,13 @@ public class QuickActionsTest {
 
         AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
         assertNotNull("长按应弹菜单", d);
-        ListView lv = d.getListView();
-        assertEquals("两项：复制、删除", 2, lv.getAdapter().getCount());
-        assertEquals("复制这个闹钟", String.valueOf(lv.getAdapter().getItem(0)));
-        assertEquals("删除这个闹钟", String.valueOf(lv.getAdapter().getItem(1)));
+        // v1.61.0 起长按菜单是 DialogKit 的自绘卡片列表（dlg_pick_list），
+        // 不再是系统的 setItems 列表
+        LinearLayout options = d.findViewById(R.id.dlg_pick_list);
+        assertNotNull("自绘列表应有容器", options);
+        assertEquals("两项：复制、删除", 2, options.getChildCount());
+        assertEquals("复制这个闹钟", optionTitle(options.getChildAt(0)));
+        assertEquals("删除这个闹钟", optionTitle(options.getChildAt(1)));
     }
 
     /** 点「复制」之后列表里真的多一条，并且原条不动。 */
@@ -141,8 +151,8 @@ public class QuickActionsTest {
         LinearLayout list = a.findViewById(R.id.alarm_list);
         list.getChildAt(0).performLongClick();
         ShadowLooper.idleMainLooper();
-        ((AlertDialog) ShadowAlertDialog.getLatestDialog()).getListView()
-                .performItemClick(null, 0, 0);
+        ((LinearLayout) ((AlertDialog) ShadowAlertDialog.getLatestDialog())
+                .findViewById(R.id.dlg_pick_list)).getChildAt(0).performClick();
         ShadowLooper.idleMainLooper();
 
         List<Alarm> now = Prefs.getAlarms(ctx());
@@ -161,16 +171,21 @@ public class QuickActionsTest {
         LinearLayout list = a.findViewById(R.id.alarm_list);
         list.getChildAt(0).performLongClick();
         ShadowLooper.idleMainLooper();
-        ((AlertDialog) ShadowAlertDialog.getLatestDialog()).getListView()
-                .performItemClick(null, 1, 1);
+        ((LinearLayout) ((AlertDialog) ShadowAlertDialog.getLatestDialog())
+                .findViewById(R.id.dlg_pick_list)).getChildAt(1).performClick();
         ShadowLooper.idleMainLooper();
 
         AlertDialog confirm = (AlertDialog) ShadowAlertDialog.getLatestDialog();
         assertNotNull("删除前应确认", confirm);
-        TextView msg = confirm.findViewById(android.R.id.message);
-        assertNotNull("确认框应有正文", msg);
-        assertTrue("正文应说清后果，实际：" + msg.getText(),
-                msg.getText().toString().contains("不再提醒"));
+        // 确认框正文同样走 DialogKit 自绘布局（message_body 里按段放 TextView）
+        LinearLayout body = confirm.findViewById(R.id.message_body);
+        assertNotNull("确认框应有正文容器", body);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < body.getChildCount(); i++) {
+            View v = body.getChildAt(i);
+            if (v instanceof TextView) sb.append(((TextView) v).getText());
+        }
+        assertTrue("正文应说清后果，实际：" + sb, sb.toString().contains("不再提醒"));
         assertEquals("确认按钮就写「删除」", "删除",
                 confirm.getButton(AlertDialog.BUTTON_POSITIVE).getText().toString());
         assertTrue("此时还没删", Prefs.getAlarms(ctx()).size() == 1);

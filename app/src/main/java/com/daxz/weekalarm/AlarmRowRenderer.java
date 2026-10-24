@@ -138,10 +138,9 @@ final class AlarmRowRenderer {
             // 用 sans-serif-medium 而不是 BOLD：粗体在小字号上糊成一团，中等字重反而更清晰。
             TextView time = new TextView(activity);
             time.setText(a.timeText());
-            // v1.30：有配色就用配色，关掉的仍然走灰字——「颜色」表达用途，
-            // 「灰不灰」表达有没有开，两个维度不能互相盖掉
-            time.setTextColor(a.enabled ? ContextCompat.getColor(activity, AlarmColors.res(a.color))
-                    : titleColor);
+            // v1.61.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
+            // 「灰不灰」这一个维度表达有没有开就够了
+            time.setTextColor(titleColor);
             time.setTextSize(26);
             time.setTypeface(TYPEFACE_MEDIUM);
             // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准

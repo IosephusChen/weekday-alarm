@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  列表选择对话框（v1.61.0）。
+
+  替掉 AlertDialog 的 setItems / setSingleChoiceItems，两个原因：
+
+  1. MIUI 主题下系统列表不渲染（单选列表已实测复现：消息文字把列表挤出可见区域），
+     自绘列表必然可见——同 dialog_horizon / dialog_calendar_content 的理由；
+  2. 系统列表是「一行灰字」，跟 App 里其它对话框不是一套东西。这里沿用引导页
+     的 bg_guide_option 卡片：未选中卡片底 + 细边，选中淡紫底 + 主色描边 + 右侧勾。
+
+  选项由 DialogKit.showPick 动态往 dlg_pick_list 里加，布局里只放标题、副说明与容器。
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tv_pick_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_pick_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingMultiplier="1.2"
+            android:textColor="@color/sub"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/dlg_pick_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="vertical" />
+    </LinearLayout>
+</ScrollView>

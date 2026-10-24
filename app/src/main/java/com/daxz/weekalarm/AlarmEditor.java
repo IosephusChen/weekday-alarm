@@ -52,17 +52,9 @@ final class AlarmEditor {
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
-        // 配色（v1.30）：点圆点即刻预览，保存时才落库
-        final int[] color = {target != null ? Alarm.clampColor(target.color) : 0};
-        LinearLayout rowColor = view.findViewById(R.id.row_alarm_color);
-        for (int i = 0; i < rowColor.getChildCount(); i++) {
-            final int idx = i;
-            rowColor.getChildAt(i).setOnClickListener(v -> {
-                color[0] = idx;
-                AlarmColors.renderDots(activity, rowColor, idx);
-            });
-        }
-        AlarmColors.renderDots(activity, rowColor, color[0]);
+        // v1.61.0：编辑页的配色圆点取消——一条闹钟一个色，日常根本没人在用，
+        // 反而让列表五颜六色。color 字段仍留在数据层（老备份照常还原），
+        // 只是不再有入口去改它
         if (target != null) {
             etLabel.setText(target.label);
             switch (target.mode) {
@@ -156,11 +148,10 @@ final class AlarmEditor {
                         int id = Prefs.nextAlarmId(activity);
                         Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
                                 true, onceStr);
-                        created.color = color[0];
                         alarms.add(created);
                     } else {
                         String tip = applyEdit(activity, target, hour[0], minute[0],
-                                label, mode, onceStr, color[0]);
+                                label, mode, onceStr);
                         if (tip != null) {
                             Toast.makeText(activity, tip, Toast.LENGTH_LONG).show();
                         }
@@ -173,16 +164,13 @@ final class AlarmEditor {
         btnDelete.setOnClickListener(v -> {
             if (handled[0]) return;
             handled[0] = true;
-            new RoundedDialog.Builder(activity)
-                    .setTitle("删除「" + target.label + "」？")
-                    .setMessage("删除后该闹钟不再提醒，已排程的实例会一并取消。")
-                    .setPositiveButton("删除", (d2, w2) -> {
+            DialogKit.showMessage(activity, "删除「" + target.label + "」？",
+                    "删除后该闹钟不再提醒，已排程的实例会一并取消。",
+                    "删除", (d2, w2) -> {
                         alarms.remove(target);
                         Prefs.setAlarms(activity, alarms);
                         onChanged.run();
-                    })
-                    .setNegativeButton("取消", null)
-                    .show();
+                    }, "取消", null);
             dialog.dismiss();
         });
         dialog.show();
@@ -221,13 +209,12 @@ final class AlarmEditor {
     }
 
     static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,
-                            String label, Alarm.Mode mode, String onceStr, int color) {
+                            String label, Alarm.Mode mode, String onceStr) {
         target.hour = hour;
         target.minute = minute;
         target.label = label;
         target.mode = mode;
         target.onceDate = onceStr;
-        target.color = color;
 
         // v1.45.0：改完就开。
         //
@@ -278,6 +265,10 @@ final class AlarmEditor {
      * 部分系统（澎湃实测）会无视主题强制换一套皮肤；而且这里要的只是
      * 「今天到一周内某天」，一个七项列表比日历更直接——临时闹钟本来就是近事。
      *
+     * <p>v1.61.0 换成 {@link DialogKit#showPick}：系统 {@code setItems} /
+     * {@code setSingleChoiceItems} 在 MIUI 主题下渲染有问题，且与 App 风格不搭。
+     * 主文案「今天」、副文案「10月23日 周三」，远近一眼看得出。
+     *
      * <p>没有接受「取消」以外的返回通道：点完立刻关闭，走回调回填即可。
      */
     private static void pickOnceDate(Activity activity, LocalDate current,
@@ -285,6 +276,7 @@ final class AlarmEditor {
         LocalDate today = LocalDate.now();
         final int count = 7;
         String[] names = new String[count];
+        String[] subs = new String[count];
         final LocalDate[] dates = new LocalDate[count];
         String[] rel = {"今天", "明天", "后天"};
         for (int i = 0; i < count; i++) {
@@ -292,27 +284,14 @@ final class AlarmEditor {
             dates[i] = d;
             String abs = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
             String head = i < rel.length ? rel[i] : weekdayOf(d);
-            names[i] = head + " · " + abs;
+            names[i] = head;
+            subs[i] = abs + " " + weekdayOf(d);
         }
         int checked = indexOfDate(dates, current);
-        if (checked < 0) {
-            // 存的日期不在未来七天里（很旧，或用户手动改过系统日期）：不预选，
-            // 免得打开就看到一个自己没选过的项被高亮
-            new RoundedDialog.Builder(activity)
-                    .setTitle("哪一天响？")
-                    .setItems(names, (d, which) -> cb.accept(dates[which]))
-                    .setNegativeButton("取消", null)
-                    .show();
-            return;
-        }
-        new RoundedDialog.Builder(activity)
-                .setTitle("哪一天响？")
-                .setSingleChoiceItems(names, checked, (d, which) -> {
-                    cb.accept(dates[which]);
-                    d.dismiss();
-                })
-                .setNegativeButton("取消", null)
-                .show();
+        // 存的日期不在未来七天里（很旧，或用户手动改过系统日期）时不预选，
+        // 免得打开就看到一个自己没选过的项被高亮——checked < 0 就是这个意思
+        DialogKit.showPick(activity, "哪一天响？", "只排未来七天，临时闹钟都是近事",
+                names, subs, checked, which -> cb.accept(dates[which]));
     }
 
     private static String weekdayOf(LocalDate d) {

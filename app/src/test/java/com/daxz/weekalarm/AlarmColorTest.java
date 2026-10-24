@@ -2,37 +2,27 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowAlertDialog;
-import org.robolectric.shadows.ShadowLooper;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 闹钟按用途着色（v1.30）。
+ * 闹钟颜色字段（v1.30 引入，v1.61.0 取消入口后只活在数据层）。
  *
- * <p>这个字段是纯装饰，但有两个地方容易出问题：备份还原时丢掉颜色（用户会以为
- * 自己没设过），以及越界值把列表染成透明/黑色。两头都钉住。
+ * <p>UI 上已经没有配色圆点、列表也不再染色，但 {@code Alarm.color} 仍然保留：
+ * 老备份里带着这个键，读的时候不能崩、也不能把列表染花。这条用例就钉这件事。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -108,105 +98,16 @@ public class AlarmColorTest {
         assertEquals(3, MainActivity.copyOf(src, 2, LocalDateTime.now()).color);
     }
 
-    // ---------- 界面 ----------
-
-    private MainActivity launchWithColor(int color) {
+    /**
+     * v1.61.0 起编辑页不再改颜色：保存时旧颜色原样留着，
+     * 不会被「新建默认色」或别处的默认值冲掉。
+     */
+    @Test
+    public void applyEdit_keepsStoredColorUntouched() {
         resetPrefs();
         Alarm a = new Alarm(1, 7, 30, "吃药", Alarm.Mode.DAILY, true);
-        a.color = color;
-        List<Alarm> list = new ArrayList<>();
-        list.add(a);
-        Prefs.setAlarms(ctx(), list);
-        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        ShadowLooper.idleMainLooper();
-        return activity;
-    }
-
-    /** 列表里的时间大字用该闹钟的颜色。 */
-    @Test
-    public void listTime_isTintedByAlarmColor() {
-        MainActivity a = launchWithColor(2);
-        LinearLayout list = a.findViewById(R.id.alarm_list);
-        LinearLayout row = (LinearLayout) list.getChildAt(0);
-        TextView time = (TextView) row.getChildAt(0);
-        assertEquals("07:30", time.getText().toString());
-        assertEquals(ContextCompat.getColor(ctx(), R.color.alarm_color_2),
-                time.getCurrentTextColor());
-    }
-
-    /** 关掉的闹钟仍然是灰字：颜色表达「用途」，灰表达「没开」，两个维度不能互相盖掉。 */
-    @Test
-    public void disabledAlarm_staysGrayEvenWithColor() {
-        resetPrefs();
-        Alarm a = new Alarm(1, 7, 30, "吃药", Alarm.Mode.DAILY, false);
-        a.color = 2;
-        List<Alarm> list = new ArrayList<>();
-        list.add(a);
-        Prefs.setAlarms(ctx(), list);
-        MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        ShadowLooper.idleMainLooper();
-
-        LinearLayout row = (LinearLayout) ((LinearLayout) activity.findViewById(R.id.alarm_list))
-                .getChildAt(0);
-        TextView time = (TextView) row.getChildAt(0);
-        assertEquals("关掉的不该保留彩色",
-                ContextCompat.getColor(ctx(), R.color.sub), time.getCurrentTextColor());
-    }
-
-    /** 编辑框里四个圆点，点哪个哪个选中（内容描述带「已选中」，TalkBack 也读得出）。 */
-    @Test
-    public void editDialog_hasFourDots_andSelectsOnTap() {
-        MainActivity a = launchWithColor(0);
-        LinearLayout list = a.findViewById(R.id.alarm_list);
-        list.getChildAt(0).performClick();
-        ShadowLooper.idleMainLooper();
-
-        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
-        assertNotNull("点行应打开编辑框", d);
-        LinearLayout row = d.findViewById(R.id.row_alarm_color);
-        assertNotNull("编辑框里应有配色行", row);
-        assertEquals("四个配色圆点", 4, row.getChildCount());
-
-        View dot2 = row.getChildAt(2);
-        dot2.performClick();
-        assertTrue("点过的圆点应标成已选中，实际："
-                        + dot2.getContentDescription(),
-                String.valueOf(dot2.getContentDescription()).contains("已选中"));
-        assertFalse("其余圆点不该是选中态",
-                String.valueOf(row.getChildAt(0).getContentDescription()).contains("已选中"));
-
-        d.dismiss();
-    }
-
-    /** 编辑框打开时应回显这条闹钟已有的颜色。 */
-    @Test
-    public void editDialog_showsCurrentColor() {
-        MainActivity a = launchWithColor(3);
-        ((LinearLayout) a.findViewById(R.id.alarm_list)).getChildAt(0).performClick();
-        ShadowLooper.idleMainLooper();
-
-        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
-        LinearLayout row = d.findViewById(R.id.row_alarm_color);
-        assertTrue("第 4 个圆点应是选中态",
-                String.valueOf(row.getChildAt(3).getContentDescription()).contains("已选中"));
-        d.dismiss();
-    }
-
-    /** 保存按钮把选中的颜色写回这条闹钟——点圆点只是预览，不点保存不该生效。 */
-    @Test
-    public void save_persistsChosenColor() {
-        MainActivity a = launchWithColor(0);
-        ((LinearLayout) a.findViewById(R.id.alarm_list)).getChildAt(0).performClick();
-        ShadowLooper.idleMainLooper();
-
-        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
-        LinearLayout row = d.findViewById(R.id.row_alarm_color);
-        row.getChildAt(1).performClick();
-
-        assertNotNull("编辑框应有保存按钮", d.getButton(AlertDialog.BUTTON_POSITIVE));
-        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        ShadowLooper.idleMainLooper();
-
-        assertEquals("保存后应写入橙色", 1, Prefs.getAlarms(ctx()).get(0).color);
+        a.color = 3;
+        AlarmEditor.applyEdit(ctx(), a, 8, 0, "吃药", Alarm.Mode.DAILY, null);
+        assertEquals("编辑后颜色应原样保留", 3, a.color);
     }
 }

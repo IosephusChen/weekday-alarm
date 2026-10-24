@@ -7,10 +7,23 @@
     android:padding="20dp">
 
     <TextView
-        style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="闹钟音量" />
+        android:text="@string/dialog_volume_title"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingMultiplier="1.2"
+        android:text="@string/dialog_volume_message"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
+
 
     <!-- 与设置主页那条同一套轨道与滑块（v1.49.6）；padding 留出滑块半径，否则贴到 0 就被裁 -->
     <SeekBar

@@ -403,8 +403,9 @@ final class CalendarPanel {
      * 「当天闹钟跳过」——闹钟早响过了，承诺跳过是假话。数据上两者完全一样，所以日历格子、
      * 统计、清除都不再分时段。
      *
-     * <p>用列表式（{@code setItems}）而不是并排三个按钮：文案一长（「取消请假 / 标记为加班 /
-     * 关闭」）就会折行成两截，一行一项反而更好点，也不受屏幕宽度影响。
+     * <p>用一张张选项卡而不是系统 {@code setItems}：MIUI 主题下系统列表不渲染，
+     * 且「一行灰字」跟 App 里其它对话框不是一套东西。选项卡还多出一个副标题的位置，
+     * 把「标了会怎样」直接写在选项旁边——这件事以前只在点完的 Toast 里说。
      */
     private void onDayClick(LocalDate d) {
         boolean work = DayOffAction.isWorkDay(DayOffAction.typeOf(host, d));
@@ -414,22 +415,41 @@ final class CalendarPanel {
         String dateText = TimeText.monthDayWeek(d);
 
         List<String> items = new ArrayList<>();
+        List<String> subs = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
         // 请假项：上班日给；已有标记时也给，用来取消（老数据可能在休息日上留了请假）
         if (work || hasV) {
             items.add(hasV ? "取消请假" : "标记为请假");
+            subs.add(vacationSub(work, past, hasV));
             actions.add(() -> toggleVacation(d, work, past));
         }
         // 加班项：任何日子都给。工作日的加班不影响闹钟，只是一条记录
         items.add(hasO ? "取消加班" : "标记为加班");
+        subs.add(overtimeSub(work, past, hasO));
         actions.add(() -> toggleOvertime(d, work, past));
 
-        new RoundedDialog.Builder(host)
-                .setTitle(dateText + " · " + (work ? "上班日" : "休息日")
-                        + (past ? " · 已过去" : ""))
-                .setItems(items.toArray(new String[0]), (dialog, i) -> actions.get(i).run())
-                .setNegativeButton("关闭", null)
-                .show();
+        DialogKit.showPick(host,
+                dateText + " · " + (work ? "上班日" : "休息日")
+                        + (past ? " · 已过去" : ""),
+                past ? "这一天已经过了，标记只作记录，不影响闹钟"
+                        : (work ? "请假会跳过当天的闹钟，加班只作记录"
+                        : "标了加班，当天按上班日排程、闹钟照响"),
+                items.toArray(new String[0]), subs.toArray(new String[0]),
+                -1, which -> actions.get(which).run());
+    }
+
+    /** 请假选项的副标题：说清点下去对闹钟有什么影响。 */
+    private static String vacationSub(boolean work, boolean past, boolean hasV) {
+        if (hasV) return "删掉这一天的请假记录";
+        if (past) return "补记一下，不影响闹钟";
+        return work ? "当天闹钟跳过" : "只是留个记录";
+    }
+
+    /** 加班选项的副标题：最容易误解的一项——工作日标加班闹钟照样响。 */
+    private static String overtimeSub(boolean work, boolean past, boolean hasO) {
+        if (hasO) return "删掉这一天的加班记录";
+        if (past) return "补记一下，不影响闹钟";
+        return work ? "当天闹钟不受影响" : "当天按上班日响铃";
     }
 
     /** 切换某天的请假标记。上班日标了才影响闹钟，休息日上的老数据只做清理。 */

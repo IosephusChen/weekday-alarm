@@ -14,17 +14,26 @@ android {
         versionName "1.63.0"
     }
 
+    // 签名配置（v1.63.0 起改为条件式，为公开仓库准备）：
+    // 本机有 ~/.android/debug.keystore 时用它签（作者自己的构建，覆盖安装靠它）；
+    // 别人 clone 下来没有这个文件，就什么也不配——AGP 会产出未签名的 release 包，
+    // debug 包退回 AGP 默认签名，照样能装能跑测试。想自己签：在 signingConfigs 里
+    // 加一个指向你自己 keystore 的 release 配置即可。
+    def localKeystore = file(System.getProperty("user.home") + "/.android/debug.keystore")
+    def hasLocalKeystore = localKeystore.exists()
+
     signingConfigs {
-        // 使用本机 debug keystore（别名 androiddebugkey / 密码 android），
-        // 同时启用 v1+v2+v3 签名，保证各类安装器与低版本系统都能识别
-        release {
-            storeFile file(System.getProperty("user.home") + "/.android/debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
-            enableV1Signing true
-            enableV2Signing true
-            enableV3Signing true
+        if (hasLocalKeystore) {
+            release {
+                storeFile localKeystore
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+                // v1+v2+v3 全开，保证各类安装器与低版本系统都能识别
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
         }
     }
 
@@ -41,11 +50,11 @@ android {
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.release
+            if (hasLocalKeystore) signingConfig signingConfigs.release
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            if (hasLocalKeystore) signingConfig signingConfigs.release
         }
     }
 }

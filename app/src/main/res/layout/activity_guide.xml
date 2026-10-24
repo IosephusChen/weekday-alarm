@@ -613,7 +613,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="下面五项建议全部开齐。每一项管一件事，不开的后果写在它下面——「自启动」决定闹钟响不响，其余影响响的时候好不好关、好不好看。"
+                    android:text="下面五项建议全部开齐，不开的后果写在每项下面——「自启动」决定闹钟响不响，其余影响响的时候好不好关、好不好看。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -963,9 +963,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="锁屏响铃要两个开关都开：「后台弹出界面」+「锁屏显示」。点了马上按电源键锁屏，6 秒后屏幕自己亮一下，亮了就没问题。"
-                    android:textColor="@color/sub"
-                    android:textSize="12sp" />
+                    android:text="锁屏时能不能看到响铃页，当场试出来。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>

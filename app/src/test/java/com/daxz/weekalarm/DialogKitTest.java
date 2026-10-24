@@ -181,4 +181,123 @@ public class DialogKitTest {
         ShadowLooper.idleMainLooper();
         assertEquals("点第 3 项应回调 2", 2, picked[0]);
     }
+
+    // ---------- 多选型（v1.65.0）----------
+
+    /**
+     * 多选卡片：点一下勾上、再点一下取消，卡片选中态与勾同步。
+     *
+     * <p>v1.65.0 把「日历显示内容」从三行裸 CheckBox 换成这套卡片，
+     * 这里钉住积木本身：初始态、切换、再切换。
+     */
+    @Test
+    public void showMultiPick_clickTogglesCard() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        boolean[] checked = {true, false, false};
+        DialogKit.showMultiPick(a, "日历显示内容", "挑想看的",
+                new String[]{"农历节日", "二十四节气", "基督教节日"}, checked, r -> {
+                });
+
+        LinearLayout list = listOf((AlertDialog) ShadowAlertDialog.getLatestDialog());
+        View first = list.getChildAt(0);
+        View second = list.getChildAt(1);
+
+        // 初始态：第 1 项勾上，第 2 项空着
+        assertTrue("第 1 项初始应有勾", checkVisible(first));
+        assertTrue("第 1 项初始应是选中态", first.isSelected());
+        assertFalse("第 2 项初始不该有勾", checkVisible(second));
+        assertFalse("第 2 项初始不是选中态", second.isSelected());
+
+        // 点第 2 项 → 勾上；再点第 1 项 → 取消
+        second.performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue("点第 2 项应勾上", checkVisible(second));
+        assertTrue(second.isSelected());
+        first.performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse("再点第 1 项应取消", checkVisible(first));
+        assertFalse(first.isSelected());
+
+        // 数组被就地改写，调用方读到的是最新态
+        assertFalse(checked[0]);
+        assertTrue(checked[1]);
+    }
+
+    /** 「完成」才回调，且带回最新勾选态；「取消」什么都不写。 */
+    @Test
+    public void showMultiPick_doneReportsLatestState() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        boolean[] checked = {false, false, false};
+        final boolean[][] got = {null};
+        DialogKit.showMultiPick(a, "日历显示内容", null,
+                new String[]{"甲", "乙", "丙"}, checked, r -> got[0] = r);
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = listOf(d);
+        list.getChildAt(1).performClick();
+        ShadowLooper.idleMainLooper();
+        list.getChildAt(2).performClick();
+        ShadowLooper.idleMainLooper();
+
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertNotNull("完成应回调", got[0]);
+        assertFalse(got[0][0]);
+        assertTrue("勾上的第 2 项应在结果里", got[0][1]);
+        assertTrue("勾上的第 3 项应在结果里", got[0][2]);
+
+        // 取消不回调：再来一次，只按取消
+        ShadowAlertDialog.reset();
+        final boolean[] cancelled = {false};
+        DialogKit.showMultiPick(a, "日历显示内容", null,
+                new String[]{"甲", "乙"}, new boolean[]{true, false}, r -> cancelled[0] = true);
+        AlertDialog d2 = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        d2.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse("取消不该回调", cancelled[0]);
+    }
+
+    /**
+     * 「日历显示内容」这条真实路径：三张卡、初始态读 Prefs、完成写回 Prefs。
+     *
+     * <p>积木测试钉 DialogKit，这里钉调用方——换积木时最常漏的就是「初始态忘了读」
+     * 或「完成忘了写回」。Prefs 三个键是 v1.60.0 的老键，值必须原样往返。
+     */
+    @Test
+    public void calendarContentDialog_writesBackOnDone() {
+        resetPrefs();
+        Prefs.setLunarFestivals(ctx(), true);
+        Prefs.setSolarTerms(ctx(), true);
+        Prefs.setChristianFestivals(ctx(), false);
+
+        SettingsActivity a = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+        a.showCalendarContentDialog();
+
+        LinearLayout list = listOf((AlertDialog) ShadowAlertDialog.getLatestDialog());
+        assertEquals("三张卡", 3, list.getChildCount());
+        // 初始态跟着 Prefs：前两张有勾，第三张空着
+        assertTrue(checkVisible(list.getChildAt(0)));
+        assertTrue(checkVisible(list.getChildAt(1)));
+        assertFalse(checkVisible(list.getChildAt(2)));
+
+        // 把「基督教节日」勾上，「二十四节气」取消，然后完成
+        list.getChildAt(2).performClick();
+        ShadowLooper.idleMainLooper();
+        list.getChildAt(1).performClick();
+        ShadowLooper.idleMainLooper();
+        ((AlertDialog) ShadowAlertDialog.getLatestDialog())
+                .getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertTrue(Prefs.isLunarFestivals(ctx()));
+        assertFalse("二十四节气应被取消", Prefs.isSolarTerms(ctx()));
+        assertTrue("基督教节日应被勾上", Prefs.isChristianFestivals(ctx()));
+    }
 }

@@ -161,6 +161,68 @@ public final class DialogKit {
         new RoundedDialog.Builder(c).setView(view).show();
     }
 
+    /**
+     * 多选列表（v1.65.0）：把 v1.60.0 为绕开 MIUI 渲染 bug 自绘的复选框也收进卡片语言。
+     *
+     * <p>点卡片任意处即切换——选中底与描边由 {@code bg_guide_option} 的
+     * {@code setSelected} 驱动，右侧勾的显隐走 {@link #showCheck}，和单选
+     * {@link #showPick} 同一套视觉。「完成」才回调；取消不写任何东西
+     * （多选误触成本比单选高，保留显式确认）。
+     *
+     * @param checked 初始勾选态，长度须与 {@code items} 相同；回调里是**同一个数组**的
+     *                 最新值（直接改传入数组，调用方少一次拷贝——调用方传的就是
+     *                 自己那份状态，没有第二份要同步）
+     */
+    public static void showMultiPick(Context c, String title, String sub, String[] items,
+                                     boolean[] checked, OnMultiPick onDone) {
+        View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
+        TextView tvTitle = view.findViewById(R.id.tv_pick_title);
+        TextView tvSub = view.findViewById(R.id.tv_pick_sub);
+        LinearLayout list = view.findViewById(R.id.dlg_pick_list);
+
+        if (title == null || title.isEmpty()) {
+            tvTitle.setVisibility(View.GONE);
+        } else {
+            tvTitle.setText(title);
+        }
+        if (sub == null || sub.isEmpty()) {
+            tvSub.setVisibility(View.GONE);
+        } else {
+            tvSub.setText(sub);
+        }
+
+        for (int i = 0; i < items.length; i++) {
+            final int which = i;
+            View row = optionView(c, items[i], null);
+            row.setSelected(checked[i]);
+            showCheck(row, checked[i]);
+            row.setOnClickListener(v -> {
+                checked[which] = !checked[which];
+                v.setSelected(checked[which]);
+                showCheck(v, checked[which]);
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (i > 0) lp.topMargin = dp(c, 10);
+            row.setLayoutParams(lp);
+            list.addView(row);
+        }
+
+        RoundedDialog.Builder b = new RoundedDialog.Builder(c);
+        b.setView(view);
+        b.setPositiveButton("完成", (d, w) -> {
+            if (onDone != null) onDone.onMultiPick(checked);
+        });
+        b.setNegativeButton("取消", null);
+        b.show();
+    }
+
+    /** 多选完成：{@code checked} 与传入的 items 等长，是最新勾选态。 */
+    public interface OnMultiPick {
+        void onMultiPick(boolean[] checked);
+    }
+
     /** 选项卡的选中态：卡片描边由 {@code bg_guide_option} 驱动，这里只切右侧的勾。 */
     static void showCheck(View card, boolean show) {
         View mark = card.findViewWithTag(TAG_CHECK);

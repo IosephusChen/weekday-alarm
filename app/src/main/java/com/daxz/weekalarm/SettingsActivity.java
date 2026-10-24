@@ -490,28 +490,40 @@ public class SettingsActivity extends AppCompatActivity {
      * <p>节气变化时要 {@link Widgets#updateAll}——三个整月组件都画节气；
      * 另两个只影响 App 内日历，不碰小部件。
      */
-    private void showCalendarContentDialog() {
-        View view = getLayoutInflater().inflate(R.layout.dialog_calendar_content, null);
-        CheckBox cbLunar = view.findViewById(R.id.cb_lunar);
-        CheckBox cbSolar = view.findViewById(R.id.cb_solar_terms);
-        CheckBox cbChristian = view.findViewById(R.id.cb_christian);
-        cbLunar.setChecked(Prefs.isLunarFestivals(this));
-        cbSolar.setChecked(Prefs.isSolarTerms(this));
-        cbChristian.setChecked(Prefs.isChristianFestivals(this));
-
-        AlertDialog dialog = new RoundedDialog.Builder(this)
-                .setView(view)
-                .setPositiveButton("完成", (d, w) -> {
-                    boolean solarChanged = cbSolar.isChecked() != Prefs.isSolarTerms(this);
-                    Prefs.setLunarFestivals(this, cbLunar.isChecked());
-                    Prefs.setSolarTerms(this, cbSolar.isChecked());
-                    Prefs.setChristianFestivals(this, cbChristian.isChecked());
+    /**
+     * 日历显示内容（v1.65.0 换成 DialogKit 多选卡片）。
+     *
+     * <p>v1.60.0 为绕开 MIUI 上 {@code setMultiChoiceItems} 的渲染 bug 自绘了三行
+     * 裸 {@code CheckBox}（{@code dialog_calendar_content.xml}）——功能没问题，但它是
+     * 设置页里唯一还没进卡片语言的选择器。现在复用 {@link DialogKit#showMultiPick}：
+     * 一张卡一项，点卡片切换，选中淡紫底 + 主色描边 + 右侧勾。语义不变：三项多选、
+     * Prefs 三个键不动、文案不改、「完成」仍显式确认。
+     *
+     * <p>包级可见：单测直接触发，不必去点设置页那一行（同 {@code tickForTest} 的用法）。
+     */
+    void showCalendarContentDialog() {
+        boolean[] checked = {
+                Prefs.isLunarFestivals(this),
+                Prefs.isSolarTerms(this),
+                Prefs.isChristianFestivals(this)
+        };
+        DialogKit.showMultiPick(this,
+                getString(R.string.dialog_calendar_content_title),
+                getString(R.string.dialog_calendar_content_message),
+                new String[]{
+                        getString(R.string.dialog_calendar_content_lunar),
+                        getString(R.string.dialog_calendar_content_solar),
+                        getString(R.string.dialog_calendar_content_christian)
+                },
+                checked,
+                result -> {
+                    boolean solarChanged = result[1] != Prefs.isSolarTerms(this);
+                    Prefs.setLunarFestivals(this, result[0]);
+                    Prefs.setSolarTerms(this, result[1]);
+                    Prefs.setChristianFestivals(this, result[2]);
                     refreshCalendarContentValue();
                     if (solarChanged) Widgets.updateAll(this);
-                })
-                .setNegativeButton("取消", null)
-                .create();
-        dialog.show();
+                });
     }
 
     /**

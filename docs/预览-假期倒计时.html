@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 · 假期倒计时（今天状态卡新增一行）</title>
+<style>
+  :root{
+    --bg:#f4f4f6; --panel:#ffffff; --ink:#16181d; --sub:#6b7280;
+    --line:#c9ccd3; --block:#e6e7ea; --block2:#f0f1f3;
+    --new:#4f46e5; --newbg:#eef0ff; --mark:#e11d48;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:28px 24px 40px;background:var(--bg);color:var(--ink);
+       font:14px/1.55 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  h1{font-size:19px;margin:0 0 6px}
+  .lede{color:var(--sub);font-size:13px;max-width:980px;margin:0 0 4px}
+  .meta{color:var(--sub);font-size:12px;margin:0 0 22px}
+  .row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+  .col{width:301px}
+  .col h2{font-size:14px;margin:0 0 2px}
+  .col .hint{font-size:12px;color:var(--sub);height:34px;margin:0 0 8px}
+  .phone{position:relative;width:301px;height:560px;background:var(--panel);
+         border:1px solid var(--line);border-radius:14px;overflow:hidden;padding:14px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:var(--panel)}
+  .card .k{font-size:11px;color:var(--sub);margin-bottom:6px}
+  .date{font-size:13px;color:var(--ink)}
+  .lunar{font-size:11px;color:var(--sub);margin-top:1dp}
+  .status{font-size:17px;font-weight:700;margin-top:8px}
+  .sub{font-size:12px;color:var(--sub);margin-top:2px}
+  .count{margin-top:2px;font-size:12px;color:var(--new)}
+  .count.tag{display:inline-block;background:var(--newbg);border:1px solid var(--new);
+             border-radius:6px;padding:1px 7px;font-weight:600}
+  .ghostcard{border:1px dashed #b9bdc7;border-radius:14px;height:86px;margin-bottom:12px;
+             display:flex;align-items:center;justify-content:center;font-size:11px;color:#9aa0aa}
+  .notes{margin:10px 0 0;padding:0;list-style:none;font-size:12px;color:#374151}
+  .notes li{margin:0 0 4px;padding-left:12px;position:relative}
+  .notes li:before{content:"·";position:absolute;left:2px;color:var(--sub)}
+  .sum{margin-top:28px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .sum h3{font-size:14px;margin:0 0 8px}
+  .sum table{border-collapse:collapse;font-size:12.5px;width:100%;max-width:960px}
+  .sum td,.sum th{border-bottom:1px solid #eceef2;padding:6px 8px;text-align:left;vertical-align:top}
+  .sum th{color:var(--sub);font-weight:600}
+  code{background:#eceef2;border-radius:4px;padding:1px 5px;font-size:11.5px}
+</style>
+</head>
+<body>
+
+<h1>假期倒计时 · 今天状态卡新增一行</h1>
+<p class="lede">用户拍板只做「距下一个法定假期还有 N 天」，不做节日罗列。放在今天状态卡内：
+卡片数量与顺序不动（首页还是「今天 → 闹钟 → 日历」三张卡），只在副信息下方加一行
+假期信息——副信息管闹钟，新行管假期，两件事不混。</p>
+<p class="meta">P3（v1.67.0）· 方案见 <code>docs/方案-假期倒计时.md</code> · 2026-10-25 出线框</p>
+
+<div class="row">
+
+  <div class="col">
+    <h2>普通工作日</h2>
+    <p class="hint">前方有假期：一行小字告诉还要熬多久。</p>
+    <div class="phone">
+      <div class="card">
+        <div class="k">今天</div>
+        <div class="date">10月27日 周二</div>
+        <div class="lunar">农历九月十一</div>
+        <div class="status">今天上班</div>
+        <div class="sub">工作日 · 下一个 07:00</div>
+        <div class="count tag">距元旦还有 66 天</div>
+      </div>
+      <div class="ghostcard">闹钟列表</div>
+      <div class="ghostcard">本月班表</div>
+    </div>
+    <ul class="notes">
+      <li>新行 12sp / 主色，副信息是 12sp / 次要色——从属但找得到</li>
+      <li>与副信息间距 2dp，不另起一段</li>
+    </ul>
+  </div>
+
+  <div class="col">
+    <h2>假期里</h2>
+    <p class="hint">假期进行中改说进度，最后一天提醒明天上班。</p>
+    <div class="phone">
+      <div class="card">
+        <div class="k">今天</div>
+        <div class="date">2月17日 周三</div>
+        <div class="lunar">农历腊月廿九</div>
+        <div class="status">今天休息</div>
+        <div class="sub">法定节假日 · 下一个 02/20 07:00</div>
+        <div class="count tag">春节假期第 2 天</div>
+      </div>
+      <div class="ghostcard">闹钟列表</div>
+      <div class="ghostcard">本月班表</div>
+    </div>
+    <ul class="notes">
+      <li>假期第一天「今天春节」，最后一天「国庆今天结束」</li>
+      <li>补班日不算假日：调休补班的周六倒计时不归零</li>
+    </ul>
+  </div>
+
+  <div class="col">
+    <h2>看不到那么远</h2>
+    <p class="hint">数据边界外（内置到 2026，没拉远程增量）干脆不显示。</p>
+    <div class="phone">
+      <div class="card">
+        <div class="k">今天</div>
+        <div class="date">12月20日 周日</div>
+        <div class="lunar">农历冬月初二</div>
+        <div class="status">今天休息</div>
+        <div class="sub">休息日 · 没有启用的闹钟</div>
+      </div>
+      <div class="ghostcard">闹钟列表</div>
+      <div class="ghostcard">本月班表</div>
+    </div>
+    <ul class="notes">
+      <li>120 天窗口内没有假日数据 → 这一行不出现</li>
+      <li>不猜、不显示 0 天或「暂无」——没有信息量的行不如没有</li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="sum">
+  <h3>文案规则（纯函数输出，测试逐条钉）</h3>
+  <table>
+    <tr><th>场景</th><th>文案</th></tr>
+    <tr><td>普通日，前方有假期</td><td>距元旦还有 23 天</td></tr>
+    <tr><td>明天就是假期第一天</td><td>明天就是元旦</td></tr>
+    <tr><td>假期第一天 / 中间天 / 最后一天</td><td>今天元旦 / 春节假期第 2 天 / 国庆今天结束</td></tr>
+    <tr><td>名字取不到（内置与远程都没有）</td><td>距下次放假还有 40 天（不带节日名）</td></tr>
+    <tr><td>120 天窗口内无假日</td><td>不显示这一行</td></tr>
+  </table>
+  <p class="notes" style="margin-top:10px">
+    实现要点：新增 <code>HolidayCountdown</code> 纯函数（同 <code>MonthWidgetRender.compute</code> 路子，JVM 可测）；
+    数据只走 <code>HolidayData</code> 三个查询方法，不新增权限与网络请求；首页 <code>refreshAll()</code>
+    已按天重算，并进去即可；小组件不动。
+  </p>
+</div>
+
+</body>
+</html>

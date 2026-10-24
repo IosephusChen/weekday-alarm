@@ -352,14 +352,11 @@ public class GuideActivity extends AppCompatActivity {
     private void bindPermissions() {
         findViewById(R.id.perm_notif).setOnClickListener(v -> openNotificationSettings());
         // v1.47.2：真机验证发现「后台弹出界面」开启会连带开启全屏通知（反之不成立），
-        // 所以这一行改成指向「后台弹出界面」——一个入口覆盖两件事，不用再单独引导全屏
-        findViewById(R.id.perm_fsi).setOnClickListener(v -> {
-            if (!PermissionGuides.openBackgroundPopup(this)) {
-                Toast.makeText(this, "这台机器没有可直达的页面，请到「应用管理 → 打工人闹钟 → 其他权限」里找",
-                        Toast.LENGTH_LONG).show();
-                openAppDetails();
-            }
-        });
+        // 所以这一行改成指向「后台弹出界面」——一个入口覆盖两件事，不用再单独引导全屏。
+        // v1.59.1：真机 2×2 实测确认它管「后台能不能把界面拉起来」——关掉时锁屏、
+        // 解锁都不弹，只剩通知栏。「锁屏显示」与它同在小米权限编辑页（下一行），
+        // 两行共用一个跳转。
+        findViewById(R.id.perm_fsi).setOnClickListener(v -> openPopupPerms());
         // v1.47.1：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
         // 只能给跳转。它比电池优化更关键：没有它，App 被划掉后闹钟到点广播直接被丢弃。
         findViewById(R.id.perm_autostart).setOnClickListener(
@@ -367,12 +364,29 @@ public class GuideActivity extends AppCompatActivity {
         // v1.45.0：悬浮窗权限。解锁响铃时那张贴顶横幅就是靠它挂上去的，
         // 没有它只能退回整屏——用户要的恰恰是「别整屏」
         findViewById(R.id.perm_overlay).setOnClickListener(v -> openOverlaySettings());
-        // v1.45.0：锁屏显示。它不在标准权限体系里，没有任何 API 能读到状态，
-        // 所以这一行给的是「测一下」，不是「去开启」
-        findViewById(R.id.perm_lock).setOnClickListener(v -> showLockScreenHint());
+        // v1.59.1：锁屏显示移到底部测试按钮，这一行只负责跳去同一个权限编辑页开它
+        findViewById(R.id.perm_lock).setOnClickListener(v -> openPopupPerms());
         // v1.25.1：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
         // 让用户等到第二天早上才发现不响，比什么都不做还糟。
         findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
+        // v1.59.1：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
+        // 真机 2×2 实测确认；探针只验「锁屏上能不能看到响铃页」，不碰业务。
+        findViewById(R.id.btn_lock_try).setOnClickListener(v -> showLockScreenHint());
+    }
+
+    /**
+     * 跳小米「权限编辑页」（v1.59.1 从 perm_fsi 抽出，两行共用）。
+     *
+     * <p>「后台弹出界面」和「锁屏显示」都在这一页：前者管后台能不能拉起界面，
+     * 后者管拉起的界面能不能盖在锁屏上——真机 2×2 实测证明缺任何一个，
+     * 锁屏响铃都不完整。两行给同一个入口，不用用户翻两遍。
+     */
+    private void openPopupPerms() {
+        if (!PermissionGuides.openBackgroundPopup(this)) {
+            Toast.makeText(this, "这台机器没有可直达的页面，请到「应用管理 → 打工人闹钟 → 其他权限」里找",
+                    Toast.LENGTH_LONG).show();
+            openAppDetails();
+        }
     }
 
     /**
@@ -395,9 +409,10 @@ public class GuideActivity extends AppCompatActivity {
         boolean notif = NotificationManagerCompat.from(this).areNotificationsEnabled();
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
         setPermState(stNotif, notif);
-        // 通知不是「有更好」，是停止响铃的唯一常驻入口：关掉之后闹钟响了没有按钮可按
+        // 通知不是「有更好」：关掉后通知栏没有「停止」按钮。但响铃页与首页兜底行
+        // 还能停，所以 v1.59.1 起不再叫「必需」，只说清后果
         if (!notif) {
-            stNotif.setText("未开 · 闹钟响了关不掉");
+            stNotif.setText("未开 · 响铃时得进 App 关");
             stNotif.setTextColor(ContextCompat.getColor(this, R.color.danger));
         }
         setPermState(stFsi, fsi);
@@ -412,11 +427,11 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「锁屏显示」那一行的状态（v1.45.0）。
+     * 「锁屏显示」那一行的状态（v1.45.0 引入，v1.59.1 改文案）。
      *
-     * <p>三态而不是两态：这一项查不到，只能靠自测。「还没测过」不能显示成「没开」——
-     * 第一次打开引导页就说人家没开，等于凭空指责；而「测了没反应」得给下一步动作，
-     * 不能只挂一句「去开启」（它根本没有能跳转的设置页）。
+     * <p>四态而不是两态：这一项查不到，只能靠自测。没测过时按普通权限行显示
+     * 「去开启 · 同上一页」（它和「后台弹出界面」同在小米权限编辑页）；
+     * 测过之后把探针结果写进来——通过、没锁屏、没测到各一句，不给无端指责。
      */
     private void refreshLockState() {
         if (stLock == null) return;
@@ -428,10 +443,11 @@ public class GuideActivity extends AppCompatActivity {
             stLock.setText("当时没锁屏，再测一次");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         } else if (LockProbe.isTimedOut(this)) {
-            stLock.setText("没测到 · 点这里看怎么开");
+            // 真机 2×2 实测：后台弹出界面与锁屏显示缺一个锁屏都不弹，两个都要查
+            stLock.setText("没测到 · 两个开关都要开");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.danger));
         } else {
-            stLock.setText("测一下");
+            stLock.setText("去开启 · 同上一页");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         }
     }
@@ -455,27 +471,26 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「锁屏显示」：先测，测不出来再给路径（v1.45.0）。
+     * 「试一下锁屏响铃」的对话框（v1.45.0 引入，v1.59.1 精简）。
      *
-     * <p>v1.39.0 那版只能给路径——因为这一项不在 Android 的权限体系里，既没有 API 能读、
-     * 也没法申请。但「给路径」对用户来说等于「你自己去找」，很多人就卡在这一步。
-     * 现在改成「试一次」：界面能不能盖在锁屏上，试一下就知道，比任何说明都直接。
+     * <p>v1.59.1：路径入口整个去掉——「锁屏显示」已经和「后台弹出界面」并成
+     * 权限清单里的两行，点行内「去开启 · 同上一页」直达同一个权限编辑页，
+     * 这里只留测试本身。开启路径不再需要第二份说明。
      *
      * <p>测试本身不碰业务：不响铃、不发通知、不排班、不记 snooze（见 {@link LockProbe}）。
      */
     void showLockScreenHint() {
-        String msg = "这一项系统不提供查询：它不在标准权限里，App 读不到状态，也申请不了。"
-                + "所以只能试一次。\n\n"
+        String msg = "锁屏响铃要两个开关都开：「后台弹出界面」和「锁屏显示」，"
+                + "缺一个锁屏时都看不到响铃页。这一项系统不提供查询，只能试一次。\n\n"
                 + "1. 点「开始测试」\n"
                 + "2. 马上按电源键锁屏\n"
-                + "3. 6 秒后如果屏幕自己亮起、显示一个绿勾，说明是开着的\n\n"
-                + "没亮就是没开（或者系统拦了后台拉起界面）。"
-                + "这种情况按「看怎么开」里的路径手动打开。";
+                + "3. 6 秒后如果屏幕自己亮起、显示一个绿勾，说明没问题\n\n"
+                + "没亮就是两个开关至少有一个没开，回上面把「后台弹出界面」"
+                + "和「锁屏显示」都打开，再测一次。";
         new RoundedDialog.Builder(this)
-                .setTitle("锁屏显示")
+                .setTitle("试一下锁屏响铃")
                 .setMessage(msg)
                 .setPositiveButton("开始测试", (d, w) -> startLockProbe())
-                .setNeutralButton("看怎么开", (d, w) -> showLockPath())
                 .setNegativeButton("取消", null)
                 .show();
     }
@@ -486,21 +501,6 @@ public class GuideActivity extends AppCompatActivity {
         refreshLockState();
         Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
                 Toast.LENGTH_LONG).show();
-    }
-
-    /** 手动开启路径。测不出来时才会走到这里，所以写成「照着找一遍」。 */
-    private void showLockPath() {
-        new RoundedDialog.Builder(this)
-                .setTitle("锁屏显示怎么开")
-                .setMessage("路径（荣耀 / 华为 / 小米 / OPPO / vivo 大同小异）：\n"
-                        + "设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示\n\n"
-                        + "另外两个一起确认更稳：\n"
-                        + "· 显示悬浮窗（解锁响铃时那张横幅靠它）\n"
-                        + "· 后台弹出界面（小米 / 红米 / HyperOS 必开）\n\n"
-                        + "开完之后，锁屏响铃会直接铺满屏幕，不用先解锁。")
-                .setPositiveButton("去应用详情", (d, w) -> openAppDetails())
-                .setNegativeButton("知道了", null)
-                .show();
     }
 
     private void openNotificationSettings() {

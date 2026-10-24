@@ -221,7 +221,8 @@ public class RingStopTest {
         ActivityController<GuideActivity> ctl =
                 Robolectric.buildActivity(GuideActivity.class).setup();
         TextView st = ctl.get().findViewById(R.id.st_notif);
-        assertEquals("未开 · 闹钟响了关不掉", st.getText().toString());
+        // v1.59.1：通知降为「建议」（进 App 也能停），但后果仍要说清
+        assertEquals("未开 · 响铃时得进 App 关", st.getText().toString());
         ctl.pause().stop().destroy();
     }
 

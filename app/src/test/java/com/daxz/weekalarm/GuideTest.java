@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -353,9 +354,9 @@ public class GuideTest {
         shadowOf(nm).setNotificationsEnabled(false);
 
         GuideActivity a = fresh();
-        // v1.47.1：通知不是「有更好」——关掉之后闹钟响了没有按钮可按，
-        // 所以这里不再写温吞的「去开启」，直接说后果
-        assertEquals("通知没开时要说清后果", "未开 · 闹钟响了关不掉", text(a, R.id.st_notif));
+        // v1.59.1：通知降为「建议」——响铃页与首页兜底行还能停，不再叫「必需」，
+        // 但状态行仍要说清后果，不写温吞的「去开启」
+        assertEquals("通知没开时要说清后果", "未开 · 响铃时得进 App 关", text(a, R.id.st_notif));
 
         shadowOf(nm).setNotificationsEnabled(true);
         a.onResume(); // 从系统设置回来
@@ -409,15 +410,29 @@ public class GuideTest {
     }
 
     /**
-     * 「锁屏显示」在没测过时不能显示成「没开」。
+     * 「锁屏显示」在没测过时不能显示成失败（v1.59.1 改默认文案）。
      *
-     * <p>这一项查不到状态（不在标准权限里），只能靠自测。如果默认就写「去开启」或
-     * 「没开」，等于凭空指责用户——他可能明明开着，只是我们没测。
+     * <p>这一项查不到状态（不在标准权限里），只能靠自测。默认文案按普通权限行
+     * 写「去开启 · 同上一页」——它和「后台弹出界面」同在小米权限编辑页。
+     * 关键是绝不能默认就写「没测到」：用户可能明明开着，只是我们没测。
      */
     @Test
-    public void lockRow_beforeAnyProbe_saysTestNotFailure() {
+    public void lockRow_beforeAnyProbe_saysOpenNotFailure() {
         GuideActivity a = fresh();
-        assertEquals("还没测过就说「测一下」", "测一下", text(a, R.id.st_lock));
+        assertEquals("没测过时应指向去开启，而不是指责没开",
+                "去开启 · 同上一页", text(a, R.id.st_lock));
+    }
+
+    /** 测过并且没测到：两个开关都要查（真机 2×2：缺一个锁屏都不弹）。 */
+    @Test
+    public void lockRow_showsFailAfterTimeout() {
+        GuideActivity a = fresh();   // 先起页面（fresh 内部会清空数据）
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_NONE,
+                System.currentTimeMillis() - LockProbe.TIMEOUT_MS - 1000);
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertTrue("没测到要说两个开关都要开，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).contains("两个开关都要开"));
     }
 
     /** 测过并且通过：结果写回 Prefs，引导页 onResume 时这一行要跟着变。 */
@@ -462,24 +477,48 @@ public class GuideTest {
     }
 
     /**
-     * 点「锁屏显示」弹的是测试对话框，不是直接跳系统设置。
+     * 点「锁屏显示」行跳的是权限编辑页，不是测试对话框（v1.59.1）。
      *
-     * <p>它没有能跳的设置页（厂商各不相同），直接跳会跳到应用详情，用户还得自己找。
-     * 先测一次，测不过再给路径，这才是这一项该有的顺序。
+     * <p>真机 2×2 实测：它和「后台弹出界面」同在小米权限编辑页，所以这一行
+     * 和「后台弹出界面」共用一个入口；测试挪到底部「试一下锁屏响铃」按钮。
      */
     @Test
-    public void lockRow_opensProbeDialog() {
+    public void lockRow_jumpsToPermissionEditor() {
         GuideActivity a = fresh();
+        Application app = (Application) ctx();
+        shadowOf(app).clearNextStartedActivities();
+
         tap(a, R.id.perm_lock);
+
+        Intent next = shadowOf(app).getNextStartedActivity();
+        assertNotNull("点「锁屏显示」应跳去权限编辑页（与后台弹出界面同一页）", next);
+    }
+
+    /**
+     * 点「试一下锁屏响铃」弹测试对话框（v1.59.1）。
+     *
+     * <p>路径入口整个去掉了：开启路径已经由权限清单里「后台弹出界面」和
+     * 「锁屏显示」两行承担（同在权限编辑页），对话框只留测试本身。
+     */
+    @Test
+    public void lockTryButton_opensProbeDialog() {
+        GuideActivity a = fresh();
+        tap(a, R.id.btn_lock_try);
         // RoundedDialog 继承的是 appcompat 的 AlertDialog，不是 android.app 那个
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
-        assertNotNull("应弹出锁屏显示对话框", d);
-        assertTrue("对话框要说明「系统查不到，只能试一次」",
+        assertNotNull("应弹出锁屏响铃测试对话框", d);
+        TextView msg = d.findViewById(android.R.id.message);
+        assertNotNull("对话框应有正文", msg);
+        assertTrue("对话框要说明「两个开关都开」",
+                msg.getText().toString().contains("两个开关"));
+        assertTrue("对话框要有「开始测试」",
                 d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).getText().toString()
                         .contains("开始测试"));
-        assertNotNull("要给「看怎么开」的兜底入口",
-                d.getButton(android.content.DialogInterface.BUTTON_NEUTRAL));
+        // v1.59.1 起不再需要「看怎么开」——路径已在权限清单两行里。
+        // appcompat 的 neutral 按钮 View 一直在（默认 GONE），所以查可见性而不是查 null
+        assertEquals("v1.59.1 起不再需要「看怎么开」——路径已在权限清单两行里",
+                View.GONE, d.getButton(android.content.DialogInterface.BUTTON_NEUTRAL).getVisibility());
     }
 
     /** 试听：起前台服务（有声音）+ 打开响铃页（看得见），与主界面测试响铃同一条路径。 */

@@ -613,130 +613,18 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="每一项管一件事，不开的后果写在它下面。点去开启，回来会自动打勾。"
+                    android:text="下面五项建议全部开齐。每一项管一件事，不开的后果写在它下面——「自启动」决定闹钟响不响，其余影响响的时候好不好关、好不好看。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
-                <!-- 通知权限 -->
-                <LinearLayout
-                    android:id="@+id/perm_notif"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="通知权限（必须）"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，响铃时连「停止」按钮都没有"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/st_notif"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="去开启"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-
-                <!-- 全屏通知 -->
-                <LinearLayout
-                    android:id="@+id/perm_fsi"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="后台弹出界面"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，响铃时不会自动弹出界面，只在通知栏躺着"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/st_fsi"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="去开启 · 顺带开全屏"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-
-                <!-- 自启动（v1.47.1）：国产 ROM 的后台白名单，不是 Android 权限。
+                <!-- 自启动（v1.59.1 提到第一位）：国产 ROM 的后台白名单，不是 Android 权限。
                      没有它，App 被划掉后闹钟到点广播直接被丢弃——排着，但不响。
                      没有任何 API 能读到状态，所以这一行只写「去开启」，不给勾。 -->
                 <LinearLayout
                     android:id="@+id/perm_autostart"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="18dp"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
@@ -765,7 +653,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="不开的话，划掉 App 后闹钟到点不响"
+                            android:text="不开的话，划掉 App 后闹钟到点不响——排着，但没声。"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
 
@@ -774,7 +662,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="手动开启 · 划掉 App 后还能响"
+                            android:text="去开启"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -786,7 +674,61 @@
                         android:textColor="@color/sub"
                         android:textSize="20sp" />
                 </LinearLayout>
+                <!-- 通知权限：关掉后没有通知栏那个「停止」按钮；响铃页与首页兜底行还能停。 -->
+                <LinearLayout
+                    android:id="@+id/perm_notif"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="通知权限"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，闹钟响时没有通知，要进 App 才能关。"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/st_notif"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
                 <!-- 显示悬浮窗（v1.45.0）：解锁响铃时那张贴顶横幅要它才能挂上。
                      这一项有标准 API（Settings.canDrawOverlays），能直接打勾。 -->
                 <LinearLayout
@@ -822,7 +764,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="不开的话，响铃时顶部不弹横幅，只能进通知栏找"
+                            android:text="不开的话，响铃时顶部不弹横幅，只能进通知栏找。"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
 
@@ -843,10 +785,66 @@
                         android:textColor="@color/sub"
                         android:textSize="20sp" />
                 </LinearLayout>
+                <!-- 后台弹出界面（v1.47.2 起指向小米权限编辑页）：真机 2×2 实测，它管「后台能不能
+                     把界面拉起来」——关掉时锁屏、解锁都不弹，只剩通知栏。开它会连带开全屏通知。
+                     「锁屏显示」与它在同一页，见下一行。 -->
+                <LinearLayout
+                    android:id="@+id/perm_fsi"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="58dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="10dp">
 
-                <!-- 锁屏显示（v1.45.0）：系统不提供查询，只能「测一下」。
-                     点它弹对话框 → 开始测试 → 用户按电源键 → 6 秒后自测页自己亮起来。
-                     副标题是三态的：没测过 / 已通过 / 没测到。 -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="后台弹出界面"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，响铃时不会自动弹出界面，锁屏、解锁都只在通知栏躺着。"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/st_fsi"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="去开启 · 进去点「其他权限」"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="20sp" />
+                </LinearLayout>
+                <!-- 锁屏显示（v1.59.1）：真机 2×2 实测，它管「拉起来的界面能不能盖在锁屏上」——
+                     关掉时锁屏看不到、解锁才出现。和「后台弹出界面」在同一页，路径共用。
+                     没有 API 能读状态，探针结果写在状态行；没测过时不无端指责用户。 -->
                 <LinearLayout
                     android:id="@+id/perm_lock"
                     android:layout_width="match_parent"
@@ -880,7 +878,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="不开的话，锁屏时看不到响铃页面，解锁才出现"
+                            android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
 
@@ -889,7 +887,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="测一下"
+                            android:text="去开启 · 同上一页"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -907,9 +905,18 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="建议全部开齐；实在找不到入口的，至少保住「通知权限」和「自启动」——这两个决定闹钟响不响。"
+                    android:text="「自启动」和「锁屏显示」系统读不到状态，回来不会自动打勾，要自己确认开没开。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:gravity="center"
+                    android:text="开完了？当场验一下，别等第二天早上才发现不响"
+                    android:textColor="@color/ink"
+                    android:textSize="13sp" />
 
                 <!-- v1.25.1：开完权限当场试一次，别等第二天早上才发现不响 -->
                 <TextView
@@ -932,6 +939,33 @@
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="会响一声并弹出响铃页，点「结束测试」就停，不影响正式排班。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
+
+                <!-- v1.59.1：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
+                     真机 2×2 实测确认；这一项只验证「锁屏上能不能看到响铃页」，不碰业务。 -->
+                <TextView
+                    android:id="@+id/btn_lock_try"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_guide_try"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="试一下锁屏响铃"
+                    android:textColor="@color/indigo"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="锁屏响铃要两个开关都开：「后台弹出界面」+「锁屏显示」。点了马上按电源键锁屏，6 秒后屏幕自己亮一下，亮了就没问题。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>

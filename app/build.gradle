@@ -19,6 +19,10 @@ android {
     // 别人 clone 下来没有这个文件，就什么也不配——AGP 会产出未签名的 release 包，
     // debug 包退回 AGP 默认签名，照样能装能跑测试。想自己签：在 signingConfigs 里
     // 加一个指向你自己 keystore 的 release 配置即可。
+    // 下面两处 "android" 是 Google 公开文档里的调试密钥通用默认值（不是秘密，
+    // 真正的密钥文件在 ~/.android/debug.keystore、不在仓库里）；要换成自己的
+    // release 签名，在 ~/.gradle/gradle.properties 里定义 RELEASE_STORE_PASSWORD /
+    // RELEASE_KEY_PASSWORD 覆盖即可，不必改这里。
     def localKeystore = file(System.getProperty("user.home") + "/.android/debug.keystore")
     def hasLocalKeystore = localKeystore.exists()
 
@@ -26,9 +30,9 @@ android {
         if (hasLocalKeystore) {
             release {
                 storeFile localKeystore
-                storePassword "android"
+                storePassword (project.findProperty("RELEASE_STORE_PASSWORD") ?: "android")
                 keyAlias "androiddebugkey"
-                keyPassword "android"
+                keyPassword (project.findProperty("RELEASE_KEY_PASSWORD") ?: "android")
                 // v1+v2+v3 全开，保证各类安装器与低版本系统都能识别
                 enableV1Signing true
                 enableV2Signing true

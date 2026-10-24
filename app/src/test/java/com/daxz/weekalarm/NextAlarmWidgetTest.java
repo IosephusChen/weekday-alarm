@@ -17,6 +17,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,9 +65,25 @@ public class NextAlarmWidgetTest {
         ScheduleManager.rescheduleAll(ctx());
 
         NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
-        assertTrue("主信息应含下一次响铃时刻", m.title.contains("07:00"));
-        assertTrue("副信息应含闹钟名称", m.subtitle.contains("起床"));
-        assertTrue("副信息应含提醒总数", m.subtitle.contains("共"));
+        assertEquals("主信息只放时刻，不被日期稀释", "07:00", m.title);
+        assertTrue("副信息应含闹钟名称", m.subtitle.endsWith(" · 起床"));
+        assertFalse("桌面不展示提醒总数这类统计", m.subtitle.contains("共"));
+        assertFalse("主信息不再连日期", m.title.contains("月"));
+    }
+
+    @Test
+    public void subtitle_usesRelativeWordsForTodayAndTomorrow() {
+        LocalDateTime now = LocalDateTime.now();
+        NextAlarmWidget.WidgetModel today = NextAlarmWidget.computeModel(ctx(),
+                new ScheduleManager.NextAlarm(now.withHour(23).withMinute(59), "测试", 1), 0);
+        assertTrue("今天的闹钟用「今天」，实际：" + today.subtitle,
+                today.subtitle.startsWith("今天 · "));
+
+        NextAlarmWidget.WidgetModel tomorrow = NextAlarmWidget.computeModel(ctx(),
+                new ScheduleManager.NextAlarm(now.plusDays(1).withHour(7).withMinute(0),
+                        "测试", 1), 0);
+        assertTrue("明天的闹钟用「明天」，实际：" + tomorrow.subtitle,
+                tomorrow.subtitle.startsWith("明天 · "));
     }
 
     @Test

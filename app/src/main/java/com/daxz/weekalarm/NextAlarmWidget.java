@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViews;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -21,15 +22,21 @@ public class NextAlarmWidget extends AppWidgetProvider {
 
     /** 小组件展示的数据模型（纯数据，便于单元测试，不经过 RemoteViews）。 */
     static class WidgetModel {
-        final String title;     // 主信息：下一个闹钟时间 / 状态文案
-        final String subtitle;  // 副信息：标签 + 统计
+        final String title;     // 主信息：下一次响铃时刻 / 空状态
+        final String subtitle;  // 副信息：日期 + 闹钟名
         WidgetModel(String title, String subtitle) {
             this.title = title;
             this.subtitle = subtitle;
         }
     }
 
-    /** 计算小组件要展示的内容；与主 App 共用同一套排班计算。 */
+    /**
+     * 计算小组件要展示的内容；与主 App 共用同一套排班计算。
+     *
+     * <p>v1.62.0 起重排信息层级：主信息只放**时刻**，副信息放**日期 + 闹钟名**。
+     * 原来主信息是「10月26日 周一 07:00」一长串，时间被日期稀释；副信息还要缀
+     * 「未来 90 天共 140 个提醒」——那是统计，不是桌面一眼要看的东西。
+     */
     static WidgetModel computeModel(Context ctx) {
         return computeModel(ctx, ScheduleManager.nextRegisteredAlarm(ctx),
                 ScheduleManager.countScheduled(ctx));
@@ -40,6 +47,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
      *
      * <p>主界面刷新时已经算过「下一个已登记闹钟」和「提醒总数」，这里再算一遍纯属重复；
      * 而 {@code nextRegisteredAlarm} 每次都要逐候选探测 PendingIntent，是跨进程调用。
+     * v1.62.0 起提醒总数不再显示，{@code count} 只为兼容旧调用链保留。
      */
     static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next, int count) {
         if (next == null) {
@@ -47,10 +55,18 @@ public class NextAlarmWidget extends AppWidgetProvider {
                     "未来 " + Prefs.getHorizonDays(ctx) + " 天没有可排的闹钟");
         }
         LocalDateTime when = next.when;
-        String time = TimeText.monthDayWeek(when.toLocalDate()) + " "
-                + TimeText.clock(when.getHour(), when.getMinute());
-        String sub = next.label + " · 未来 " + Prefs.getHorizonDays(ctx) + " 天共 " + count + " 个提醒";
-        return new WidgetModel(time, sub);
+        String title = TimeText.clock(when.getHour(), when.getMinute());
+        String label = next.label == null || next.label.isEmpty() ? "闹钟" : next.label;
+        String subtitle = datePart(when.toLocalDate()) + " · " + label;
+        return new WidgetModel(title, subtitle);
+    }
+
+    /** 副信息里的日期部分：今天 / 明天用相对词，其余「月日 + 星期」。 */
+    private static String datePart(LocalDate d) {
+        LocalDate today = LocalDate.now();
+        if (d.equals(today)) return "今天";
+        if (d.equals(today.plusDays(1))) return "明天";
+        return TimeText.monthDayWeek(d);
     }
 
     /**

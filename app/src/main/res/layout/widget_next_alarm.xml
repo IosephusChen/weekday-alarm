@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 桌面小组件「下一个闹钟」4×2（v1.51.0 固化）。
+<!-- 桌面小组件「下一个闹钟」4×2（v1.62.0 重排信息层级）。
 
-     这一版把原来 widget_next_alarm_tall.xml 的内容压进 4×2：
-     闹钟两行 + 本周七格，没有「今天 / 明天不上班」按钮。
-
-     为什么改：v1.50.0 的 4×2 只有两行文字，用户看到的「闹钟 + 七格」形态
-     是 buildFor() 里 H_TALL=150 按高度误判凑出来的——卡片实测 165dp ≥ 150，
-     于是走了 4×3 的 tall 布局。换机型或换桌面、高度掉到 150 以下，
-     同一个组件会突然变回两行文字。形态不能靠巧合，所以固化成正式布局。
-
-     v1.51.0 起尺寸由 resizeMode="none" 锁死，不再有「拉高换布局」这回事，
-     NextAlarmWidget 里那套 H_TALL / H_FULL 分档一并删掉。
+     主信息只放时刻（07:00），副信息放「今天 / 明天 / 月日 星期 · 闹钟名」。
+     原来主信息把日期、星期、时间连成一长串，时间被稀释；副信息还缀着
+     「未来 90 天共 N 个提醒」——统计信息不该占桌面一眼的位置。
 
      七格沿用班表组件的 id（day_0..6 / label_0..6 / hl_0..6），
      渲染直接调 WeekWidgetRender.fillWeekCells，不复制一份逻辑。 -->
@@ -63,7 +56,7 @@
         android:maxLines="1"
         android:text="—"
         android:textColor="#FFFFFF"
-        android:textSize="20sp"
+        android:textSize="22sp"
         android:textStyle="bold" />
 
     <TextView

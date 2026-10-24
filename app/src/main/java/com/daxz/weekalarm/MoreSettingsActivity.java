@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
+import java.util.List;
+
 /**
  * 设置的二级页（v1.49.0）。
  *
@@ -39,5 +41,15 @@ public class MoreSettingsActivity extends SettingsActivity {
         findViewById(R.id.sec_ring).setVisibility(ring ? View.VISIBLE : View.GONE);
         findViewById(R.id.sec_all).setVisibility(ring ? View.GONE : View.VISIBLE);
         ((TextView) findViewById(R.id.tv_title)).setText(ring ? "更多响铃设置" : "更多设置");
+        if (!ring) {
+            // v1.59.0：更新日志行右侧显示当前版本。XML 里那个 v1.22.3 是从
+            // v1.22.3 加这行起就写死的占位——从没有任何代码刷新它，用户装机
+            // 后看到「更新日志 v1.22.3」以为日志停更了四年。
+            List<Changelog.Entry> entries = Changelog.all();
+            if (!entries.isEmpty()) {
+                ((TextView) findViewById(R.id.tv_changelog_version))
+                        .setText("v" + entries.get(0).version);
+            }
+        }
     }
 }

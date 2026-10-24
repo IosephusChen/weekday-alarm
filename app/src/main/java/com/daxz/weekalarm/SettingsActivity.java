@@ -41,7 +41,6 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView tvWeekMode;
     private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
     /** 本月班表是否显示闹钟（v1.51.1，三个整月变体共用）。 */
-    private SwitchCompat swMonthAlarm;
     /** 二十四节气开关（v1.51.2）。 */
     private SwitchCompat swSolarTerms;
     private SwitchCompat swChristian;
@@ -136,7 +135,6 @@ public class SettingsActivity extends AppCompatActivity {
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
         swLunar = findViewById(R.id.switch_lunar);
-        swMonthAlarm = findViewById(R.id.switch_month_alarm);
         swSolarTerms = findViewById(R.id.switch_solar_terms);
         swChristian = findViewById(R.id.switch_christian);
         swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
@@ -235,14 +233,8 @@ public class SettingsActivity extends AppCompatActivity {
         // v1.22.3：更新日志——每版改了什么都能翻，不联网
         bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
         bind(R.id.row_pin_widget, v -> showPinWidgetDialog());
-        // v1.51.1：本月班表要不要显示下一个闹钟。三个整月变体共用这个开关——
-        // 做成「显示/不显示」两个组件的话，小部件列表里会有六个「本月班表」。
-        bind(R.id.row_month_alarm, v -> { if (swMonthAlarm != null) swMonthAlarm.toggle(); });
-        if (swMonthAlarm != null) swMonthAlarm.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;
-            Prefs.setMonthWidgetAlarm(this, checked);
-            Widgets.updateAll(this);   // 立刻生效，不用等下一次刷新周期
-        });
+        // v1.59.0：「本月班表显示闹钟」开关已删——v1.52.0 起闹钟并进标题行不再挤
+        // 周次，开关的存在理由没了，用户反馈「没必要」。现在恒定显示，与 4×2 同口径。
 
         // ===== v1.46.2：从首页搬来的三块 =====
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
@@ -303,7 +295,6 @@ public class SettingsActivity extends AppCompatActivity {
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
         if (swLunar != null) swLunar.setChecked(Prefs.isLunarFestivals(this));
-        if (swMonthAlarm != null) swMonthAlarm.setChecked(Prefs.isMonthWidgetAlarm(this));
         if (swSolarTerms != null) swSolarTerms.setChecked(Prefs.isSolarTerms(this));
         if (swChristian != null) swChristian.setChecked(Prefs.isChristianFestivals(this));
         if (swBedtimeWorkday != null) swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
@@ -673,14 +664,18 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 「添加到桌面」（v1.49.9）。
+     * 「添加到桌面」（v1.49.9，v1.59.0 按澎湃实测重写）。
      *
      * <p>澎湃把第三方小部件统一收进「安卓小部件」二级列表，用户要翻三层才找得到。
-     * {@code requestPinAppWidget} 能让系统直接弹「是否添加到桌面」，点一下就放上去。
-     * 这是标准 API（26+），不需要任何权限，也不需要接入澎湃自家规范。
+     * {@code requestPinAppWidget} 本意是让系统直接弹「是否添加到桌面」，点一下就放上去。
      *
-     * <p>但小米可能没实现这个能力，所以先问 {@code isRequestPinAppWidgetSupported}；
-     * 不支持就退回手动路径，而不是点了没反应。
+     * <p><b>v1.59.0 为什么重写</b>：真机实测（用户反馈）——HyperOS 上
+     * {@code isRequestPinAppWidgetSupported()} 返回 true，请求也「发出去了」，
+     * 但桌面**根本不弹确认框**，用户看到的只有我们弹的 Toast 文案。
+     * 「API 可用」和「启动器真的弹框」是两回事，这个 Gap 只能靠诚实兜底。
+     *
+     * <p>现在：认得出小米桌面就直接给手动路径（不发无效请求）；其他桌面照旧请求，
+     * 但结果反馈从「一闪而过的 Toast」升级成一个说全两种可能的对话框。
      */
     private void showPinWidgetDialog() {
         new RoundedDialog.Builder(this)
@@ -705,7 +700,27 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
     }
 
+    /** 小米桌面（HyperOS / MIUI）：实测不支持一键添加，直接给手动路径。 */
+    private boolean isXiaomiLauncher() {
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+            android.content.pm.ResolveInfo ri = getPackageManager()
+                    .resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            if (ri == null || ri.activityInfo == null) return false;
+            String pkg = ri.activityInfo.packageName;
+            return pkg != null && (pkg.startsWith("com.miui.home")
+                    || pkg.startsWith("com.android.launcher"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void pinWidget(Class<?> provider, int heightDp) {
+        // 澎湃桌面：不发无效请求，直接教手动加（附原因，不然用户以为 App 坏了）
+        if (isXiaomiLauncher()) {
+            showPinManualGuide();
+            return;
+        }
         android.appwidget.AppWidgetManager mgr =
                 android.appwidget.AppWidgetManager.getInstance(this);
         if (!mgr.isRequestPinAppWidgetSupported()) {
@@ -724,14 +739,32 @@ public class SettingsActivity extends AppCompatActivity {
             showPinFallback();
             return;
         }
-        // 返回 true 只代表请求发出去了。小米桌面可能收下但不弹确认框，
-        // 所以这句话必须说清「没反应的话该怎么办」。
-        Toast.makeText(this, "已请求添加到桌面；如果桌面没有弹出确认框，请用下面的路径手动添加",
-                Toast.LENGTH_LONG).show();
-        showPinFallbackDelayed();
+        // 请求发出去了。弹没弹框无法检测（API 无回调），所以一次说全两种可能：
+        // 弹了 → 点确认；没弹 → 手动路径。v1.49.x 用 Toast，用户实测「只弹文案」，
+        // Toast 会被桌面盖住也看不清步骤，换成对话框。
+        new RoundedDialog.Builder(this)
+                .setTitle("看桌面有没有弹出确认框")
+                .setMessage("弹了就直接点「添加」，组件放上桌面就完成。\n\n"
+                        + "没有弹出的话，按下面手动加：\n"
+                        + "长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
+                        + "「安卓小部件」→ 找「打工人闹钟」。")
+                .setPositiveButton("知道了", null)
+                .show();
     }
 
-    /** 请求发出去了但桌面没反应时的兜底说明（v1.49.10）。 */
+    /** 小米桌面的手动引导（v1.59.0）：说清为什么不能一键加。 */
+    private void showPinManualGuide() {
+        new RoundedDialog.Builder(this)
+                .setTitle("需要手动添加")
+                .setMessage("你的桌面（澎湃 / MIUI）暂时不支持从 App 里一键添加，"
+                        + "两步就好：\n\n"
+                        + "长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
+                        + "「安卓小部件」→ 找「打工人闹钟」，选一个放上去。")
+                .setPositiveButton("知道了", null)
+                .show();
+    }
+
+    /** 请求发出不去的兜底说明（v1.49.10）。 */
     private void showPinFallback() {
         new RoundedDialog.Builder(this)
                 .setTitle("请手动添加")
@@ -739,19 +772,6 @@ public class SettingsActivity extends AppCompatActivity {
                         + "「安卓小部件」→ 找「打工人闹钟」。")
                 .setPositiveButton("知道了", null)
                 .show();
-    }
-
-    /**
-     * 请求已发出后，给一句「万一没弹」的提示。
-     *
-     * <p>延迟 1.2 秒：系统确认框通常立刻出现，弹了就不用再打扰；
-     * 只在没弹的时候补一句路径。这里无法真正检测「弹没弹」，
-     * 所以用 Toast 而不是对话框——用户看到确认框时它只是一闪而过。
-     */
-    private void showPinFallbackDelayed() {
-        new android.os.Handler(getMainLooper()).postDelayed(() ->
-                Toast.makeText(this, "没看到确认框？长按桌面 → 小部件 → 全部应用 → 安卓小部件",
-                        Toast.LENGTH_LONG).show(), 1200);
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */

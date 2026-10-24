@@ -275,4 +275,24 @@ public class SettingsLayoutTest {
 
         ctl.pause().stop().destroy();
     }
+
+    /**
+     * 「更新日志」那一行要显示当前版本号（v1.59.0）。
+     *
+     * <p>XML 里写死了一个「v1.22.3」，而没有任何代码去刷新它——用户装机后
+     * 看到更新日志停在四年前的版本，以为日志停更了。现在由 onCreate 动态刷。
+     */
+    @Test
+    public void morePage_changelogRowShowsCurrentVersion() {
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity a = ctl.get();
+
+        android.widget.TextView v = a.findViewById(R.id.tv_changelog_version);
+        assertNotNull("应有更新日志这一行", v);
+        assertEquals("v" + Changelog.all().get(0).version, v.getText().toString());
+
+        ctl.pause().stop().destroy();
+    }
 }

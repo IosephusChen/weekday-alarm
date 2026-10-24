@@ -145,27 +145,6 @@ public final class Prefs {
         return getWeekStart(c) == WEEK_START_SUNDAY;
     }
 
-    // ================= 本月班表是否显示闹钟（v1.51.1）=================
-
-    /**
-     * 三个「本月班表」组件共用这一个开关。
-     *
-     * <p>为什么不做成「显示闹钟 / 不显示闹钟」两个组件：小部件列表里会变成六个
-     * 「本月班表」，用户分不清哪个是哪个。Android 也没有「每个实例独立设置」的
-     * 原生能力（要另写放置时的配置页），试用阶段不值得。
-     *
-     * <p>默认打开：闹钟是这个 App 的主线信息，日历卡上顺带看一眼比单独放一张卡省地方。
-     */
-    public static final String KEY_MONTH_WIDGET_ALARM = "month_widget_alarm";
-
-    public static boolean isMonthWidgetAlarm(Context c) {
-        return sp(c).getBoolean(KEY_MONTH_WIDGET_ALARM, true);
-    }
-
-    public static void setMonthWidgetAlarm(Context c, boolean on) {
-        sp(c).edit().putBoolean(KEY_MONTH_WIDGET_ALARM, on).apply();
-    }
-
     // ================= 二十四节气（v1.51.2）=================
 
     /**

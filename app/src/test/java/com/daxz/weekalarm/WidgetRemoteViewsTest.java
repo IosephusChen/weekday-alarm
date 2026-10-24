@@ -275,41 +275,30 @@ public class WidgetRemoteViewsTest {
     }
 
     /**
-     * 「本月班表显示闹钟」开关必须同时管住两个变体（v1.51.1 三个，v1.53.0 定为两个）。
+     * 两个变体的闹钟状态行恒定显示（v1.59.0 删开关后改成这条）。
      *
-     * <p>v1.52.0 起两份布局结构一致：闹钟并进标题行、只报状态不报时刻，
-     * 且不再把「本周 · 大周」挤掉。这里把这两点一起钉住。
+     * <p>历史：v1.51.1 加「本月班表显示闹钟」开关，为解决「闹钟占一整行把周次挤掉」；
+     * v1.52.0 起闹钟并进标题行、只报状态不报时刻，且不再把「本周 · 大周」挤掉——
+     * 开关的存在理由已经没了，用户反馈「这个开关没必要」，v1.59.0 删掉，改成恒定显示。
+     *
+     * <p>现在钉两点：两个变体都显示闹钟状态；周次与闹钟并排，互不挤掉。
      */
     @Test
-    public void monthAlarmRow_followsGlobalSwitch() {
+    public void monthAlarmRow_alwaysShows() {
         Context c = ctx();
-        try {
-            Prefs.setMonthWidgetAlarm(c, true);
-            View on4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("4×4 闹钟状态该显示", View.VISIBLE,
-                    on4.findViewById(R.id.widget_month_alarm).getVisibility());
-            assertEquals("4×4 闹钟只报状态，不报具体时刻",
-                    "闹钟已开启", text(on4, R.id.widget_month_alarm));
+        View v4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
+        assertEquals("4×4 闹钟状态该显示（开关已删，恒定显示）", View.VISIBLE,
+                v4.findViewById(R.id.widget_month_alarm).getVisibility());
+        assertEquals("4×4 闹钟只报状态，不报具体时刻",
+                "闹钟已开启", text(v4, R.id.widget_month_alarm));
+        assertEquals("4×4 的周次不该被闹钟挤掉", View.VISIBLE,
+                v4.findViewById(R.id.widget_month_sub).getVisibility());
 
-            View on3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("4×3 闹钟状态该显示", View.VISIBLE,
-                    on3.findViewById(R.id.widget_month_alarm).getVisibility());
-            assertEquals("4×3 的周次不该被闹钟挤掉", View.VISIBLE,
-                    on3.findViewById(R.id.widget_month_sub).getVisibility());
-
-            Prefs.setMonthWidgetAlarm(c, false);
-            View off4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("关掉后 4×4 闹钟状态该隐藏", View.GONE,
-                    off4.findViewById(R.id.widget_month_alarm).getVisibility());
-
-            View off3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
-            assertEquals("关掉后 4×3 闹钟状态该隐藏", View.GONE,
-                    off3.findViewById(R.id.widget_month_alarm).getVisibility());
-            assertEquals("关掉后周次照旧显示", View.VISIBLE,
-                    off3.findViewById(R.id.widget_month_sub).getVisibility());
-        } finally {
-            Prefs.setMonthWidgetAlarm(c, true);
-        }
+        View v3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
+        assertEquals("4×3 闹钟状态也该显示", View.VISIBLE,
+                v3.findViewById(R.id.widget_month_alarm).getVisibility());
+        assertEquals("4×3 的周次不该被闹钟挤掉", View.VISIBLE,
+                v3.findViewById(R.id.widget_month_sub).getVisibility());
     }
 
     /**

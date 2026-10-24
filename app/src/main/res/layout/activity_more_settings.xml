@@ -729,14 +729,15 @@
                                     style="@style/SettingsValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="v1.22.3" />
+                                    android:text="v—" />
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
             </LinearLayout>
 
             <!-- 桌面小组件（v1.49.9）：澎湃把第三方小部件收在「安卓小部件」二级列表，
-                 要翻三层才找得到；这一行调 requestPinAppWidget 让系统直接弹确认框。 -->
+                 要翻三层才找得到；这一行尽量一键加，小米桌面实测不支持，会给手动路径。
+                 v1.59.0：「本月班表显示闹钟」开关已删（恒定显示），本组只剩这一行。 -->
             <TextView
                 style="@style/SectionTitle"
                 android:layout_width="wrap_content"
@@ -784,57 +785,10 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="不用去小部件列表里翻，选一个直接放上去" />
+                            android:text="选一个放上桌面；部分桌面要手动加，会教你路径" />
                     </LinearLayout>
 
                     <TextView style="@style/SettingsChevron" />
-                </LinearLayout>
-
-                <View style="@style/SettingsDivider" />
-
-                <!-- v1.51.1：三个「本月班表」变体共用一个开关。
-                     做成开关而不是再做三个组件——列表里会变成六个「本月班表」。 -->
-                <LinearLayout
-                    android:id="@+id/row_month_alarm"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/selectableItemBackground"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="64dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/SettingsTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="本月班表显示闹钟" />
-
-                        <TextView
-                            style="@style/SettingsSummary"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="完整版单独占一行，极简版放标题右侧；关掉后日历格子更高" />
-                    </LinearLayout>
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switch_month_alarm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:focusable="false" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -613,7 +613,7 @@
                     android:layout_marginTop="8dp"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="国内厂商的系统会限制后台。点每一项去开启，开完回来这里会自动打勾。"
+                    android:text="每一项管一件事，不开的后果写在它下面。点去开启，回来会自动打勾。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -646,6 +646,14 @@
                             android:text="通知权限（必须）"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，响铃时连「停止」按钮都没有"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
 
                         <TextView
                             android:id="@+id/st_notif"
@@ -694,6 +702,14 @@
                             android:text="后台弹出界面"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，响铃时不会自动弹出界面，只在通知栏躺着"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
 
                         <TextView
                             android:id="@+id/st_fsi"
@@ -746,6 +762,14 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，划掉 App 后闹钟到点不响"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+
+                        <TextView
                             android:id="@+id/st_autostart"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -793,6 +817,14 @@
                             android:text="显示悬浮窗"
                             android:textColor="@color/ink"
                             android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，响铃时顶部不弹横幅，只能进通知栏找"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
 
                         <TextView
                             android:id="@+id/st_overlay"
@@ -845,6 +877,14 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不开的话，锁屏时看不到响铃页面，解锁才出现"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+
+                        <TextView
                             android:id="@+id/st_lock"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -867,7 +907,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:lineSpacingExtra="3dp"
-                    android:text="没全开也能用，只是可能不响，或者只在通知栏出现、不弹满屏。"
+                    android:text="建议全部开齐；实在找不到入口的，至少保住「通知权限」和「自启动」——这两个决定闹钟响不响。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 

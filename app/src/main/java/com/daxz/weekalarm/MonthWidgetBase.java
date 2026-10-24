@@ -35,8 +35,9 @@ abstract class MonthWidgetBase extends AppWidgetProvider {
     abstract boolean withActions();
 
     RemoteViews buildViews(Context ctx) {
+        // v1.59.0：闹钟状态恒定显示，开关已删（见 MonthWidgetRender.build 注释）
         return MonthWidgetRender.build(ctx, MonthWidgetRender.compute(ctx, LocalDate.now()),
-                layoutRes(), withActions(), Prefs.isMonthWidgetAlarm(ctx));
+                layoutRes(), withActions());
     }
 
     @Override

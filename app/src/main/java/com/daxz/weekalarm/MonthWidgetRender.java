@@ -155,25 +155,28 @@ final class MonthWidgetRender {
         return m;
     }
 
-    /** 4×4 完整版（带按钮、闹钟按设置开关）。 */
+    /** 4×4 完整版（带按钮、带闹钟状态）。 */
     static RemoteViews build(Context ctx, Model m) {
-        return build(ctx, m, R.layout.widget_week_schedule_month, true,
-                Prefs.isMonthWidgetAlarm(ctx));
+        return build(ctx, m, R.layout.widget_week_schedule_month, true);
     }
 
     /**
      * 两个变体共用这一个渲染入口（v1.51.1 三个，v1.53.0 定为两个）。
      *
-     * <p>变体只在「哪份布局 / 有没有请假按钮 / 有没有闹钟」上不同，42 格的算与画完全一样。
+     * <p>变体只在「哪份布局 / 有没有请假按钮」上不同，42 格的算与画完全一样。
      * 分成三个类各写一遍渲染，等于把同一段代码复制三份——改一处颜色要改三处。
+     *
+     * <p>v1.59.0：闹钟状态从「按设置开关显示」改为**恒定显示**。开关是 v1.51.1
+     * 为解决「闹钟占一整行把周次挤掉」加的，而 v1.52.0 起闹钟并进标题行、
+     * 不再挤任何东西，开关的存在理由已经没了——用户反馈「这个开关没必要」。
+     * 现在与 4×2 闹钟卡同一个口径：永远显示「闹钟已开启 / 未开启」。
      *
      * @param layout       4×4 用 {@code widget_week_schedule_month}，
      *                     4×3 用 {@code widget_month_compact}
      * @param withActions  是否显示底部「今天 / 明天不上班」
-     * @param withAlarm    是否显示下一个闹钟（设置里的全局开关）
      */
     static RemoteViews build(Context ctx, Model m, int layout,
-                             boolean withActions, boolean withAlarm) {
+                             boolean withActions) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), layout);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
@@ -194,7 +197,7 @@ final class MonthWidgetRender {
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
         }
 
-        bindAlarm(rv, ctx, withAlarm);
+        bindAlarm(rv, ctx);
 
         // 今天 / 明天请假：与 4×2 那套同一个实现，切到整月后按钮不能消失
         rv.setViewVisibility(R.id.widget_month_actions,
@@ -218,7 +221,7 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 闹钟状态那一格（v1.52.0 收成一句话）。
+     * 闹钟状态那一格（v1.52.0 收成一句话，v1.59.0 起恒定显示）。
      *
      * <p>v1.51.x 写的是「10月24日 周六 07:30」，4×4 还单独占一整行。用户反馈
      * 「多余的信息太多，像 4×2 那样显示个闹钟已开启就行」——整月日历本来就在看日期，
@@ -227,9 +230,9 @@ final class MonthWidgetRender {
      * <p>两份布局现在结构一致：标题行 = 月份 + 周次 + 闹钟状态，42 格从第二行起。
      * 4×4 因此省下整整一行，格子反而更舒展。
      */
-    private static void bindAlarm(RemoteViews rv, Context ctx, boolean withAlarm) {
+    private static void bindAlarm(RemoteViews rv, Context ctx) {
         rv.setTextViewText(R.id.widget_month_alarm, Widgets.alarmStatusText(ctx));
-        rv.setViewVisibility(R.id.widget_month_alarm, withAlarm ? View.VISIBLE : View.GONE);
+        rv.setViewVisibility(R.id.widget_month_alarm, View.VISIBLE);
         // 「小周 · 休1天」不再给闹钟让位：两者现在并排，各自都有位置
         rv.setViewVisibility(R.id.widget_month_sub, View.VISIBLE);
     }

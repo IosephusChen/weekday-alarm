@@ -47,15 +47,19 @@
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（572 条，Robolectric + JUnit）
+# 单元测试（577 条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
 ./gradlew lint
 
-# 出包
+# 出包（release 已开 R8 + 资源压缩，约 2.7MB）
 ./gradlew assembleRelease
 ```
+
+release 包经过 R8 混淆：线上崩溃栈要用 `app/build/outputs/mapping/release/mapping.txt`
+反混淆（`retrace`）。规则只保四样兜底（源文件名与行号、自定义 View 构造器、枚举、
+Parcelable CREATOR），见 `proguard-rules.pro`。
 
 **签名**：`app/build.gradle` 的签名配置是条件式的——本机存在 `~/.android/debug.keystore`
 才用它签；没有就产出未签名的 release 包，debug 包用 AGP 默认签名，照样能装能测。

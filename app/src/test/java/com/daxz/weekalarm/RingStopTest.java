@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -262,5 +263,71 @@ public class RingStopTest {
         int stId = ctx().getResources().getIdentifier(
                 "st_battery", "id", ctx().getPackageName());
         assertEquals("状态文案也一并删掉", 0, stId);
+    }
+
+    // ---------- 5. 兜底通知的消除路径（v1.64.0）----------
+
+    /**
+     * 前台服务被系统拒时发的兜底通知（{@link AlarmService#postFallbackNotification}）是
+     * ongoing 的。它有两条消除路径，v1.63.0 只通了一条：
+     * <ul>
+     *   <li>点通知里的「停止」→ 经 {@code PendingIntent.getService} 把服务拉起来再
+     *       {@code stopSelf}，{@code onDestroy} 顺带取消——通；</li>
+     *   <li>点通知本体进响铃页、再按停止——原来不走任何取消路径，通知永远挂在栏里。</li>
+     * </ul>
+     * 这条测试钉第二种：从响铃页停止后，通知必须消失。
+     */
+    @Test
+    public void fallbackNotification_cancelledWhenStoppingFromAlarmPage() {
+        resetPrefs();
+        notifications(true);
+        // 模拟「前台服务起不来」：AlarmReceiver 的 catch 会发这条兜底通知
+        AlarmService.postFallbackNotification(ctx(), 7, "起床", "2026-10-26", true);
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        ShadowNotificationManager shadow = shadowOf(nm);
+        assertNotNull("兜底通知应先发出来", shadow.getNotification(null, AlarmService.NOTIF_ID));
+
+        // 用户点通知本体进响铃页，滑动停止
+        Intent i = new Intent(ctx(), AlarmActivity.class);
+        i.putExtra(AlarmActivity.EXTRA_ALARM_ID, 7);
+        i.putExtra(AlarmActivity.EXTRA_LABEL, "起床");
+        i.putExtra(AlarmActivity.EXTRA_DATE, "2026-10-26");
+        ActivityController<AlarmActivity> ctl =
+                Robolectric.buildActivity(AlarmActivity.class, i).setup();
+        ShadowLooper.idleMainLooper();
+        ctl.get().findViewById(R.id.btn_stop).performClick();
+
+        assertNull("从响铃页停止后，兜底通知必须取消",
+                shadow.getNotification(null, AlarmService.NOTIF_ID));
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 小睡同样要能消掉兜底通知：用户点「再响 5 分钟」之后，栏里不该还挂着
+     * 「时间到了 · 点此停止」——那条说的是现在这一响，已经处理了。
+     */
+    @Test
+    public void fallbackNotification_cancelledWhenSnoozingFromAlarmPage() {
+        resetPrefs();
+        notifications(true);
+        AlarmService.postFallbackNotification(ctx(), 8, "午休", "2026-10-26", true);
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        ShadowNotificationManager shadow = shadowOf(nm);
+        assertNotNull("兜底通知应先发出来", shadow.getNotification(null, AlarmService.NOTIF_ID));
+
+        Intent i = new Intent(ctx(), AlarmActivity.class);
+        i.putExtra(AlarmActivity.EXTRA_ALARM_ID, 8);
+        i.putExtra(AlarmActivity.EXTRA_LABEL, "午休");
+        i.putExtra(AlarmActivity.EXTRA_DATE, "2026-10-26");
+        ActivityController<AlarmActivity> ctl =
+                Robolectric.buildActivity(AlarmActivity.class, i).setup();
+        ShadowLooper.idleMainLooper();
+        ctl.get().findViewById(R.id.btn_snooze).performClick();
+
+        assertNull("小睡后，兜底通知必须取消",
+                shadow.getNotification(null, AlarmService.NOTIF_ID));
+        ctl.pause().stop().destroy();
     }
 }

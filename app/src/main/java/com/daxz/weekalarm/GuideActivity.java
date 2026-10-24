@@ -601,9 +601,11 @@ public class GuideActivity extends AppCompatActivity {
         final String tip = firstRun
                 ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";
-        // v1.63.0：重排挪后台，但引导页要立刻关闭——Executor 用的是 application
-        // context，活动finish后照样会把闹钟排完
-        Reschedule.run(this, null);
+        // v1.64.0：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
+        // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App
+        // 前不会知道。这是一次性点击，阻塞几百毫秒无感；ANR 风险来自反复操作，
+        // 不来自一次性完成——所以只有这里回同步，其余界面侧路径仍走 Reschedule。
+        ScheduleManager.rescheduleAll(this);
         Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
         finish();
     }

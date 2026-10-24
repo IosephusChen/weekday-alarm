@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -209,6 +210,10 @@ public class AlarmActivity extends AppCompatActivity {
         Prefs.clearSnoozeCount(this, alarmId, date);
         // v1.38.0：小睡预告也一并撤掉，否则停止之后通知栏还挂着「N 分钟后再次响铃」
         SnoozeNotice.cancel(this, alarmId);
+        // v1.64.0：前台服务被系统拒时那条兜底通知（postFallbackNotification）是 ongoing 的，
+        // 而服务从未启动、onDestroy 的取消逻辑不会跑——从通知本体进响铃页再停，
+        // 它会永远挂在通知栏。正常响铃时这条通知归前台服务管，重复取消无副作用。
+        NotificationManagerCompat.from(this).cancel(AlarmService.NOTIF_ID);
         stopService(new android.content.Intent(this, AlarmService.class));
         finish();
     }
@@ -221,6 +226,8 @@ public class AlarmActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT).show();
             return;
         }
+        // v1.64.0：同 stopAlarm——兜底通知不走 onDestroy，小睡也要能把它取消掉
+        NotificationManagerCompat.from(this).cancel(AlarmService.NOTIF_ID);
         int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
         Prefs.incrementSnoozeCount(this, alarmId, date);
         ScheduleManager.snooze(this, alarmId, label);

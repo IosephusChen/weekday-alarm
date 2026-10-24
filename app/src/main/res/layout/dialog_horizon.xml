@@ -13,7 +13,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="提醒范围"
+        android:text="@string/dialog_horizon_title"
         android:textColor="@color/ink"
         android:textSize="17sp"
         android:textStyle="bold" />
@@ -22,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="节假日安排目前内置到 2026 年底。选择更长范围时，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖），2027 年安排公布后 App 更新数据即可自动生效，无需改设置。"
+        android:text="@string/dialog_horizon_message"
         android:textColor="@color/sub"
         android:textSize="12sp"
         android:lineSpacingMultiplier="1.2" />
@@ -39,7 +39,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="90 天（默认）"
+            android:text="@string/dialog_horizon_90"
             android:textColor="@color/ink"
             android:textSize="15sp" />
 
@@ -48,7 +48,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="180 天"
+            android:text="@string/dialog_horizon_180"
             android:textColor="@color/ink"
             android:textSize="15sp" />
 
@@ -57,7 +57,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="365 天（一整年）"
+            android:text="@string/dialog_horizon_365"
             android:textColor="@color/ink"
             android:textSize="15sp" />
     </RadioGroup>

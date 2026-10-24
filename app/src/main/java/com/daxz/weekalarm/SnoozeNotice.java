@@ -11,8 +11,6 @@ import androidx.core.app.NotificationManagerCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * 「稍后提醒」期间挂在通知栏的那条提醒（v1.38.0）。
@@ -53,7 +51,7 @@ final class SnoozeNotice {
         int mins = Math.max(1, minutes);
         LocalDateTime at = LocalDateTime.now().plusMinutes(mins);
         LocalDate targetDate = at.toLocalDate();
-        String clock = at.format(DateTimeFormatter.ofPattern("HH:mm", Locale.US));
+        String clock = TimeText.clock(at);
         String name = (label == null || label.isEmpty()) ? "闹钟" : label;
 
         Intent open = new Intent(ctx, MainActivity.class)

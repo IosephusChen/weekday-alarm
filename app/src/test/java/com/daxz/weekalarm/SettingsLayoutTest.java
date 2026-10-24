@@ -89,7 +89,7 @@ public class SettingsLayoutTest {
         assertNotNull("音量滑块应在主页", a.findViewById(R.id.seek_volume_embed));
 
         int[] moved = {R.id.row_snooze, R.id.row_keys, R.id.row_ring_duration,
-                R.id.row_test_ring, R.id.row_export, R.id.row_lunar};
+                R.id.row_test_ring, R.id.row_export, R.id.row_calendar_content};
         for (int id : moved) {
             assertNull("这一项已经搬去二级页", a.findViewById(id));
         }
@@ -230,10 +230,13 @@ public class SettingsLayoutTest {
 
         String all = collectText(a.getWindow().getDecorView());
         assertTrue("应有「排班与显示」", all.contains("排班与显示"));
-        assertTrue("应有「睡前提醒」（只在明天上班时提醒归这里）", all.contains("睡前提醒"));
         assertTrue("应有「检查与帮助」", all.contains("检查与帮助"));
         assertTrue("应有「备份与恢复」", all.contains("备份与恢复"));
         assertFalse("「排程」既指排班又指闹钟排程，已不用", all.contains("排程"));
+        // v1.60.0：「睡前提醒」段整段撤了——它唯一一行（仅在明天上班时提醒）
+        // 并进了主页睡前提醒行的对话框，这一页不再有该出现没出现的段落
+        assertFalse("「仅在明天上班时提醒」已并入睡前提醒对话框，二级页不该再有",
+                all.contains("仅在明天上班时提醒"));
 
         ctl.pause().stop().destroy();
     }
@@ -292,6 +295,56 @@ public class SettingsLayoutTest {
         android.widget.TextView v = a.findViewById(R.id.tv_changelog_version);
         assertNotNull("应有更新日志这一行", v);
         assertEquals("v" + Changelog.all().get(0).version, v.getText().toString());
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 「日历显示内容」一行：三个开关合并后行还在，值跟着 Prefs 走（v1.60.0）。
+     *
+     * <p>v1.60.0 前这里是农历节日 / 二十四节气 / 基督教节日三个开关行。
+     * 合并后 Prefs 三个键不动，行右侧的值要实时反映勾选。
+     */
+    @Test
+    public void morePage_calendarContentRowReflectsPrefs() {
+        Prefs.setLunarFestivals(ctx(), false);
+        Prefs.setSolarTerms(ctx(), true);
+        Prefs.setChristianFestivals(ctx(), false);
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity a = ctl.get();
+
+        android.widget.TextView tv = a.findViewById(R.id.tv_calendar_content);
+        assertNotNull("应有「日历显示内容」这一行", tv);
+        assertEquals("只勾了节气，值就只写节气", "二十四节气", tv.getText().toString());
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 「仅在明天上班时提醒」并入睡前提醒对话框（v1.60.0）。
+     *
+     * <p>v1.60.0 前它是更多设置里「睡前提醒」段的独立开关行——和时刻分居两处，
+     * 同一个决策要理解两遍。现在并进对话框：回显当前值，勾选即时生效。
+     */
+    @Test
+    public void bedtimeDialog_hasWorkdayOnlyCheckbox() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        Prefs.setBedtimeWorkdayOnly(ctx(), true);
+        ActivityController<SettingsActivity> ctl = openHome();
+        ctl.get().findViewById(R.id.row_bedtime).performClick();
+        ShadowLooper.idleMainLooper();
+
+        androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("点睡前提醒行应弹出对话框", d);
+        android.widget.CheckBox cb = d.findViewById(R.id.cb_bedtime_workday);
+        assertNotNull("对话框里应有「仅在明天上班时提醒」复选框", cb);
+        assertTrue("回显当前值（开着）", cb.isChecked());
+
+        cb.performClick();
+        assertFalse("勾选即时生效", Prefs.isBedtimeWorkdayOnly(ctx()));
 
         ctl.pause().stop().destroy();
     }

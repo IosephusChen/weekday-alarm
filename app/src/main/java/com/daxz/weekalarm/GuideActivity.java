@@ -3,7 +3,6 @@ package com.daxz.weekalarm;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
@@ -20,7 +19,6 @@ import androidx.core.content.ContextCompat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 新手引导页（v1.19.9 初版；v1.25.0 改成「顺手把配置做完」）。
@@ -248,7 +246,7 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     private void updateTimeText() {
-        tvTime.setText(String.format(Locale.US, "%02d:%02d", hour, minute));
+        tvTime.setText(TimeText.clock(hour, minute));
     }
 
     /** 改时间时如果已经有闹钟，直接改第一个，避免「改了却没生效」。 */
@@ -605,7 +603,7 @@ public class GuideActivity extends AppCompatActivity {
         Prefs.setOnboardDone(this, true);
         ScheduleManager.rescheduleAll(this);
         String tip = firstRun
-                ? "已排好班，上班日 " + String.format(Locale.US, "%02d:%02d", hour, minute) + " 会响"
+                ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";
         Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
         finish();

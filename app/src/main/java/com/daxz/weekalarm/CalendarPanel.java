@@ -15,7 +15,6 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +36,6 @@ import java.util.Set;
 final class CalendarPanel {
 
     /** 星期文案，与首页其他地方一致（v1.22.2 起统一成两字写法）。 */
-    private static final String[] DOW = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
     private static final int[] DOW_IDS = {
             R.id.cal_dow_0, R.id.cal_dow_1, R.id.cal_dow_2, R.id.cal_dow_3,
@@ -388,12 +386,8 @@ final class CalendarPanel {
                     break;
             }
         }
-        String day = d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekLabel(d);
+        String day = d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + TimeText.week(d);
         return day + "，" + state + (d.equals(LocalDate.now()) ? "，今天" : "");
-    }
-
-    private String weekLabel(LocalDate d) {
-        return DOW[d.getDayOfWeek().getValue() - 1];
     }
 
     // ================= 单日标记 =================
@@ -417,7 +411,7 @@ final class CalendarPanel {
         boolean past = d.isBefore(LocalDate.now());
         boolean hasV = Prefs.isVacation(host, d);
         boolean hasO = Prefs.isOvertime(host, d);
-        String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
+        String dateText = TimeText.monthDayWeek(d);
 
         List<String> items = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
@@ -440,7 +434,7 @@ final class CalendarPanel {
 
     /** 切换某天的请假标记。上班日标了才影响闹钟，休息日上的老数据只做清理。 */
     private void toggleVacation(LocalDate d, boolean work, boolean past) {
-        String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
+        String dateText = TimeText.monthDayWeek(d);
         if (Prefs.isVacation(host, d)) {
             Prefs.removeVacation(host, d);
             onChanged.run();
@@ -466,7 +460,7 @@ final class CalendarPanel {
      * <p>过去的日子只补记，不提闹钟——那天已经过完了。
      */
     private void toggleOvertime(LocalDate d, boolean work, boolean past) {
-        String dateText = d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d);
+        String dateText = TimeText.monthDayWeek(d);
         if (Prefs.isOvertime(host, d)) {
             Prefs.removeOvertime(host, d);
             onChanged.run();

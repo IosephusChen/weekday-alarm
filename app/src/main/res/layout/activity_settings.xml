@@ -39,7 +39,7 @@
                 android:paddingEnd="14dp"
                 android:paddingTop="7dp"
                 android:paddingBottom="7dp"
-                android:text="‹ 返回"
+                android:text="@string/settings_back"
                 android:textColor="@color/ink"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -49,7 +49,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="end"
-                android:text="设置"
+                android:text="@string/settings_page_title"
                 android:textColor="@color/ink"
                 android:textSize="17sp"
                 android:textStyle="bold" />
@@ -61,7 +61,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:text="闹钟" />
+            android:text="@string/settings_section_alarm" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -92,14 +92,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="闹钟音量" />
+                        android:text="@string/settings_volume_label" />
 
                     <TextView
                         android:id="@+id/tv_volume"
                         style="@style/SettingsValue"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="80%" />
+                        android:text="@string/settings_volume_default" />
                 </LinearLayout>
 
                 <!-- v1.49.6：padding 不能再是 0——滑块滚到 0 时左半会被自身边界裁掉，
@@ -138,7 +138,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="铃声" />
+                                android:text="@string/settings_ringtone_title" />
 
                             <TextView
                                 android:id="@+id/tv_ringtone"
@@ -147,7 +147,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="0.9"
                                 android:gravity="end"
-                                android:text="系统默认" />
+                                android:text="@string/settings_ringtone_default" />
 
                             <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
@@ -173,7 +173,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="更多响铃设置" />
+                    android:text="@string/settings_more_ring_title" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>
@@ -186,7 +186,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="8dp"
-            android:text="排班与节假日" />
+            android:text="@string/settings_section_schedule" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -213,14 +213,14 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="周休制度" />
+                                android:text="@string/settings_week_mode_title" />
 
                             <TextView
                                 android:id="@+id/tv_week_mode"
                                 style="@style/SettingsValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="大小周" />
+                                android:text="@string/settings_week_mode_default" />
 
                             <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
@@ -252,7 +252,7 @@
                                     style="@style/SettingsTitle"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="节假日数据" />
+                                    android:text="@string/settings_holiday_data_title" />
 
                                 <TextView
                                     android:id="@+id/tv_holiday_data"
@@ -260,7 +260,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="2dp"
-                                    android:text="—" />
+                                    android:text="@string/settings_holiday_data_default" />
                             </LinearLayout>
 
                             <TextView style="@style/SettingsChevron" />
@@ -276,7 +276,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="8dp"
-            android:text="提醒" />
+            android:text="@string/settings_section_remind" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -312,7 +312,7 @@
                         style="@style/SettingsTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="睡前提醒" />
+                        android:text="@string/settings_bedtime_title" />
 
                     <TextView
                         android:id="@+id/tv_bedtime"
@@ -320,7 +320,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="关闭" />
+                        android:text="@string/settings_bedtime_default" />
                 </LinearLayout>
 
                 <!-- 这个开关自己消费点击（与「响铃前提醒」不同）：
@@ -360,7 +360,7 @@
                                     style="@style/SettingsTitle"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="响铃前提醒" />
+                                    android:text="@string/settings_pre_notice_title" />
 
                                 <TextView
                                     android:id="@+id/tv_pre_notice"
@@ -368,7 +368,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="2dp"
-                                    android:text="响铃前先在通知栏提醒一次" />
+                                    android:text="@string/settings_pre_notice_summary" />
                             </LinearLayout>
 
                             <androidx.appcompat.widget.SwitchCompat
@@ -389,7 +389,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="8dp"
-            android:text="其他" />
+            android:text="@string/settings_section_other" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -419,13 +419,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="更多设置" />
+                    android:text="@string/settings_more_title" />
 
                 <TextView
                     style="@style/SettingsSummary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="排班 · 小组件 · 检查 · 备份" />
+                    android:text="@string/settings_more_summary" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>

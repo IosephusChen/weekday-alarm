@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,20 +13,14 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -64,7 +57,6 @@ public class MainActivity extends AppCompatActivity {
      * 星期文案（v1.22.2）：原来只有「三」一个字，放在「10月21日 三」里像漏字。
      * 统一成「周三」这种两字写法，日期行、状态栏、请假对话框都用它。
      */
-    private static final String[] DOW = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -321,7 +313,7 @@ public class MainActivity extends AppCompatActivity {
             long days = seconds / 86400;
             long h = (seconds % 86400) / 3600;
             long m = (seconds % 3600) / 60;
-            return days + " 天 " + String.format(Locale.US, "%02d:%02d", h, m);
+            return days + " 天 " + TimeText.clock((int) h, (int) m);
         }
         return String.format(Locale.US, "%02d:%02d:%02d",
                 seconds / 3600, (seconds % 3600) / 60, seconds % 60);
@@ -608,7 +600,7 @@ public class MainActivity extends AppCompatActivity {
         boolean overtime = !vacation && !baseWork && Prefs.isOvertime(this, today);
         boolean work = (baseWork && !vacation) || overtime;
 
-        tvTodayDate.setText(today.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(today));
+        tvTodayDate.setText(TimeText.monthDayWeek(today));
         // v1.20：农历单独一行，节日当天直接点出节日名（如「农历八月十五 中秋」）。
         // 只在用户开着「农历节日」时显示，避免不想看农历的人被塞信息。
         // 法定节假日名与农历无关，单独取；农历部分受设置里的开关控制。
@@ -705,15 +697,10 @@ public class MainActivity extends AppCompatActivity {
         LocalDate d = n.when.toLocalDate();
         long days = ChronoUnit.DAYS.between(today, d);
         String prefix = days == 0 ? "" : days == 1 ? "明天 " : days == 2 ? "后天 "
-                : d.format(DateTimeFormatter.ofPattern("M月d日")) + " " + weekLabel(d) + " ";
-        String time = String.format(Locale.getDefault(), "%02d:%02d",
-                n.when.getHour(), n.when.getMinute());
+                : TimeText.monthDayWeek(d) + " ";
+        String time = TimeText.clock(n.when.getHour(), n.when.getMinute());
         String label = n.label == null || n.label.isEmpty() ? "" : " " + n.label;
         return prefix + time + label;
-    }
-
-    private String weekLabel(LocalDate d) {
-        return DOW[d.getDayOfWeek().getValue() - 1];
     }
 
 }

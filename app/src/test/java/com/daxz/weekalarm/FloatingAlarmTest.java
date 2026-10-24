@@ -40,6 +40,8 @@ import java.time.LocalDate;
  *       <b>v1.45.0 反转</b>：截图实测 0.5 被系统 clamp 掉了，实际落点就是状态栏下沿；
  *       改成显式贴下沿、撤掉标志，行为不再依赖 ROM 的 clamp</li>
  *   <li>v1.44.0「logo 和稍后提醒的图标一模一样」→ 左边闹钟、右边 zzz，两个 drawable 必须不同</li>
+ *   <li>v1.60.0「横屏太长、太靠下，转竖屏还被裁」→ 宽度按屏幕短边算（两朝向等长）、
+ *       y 由可见系统栏 inset 驱动（状态栏隐藏时贴最顶）、配置变化时重算窗口</li>
  * </ol>
  */
 @RunWith(RobolectricTestRunner.class)
@@ -144,9 +146,74 @@ public class FloatingAlarmTest {
         assertEquals("顶边应紧贴状态栏下沿——多让 1dp 都会显得「浮在下面」，"
                 + "少让 1dp 就压住状态栏的时间和电量", sb, lp.y);
 
-        int screenW = ctx().getResources().getDisplayMetrics().widthPixels;
-        assertTrue("宽度应接近屏宽（现在 " + lp.width + " / " + screenW + "）",
-                lp.width > screenW * 0.9f);
+        android.util.DisplayMetrics dm = ctx().getResources().getDisplayMetrics();
+        int side = Math.round(FloatingAlarm.SIDE_MARGIN_DP * dm.density);
+        int expect = Math.min(dm.widthPixels, dm.heightPixels) - side * 2;
+        assertEquals("宽度 = 屏幕短边 - 左右各 8dp（竖屏下短边就是屏宽，仍是通栏）",
+                expect, lp.width);
+    }
+
+    /**
+     * 横屏下横幅必须和竖屏等长（v1.60.0，用户截图反馈「太长，没必要，
+     * 做成竖屏那样的长度就行」）。
+     *
+     * <p>v1.60.0 前宽度直接用 {@code widthPixels}：横屏屏宽是竖屏的两倍多，
+     * 横幅被拉成通栏。现在按短边算，横屏下短边仍是竖屏屏宽，等长。
+     */
+    @Test
+    public void banner_widthIsPortraitLengthEvenInLandscape() {
+        grantOverlay(true);
+        android.util.DisplayMetrics dm = ctx().getResources().getDisplayMetrics();
+        int portraitW = dm.widthPixels, portraitH = dm.heightPixels;
+        int side = Math.round(FloatingAlarm.SIDE_MARGIN_DP * dm.density);
+        try {
+            // 模拟旋到横屏：长宽对调（真机 1200×2670 → 2670×1200）
+            dm.widthPixels = portraitH;
+            dm.heightPixels = portraitW;
+            assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
+
+            WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
+            int portraitLen = portraitW - side * 2;
+            assertEquals("横屏下横幅长度必须等于竖屏长度（而不是横屏屏宽 - 边距）",
+                    portraitLen, lp.width);
+            assertTrue("横幅不该按横屏屏宽走", lp.width != portraitH - side * 2);
+        } finally {
+            dm.widthPixels = portraitW;
+            dm.heightPixels = portraitH;
+        }
+    }
+
+    /**
+     * 横屏响铃直接转竖屏：宽度必须跟着重算，不能超出竖屏屏宽（v1.60.0）。
+     *
+     * <p>用户截图：横屏闹钟响了没关，转回竖屏后横幅右侧被裁掉一截——
+     * 窗口是挂窗时按横屏 {@code widthPixels} 建的，旋屏不重建窗口，
+     * 宽度就一直是横屏那个值，比竖屏屏宽还大。现在注册了配置变化回调，
+     * 每次旋屏都 {@code updateViewLayout} 重算。
+     */
+    @Test
+    public void banner_relayoutAfterRotation_staysInsideScreen() {
+        grantOverlay(true);
+        android.util.DisplayMetrics dm = ctx().getResources().getDisplayMetrics();
+        int portraitW = dm.widthPixels, portraitH = dm.heightPixels;
+        int side = Math.round(FloatingAlarm.SIDE_MARGIN_DP * dm.density);
+        try {
+            dm.widthPixels = portraitH;
+            dm.heightPixels = portraitW;
+            assertTrue(FloatingAlarm.show(ctx(), 1, "起床", LocalDate.now().toString(), 5, true));
+            WindowManager.LayoutParams lp = FloatingAlarm.paramsForTest();
+            assertEquals("横屏下等长于竖屏", portraitW - side * 2, lp.width);
+
+            // 转回竖屏：配置变化回调（单测里直接驱动同一入口）应把宽度重算到位
+            dm.widthPixels = portraitW;
+            dm.heightPixels = portraitH;
+            FloatingAlarm.relayout();
+            assertEquals("竖屏下仍是短边 - 边距", portraitW - side * 2, lp.width);
+            assertTrue("宽度绝不能超过当前屏宽", lp.width <= portraitW);
+        } finally {
+            dm.widthPixels = portraitW;
+            dm.heightPixels = portraitH;
+        }
     }
 
     /**

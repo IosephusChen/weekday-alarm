@@ -147,7 +147,7 @@ public final class Alarm {
                 : delta == -2 ? "前天"
                 : null;
         String md = d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
-        return rel == null ? md + " " + weekLabel(d) : rel + " · " + md;
+        return rel == null ? md + " " + TimeText.week(d) : rel + " · " + md;
     }
 
     /**
@@ -159,7 +159,7 @@ public final class Alarm {
     public String onceDayText() {
         LocalDate d = parseOnceDate();
         return d == null ? null
-                : d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekLabel(d);
+                : d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + TimeText.week(d);
     }
 
     /** onceDate 解析失败返回 null，绝不抛——渲染路径上抛异常会直接崩首页。 */
@@ -225,11 +225,6 @@ public final class Alarm {
         return true;
     }
 
-    private static String weekLabel(LocalDate d) {
-        String[] names = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
-        return names[d.getDayOfWeek().getValue() - 1];
-    }
-
     /** 该闹钟在指定日期是否应该响（按大小周判断，兼容旧调用）。 */
     public boolean appliesTo(LocalDate d, LocalDate anchor, boolean smallRestSat) {
         return appliesTo(d, anchor, smallRestSat, false);
@@ -277,7 +272,7 @@ public final class Alarm {
     }
 
     public String timeText() {
-        return String.format("%02d:%02d", hour, minute);
+        return TimeText.clock(hour, minute);
     }
 
     // ================= JSON 序列化 =================

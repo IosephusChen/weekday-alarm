@@ -17,7 +17,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -567,8 +566,7 @@ public final class ScheduleManager {
             LocalDateTime when = (LocalDateTime) c[1];
             // post() 内部会再确认「这个闹钟还在系统里登记着」，已停用的不会因此复活
             PreNoticeReceiver.post(ctx, a.id, a.label, when.toLocalDate(), preNotice,
-                    String.format(Locale.US, "%02d:%02d",
-                            when.getHour(), when.getMinute()));
+                    TimeText.clock(when.getHour(), when.getMinute()));
         }
         Prefs.setScheduledDates(ctx, scheduled);
         Prefs.pruneSnoozeCounts(ctx);   // 顺手清掉昨天及以前的稍后提醒计数

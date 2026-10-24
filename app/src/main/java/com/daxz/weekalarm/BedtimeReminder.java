@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 睡前提醒（v1.20）：「明天要早起吗」。
@@ -128,7 +127,7 @@ public final class BedtimeReminder {
             text = day + "不用早起，闹钟不会响，放心睡";
         } else if (hasAlarm) {
             title = day + "要上班";
-            text = morning + " " + String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
+            text = morning + " " + TimeText.clock(hour, minute)
                     + " " + label + " 会响，早点睡";
         } else {
             title = day + "要上班";
@@ -326,7 +325,6 @@ public final class BedtimeReminder {
     /** 「22:00」；关闭时返回「关闭」。 */
     public static String timeText(int minutesOfDay) {
         if (minutesOfDay == Prefs.BEDTIME_OFF) return "关闭";
-        return String.format(Locale.getDefault(), "%02d:%02d",
-                minutesOfDay / 60, minutesOfDay % 60);
+        return TimeText.clock(minutesOfDay / 60, minutesOfDay % 60);
     }
 }

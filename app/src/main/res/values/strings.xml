@@ -6,4 +6,110 @@
     <string name="widget_next_alarm_desc">下一个闹钟 + 本周班表：什么时候响、这周哪天上班，一张卡看完</string>
     <string name="widget_month_schedule_desc">本月班表 · 完整（4×4）：整月哪天上班、哪天休息，顶部带下一个闹钟</string>
     <string name="widget_month_minimal_desc">本月班表 · 极简（4×3）：整月班表，不要请假按钮、格子更宽松</string>
+
+    <!-- ===== 设置页文案（v1.60.0 从布局内联迁入）===== -->
+    <string name="settings_back">‹ 返回</string>
+    <string name="settings_page_title">设置</string>
+    <string name="settings_section_alarm">闹钟</string>
+    <string name="settings_volume_label">闹钟音量</string>
+    <string name="settings_volume_default">80%</string>
+    <string name="settings_ringtone_title">铃声</string>
+    <string name="settings_ringtone_default">系统默认</string>
+    <string name="settings_more_ring_title">更多响铃设置</string>
+    <string name="settings_section_schedule">排班与节假日</string>
+    <string name="settings_week_mode_title">周休制度</string>
+    <string name="settings_week_mode_default">大小周</string>
+    <string name="settings_holiday_data_title">节假日数据</string>
+    <string name="settings_holiday_data_default">—</string>
+    <string name="settings_section_remind">提醒</string>
+    <string name="settings_bedtime_title">睡前提醒</string>
+    <string name="settings_bedtime_default">关闭</string>
+    <string name="settings_pre_notice_title">响铃前提醒</string>
+    <string name="settings_pre_notice_summary">响铃前先在通知栏提醒一次</string>
+    <string name="settings_section_other">其他</string>
+    <string name="settings_more_title">更多设置</string>
+    <string name="settings_more_summary">排班 · 小组件 · 检查 · 备份</string>
+    <string name="more_back">‹ 返回</string>
+    <string name="more_page_title">更多</string>
+    <string name="more_section_ring">响铃</string>
+    <string name="more_ring_duration_title">响铃时长</string>
+    <string name="more_ring_duration_default">不限</string>
+    <string name="more_fade_in_title">铃声渐响</string>
+    <string name="more_fade_in_summary">从静音逐渐变大，约 30 秒到设定音量</string>
+    <string name="more_vibrate_title">响铃时震动</string>
+    <string name="more_vibrate_summary">配合音量调到 0 可实现「静音仅震动」</string>
+    <string name="more_snooze_title">稍后提醒</string>
+    <string name="more_snooze_default">5 分钟 × 3 次</string>
+    <string name="more_keys_title">按键设置</string>
+    <string name="more_keys_default">音量键 · 无\n电源键 · 无</string>
+    <string name="more_section_all">排班与显示</string>
+    <string name="more_week_start_title">一周开始日</string>
+    <string name="more_week_start_default">周一</string>
+    <string name="more_horizon_title">闹钟排到多远</string>
+    <string name="more_horizon_default">未来 90 天</string>
+    <string name="more_calendar_content_title">日历显示内容</string>
+    <string name="more_calendar_content_default">都不显示</string>
+    <string name="more_section_check">检查与帮助</string>
+    <string name="more_test_ring_title">测试响铃</string>
+    <string name="more_test_ring_summary">立刻响一次，确认音量与铃声</string>
+    <string name="more_run_status_title">运行状态</string>
+    <string name="more_run_status_default">—</string>
+    <string name="more_onboard_title">新手引导与权限</string>
+    <string name="more_onboard_action">重看</string>
+    <string name="more_help_title">使用说明</string>
+    <string name="more_help_action">查看</string>
+    <string name="more_changelog_title">更新日志</string>
+    <string name="more_changelog_version_placeholder">v—</string>
+    <string name="more_section_widget">桌面小组件</string>
+    <string name="more_pin_widget_title">添加到桌面</string>
+    <string name="more_pin_widget_summary">选一个放上桌面；部分桌面要手动加，会教你路径</string>
+    <string name="more_section_backup">备份与恢复</string>
+    <string name="more_export_title">导出配置</string>
+    <string name="more_export_summary">把闹钟、排班、请假/加班标记、音量铃声存成一个文件</string>
+    <string name="more_import_title">导入配置</string>
+    <string name="more_import_summary">选择之前导出的文件恢复设置（会覆盖当前配置）</string>
+
+    <!-- ===== 设置页对话框与提示（v1.60.0 从 Java 字面量迁入）===== -->
+    <string name="toast_export_done">配置已导出，换手机时导入这个文件即可</string>
+    <string name="toast_no_file_manager_export">没有可用的文件管理器，无法导出</string>
+    <string name="toast_no_file_manager_import">没有可用的文件管理器，无法导入</string>
+    <string name="dialog_export_failed_title">导出失败</string>
+    <string name="dialog_import_done_title">导入完成</string>
+    <string name="import_done_tail">已按新配置重新排程，返回主界面即可看到结果。</string>
+    <string name="holiday_checking">正在检查…</string>
+    <string name="dialog_holiday_check_failed_title">在线检查未成功</string>
+    <string name="dialog_run_status_title">运行状态</string>
+    <string name="pin_confirm_title">看桌面有没有弹出确认框</string>
+    <string name="pin_confirm_message">弹了就直接点「添加」，组件放上桌面就完成。
+
+没有弹出的话，按下面手动加：
+长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。</string>
+    <string name="pin_manual_title">需要手动添加</string>
+    <string name="pin_manual_message">你的桌面（澎湃 / MIUI）暂时不支持从 App 里一键添加，两步就好：
+
+长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」，选一个放上去。</string>
+    <string name="pin_manual_title_plain">请手动添加</string>
+    <string name="pin_manual_message_plain">长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。</string>
+
+    <!-- ===== 设置页对话框布局（v1.60.0 从内联迁入）===== -->
+    <string name="dialog_horizon_title">提醒范围</string>
+    <string name="dialog_horizon_message">节假日安排目前内置到 2026 年底。选择更长范围时，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖），2027 年安排公布后 App 更新数据即可自动生效，无需改设置。</string>
+    <string name="dialog_horizon_90">90 天（默认）</string>
+    <string name="dialog_horizon_180">180 天</string>
+    <string name="dialog_horizon_365">365 天（一整年）</string>
+    <string name="dialog_calendar_content_title">日历显示内容</string>
+    <string name="dialog_calendar_content_message">日历格子里除了「班 / 休」，还可以显示这些名字。挑想看的，不影响闹钟排班。</string>
+    <string name="dialog_calendar_content_lunar">农历节日</string>
+    <string name="dialog_calendar_content_solar">二十四节气</string>
+    <string name="dialog_calendar_content_christian">基督教节日</string>
+    <string name="dialog_bedtime_title">睡前提醒</string>
+    <string name="dialog_bedtime_message">到点发一条安静的通知，告诉你明天要不要早起、闹钟几点响。通知里的「明天请假」可一键把明天标为请假并取消明早闹钟。</string>
+    <string name="dialog_bedtime_off">关闭</string>
+    <string name="dialog_bedtime_2130">21:30</string>
+    <string name="dialog_bedtime_2200">22:00</string>
+    <string name="dialog_bedtime_2230">22:30</string>
+    <string name="dialog_bedtime_2300">23:00</string>
+    <string name="dialog_bedtime_custom">其他时间…</string>
+    <string name="dialog_bedtime_workday_only">仅在明天上班时提醒</string>
+    <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知，免得打扰</string>
 </resources>

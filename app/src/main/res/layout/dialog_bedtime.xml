@@ -12,7 +12,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="睡前提醒"
+        android:text="@string/dialog_bedtime_title"
         android:textColor="@color/ink"
         android:textSize="17sp"
         android:textStyle="bold" />
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:lineSpacingMultiplier="1.2"
-        android:text="到点发一条安静的通知，告诉你明天要不要早起、闹钟几点响。通知里的「明天请假」可一键把明天标为请假并取消明早闹钟。"
+        android:text="@string/dialog_bedtime_message"
         android:textColor="@color/sub"
         android:textSize="12sp" />
 
@@ -39,7 +39,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="关闭" />
+            android:text="@string/dialog_bedtime_off" />
 
         <RadioButton
             android:id="@+id/rb_bed_2130"
@@ -47,7 +47,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="21:30" />
+            android:text="@string/dialog_bedtime_2130" />
 
         <RadioButton
             android:id="@+id/rb_bed_2200"
@@ -55,7 +55,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="22:00" />
+            android:text="@string/dialog_bedtime_2200" />
 
         <RadioButton
             android:id="@+id/rb_bed_2230"
@@ -63,7 +63,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="22:30" />
+            android:text="@string/dialog_bedtime_2230" />
 
         <RadioButton
             android:id="@+id/rb_bed_2300"
@@ -71,7 +71,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="23:00" />
+            android:text="@string/dialog_bedtime_2300" />
 
         <RadioButton
             android:id="@+id/rb_bed_custom"
@@ -79,6 +79,28 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="44dp"
-            android:text="其他时间…" />
+            android:text="@string/dialog_bedtime_custom" />
     </RadioGroup>
+
+    <!-- v1.60.0：「仅在明天上班时提醒」从更多设置里的独立开关行并入本对话框——
+         它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
+         勾选即时生效；睡前提醒关着时压暗禁用（由代码控制）。 -->
+    <CheckBox
+        android:id="@+id/cb_bedtime_workday"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:minHeight="44dp"
+        android:text="@string/dialog_bedtime_workday_only"
+        android:textColor="@color/ink"
+        android:textSize="15sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="2dp"
+        android:text="@string/dialog_bedtime_workday_hint"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
 </LinearLayout>

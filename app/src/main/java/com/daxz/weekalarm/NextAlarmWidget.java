@@ -9,8 +9,6 @@ import android.content.Intent;
 import android.widget.RemoteViews;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * 桌面小组件（v1.19）：在桌面一眼看到「下一个闹钟」。
@@ -20,9 +18,6 @@ import java.util.Locale;
  */
 public class NextAlarmWidget extends AppWidgetProvider {
 
-    private static final DateTimeFormatter FMT_MONTH_DAY =
-            DateTimeFormatter.ofPattern("M月d日");
-    private static final String[] DOW = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
 
     /** 小组件展示的数据模型（纯数据，便于单元测试，不经过 RemoteViews）。 */
     static class WidgetModel {
@@ -52,9 +47,8 @@ public class NextAlarmWidget extends AppWidgetProvider {
                     "未来 " + Prefs.getHorizonDays(ctx) + " 天没有可排的闹钟");
         }
         LocalDateTime when = next.when;
-        String time = when.format(FMT_MONTH_DAY) + " "
-                + DOW[when.getDayOfWeek().getValue() - 1] + " "
-                + String.format(Locale.getDefault(), "%02d:%02d", when.getHour(), when.getMinute());
+        String time = TimeText.monthDayWeek(when.toLocalDate()) + " "
+                + TimeText.clock(when.getHour(), when.getMinute());
         String sub = next.label + " · 未来 " + Prefs.getHorizonDays(ctx) + " 天共 " + count + " 个提醒";
         return new WidgetModel(time, sub);
     }

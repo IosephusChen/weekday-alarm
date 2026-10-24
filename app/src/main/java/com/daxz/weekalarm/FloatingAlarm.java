@@ -1,7 +1,9 @@
 package com.daxz.weekalarm;
 
+import android.content.ComponentCallbacks2;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Build;
@@ -12,12 +14,14 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * 响铃时的贴顶横幅（v1.40.0 起是居中小卡片，v1.41.0 改成系统闹钟那种横幅）。
@@ -53,7 +57,7 @@ import java.time.format.DateTimeFormatter;
 final class FloatingAlarm {
 
     /** 横幅左右各留多少：8dp，和系统通知横幅一致，再宽就顶到屏幕边缘了。 */
-    private static final int SIDE_MARGIN_DP = 8;
+    static final int SIDE_MARGIN_DP = 8;
     /**
      * 窗口顶边与状态栏下沿的距离：0dp，即紧贴状态栏。
      *
@@ -73,6 +77,16 @@ final class FloatingAlarm {
      *
      * <p>v1.47.4 改回「带标志 + y = 状态栏高度」：标志只把原点挪回屏幕顶，
      * 落点仍是紧贴状态栏下沿，一个像素都不重叠。两条路（系统 clamp / 不 clamp）都指向同一位置。
+     *
+     * <p><b>v1.60.0 又改了两处，都是用户横屏截图反馈</b>：① 宽度从前是
+     * {@code 屏宽 - 16dp}，横屏下短边不变、长边翻倍，横幅被拉成竖屏的两倍长
+     * （「太长，没必要，做成竖屏那样的长度就行」）——现在按<b>屏幕短边</b>算，
+     * 两个朝向等长，旋屏时宽度根本不变；② y 从前固定「状态栏高度」，
+     * 横屏看视频时状态栏是隐藏的，那 160px 黑边死区让横幅看起来漂在半空
+     * （「太靠下了，要靠到最上方」）——现在 y 由<b>可见系统栏 inset</b> 驱动，
+     * 状态栏隐藏时 inset 为 0，横幅贴屏幕最顶。同时注册配置变化回调
+     * （{@link #relayout()}）：旋屏不再重建窗口，不重算就会带着旧朝向的尺寸，
+     * 横屏响铃直接转竖屏会把右侧裁掉一截。
      */
     private static final int TOP_GAP_DP = 0;
 
@@ -91,8 +105,31 @@ final class FloatingAlarm {
     private static WindowManager windowManager;
     /** 只给单测：验「贴顶 + 通栏」这类只能从 LayoutParams 看出来的东西。 */
     private static WindowManager.LayoutParams lastParams;
+    /**
+     * 最近一次从窗口 inset 读到的「可见系统栏」顶高，null = 还没收到过。
+     *
+     * <p>旋屏时 inset 会重新派发，但重算窗口参数的那一刻可能还没到，
+     * 所以先把最近的值存着，配置变化时先按它落位，等新 inset 到了再校正。
+     */
+    private static Integer lastInsetTop;
+    /** 配置变化（旋屏 / 字体缩放 / 分屏）时重算窗口几何。见 {@link #relayout()}。 */
+    private static final ComponentCallbacks2 CONFIG_CALLBACKS = new ComponentCallbacks2() {
+        @Override
+        public void onConfigurationChanged(@NonNull Configuration newConfig) {
+            relayout();
+        }
 
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+        @Override
+        public void onTrimMemory(int level) {
+        }
+
+        @Override
+        public void onLowMemory() {
+        }
+    };
+    /** registerComponentCallbacks 用的 application context，hide 时原样注销。 */
+    private static Context appCtx;
+
 
     // 短提示用自己的一组字段，不和横幅共用——点「稍后提醒」时横幅正在退场，
     // 共用字段会让 hide() 把刚挂上的提示一起清掉
@@ -160,7 +197,7 @@ final class FloatingAlarm {
             // 大号时刻是这张卡的主信息：用户被叫醒第一眼确认的是「几点」，
             // 闹钟名只用来区分「这是哪一个」
             time.setText(timeText == null || timeText.isEmpty()
-                    ? LocalTime.now().format(TIME_FMT) : timeText);
+                    ? TimeText.clock(LocalTime.now()) : timeText);
             name.setText(label == null || label.isEmpty() ? "闹钟" : label);
 
             // 圆钮没有文字，无障碍描述与长按提示都得自己给，否则读屏只会念「按钮」
@@ -208,12 +245,12 @@ final class FloatingAlarm {
                 }
             });
 
-            DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
-            int side = dp(ctx, SIDE_MARGIN_DP);
-
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                    // 通栏：屏幕宽减去左右各 8dp。写 WRAP_CONTENT 就退回成 300dp 的小卡片
-                    Math.max(dp(ctx, 280), dm.widthPixels - side * 2),
+                    // 宽度占位，真正的值由 applyGeometry 按屏幕短边算：
+                    // 横屏时短边就是竖屏屏宽，横幅长度两个朝向一致，
+                    // 不会拉成通栏（v1.60.0 前直接用 widthPixels，横屏横幅是竖屏的两倍长，
+                    // 用户原话「太长，没必要，做成竖屏那样的长度就行」）
+                    WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     // 不抢焦点：来电话、打字、返回键都照常走下面的应用。
@@ -225,11 +262,22 @@ final class FloatingAlarm {
                             | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            // 紧贴状态栏下沿。写成「状态栏高度」而不是某个固定 dp：
-            // 挖孔屏的状态栏 40~55dp 都有，固定值在一台上刚好、在另一台上就压住了
-            lp.y = statusBarHeight(ctx) + dp(ctx, TOP_GAP_DP);
+            applyGeometry(ctx, lp);
             lp.windowAnimations = R.style.FloatWindowAnim;
             // 不加 FLAG_BLUR_BEHIND：在 HyperOS 上会糊掉整屏，见类注释
+
+            // v1.60.0：y 改由「可见系统栏」inset 驱动。状态栏被隐藏时（横屏看视频、
+            // 游戏全屏）inset 为 0，横幅贴到屏幕最顶——那 160px 黑边是死区，
+            // 排在过去用户看到的就是「漂在半空」。状态栏可见时 inset 就是它的高度，
+            // 行为和从前「紧贴状态栏下沿」一致。
+            v.setOnApplyWindowInsetsListener((vv, insets) -> {
+                int top = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                        ? insets.getInsets(WindowInsets.Type.systemBars()).top
+                        : insets.getSystemWindowInsetTop();
+                applyTopInset(vv, top);
+                // 不消费：卡片里的时刻、按钮还要照常排版
+                return insets;
+            });
 
             WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
             if (wm == null) return false;
@@ -237,6 +285,13 @@ final class FloatingAlarm {
             windowManager = wm;
             view = v;
             lastParams = lp;
+            appCtx = ctx.getApplicationContext();
+            if (appCtx != null) {
+                // 旋屏时横幅窗口不会自动重算尺寸：v1.60.0 前横屏响铃直接转竖屏，
+                // 窗口宽度还是横屏的像素值，比竖屏屏宽还大，右侧被裁掉一截。
+                // 注册后每次配置变化都重算，旋转、分屏、字体缩放都覆盖。
+                appCtx.registerComponentCallbacks(CONFIG_CALLBACKS);
+            }
             return true;
         } catch (Exception e) {
             // BadTokenException / 权限被回收：清理干净，让调用方退回整屏
@@ -254,6 +309,14 @@ final class FloatingAlarm {
      * {@code FloatWindowAnim} 里的退场动画跑完，后者是「啪」地消失。
      */
     static void hide() {
+        if (appCtx != null) {
+            try {
+                appCtx.unregisterComponentCallbacks(CONFIG_CALLBACKS);
+            } catch (Exception ignore) {
+            }
+            appCtx = null;
+        }
+        lastInsetTop = null;
         if (view == null || windowManager == null) {
             view = null;
             windowManager = null;
@@ -266,6 +329,73 @@ final class FloatingAlarm {
         view = null;
         windowManager = null;
         lastParams = null;
+    }
+
+    /**
+     * 按当前屏幕几何重算横幅的宽和高位（v1.60.0）。
+     *
+     * <p><b>宽度按短边算</b>：{@code min(宽, 高) - 左右边距}。竖屏时短边就是屏宽，
+     * 和从前「通栏」一致；横屏时短边仍是竖屏屏宽，所以横幅长度两个朝向相同——
+     * 这正是用户要的「做成竖屏那样的长度」。副作用是旋屏时宽度根本不变，
+     * 「横屏响铃转竖屏后超出画面」从此不可能发生。
+     *
+     * <p><b>y 用最近一次可见系统栏 inset</b>（{@link #lastInsetTop}）：没收到过
+     * inset 时退回状态栏高度。为什么不直接读 inset：inset 是窗口挂上之后才派发的，
+     * addView 的那一刻只能先用状态栏高度占位。
+     */
+    private static void applyGeometry(Context ctx, WindowManager.LayoutParams lp) {
+        DisplayMetrics dm = ctx.getResources().getDisplayMetrics();
+        int side = dp(ctx, SIDE_MARGIN_DP);
+        // 280dp 下限：小窗 / 分屏时短边可能很窄，别把横幅压成一条线
+        lp.width = Math.max(dp(ctx, 280),
+                Math.min(dm.widthPixels, dm.heightPixels) - side * 2);
+        int top = lastInsetTop != null ? lastInsetTop : statusBarHeight(ctx);
+        lp.y = top + dp(ctx, TOP_GAP_DP);
+    }
+
+    /**
+     * 收到窗口 inset 后校正 y（v1.60.0）。
+     *
+     * <p>只看<b>可见</b>的系统栏（{@code getInsets(systemBars())} 尊重 visibility，
+     * 不是 {@code getInsetsIgnoringVisibility}）：横屏看视频时状态栏被隐藏，
+     * inset 为 0，横幅贴屏幕最顶；竖屏状态栏可见，inset 是它的高度，
+     * 横幅紧排其下——和 v1.59 及以前用户已认可的竖屏效果一致。
+     */
+    private static void applyTopInset(View v, int insetTop) {
+        WindowManager.LayoutParams lp = lastParams;
+        WindowManager wm = windowManager;
+        if (v == null || lp == null || wm == null) return;
+        lastInsetTop = insetTop;
+        int y = insetTop + dp(v.getContext(), TOP_GAP_DP);
+        if (lp.y == y) return;
+        lp.y = y;
+        try {
+            wm.updateViewLayout(v, lp);
+        } catch (Exception ignore) {
+            // 窗口刚被系统回收：下一帧 hide() 会收拾干净
+        }
+    }
+
+    /**
+     * 配置变化（旋屏 / 分屏 / 字体缩放）后重算窗口几何（v1.60.0）。
+     *
+     * <p>挂在 application context 上的 {@link #CONFIG_CALLBACKS} 在每次配置变化时
+     * 调到这里。旋屏不重建横幅窗口，不重算就会带着旧朝向的尺寸：
+     * v1.60.0 前横屏响铃直接转竖屏，宽度还是横屏的 {@code widthPixels}，
+     * 比竖屏屏宽还大，右侧整块被裁掉（用户截图反馈的第三种情况）。
+     *
+     * <p>包级可见只为单测能直接驱动；生产路径只有配置变化一条。
+     */
+    static void relayout() {
+        View v = view;
+        WindowManager wm = windowManager;
+        WindowManager.LayoutParams lp = lastParams;
+        if (v == null || wm == null || lp == null) return;
+        try {
+            applyGeometry(v.getContext(), lp);
+            wm.updateViewLayout(v, lp);
+        } catch (Exception ignore) {
+        }
     }
 
     /** 只给单测：短提示当前挂着的 View。 */

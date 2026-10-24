@@ -17,7 +17,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 
 /** 全屏闹钟页：锁屏上弹出，停止 / 小睡；支持音量键 / 电源键自定义作用（v1.16）。 */
 public class AlarmActivity extends AppCompatActivity {
@@ -179,19 +178,14 @@ public class AlarmActivity extends AppCompatActivity {
                 : "滑到底才会停 · " + minutes + " 分钟后自动停止";
     }
 
-    private static String weekLabel(LocalDate d) {
-        String[] names = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
-        return names[d.getDayOfWeek().getValue() - 1];
-    }
-
     /** 日期行：「10月21日 星期三」——与澎湃一致，月日不补零。 */
     static String dateLine(LocalDate d) {
-        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + weekLabel(d);
+        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日 " + TimeText.week(d);
     }
 
     /** 大字号时刻：24 小时制、只到分钟。 */
     static String clockText() {
-        return LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+        return TimeText.clock(LocalTime.now());
     }
 
     private void refreshClock() {

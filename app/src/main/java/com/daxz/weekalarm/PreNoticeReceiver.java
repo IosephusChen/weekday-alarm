@@ -18,7 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 /**
  * 响铃前的通知栏提醒（v1.17）。
@@ -235,14 +234,11 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      */
     static int actualMinutes(LocalDate d, String timeText, int fallback) {
         if (d == null || timeText == null || timeText.isEmpty()) return fallback;
-        try {
-            LocalTime t = LocalTime.parse(timeText, DateTimeFormatter.ofPattern("HH:mm"));
-            long sec = Duration.between(LocalDateTime.now(), d.atTime(t)).getSeconds();
-            if (sec <= 0) return 0;
-            return (int) Math.max(1, (sec + 59) / 60);
-        } catch (Exception e) {
-            return fallback;
-        }
+        LocalTime t = TimeText.parseClock(timeText);
+        if (t == null) return fallback;
+        long sec = Duration.between(LocalDateTime.now(), d.atTime(t)).getSeconds();
+        if (sec <= 0) return 0;
+        return (int) Math.max(1, (sec + 59) / 60);
     }
 
     /**

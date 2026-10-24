@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 添加 / 编辑闹钟的对话框（v1.36.0 从 {@code MainActivity} 拆出，纯搬运）。
@@ -94,13 +93,13 @@ final class AlarmEditor {
         if (target == null) {
             btnDelete.setVisibility(View.GONE);
         }
-        tvTime.setText(String.format(Locale.getDefault(), "%02d:%02d", hour[0], minute[0]));
+        tvTime.setText(TimeText.clock(hour[0], minute[0]));
         // 自绘「时 / 分」双列滚轮选择器：澎湃 OS 会无视框架 TimePicker 的 spinner
         // 主题设置、强制渲染成表盘拨轮，因此不再依赖 TimePickerDialog
         tvTime.setOnClickListener(v -> TimeWheelDialog.show(activity, hour[0], minute[0], (h, m) -> {
             hour[0] = h;
             minute[0] = m;
-            tvTime.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m));
+            tvTime.setText(TimeText.clock(h, m));
         }));
 
         // 日期行：勾上「仅一次」才出现

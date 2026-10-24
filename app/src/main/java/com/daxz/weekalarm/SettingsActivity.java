@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.SeekBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -18,7 +19,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,11 +39,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView tvHorizon, tvHolidayData, tvVolume, tvBedtime, tvWeekStart;
     /** 周休制度三行（v1.46.3 从首页「排班」卡搬来）。 */
     private TextView tvWeekMode;
-    private SwitchCompat swFadeIn, swVibrate, swLunar, swBedtimeWorkday, swPreNotice;
-    /** 本月班表是否显示闹钟（v1.51.1，三个整月变体共用）。 */
-    /** 二十四节气开关（v1.51.2）。 */
-    private SwitchCompat swSolarTerms;
-    private SwitchCompat swChristian;
+    private SwitchCompat swFadeIn, swVibrate, swPreNotice;
     /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
     /** 主页睡前提醒开关（v1.49.0）。 */
@@ -64,11 +60,11 @@ public class SettingsActivity extends AppCompatActivity {
                             if (os == null) throw new java.io.IOException("无法写入该位置");
                             os.write(ConfigBackup.exportJson(this).getBytes("UTF-8"));
                             os.flush();
-                            Toast.makeText(this, "配置已导出，换手机时导入这个文件即可",
+                            Toast.makeText(this, getString(R.string.toast_export_done),
                                     Toast.LENGTH_LONG).show();
                         } catch (Exception e) {
                             new RoundedDialog.Builder(this)
-                                    .setTitle("导出失败")
+                                    .setTitle(getString(R.string.dialog_export_failed_title))
                                     .setMessage(String.valueOf(e.getMessage()))
                                     .setPositiveButton("知道了", null)
                                     .show();
@@ -84,9 +80,9 @@ public class SettingsActivity extends AppCompatActivity {
             BackupImporter.register(this, result -> {
                 refreshAll();
                 new RoundedDialog.Builder(this)
-                        .setTitle("导入完成")
+                        .setTitle(getString(R.string.dialog_import_done_title))
                         .setMessage(result.message
-                                + "。\n\n已按新配置重新排程，返回主界面即可看到结果。")
+                                + "。\n\n" + getString(R.string.import_done_tail))
                         .setPositiveButton("知道了", null)
                         .show();
             }, false);
@@ -134,10 +130,6 @@ public class SettingsActivity extends AppCompatActivity {
         tvBedtime = findViewById(R.id.tv_bedtime);
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
-        swLunar = findViewById(R.id.switch_lunar);
-        swSolarTerms = findViewById(R.id.switch_solar_terms);
-        swChristian = findViewById(R.id.switch_christian);
-        swBedtimeWorkday = findViewById(R.id.switch_bedtime_workday);
         swBedtime = findViewById(R.id.switch_bedtime);
         sbVolume = findViewById(R.id.seek_volume_embed);
 
@@ -199,32 +191,10 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
         }
-        bind(R.id.row_bedtime_workday, v -> { if (swBedtimeWorkday != null) swBedtimeWorkday.toggle(); });
-        if (swBedtimeWorkday != null) swBedtimeWorkday.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;
-            Prefs.setBedtimeWorkdayOnly(this, checked);
-            // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
-            BedtimeReminder.reschedule(this);
-        });
-        // v1.20：农历节日开关（只影响日历显示，不涉及排程）
-        bind(R.id.row_lunar, v -> { if (swLunar != null) swLunar.toggle(); });
-        if (swLunar != null) swLunar.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;
-            Prefs.setLunarFestivals(this, checked);
-        });
-        // v1.51.2：二十四节气开关（只影响日历显示）
-        bind(R.id.row_solar_terms, v -> { if (swSolarTerms != null) swSolarTerms.toggle(); });
-        if (swSolarTerms != null) swSolarTerms.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;
-            Prefs.setSolarTerms(this, checked);
-            Widgets.updateAll(this);   // 三个整月组件都会用到，立刻刷一次
-        });
-        // v1.21：基督教节日开关（同样只影响日历显示）
-        bind(R.id.row_christian, v -> { if (swChristian != null) swChristian.toggle(); });
-        if (swChristian != null) swChristian.setOnCheckedChangeListener((v, checked) -> {
-            if (swAttaching) return;
-            Prefs.setChristianFestivals(this, checked);
-        });
+        // v1.60.0：农历节日 / 二十四节气 / 基督教节日三个开关合并成一行多选。
+        // 它们都是「日历里显不显示某类名字」，同一个决策拆成三个开关，
+        // 设置页平白多两行。Prefs 三个键不动（备份格式不变），只换入口。
+        bind(R.id.row_calendar_content, v -> showCalendarContentDialog());
         // v1.20：配置导出 / 导入
         bind(R.id.row_export, v -> exportConfig());
         bind(R.id.row_import, v -> importConfig());
@@ -294,13 +264,10 @@ public class SettingsActivity extends AppCompatActivity {
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
-        if (swLunar != null) swLunar.setChecked(Prefs.isLunarFestivals(this));
-        if (swSolarTerms != null) swSolarTerms.setChecked(Prefs.isSolarTerms(this));
-        if (swChristian != null) swChristian.setChecked(Prefs.isChristianFestivals(this));
-        if (swBedtimeWorkday != null) swBedtimeWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
         if (swPreNotice != null) swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
         if (swBedtime != null) swBedtime.setChecked(Prefs.getBedtimeMinutes(this) != Prefs.BEDTIME_OFF);
         if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this));
+        refreshCalendarContentValue();
         swAttaching = false;
     }
 
@@ -461,7 +428,7 @@ public class SettingsActivity extends AppCompatActivity {
         String[] options = {"周一", "周日"};
         int checked = Prefs.isSundayFirst(this) ? 1 : 0;
         new RoundedDialog.Builder(this)
-                .setTitle("一周开始日")
+                .setTitle(getString(R.string.more_week_start_title))
                 .setSingleChoiceItems(options, checked, (dialog, which) -> {
                     dialog.dismiss();
                     Prefs.setWeekStart(this, which == 1
@@ -518,6 +485,65 @@ public class SettingsActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // ================= 日历显示内容（v1.60.0 三开关合并）=================
+
+    /**
+     * 「日历显示内容」多选对话框：农历节日 / 二十四节气 / 基督教节日（v1.60.0）。
+     *
+     * <p>v1.60.0 前这是设置页上三个独立的开关行。它们都是「日历格子里显不显示
+     * 某类名字」，同一个决策拆成三行，用户要逐行理解、逐行开关，设置页还平白
+     * 多两行。合并成一行多选：点行进对话框，勾完「完成」一次落盘。
+     *
+     * <p>Prefs 仍是三个键（{@code lunar_festivals / solar_terms / christian_festivals}）——
+     * 备份格式不变，ConfigBackup 与 widget 渲染一行代码都不用动，只是换入口。
+     *
+     * <p>用自绘布局而不是 {@code setMultiChoiceItems}：同 dialog_horizon 的理由，
+     * MIUI 主题下系统列表渲染有问题，自绘三行复选框必然可见。
+     *
+     * <p>节气变化时要 {@link Widgets#updateAll}——三个整月组件都画节气；
+     * 另两个只影响 App 内日历，不碰小部件。
+     */
+    private void showCalendarContentDialog() {
+        View view = getLayoutInflater().inflate(R.layout.dialog_calendar_content, null);
+        CheckBox cbLunar = view.findViewById(R.id.cb_lunar);
+        CheckBox cbSolar = view.findViewById(R.id.cb_solar_terms);
+        CheckBox cbChristian = view.findViewById(R.id.cb_christian);
+        cbLunar.setChecked(Prefs.isLunarFestivals(this));
+        cbSolar.setChecked(Prefs.isSolarTerms(this));
+        cbChristian.setChecked(Prefs.isChristianFestivals(this));
+
+        AlertDialog dialog = new RoundedDialog.Builder(this)
+                .setView(view)
+                .setPositiveButton("完成", (d, w) -> {
+                    boolean solarChanged = cbSolar.isChecked() != Prefs.isSolarTerms(this);
+                    Prefs.setLunarFestivals(this, cbLunar.isChecked());
+                    Prefs.setSolarTerms(this, cbSolar.isChecked());
+                    Prefs.setChristianFestivals(this, cbChristian.isChecked());
+                    refreshCalendarContentValue();
+                    if (solarChanged) Widgets.updateAll(this);
+                })
+                .setNegativeButton("取消", null)
+                .create();
+        dialog.show();
+    }
+
+    /** 行右侧的值：勾了什么就列什么，全没勾写「都不显示」（v1.60.0）。 */
+    private void refreshCalendarContentValue() {
+        TextView tv = findViewById(R.id.tv_calendar_content);
+        if (tv == null) return;
+        StringBuilder sb = new StringBuilder();
+        if (Prefs.isLunarFestivals(this)) sb.append("农历节日");
+        if (Prefs.isSolarTerms(this)) {
+            if (sb.length() > 0) sb.append("、");
+            sb.append("二十四节气");
+        }
+        if (Prefs.isChristianFestivals(this)) {
+            if (sb.length() > 0) sb.append("、");
+            sb.append("基督教节日");
+        }
+        tv.setText(sb.length() == 0 ? "都不显示" : sb.toString());
+    }
+
     // ================= 节假日数据（v1.19.7 由主界面迁入）=================
 
     /** 节假日数据行摘要：内置覆盖范围 / 远程版本。 */
@@ -533,7 +559,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     /** 手动检查节假日数据更新（点击「节假日数据」行）。 */
     private void checkHolidayUpdate() {
-        tvHolidayData.setText("正在检查…");
+        tvHolidayData.setText(getString(R.string.holiday_checking));
         findViewById(R.id.row_holiday_data).setEnabled(false);
         HolidayUpdater.check(this, true, result -> {
             findViewById(R.id.row_holiday_data).setEnabled(true);
@@ -566,7 +592,7 @@ public class SettingsActivity extends AppCompatActivity {
         String reason = HolidayUpdater.lastFailureReason();
         if (reason == null || reason.isEmpty()) reason = "网络请求未成功";
         new RoundedDialog.Builder(this)
-                .setTitle("在线检查未成功")
+                .setTitle(getString(R.string.dialog_holiday_check_failed_title))
                 .setMessage("原因：" + reason + "\n\n"
                         + "当前仍在用内置的 " + HolidayData.BUILT_IN_FIRST_YEAR + "–"
                         + HolidayData.BUILT_IN_YEAR + " 年节假日数据，这些年份的放假与调休补班"
@@ -615,11 +641,10 @@ public class SettingsActivity extends AppCompatActivity {
         sb.append("未来 ").append(horizon).append(" 天共 ").append(n).append(" 个提醒");
         if (next != null) {
             sb.append("\n下一个闹钟：")
-                    .append(next.when.format(java.time.format.DateTimeFormatter.ofPattern("M月d日")))
+                    .append(TimeText.monthDay(next.when.toLocalDate()))
                     .append(" ").append(WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate()))
                     .append(" ")
-                    .append(String.format(java.util.Locale.getDefault(), "%02d:%02d",
-                            next.when.getHour(), next.when.getMinute()))
+                    .append(TimeText.clock(next.when.getHour(), next.when.getMinute()))
                     .append(" ").append(next.label).append(" · 系统已登记 ✓");
         } else {
             sb.append("\n系统中暂无已登记的闹钟，请检查排班设置");
@@ -641,7 +666,7 @@ public class SettingsActivity extends AppCompatActivity {
                         + " 年节假日安排（放假与调休自动优先于周休制度）");
 
         new RoundedDialog.Builder(this)
-                .setTitle("运行状态")
+                .setTitle(getString(R.string.dialog_run_status_title))
                 .setMessage(sb.toString())
                 .setPositiveButton("知道了", null)
                 .show();
@@ -679,7 +704,7 @@ public class SettingsActivity extends AppCompatActivity {
      */
     private void showPinWidgetDialog() {
         new RoundedDialog.Builder(this)
-                .setTitle("添加到桌面")
+                .setTitle(getString(R.string.more_pin_widget_title))
                 .setItems(new String[]{
                                 "下一个闹钟（4×2）",
                                 "本月班表 · 完整（4×4）",
@@ -743,11 +768,8 @@ public class SettingsActivity extends AppCompatActivity {
         // 弹了 → 点确认；没弹 → 手动路径。v1.49.x 用 Toast，用户实测「只弹文案」，
         // Toast 会被桌面盖住也看不清步骤，换成对话框。
         new RoundedDialog.Builder(this)
-                .setTitle("看桌面有没有弹出确认框")
-                .setMessage("弹了就直接点「添加」，组件放上桌面就完成。\n\n"
-                        + "没有弹出的话，按下面手动加：\n"
-                        + "长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
-                        + "「安卓小部件」→ 找「打工人闹钟」。")
+                .setTitle(getString(R.string.pin_confirm_title))
+                .setMessage(getString(R.string.pin_confirm_message))
                 .setPositiveButton("知道了", null)
                 .show();
     }
@@ -755,11 +777,8 @@ public class SettingsActivity extends AppCompatActivity {
     /** 小米桌面的手动引导（v1.59.0）：说清为什么不能一键加。 */
     private void showPinManualGuide() {
         new RoundedDialog.Builder(this)
-                .setTitle("需要手动添加")
-                .setMessage("你的桌面（澎湃 / MIUI）暂时不支持从 App 里一键添加，"
-                        + "两步就好：\n\n"
-                        + "长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
-                        + "「安卓小部件」→ 找「打工人闹钟」，选一个放上去。")
+                .setTitle(getString(R.string.pin_manual_title))
+                .setMessage(getString(R.string.pin_manual_message))
                 .setPositiveButton("知道了", null)
                 .show();
     }
@@ -767,9 +786,8 @@ public class SettingsActivity extends AppCompatActivity {
     /** 请求发出不去的兜底说明（v1.49.10）。 */
     private void showPinFallback() {
         new RoundedDialog.Builder(this)
-                .setTitle("请手动添加")
-                .setMessage("长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点"
-                        + "「安卓小部件」→ 找「打工人闹钟」。")
+                .setTitle(getString(R.string.pin_manual_title_plain))
+                .setMessage(getString(R.string.pin_manual_message_plain))
                 .setPositiveButton("知道了", null)
                 .show();
     }
@@ -987,15 +1005,6 @@ public class SettingsActivity extends AppCompatActivity {
             text = text + " · 仅明天上班";
         }
         tvBedtime.setText(text);
-        // 睡前提醒关着时，「仅在明天上班时提醒」没有意义——压暗并禁用，
-        // 免得用户以为改了它就会开始提醒
-        boolean on = cur != Prefs.BEDTIME_OFF;
-        View row = findViewById(R.id.row_bedtime_workday);
-        if (row != null) {
-            row.setAlpha(on ? 1f : 0.45f);
-            row.setEnabled(on);
-        }
-        if (swBedtimeWorkday != null) swBedtimeWorkday.setEnabled(on);
     }
 
     /**
@@ -1014,6 +1023,22 @@ public class SettingsActivity extends AppCompatActivity {
         else if (cur == 23 * 60) id = R.id.rb_bed_2300;
         else id = R.id.rb_bed_custom;
         rg.check(id);   // 先选中再挂监听，避免 setChecked 反过来触发一次保存
+
+        // v1.60.0：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框。
+        // 勾选即时生效（和时刻「点哪项存哪项」同一风格）；睡前提醒关着时压暗禁用——
+        // 没有提醒可发，这个条件无从谈起，不禁用会让人以为改了它就会开始提醒。
+        CheckBox cbWorkday = view.findViewById(R.id.cb_bedtime_workday);
+        boolean bedOn = cur != Prefs.BEDTIME_OFF;
+        cbWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
+        cbWorkday.setEnabled(bedOn);
+        cbWorkday.setAlpha(bedOn ? 1f : 0.45f);
+        cbWorkday.setOnCheckedChangeListener((b, checked) -> {
+            Prefs.setBedtimeWorkdayOnly(this, checked);
+            // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
+            BedtimeReminder.reschedule(this);
+            // 主页那行的副标题要跟着变（「21:30 · 仅明天上班」）
+            updateBedtimeText();
+        });
 
         final boolean[] handled = {false};
         AlertDialog dialog = new RoundedDialog.Builder(this)
@@ -1069,13 +1094,13 @@ public class SettingsActivity extends AppCompatActivity {
         try {
             exportLauncher.launch(ConfigBackup.suggestFileName());
         } catch (Exception e) {
-            Toast.makeText(this, "没有可用的文件管理器，无法导出", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_no_file_manager_export), Toast.LENGTH_LONG).show();
         }
     }
 
     private void importConfig() {
         if (!BackupImporter.pick(importLauncher)) {
-            Toast.makeText(this, "没有可用的文件管理器，无法导入", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.toast_no_file_manager_import), Toast.LENGTH_LONG).show();
         }
     }
 

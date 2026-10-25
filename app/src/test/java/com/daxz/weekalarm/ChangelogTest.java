@@ -25,6 +25,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,6 +66,22 @@ public class ChangelogTest {
             }
         }
         return false;
+    }
+
+    /** 深度优先找第一个文案含 {@code needle} 的 TextView；找不到返回 null。 */
+    private static TextView findText(View root, String needle) {
+        if (root instanceof TextView) {
+            CharSequence t = ((TextView) root).getText();
+            if (t != null && t.toString().contains(needle)) return (TextView) root;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                TextView hit = findText(g.getChildAt(i), needle);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
     }
 
     @Test
@@ -211,8 +228,11 @@ public class ChangelogTest {
         String prevDate = newest.date;
         for (int i = 1; i < Changelog.all().size(); i++) {
             Changelog.Entry e = Changelog.all().get(i);
-            // 卡片第 2 行是 meta（日期 · versionCode），只看这一行，别被正文里的日期串扰
-            TextView meta = (TextView) ((ViewGroup) box.getChildAt(i)).getChildAt(1);
+            // meta 行按内容找（含 versionCode 的那个 TextView），不按下标——
+            // v1.71.0 起卡片头部是「版本徽章 + 标题」两列、条目是悬挂缩进行，
+            // 子视图不再全是 TextView，写死下标一改结构就红
+            TextView meta = findText((View) box.getChildAt(i), "versionCode");
+            assertNotNull("卡片里应有一行 meta（日期 · versionCode）：v" + e.version, meta);
             String text = meta.getText().toString();
             if (e.date.equals(prevDate)) {
                 assertTrue("与上一张同日应写「同日」：v" + e.version + " 实际：" + text,
@@ -245,6 +265,30 @@ public class ChangelogTest {
     }
 
     /**
+     * v1.71.0：版本号做成徽章，当前版本卡带「当前版本」徽章。
+     *
+     * <p>原来「v1.70.0  标题」是一行整TextView，扫一页找「现在看到第几版」
+     * 得逐行读前几个字符；「当前版本」也只是 meta 行里的一段文字，容易扫过去。
+     * 徽章化之后这两件事都该在——逐卡钉，别只钉第一张。
+     */
+    @Test
+    public void cards_carryVersionPill_andOnlyCurrentHasBadge() {
+        List<Changelog.Entry> all = Changelog.all();
+        int code = installedCode();
+        LinearLayout box = new LinearLayout(ctx());
+        Changelog.renderInto(ctx(), box, all, code);
+
+        for (int i = 0; i < all.size(); i++) {
+            View card = box.getChildAt(i);
+            Changelog.Entry e = all.get(i);
+            assertTrue("每张卡都应有版本徽章：v" + e.version,
+                    containsText(card, "v" + e.version));
+            assertEquals("只有当前版本卡带「当前版本」徽章：v" + e.version,
+                    e.code == code, containsText(card, "当前版本"));
+        }
+    }
+
+    /**
      * 分批画与一次性画必须完全等价——包括跨批次边界的「同日」判断。
      *
      * <p>这条是分页改造的安全网：如果哪次改了分页大小或「同日」的取值方式，
@@ -268,14 +312,31 @@ public class ChangelogTest {
         assertEquals("分批画完的卡数应与一次性画一致",
                 full.getChildCount(), paged.getChildCount());
         for (int i = 0; i < full.getChildCount(); i++) {
-            ViewGroup a = (ViewGroup) full.getChildAt(i);
-            ViewGroup b = (ViewGroup) paged.getChildAt(i);
-            assertEquals("第 " + i + " 张卡的结构应一致",
-                    a.getChildCount(), b.getChildCount());
-            for (int j = 0; j < a.getChildCount(); j++) {
-                assertEquals("第 " + i + " 张第 " + j + " 行文案应一致",
-                        ((TextView) a.getChildAt(j)).getText().toString(),
-                        ((TextView) b.getChildAt(j)).getText().toString());
+            // v1.71.0 起卡片里有 LinearLayout 子行（徽章 + 标题两列、悬挂缩进条目），
+            // 不再逐子 cast TextView，改成按「文本叶」顺序对比——结构怎么调都不红，
+            // 但文案差一个字符就红
+            assertEquals("第 " + i + " 张卡的文案应一致",
+                    textLeaves((View) full.getChildAt(i)),
+                    textLeaves((View) paged.getChildAt(i)));
+        }
+    }
+
+    /** 深度优先收集视图树里所有 TextView 的文案，按出现顺序。 */
+    private static List<String> textLeaves(View root) {
+        List<String> out = new ArrayList<>();
+        collectText(root, out);
+        return out;
+    }
+
+    private static void collectText(View root, List<String> out) {
+        if (root instanceof TextView) {
+            CharSequence t = ((TextView) root).getText();
+            out.add(t == null ? "" : t.toString());
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                collectText(g.getChildAt(i), out);
             }
         }
     }

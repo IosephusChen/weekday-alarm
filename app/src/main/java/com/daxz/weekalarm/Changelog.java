@@ -2,6 +2,8 @@ package com.daxz.weekalarm;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -53,6 +55,11 @@ public final class Changelog {
      * 真想知道为什么，去项目里的使用说明。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(178, "1.71.0", "2026/10/25", "三页一窗排版收紧：运行状态 / 使用说明 / 更新日志 / 导入导出（无功能变化）",
+                    "运行状态弹窗：五件事（排程量 / 下一个闹钟 / 注册上限 / 大周基准 / 节假日来源）从一段文字改成「标签: 值」信息行，「已登记」跟绿色徽章，没登记走红色——核对用的信息一眼能扫",
+                    "使用说明页：条目改悬挂缩进（换行对齐正文不对齐圆点），小节标题带序号；更新日志页：版本号做成徽章、条目同样悬挂缩进，翻页找「现在第几版」不用逐行读",
+                    "导入确认框从一大段文字改成「一句说明 + 文件摘要信息行 + 一句警告」；导出完成从 Toast 升级成小结对话框，文件里装了什么当场说清",
+                    "新增 RowKit 行级积木（条目 / 信息行 / 分隔线 / 徽章），对话框与整页共用一套版式"),
             new Entry(177, "1.70.0", "2026/10/25", "设置弹窗卡片化：五个单选圈弹窗换成卡片语言（无交互变化）",
                     "响铃时长 / 按键设置 / 稍后提醒 / 响铃前提醒 / 提醒范围五个弹窗从系统单选圈换成 App 卡片：选项、档位、确定才生效的交互逐字保留，只是视觉统一（新增 DialogKit.showGroupPick 分组单选积木；提醒范围本来就是点哪项存哪项，改走 showPick）",
                     "设置页与引导页共用同一份档位映射（PrefDialogs），两边同时换新视觉；旧布局五个已删，档位与 Prefs 值的对应关系留在代码常量里并加了守门测试"),
@@ -830,6 +837,19 @@ public final class Changelog {
     }
 
     /** 画一张版本卡；样式与分批无关，只由这一处维护。 */
+    /**
+     * 一张版本卡（v1.71.0 改版）。
+     *
+     * <p>原来「v1.70.0  标题」是一行整TextView，版本号混在标题里，
+     * 扫一页要找「现在看到第几版了」得逐行读前几个字符。改成版本号实心
+     * 徽章（{@link RowKit#pill}）+ 标题两列：徽章一眼定位，标题自动换行。
+     *
+     * <p>「当前版本」也从 meta 行里的一段文字升级成徽章——以前它跟在
+     * 「同日 · versionCode 177」后面，容易被当成普通文字扫过去。
+     *
+     * <p>要点条目换成{@link RowKit#bullet}悬挂缩进行：长要点换行后
+     * 第二行顶到最左、和圆点齐平，一页卡下来左右边界不齐。
+     */
     private static LinearLayout buildCard(Context c, Entry e, boolean current, boolean sameDay,
                                           int pad, float d) {
         LinearLayout card = new LinearLayout(c);
@@ -842,35 +862,57 @@ public final class Changelog {
         lp.bottomMargin = Math.round(10 * d);
         card.setLayoutParams(lp);
 
-        TextView head = new TextView(c);
-        head.setText("v" + e.version + "  " + e.title);
-        head.setTextSize(15f);
-        head.setTypeface(Typeface.DEFAULT_BOLD);
-        head.setTextColor(c.getColor(current ? R.color.indigo : R.color.ink));
+        // 头部行：版本徽章 + 标题
+        LinearLayout head = new LinearLayout(c);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.TOP);
+        head.addView(RowKit.pill(c, "v" + e.version, R.color.indigo),
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView title = new TextView(c);
+        title.setText(e.title);
+        title.setTextSize(14f);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(c.getColor(R.color.ink));
+        title.setLineSpacing(0, 1.2f);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        tlp.leftMargin = Math.round(7 * d);
+        head.addView(title, tlp);
         card.addView(head);
 
+        // meta 行：日期 · versionCode，当前版本再跟一个徽章
+        LinearLayout metaRow = new LinearLayout(c);
+        metaRow.setOrientation(LinearLayout.HORIZONTAL);
+        metaRow.setGravity(Gravity.CENTER_VERTICAL);
         TextView meta = new TextView(c);
-        meta.setText((sameDay ? "同日" : e.date)
-                + " · versionCode " + e.code + (current ? " · 当前版本" : ""));
+        meta.setText((sameDay ? "同日" : e.date) + " · versionCode " + e.code);
         meta.setTextSize(11f);
         meta.setTextColor(c.getColor(R.color.sub));
-        LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
+        metaRow.addView(meta);
+        if (current) {
+            TextView badge = RowKit.pill(c, "当前版本", R.color.indigo);
+            LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            blp.leftMargin = Math.round(6 * d);
+            metaRow.addView(badge, blp);
+        }
+        LinearLayout.LayoutParams mlp2 = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        mlp.topMargin = Math.round(2 * d);
-        card.addView(meta, mlp);
+        mlp2.topMargin = Math.round(5 * d);
+        card.addView(metaRow, mlp2);
 
         for (String s : e.points) {
-            TextView t = new TextView(c);
-            t.setText("· " + s);
-            t.setTextSize(13f);
-            t.setTextColor(c.getColor(R.color.ink));
-            t.setLineSpacing(Math.round(3 * d), 1.15f);
-            LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+            View b = RowKit.bullet(c, s, 12);
+            LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            tlp.topMargin = Math.round(7 * d);
-            card.addView(t, tlp);
+            plp.topMargin = Math.round(7 * d);
+            card.addView(b, plp);
         }
         return card;
     }

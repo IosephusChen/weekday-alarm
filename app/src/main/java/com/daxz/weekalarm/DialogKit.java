@@ -66,20 +66,40 @@ public final class DialogKit {
     }
 
     /**
+     * 自定义正文的消息框（v1.71.0）：标题 + 调用方搭好的 body 视图。
+     *
+     * <p>「五件事挤一段 {@code "\n"} 文字」那种对话框（运行状态、导入摘要）
+     * 用文字排版排不出「哪句说的是哪件事」，需要 {@link RowKit} 的行级结构；
+     * 但标题版式、按钮、圆角又和普通消息框完全一样。所以只把 body 换成视图，
+     * 外壳仍走 {@code dialog_message}——版式漂移不了。
+     */
+    public static void showMessage(Context c, String title, View body, String positiveText,
+                                   DialogInterface.OnClickListener onPositive) {
+        showMessage(c, title, body, positiveText, onPositive, null, null);
+    }
+
+    /** 自定义正文的消息框（带取消按钮）。 */
+    public static void showMessage(Context c, String title, View body, String positiveText,
+                                   DialogInterface.OnClickListener onPositive,
+                                   String negativeText, DialogInterface.OnClickListener onNegative) {
+        View view = messageShell(c, title);
+        ((LinearLayout) view.findViewById(R.id.message_body)).addView(body);
+        RoundedDialog.Builder b = new RoundedDialog.Builder(c);
+        b.setView(view);
+        if (positiveText != null) b.setPositiveButton(positiveText, onPositive);
+        if (negativeText != null) b.setNegativeButton(negativeText, onNegative);
+        b.show();
+    }
+
+    /**
      * 消息框的视图本体：标题 + 分段正文。
      *
      * <p>拆出来供「消息之外还要带点别的」的场景复用（例如导出失败时附上报错码），
      * 调用方拿到 view 后可以再往 {@code message_body} 里加控件。
      */
     public static View messageView(Context c, String title, String body) {
-        View view = LayoutInflater.from(c).inflate(R.layout.dialog_message, null);
-        TextView tvTitle = view.findViewById(R.id.tv_message_title);
+        View view = messageShell(c, title);
         LinearLayout box = view.findViewById(R.id.message_body);
-        if (title == null || title.isEmpty()) {
-            tvTitle.setVisibility(View.GONE);
-        } else {
-            tvTitle.setText(title);
-        }
         if (body != null && !body.isEmpty()) {
             // 段与段之间用间距，段内的换行（罗列项）原样保留
             String[] paras = body.split("\\n\\n");
@@ -98,6 +118,18 @@ public final class DialogKit {
                 t.setLayoutParams(lp);
                 box.addView(t);
             }
+        }
+        return view;
+    }
+
+    /** 消息框外壳：inflate {@code dialog_message} 并填标题；正文容器留给调用方。 */
+    private static View messageShell(Context c, String title) {
+        View view = LayoutInflater.from(c).inflate(R.layout.dialog_message, null);
+        TextView tvTitle = view.findViewById(R.id.tv_message_title);
+        if (title == null || title.isEmpty()) {
+            tvTitle.setVisibility(View.GONE);
+        } else {
+            tvTitle.setText(title);
         }
         return view;
     }

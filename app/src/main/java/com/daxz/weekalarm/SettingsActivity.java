@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -17,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 
 import java.time.LocalDate;
@@ -59,10 +61,11 @@ public class SettingsActivity extends AppCompatActivity {
                         if (uri == null) return;
                         try (java.io.OutputStream os = getContentResolver().openOutputStream(uri)) {
                             if (os == null) throw new java.io.IOException("无法写入该位置");
-                            os.write(ConfigBackup.exportJson(this).getBytes("UTF-8"));
+                            String json = ConfigBackup.exportJson(this);
+                            os.write(json.getBytes("UTF-8"));
                             os.flush();
-                            Toast.makeText(this, getString(R.string.toast_export_done),
-                                    Toast.LENGTH_LONG).show();
+                            // v1.71.0：Toast → 小结对话框（文件里有什么，当场说清）
+                            showExportDone(json);
                         } catch (Exception e) {
                             DialogKit.showMessage(this,
                                     getString(R.string.dialog_export_failed_title),
@@ -611,6 +614,11 @@ public class SettingsActivity extends AppCompatActivity {
      * <p>内容一个字没少：开关状态、未来 N 天的提醒总数、下一个已登记闹钟、
      * 大周基准、节假日数据来源。变的是位置——这些都是「核对用」信息，
      * 不该每天摆在首页最底部。
+     *
+     * <p>v1.71.0 排版改版：五件事原来挤一段 {@code "\n"} 文字，读之前先要断句
+     * 才知道哪句说的是哪件事。改成{@link RowKit#kv}「标签: 值」信息行——
+     * 标签固定宽、值自动换行并对齐成一列，行间发丝线分隔，像一张规格表。
+     * 「已登记」用 success 色徽章跟在下一个闹钟后面，扫一眼就知道系统里落没落。
      */
     private void showRunStatusDialog() {
         java.util.List<Alarm> alarms = Prefs.getAlarms(this);
@@ -618,41 +626,82 @@ public class SettingsActivity extends AppCompatActivity {
         ScheduleManager.NextAlarm next = ScheduleManager.nextRegisteredAlarm(this, alarms);
         int horizon = Prefs.getHorizonDays(this);
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("未来 ").append(horizon).append(" 天共 ").append(n).append(" 个提醒");
+        java.util.List<View> rows = new java.util.ArrayList<>();
+        rows.add(RowKit.kv(this, "提醒排程", "未来 " + horizon + " 天 · " + n + " 个"));
         if (next != null) {
-            sb.append("\n下一个闹钟：")
-                    .append(TimeText.monthDay(next.when.toLocalDate()))
-                    .append(" ").append(WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate()))
-                    .append(" ")
-                    .append(TimeText.clock(next.when.getHour(), next.when.getMinute()))
-                    .append(" ").append(next.label).append(" · 系统已登记 ✓");
+            rows.add(RowKit.kv(this, "下一个闹钟",
+                    TimeText.monthDay(next.when.toLocalDate())
+                            + " " + WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate())
+                            + " " + TimeText.clock(next.when.getHour(), next.when.getMinute())
+                            + " " + next.label,
+                    R.color.success, "已登记"));
         } else {
-            sb.append("\n系统中暂无已登记的闹钟，请检查排班设置");
+            rows.add(RowKit.kv(this, "下一个闹钟",
+                    "系统中暂无已登记的闹钟，请检查排班设置", R.color.danger));
         }
         // 提醒总量超过单次注册上限（ROM 硬限）时说明截断策略，避免用户误以为漏排
         if (n > ScheduleManager.MAX_REGISTERED_ALARMS) {
-            sb.append("\n提醒较多，已优先排程最近的 ")
-                    .append(ScheduleManager.MAX_REGISTERED_ALARMS)
-                    .append(" 个，更久的会随闹钟响铃自动补上");
+            rows.add(RowKit.kv(this, "注册上限", "已优先排程最近的 "
+                    + ScheduleManager.MAX_REGISTERED_ALARMS
+                    + " 个，更久的会随闹钟响铃自动补上"));
         }
 
         WeekSchedule.Rule rule = Prefs.getRule(this);
         if (rule.mode.needsAnchor()) {
-            sb.append("\n\n当前基准（大周周六）：").append(rule.anchor);
+            rows.add(RowKit.kv(this, "当前基准", "大周周六 " + rule.anchor));
         }
-        sb.append("\n\n").append(HolidayData.hasRemote()
-                ? "节假日数据已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
+        rows.add(RowKit.kv(this, "节假日数据", HolidayData.hasRemote()
+                ? "已在线更新至 " + HolidayData.effectiveYear() + " 年（放假与调休自动优先于周休制度）"
                 : "已内置 " + HolidayData.BUILT_IN_FIRST_YEAR + "–" + HolidayData.BUILT_IN_YEAR
-                        + " 年节假日安排（放假与调休自动优先于周休制度）");
+                        + " 年安排（放假与调休自动优先于周休制度）"));
 
-        DialogKit.showMessage(this, getString(R.string.dialog_run_status_title), sb.toString());
+        LinearLayout body = RowKit.stack(this, rows.toArray(new View[0]));
+
+        DialogKit.showMessage(this, getString(R.string.dialog_run_status_title),
+                body, "知道了", null);
+    }
+
+    /**
+     * 导出完成小结（v1.71.0）：原来是一句 Toast，用户看完只知道「成功了」，
+     * 不知道文件里装了什么。换成小结对话框 + 摘要信息行（导出时间 / 闹钟数 /
+     * 请假加班标记数）——和导入确认框里显示的信息同一套版式、同一份数据，
+     * 「导出时看到的」和「导入时看到的」对得上。
+     */
+    private void showExportDone(String json) {
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        TextView line = new TextView(this);
+        line.setText(R.string.export_done_body);
+        line.setTextColor(ContextCompat.getColor(this, R.color.sub));
+        line.setTextSize(12);
+        line.setLineSpacing(0, 1.2f);
+        body.addView(line);
+
+        ConfigBackup.Summary sum = ConfigBackup.summarize(json);
+        if (sum != null) {
+            java.util.List<View> rows = new java.util.ArrayList<>();
+            rows.add(RowKit.kv(this, getString(R.string.summary_exported_at), sum.exportedAt));
+            rows.add(RowKit.kv(this, getString(R.string.summary_alarms),
+                    sum.alarmCount + " 个"));
+            if (sum.vacationDays > 0) {
+                rows.add(RowKit.kv(this, getString(R.string.summary_vacation),
+                        sum.vacationDays + " 天"));
+            }
+            if (sum.overtimeDays > 0) {
+                rows.add(RowKit.kv(this, getString(R.string.summary_overtime),
+                        sum.overtimeDays + " 天"));
+            }
+            body.addView(RowKit.stack(this, rows.toArray(new View[0])),
+                    RowKit.rowLp(this, 12));
+        }
+
+        DialogKit.showMessage(this, getString(R.string.dialog_export_done_title),
+                body, "知道了", null);
     }
 
     /** 运行状态行右侧的一句话摘要：不点开也能看出「开着没、几个提醒」。 */
     private void updateRunStatusText() {
         TextView tv = findViewById(R.id.tv_run_status_summary);
-        if (tv == null) return;
         if (tv == null) return;
         int n = ScheduleManager.countScheduled(this, Prefs.getAlarms(this));
         tv.setText("已开启 · " + n + " 个提醒");

@@ -41,12 +41,36 @@ public final class ConfigBackup {
         public final boolean ok;
         public final String message;
         public final int alarmCount;
+        /** 请假 / 加班标记天数（v1.71.0）：导入完成对话框的信息行用。 */
+        public final int vacationDays;
+        public final int overtimeDays;
 
         Result(boolean ok, String message, int alarmCount) {
+            this(ok, message, alarmCount, 0, 0);
+        }
+
+        Result(boolean ok, String message, int alarmCount, int vacationDays, int overtimeDays) {
             this.ok = ok;
             this.message = message;
             this.alarmCount = alarmCount;
+            this.vacationDays = vacationDays;
+            this.overtimeDays = overtimeDays;
         }
+    }
+
+    /**
+     * 备份文件摘要（v1.71.0）：导入确认与导出完成对话框的信息行数据。
+     *
+     * <p>取代原来的 {@code describe}（返回一句拼好的文字）——对话框要把
+     * 「导出时间 / 闹钟数 / 请假加班标记数」排成信息行，拼好的字符串还得再拆一遍，
+     * 不如直接给结构。文件解析不了返回 {@code null}，调用方据此不显示摘要区。
+     */
+    public static final class Summary {
+        /** 导出时间；文件里没有这个字段时写「未知」。 */
+        public String exportedAt;
+        public int alarmCount;
+        public int vacationDays;
+        public int overtimeDays;
     }
 
     // ================= 导出 =================
@@ -246,7 +270,7 @@ public final class ConfigBackup {
                 + (vacations.isEmpty() && overtimes.isEmpty() ? ""
                 : "、" + vacations.size() + " 天请假、" + overtimes.size() + " 天加班")
                 + "，其余设置也已恢复";
-        return new Result(true, msg, count);
+        return new Result(true, msg, count, vacations.size(), overtimes.size());
     }
 
     private static Set<String> parseDates(JSONArray arr) {
@@ -286,18 +310,24 @@ public final class ConfigBackup {
     }
 
     /** 摘要文案（导入前二次确认用）。 */
-    public static String describe(String json) {
+    /** 备份文件摘要；解析不了（坏 JSON / 缺 prefs）返回 {@code null}。 */
+    public static Summary summarize(String json) {
         try {
             JSONObject root = new JSONObject(json);
             JSONObject p = root.optJSONObject("prefs");
-            if (p == null) return "";
-            JSONArray arr = p.optJSONArray(Prefs.KEY_ALARMS);
-            int n = arr != null ? arr.length() : 0;
+            if (p == null) return null;
+            Summary s = new Summary();
             String at = root.optString("exportedAt", "");
-            return "导出时间 " + (at.isEmpty() ? "未知" : at)
-                    + " · " + n + " 个闹钟";
+            s.exportedAt = at.isEmpty() ? "未知" : at;
+            JSONArray arr = p.optJSONArray(Prefs.KEY_ALARMS);
+            s.alarmCount = arr != null ? arr.length() : 0;
+            s.vacationDays = p.optJSONArray(Prefs.KEY_VACATION_DATES) != null
+                    ? p.optJSONArray(Prefs.KEY_VACATION_DATES).length() : 0;
+            s.overtimeDays = p.optJSONArray(Prefs.KEY_OVERTIME_DATES) != null
+                    ? p.optJSONArray(Prefs.KEY_OVERTIME_DATES).length() : 0;
+            return s;
         } catch (Exception e) {
-            return "";
+            return null;
         }
     }
 }

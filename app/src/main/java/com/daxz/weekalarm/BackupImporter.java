@@ -1,11 +1,16 @@
 package com.daxz.weekalarm;
 
+import android.content.Context;
 import android.net.Uri;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 /**
  * 导入旧备份的完整流程（v1.47.0）：选文件 → 读文本 → 校验格式 → 二次确认 → 落盘 → 回调。
@@ -53,17 +58,65 @@ public final class BackupImporter {
                         DialogKit.showMessage(activity, "这个文件不能导入", check.message);
                         return;
                     }
-                    String summary = ConfigBackup.describe(json);
-                    DialogKit.showMessage(activity, "导入配置？",
-                            "会用这份配置覆盖当前的全部设置：闹钟、排班基准、"
-                                    + "请假/加班标记、音量铃声、睡前提醒。"
-                                    + (fromGuide ? "\n\n包括你刚才选的班表。" : "")
-                                    + "\n\n"
-                                    + (summary.isEmpty() ? "" : summary + "\n\n")
-                                    + "覆盖后无法撤销，当前设置不会自动备份。",
-                            "覆盖导入", (d, w) -> importNow(activity, json, callback),
-                            "取消", null);
+                    DialogKit.showMessage(activity,
+                            activity.getString(R.string.dialog_import_confirm_title),
+                            confirmBody(activity, json, fromGuide),
+                            activity.getString(R.string.import_confirm_positive),
+                            (d, w) -> importNow(activity, json, callback),
+                            activity.getString(R.string.dialog_cancel), null);
                 });
+    }
+
+    /**
+     * 导入确认框的正文（v1.71.0 结构化）。
+     *
+     * <p>原来是一大段文字：覆盖范围、引导页附加句、文件摘要、警告全拼在一个字符串里，
+     * 四五行走完用户还没找到「这个文件是什么时候导的」。改成三段：
+     * 一句说明（会覆盖什么）→ 摘要信息行（导出时间 / 闹钟 / 请假加班标记）→
+     * 一句警告（danger 色）。文件解析不出摘要时只留说明和警告，不显示空行。
+     */
+    static View confirmBody(Context activity, String json, boolean fromGuide) {
+        LinearLayout body = new LinearLayout(activity);
+        body.setOrientation(LinearLayout.VERTICAL);
+
+        TextView intro = new TextView(activity);
+        intro.setText(activity.getString(R.string.import_confirm_body)
+                + (fromGuide ? "\n" + activity.getString(R.string.import_confirm_guide_extra) : ""));
+        intro.setTextColor(ContextCompat.getColor(activity, R.color.sub));
+        intro.setTextSize(12);
+        intro.setLineSpacing(0, 1.2f);
+        body.addView(intro);
+
+        ConfigBackup.Summary sum = ConfigBackup.summarize(json);
+        if (sum != null) {
+            body.addView(RowKit.kv(activity,
+                            activity.getString(R.string.summary_exported_at), sum.exportedAt),
+                    RowKit.rowLp(activity, 12));
+            body.addView(RowKit.kv(activity,
+                            activity.getString(R.string.summary_alarms), sum.alarmCount + " 个"),
+                    RowKit.rowLp(activity, 7));
+            if (sum.vacationDays > 0) {
+                body.addView(RowKit.kv(activity,
+                                activity.getString(R.string.summary_vacation),
+                                sum.vacationDays + " 天"),
+                        RowKit.rowLp(activity, 7));
+            }
+            if (sum.overtimeDays > 0) {
+                body.addView(RowKit.kv(activity,
+                                activity.getString(R.string.summary_overtime),
+                                sum.overtimeDays + " 天"),
+                        RowKit.rowLp(activity, 7));
+            }
+        }
+
+        TextView warn = new TextView(activity);
+        warn.setText(R.string.import_confirm_warning);
+        warn.setTextColor(ContextCompat.getColor(activity, R.color.danger));
+        warn.setTextSize(12);
+        warn.setLineSpacing(0, 1.2f);
+        warn.setLayoutParams(RowKit.rowLp(activity, 7));
+        body.addView(warn);
+        return body;
     }
 
     /**

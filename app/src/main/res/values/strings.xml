@@ -69,12 +69,27 @@
     <string name="more_import_summary">选择之前导出的文件恢复设置（会覆盖当前配置）</string>
 
     <!-- ===== 设置页对话框与提示（v1.60.0 从 Java 字面量迁入）===== -->
-    <string name="toast_export_done">配置已导出，换手机时导入这个文件即可</string>
     <string name="toast_no_file_manager_export">没有可用的文件管理器，无法导出</string>
     <string name="toast_no_file_manager_import">没有可用的文件管理器，无法导入</string>
     <string name="dialog_export_failed_title">导出失败</string>
     <string name="dialog_import_done_title">导入完成</string>
     <string name="import_done_tail">已按新配置重新排程，返回主界面即可看到结果。</string>
+
+    <!-- ===== 导入导出结构化版式（v1.71.0）=====
+         导出完成从 Toast 升级成小结对话框，导入确认从一大段文字改成
+         「一句说明 + 摘要信息行 + 警告」。文案都在这里，不在 Java 里。 -->
+    <string name="dialog_export_done_title">已导出</string>
+    <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。</string>
+    <string name="dialog_import_confirm_title">导入配置？</string>
+    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、音量铃声、睡前提醒。</string>
+    <string name="import_confirm_guide_extra">包括你刚才选的班表。</string>
+    <string name="import_confirm_warning">覆盖后无法撤销，当前设置不会自动备份。</string>
+    <string name="import_confirm_positive">覆盖导入</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="summary_exported_at">导出时间</string>
+    <string name="summary_alarms">闹钟</string>
+    <string name="summary_vacation">请假标记</string>
+    <string name="summary_overtime">加班标记</string>
     <string name="holiday_checking">正在检查…</string>
     <string name="dialog_holiday_check_failed_title">在线检查未成功</string>
     <string name="dialog_run_status_title">运行状态</string>

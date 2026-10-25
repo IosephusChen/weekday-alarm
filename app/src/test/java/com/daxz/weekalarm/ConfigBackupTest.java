@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -93,7 +94,17 @@ public class ConfigBackupTest {
         assertTrue("应包含请假日期", json.contains("2026-10-21"));
         assertTrue("应包含睡前提醒设置", json.contains(Prefs.KEY_BEDTIME_MINUTES));
         assertTrue(ConfigBackup.suggestFileName().endsWith(".json"));
-        assertTrue(ConfigBackup.describe(json).contains("2 个闹钟"));
+        // v1.71.0：describe（拼好的字符串）换成 summarize（结构化），
+        // 摘要要给导入确认 / 导出小结对话框当信息行用，不能再让调用方拆字符串
+        ConfigBackup.Summary sum = ConfigBackup.summarize(json);
+        assertNotNull(sum);
+        assertEquals(2, sum.alarmCount);
+        assertEquals(2, sum.vacationDays);
+        assertEquals(1, sum.overtimeDays);
+        assertFalse("导出时间应有值", sum.exportedAt.isEmpty());
+        // 坏 JSON / 缺 prefs 返回 null，调用方据此不显示摘要区
+        assertNull(ConfigBackup.summarize("不是 JSON"));
+        assertNull(ConfigBackup.summarize("{\"app\":\"x\"}"));
     }
 
     @Test

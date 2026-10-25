@@ -138,11 +138,50 @@ public class HelpActivityTest {
 
     /** 页面里的条目都是可读文本，不是空壳——防止以后改布局把文案丢了。 */
     @Test
+    /**
+     * 每个条目行的正文列都不能为空（v1.71.0 起逐行查）。
+     *
+     * <p>原来条目是「· 正文」一个 TextView，断言整页文字里有「· 」即可；
+     * v1.71.0 改成「圆点列 + 正文列」两列后，圆点单独占位，逐行查才有意义——
+     * 顺带把「有没有圆点列」也钉住：少了它悬挂缩进就退化成普通段落。
+     */
     public void helpPage_itemsAreNotBlank() {
         HelpActivity a = launch();
         String all = allText(a);
         assertTrue("正文不该为空", all.trim().length() > 200);
-        assertTrue("条目应以「· 」开头", all.contains("· "));
+
+        int rows = 0;
+        for (android.view.View row : itemRows(a.getWindow().getDecorView())) {
+            TextView dot = (TextView) ((android.view.ViewGroup) row).getChildAt(0);
+            assertEquals("圆点列应是「·」", "·", dot.getText().toString());
+            TextView body = (TextView) ((android.view.ViewGroup) row).getChildAt(1);
+            assertTrue("条目正文不能为空", body.getText().toString().trim().length() > 0);
+            rows++;
+        }
+        assertTrue("说明页应有若干条目行，实际 " + rows, rows >= 10);
+    }
+
+    /** 深度优先收集「圆点列 + 正文列」的条目行（第一列文案是「·」的横排容器）。 */
+    private static java.util.List<android.view.View> itemRows(android.view.View root) {
+        java.util.List<android.view.View> out = new java.util.ArrayList<>();
+        collectRows(root, out);
+        return out;
+    }
+
+    private static void collectRows(android.view.View v,
+                                    java.util.List<android.view.View> out) {
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            if (g.getChildCount() == 2
+                    && g.getChildAt(0) instanceof TextView
+                    && "·".contentEquals(((TextView) g.getChildAt(0)).getText())
+                    && g.getChildAt(1) instanceof TextView) {
+                out.add(g);
+            }
+            for (int i = 0; i < g.getChildCount(); i++) {
+                collectRows(g.getChildAt(i), out);
+            }
+        }
     }
 
     /** 把整页 TextView 的文字拼起来，供断言用。 */

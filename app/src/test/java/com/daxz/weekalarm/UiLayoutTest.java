@@ -354,8 +354,10 @@ public class UiLayoutTest {
         Dialog d = ShadowAlertDialog.getLatestDialog();
         assertNotNull("点运行状态应弹出详情", d);
         View root = d.getWindow().getDecorView();
-        assertTrue("详情里要有提醒总数或未开启说明", containsText(root, "个提醒")
-                || containsText(root, "尚未开启"));
+        // v1.71.0：详情从一段文字改成信息行，「未来 90 天共 142 个提醒」
+        // 现在的说法是「提醒排程：未来 90 天 · 142 个」——按新文案钉
+        assertTrue("详情里要有提醒排程行", containsText(root, "提醒排程"));
+        assertTrue("详情里要能看出未来 N 天的量", containsText(root, "未来"));
         assertTrue("详情里要有节假日数据来源", containsText(root, "节假日"));
     }
 

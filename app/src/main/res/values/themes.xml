@@ -83,10 +83,44 @@
 
     <!-- ===== 使用说明页（v1.34.2）=====
          原来这 9 条是一整块 12sp 的灰字，读起来像免责声明。改成「小节标题 + 条目」：
-         标题 15sp 加粗、条目 14sp 正文色，找「组件怎么加」能直接扫到那一节。 -->
+         标题 15sp 加粗、条目 14sp 正文色，找「组件怎么加」能直接扫到那一节。
+
+         v1.71.0 两处排版收紧：
+         ① 条目改「圆点列 + 正文列」两列（HelpItemRow + HelpDot）——以前「· 正文」
+            是一个 TextView，换行后第二行顶到最左边和圆点齐平，一段话里出现两条
+            左边界，扫读时眼睛来回找；现在圆点占位列、正文自动换行只对齐正文。
+         ② 小节标题前加 circled number（HelpSectionRow）——五节并列时序号比
+            光秃秃的标题更能说清「这是第几类、一共几类」。 -->
     <style name="HelpSection">
         <item name="android:textColor">@color/ink</item>
         <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 小节标题行：序号 + 标题横排 -->
+    <style name="HelpSectionRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <!-- 条目行：圆点列 + 正文列（悬挂缩进） -->
+    <style name="HelpItemRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">top</item>
+        <item name="android:layout_marginTop">8dp</item>
+    </style>
+
+    <!-- 圆点列：固定宽占位，主色加粗，和正文基线对齐由 gravity=top 保证 -->
+    <style name="HelpDot">
+        <item name="android:layout_width">12dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:text">·</item>
+        <item name="android:textColor">@color/indigo</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 

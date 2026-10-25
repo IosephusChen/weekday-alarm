@@ -182,6 +182,37 @@ public class DialogKitTest {
         assertEquals("点第 3 项应回调 2", 2, picked[0]);
     }
 
+    /**
+     * 点完一项，对话框必须跟着关掉（v1.67.0 修的回归）。
+     *
+     * <p>v1.61.0 从系统 {@code setItems} 换成自绘卡片时，「点完即关」被丢掉了：
+     * 弹窗留在屏幕上，选项还是点之前的旧状态。日历的「标记为请假 / 取消请假」
+     * 因此同一天能读出两种答案，再点一次还会把刚标的记录取消掉——用户 2026-10-25
+     * 真机测试时报的就是这个（截图里 Toast 已弹出、弹窗仍开着）。
+     */
+    @Test
+    public void showPick_clickDismissesDialog() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        final int[] picked = {-1};
+        DialogKit.showPick(a, "10月13日 周二 · 上班日 · 已过去", "补记一下，不影响闹钟",
+                new String[]{"标记为请假", "标记为加班"}, null, -1, which -> picked[0] = which);
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        assertNotNull(d);
+        assertTrue("开局对话框应是开着的", d.isShowing());
+
+        LinearLayout list = listOf(d);
+        list.getChildAt(0).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点第 1 项应回调 0", 0, picked[0]);
+        assertFalse("点完要关掉对话框——留着它，上面的「标记为请假」就是过期状态，再点一次会取消刚标的记录",
+                d.isShowing());
+    }
+
     // ---------- 多选型（v1.65.0）----------
 
     /**

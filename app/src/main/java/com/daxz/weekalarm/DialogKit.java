@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 
 /**
@@ -122,6 +123,11 @@ public final class DialogKit {
      * 带副标题的列表选择。副标题用于把「选它意味着什么」说在明处
      * （例如「周日」下面写「班表从周日开始排」），省得用户选完才发现不对。
      *
+     * <p><b>点一项即回调并关掉对话框</b>（v1.67.0 修）：v1.61.0 从系统 {@code setItems}
+     * 换成这套自绘卡片时，{@code setItems} 自带的「点完即关」被丢掉了——弹窗留在屏幕上，
+     * 上面的选项还是点之前的旧状态。日历的「标记为请假 / 取消请假」同一天因此能读出两种
+     * 答案，再点一次还会把刚标的记录又取消掉，属于会吞数据的假象。
+     *
      * @param subs 每项的副标题，可与 {@code items} 等长；{@code null} 或越界项按没有处理
      */
     public static void showPick(Context c, String title, String sub, String[] items,
@@ -142,6 +148,9 @@ public final class DialogKit {
             tvSub.setText(sub);
         }
 
+        // 先 show 拿到对话框实例，点击回调里连它一起关。用数组持有是因为 Java 的
+        // lambda 只能抓 effectively final——这里的对话框是在这些回调挂上去之后才存在的
+        final AlertDialog[] dlg = new AlertDialog[1];
         for (int i = 0; i < items.length; i++) {
             String itemSub = subs != null && i < subs.length ? subs[i] : null;
             View row = optionView(c, items[i], itemSub);
@@ -149,6 +158,7 @@ public final class DialogKit {
             final int which = i;
             row.setOnClickListener(v -> {
                 if (onPick != null) onPick.onPick(which);
+                if (dlg[0] != null) dlg[0].dismiss();
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -158,7 +168,7 @@ public final class DialogKit {
             list.addView(row);
         }
 
-        new RoundedDialog.Builder(c).setView(view).show();
+        dlg[0] = new RoundedDialog.Builder(c).setView(view).show();
     }
 
     /**

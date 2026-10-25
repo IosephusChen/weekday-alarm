@@ -19,31 +19,43 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
- * 桌面图标日夜一致性的守门（v1.69.0）。
+ * 系统 surface 日夜一致性的守门（v1.69.0 建，v1.69.1 扩到通知）。
  *
- * <p><b>背景</b>：启动器是系统 surface，图标的资源解析走**启动器的配置**——系统处于
- * 深色模式时，values-night 里的重定义会作用到图标上。v1.69.0 之前图标背景直接引用
- * {@code @color/indigo}，而 indigo 在 values-night 里被提亮成浅紫 #818CF8
- * （那是 App 内界面要的效果），于是深夜色壁纸上的桌面图标发白，
- * 用户原话「夜间变得有些透明」。
+ * <p><b>原则</b>（v1.56.0 立，v1.69.0 补全）：<b>界面 surface</b> 该随明暗切换
+ * （深色底上 indigo 要提亮才有对比度），<b>系统 surface</b> 必须日夜同色——
+ * 因为启动器 / SystemUI 这些进程渲染我们的资源时，用的是<b>系统</b>的明暗配置，
+ * values-night 会作用到它们身上。
  *
- * <p><b>修法</b>：新增 {@code ic_launcher_bg}（#4F46E5）**故意不做 values-night 覆盖**，
- * 图标配置改引用它。App 内该提亮照旧提亮，图标日夜一个色。
+ * <p><b>已出过三次同类事故</b>：
+ * <ul>
+ *   <li>v1.55.x：小部件标签色引用 indigo / violet，深色下被静默提亮（v1.56.0 修，改固定 token）；</li>
+ *   <li>v1.69.0 前：桌面图标背景引用 @color/indigo，深夜色壁纸上发白，
+ *       用户反馈「夜间变得有些透明」（v1.69.0 修，新增 ic_launcher_bg）；</li>
+ *   <li>v1.69.0 审计发现：通知的品牌紫渐变（bg_notif_icon / bg_notif_action）
+ *       注释写着「不随明暗切换」，引用的却是有夜间版的 indigo / violet
+ *       （v1.69.1 修，改 hero_start / hero_end）。</li>
+ * </ul>
  *
- * <p>这条测试钉两件事：① 夜间配置确实生效（indigo 会被提亮——否则测试是空的）；
- * ② 图标专用色不跟着变，且四个图标配置文件引用的就是它。
+ * <p>这条测试钉三件事：① 夜间配置确实生效（indigo 会被提亮——否则测试是空跑）；
+ * ② 图标专用色不跟着变；③ 两类系统 surface 的配置文件引用的都是无夜间版的固定 token。
  */
 @RunWith(RobolectricTestRunner.class)
-public class LauncherIconNightTest {
+public class SystemSurfaceNightTest {
 
     private final Context ctx = ApplicationProvider.getApplicationContext();
 
-    /** 四个图标配置文件（自适应图标 + API 26 以下兜底），全部应引用专用底色。 */
+    /** 桌面图标：四个配置文件（自适应图标 ×2 + API 26 以下兜底 ×2）。 */
     private static final String[] ICON_XMLS = {
             "src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
             "src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
             "src/main/res/mipmap-anydpi/ic_launcher.xml",
             "src/main/res/mipmap-anydpi/ic_launcher_round.xml",
+    };
+
+    /** 通知卡片：品牌紫渐变两个 drawable（SystemUI 渲染，系统 surface）。 */
+    private static final String[] NOTIF_DRAWABLES = {
+            "src/main/res/drawable/bg_notif_icon.xml",
+            "src/main/res/drawable/bg_notif_action.xml",
     };
 
     @Test
@@ -52,7 +64,6 @@ public class LauncherIconNightTest {
         assertEquals("日间 indigo 就是深靛蓝", 0xFF4F46E5,
                 ContextCompat.getColor(ctx, R.color.indigo));
         assertEquals(0xFF4F46E5, ContextCompat.getColor(ctx, R.color.ic_launcher_bg));
-        assertAllIconXmlsUseDedicatedColor();
     }
 
     @Test
@@ -64,18 +75,25 @@ public class LauncherIconNightTest {
                 ContextCompat.getColor(ctx, R.color.indigo));
         // 图标专用色没有夜间版，日夜同色——桌面图标不再发白。
         assertEquals(0xFF4F46E5, ContextCompat.getColor(ctx, R.color.ic_launcher_bg));
-        assertAllIconXmlsUseDedicatedColor();
     }
 
-    /** 四个配置文件都必须引用 ic_launcher_bg，且不能再引用会随夜间切换的 indigo。 */
-    private void assertAllIconXmlsUseDedicatedColor() {
+    /** 两类系统 surface 的配置文件都必须引用无夜间版的固定 token。 */
+    @Test
+    public void systemSurfaceFiles_useNightlessTokens() {
         for (String path : ICON_XMLS) {
-            File f = iconFile(path);
-            assertTrue("图标配置文件应存在: " + path, f.exists());
-            String xml = read(f);
+            String xml = read(iconFile(path));
             assertTrue(path + " 应引用 ic_launcher_bg", xml.contains("@color/ic_launcher_bg"));
             assertFalse(path + " 不能再引用随夜间切换的 @color/indigo",
                     xml.contains("@color/indigo\""));
+        }
+        for (String path : NOTIF_DRAWABLES) {
+            String xml = read(iconFile(path));
+            assertTrue(path + " 应引用 hero_start", xml.contains("@color/hero_start"));
+            assertTrue(path + " 应引用 hero_end", xml.contains("@color/hero_end"));
+            assertFalse(path + " 不能再引用随夜间切换的 @color/indigo",
+                    xml.contains("@color/indigo\""));
+            assertFalse(path + " 不能再引用随夜间切换的 @color/violet",
+                    xml.contains("@color/violet\""));
         }
     }
 

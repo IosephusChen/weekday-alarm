@@ -4,14 +4,19 @@
 
   原来是一层 8% 黑（深色模式 15% 白）的透明蒙层，和系统通知里的灰色圆毫无区别——
   用户反馈「好看但没有特色，容易和系统闹钟混淆」。现在直接用首页 hero 的同一套渐变
-  （indigo → violet，135°），通知栏里一眼能认出是本应用。
+  （135°），通知栏里一眼能认出是本应用。
 
-  品牌色不随明暗模式变：深色卡片上紫底白图标同样成立，所以不再需要 _dark 变体。
+  v1.69.1：渐变两端从 @color/indigo / @color/violet 改成 hero_start / hero_end。
+  通知 RemoteViews 由 SystemUI 按**系统**的明暗配置渲染——indigo / violet 有
+  values-night 版（浅紫粉一对），夜里通知栏的品牌紫会被提亮，和 App 里固定不变的
+  hero 渐变不是同一个紫，白图标对比度也从约 5:1 掉到约 3:1。
+  hero_start / hero_end 是 v1.56.0 立的固定 token（无夜间版，值与 indigo / violet
+  日间值完全相同），换过来日间零变化、夜间钉死。桌面图标同类问题见 ic_launcher_bg。
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <gradient
         android:angle="135"
-        android:startColor="@color/indigo"
-        android:endColor="@color/violet" />
+        android:startColor="@color/hero_start"
+        android:endColor="@color/hero_end" />
 </shape>

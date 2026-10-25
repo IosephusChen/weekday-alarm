@@ -189,9 +189,10 @@ public class WidgetProviderConfigTest {
     public void allProviders_buildViewsCanInflate() {
         // 4×2 闹钟：v1.51.0 起带七格，但没有请假按钮（按钮只在整月那张卡上）
         View a = inflate(NextAlarmWidget.buildViews(ctx(),
-                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响")));
+                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天",
+                        "休息日 · 下次 明天 07:00 起床")));
         assertNotNull(a);
-        assertNotNull(a.findViewById(R.id.widget_title));
+        assertNotNull(a.findViewById(R.id.widget_hero));
         assertNotNull("4×2 闹钟卡必须有七格", a.findViewById(R.id.label_0));
         assertNotNull(a.findViewById(R.id.label_6));
 

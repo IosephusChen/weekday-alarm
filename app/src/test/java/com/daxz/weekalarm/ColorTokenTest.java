@@ -38,7 +38,7 @@ public class ColorTokenTest {
      * 明确不需要夜间版本的色。
      *
      * <p>只允许一种情况：这个色<b>永远画在一个不随明暗变化的底上</b>。
-     * v1.56.0 起有两组：
+     * v1.56.0 起有三组：
      * <ul>
      *   <li>{@code widget_*}：班表小组件的标签色，压在固定紫色渐变（{@code bg_hero}）上</li>
      *   <li>{@code hero_start / hero_end / hero_text}：v1.56.0 紫色卡片事故后新立的固定 token。
@@ -46,6 +46,10 @@ public class ColorTokenTest {
      *       在此之前它们引用 {@code indigo / violet / indigo_dark}，这三个色有夜间版，
      *       深色模式下三张卡（两个小部件根背景 + 首页「今日状态」卡）一起变成淡粉紫。
      *       详见 {@code values/colors.xml} 里同名字段的注释。</li>
+     *   <li>{@code ic_launcher_bg}：v1.69.0 桌面图标专用底色。启动器是系统 surface，
+     *       资源解析走**启动器的**配置——系统深色模式下 values-night 会作用到图标上。
+     *       早先图标背景引用 {@code indigo}（有夜间版），深夜色壁纸上整个图标发白，
+     *       用户反馈「夜间变得有些透明」。这个色必须日夜同值，故不设夜间版。</li>
      * </ul>
      */
     private static final Set<String> NIGHTLESS = new LinkedHashSet<>();
@@ -60,6 +64,7 @@ public class ColorTokenTest {
         NIGHTLESS.add("hero_start");
         NIGHTLESS.add("hero_end");
         NIGHTLESS.add("hero_text");
+        NIGHTLESS.add("ic_launcher_bg");
     }
 
     @Test

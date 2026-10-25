@@ -60,7 +60,7 @@ public class WidgetRemoteViewsTest {
         resetPrefs();
         NextAlarmWidget.WidgetModel m = NextAlarmWidget.computeModel(ctx());
         View root = inflate(NextAlarmWidget.buildViews(ctx(), m));
-        assertEquals(m.title, ((TextView) root.findViewById(R.id.widget_title)).getText().toString());
+        assertEquals(m.status, ((TextView) root.findViewById(R.id.widget_hero)).getText().toString());
     }
 
     /** 4×4 整月卡的底部两个按钮：文案要真的写进 RemoteViews，而不是只存在于模型里。 */
@@ -173,12 +173,12 @@ public class WidgetRemoteViewsTest {
     @Test
     public void compactLayout_alwaysHasWeekCells() {
         NextAlarmWidget.WidgetModel m =
-                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
+                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天", "休息日 · 下次 明天 07:00 起床");
         View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
         assertNotNull("4×2 卡要有七格", v.findViewById(R.id.day_0));
         assertNotNull(v.findViewById(R.id.label_6));
-        assertNotNull(v.findViewById(R.id.widget_title));
+        assertNotNull(v.findViewById(R.id.widget_hero));
         assertNotNull(v.findViewById(R.id.widget_sub));
     }
 
@@ -186,7 +186,7 @@ public class WidgetRemoteViewsTest {
     @Test
     public void compactLayout_hasNoLeaveButtons() {
         NextAlarmWidget.WidgetModel m =
-                new NextAlarmWidget.WidgetModel("起床", "明天 07:00 会响");
+                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天", "休息日 · 下次 明天 07:00 起床");
         View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
         assertNull("4×2 不放请假按钮", v.findViewById(R.id.wrap_today_action));

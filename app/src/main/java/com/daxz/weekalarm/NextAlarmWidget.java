@@ -12,70 +12,78 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 桌面小组件（v1.19）：在桌面一眼看到「下一个闹钟」。
- * 计算逻辑完全复用主 App 的 ScheduleManager，保证与 App 内状态一致。
+ * 桌面小组件（v1.19）：在桌面一眼看到「下次什么时候响、今天上不上班」。
+ *
+ * <p><b>v1.69.0 改版</b>：信息结构对齐 App 首页的「今天状态卡」——
+ * 大字段放今天状态（今天休息 / 今天上班 / 今天请假 / 今天加班），
+ * 右侧角标放周次（小周 · 休1天），副信息放「下次 明天 07:00 起床」，
+ * 底部仍是本周七格。原来大字段放的是闹钟时刻，与首页的「状态优先」不是一个层级，
+ * 同一天两处给的重点不一样。文案计算全部走 {@link TodayCard}，与首页逐字一致。
+ *
+ * <p><b>为什么不放「距下次响铃」秒表倒计时</b>：widget 的 updatePeriodMillis
+ * 系统最快按 30 分钟投递，一个秒级倒计时会在两次刷新之间冻结半小时，
+ * 显示一个静止的「20:35:06」比不显示更糟。要看着跳的倒计时请进 App。
+ *
+ * <p>计算逻辑复用主 App 的 ScheduleManager / WeekSchedule，保证与 App 内状态一致。
  * 更新策略：以主 App 主动推送为主（开关 / 设置变更 / 响铃后重排 / 开机恢复），
  * provider 的 updatePeriodMillis 为 30 分钟兜底（不是 0）——长期不打开 App 时，
  * 跨天后「今天」高亮最长会错约 30 分钟，Doze 期间更久，但没有即时 DATE_CHANGED 通道。
  */
 public class NextAlarmWidget extends AppWidgetProvider {
 
-
     /** 小组件展示的数据模型（纯数据，便于单元测试，不经过 RemoteViews）。 */
     static class WidgetModel {
-        final String title;     // 主信息：下一次响铃时刻 / 空状态
-        final String subtitle;  // 副信息：日期 + 闹钟名
-        WidgetModel(String title, String subtitle) {
-            this.title = title;
-            this.subtitle = subtitle;
+        final String status;   // 大字段：今天休息 / 今天上班 / 今天请假 / 今天加班
+        final String chip;     // 角标：小周 · 休1天
+        final String sub;      // 副信息：休息日 · 下次 明天 07:00 起床
+        WidgetModel(String status, String chip, String sub) {
+            this.status = status;
+            this.chip = chip;
+            this.sub = sub;
         }
     }
 
     /**
-     * 计算小组件要展示的内容；与主 App 共用同一套排班计算。
+     * 计算小组件要展示的内容；与主 App 首页状态卡共用同一套排班与文案计算。
      *
-     * <p>v1.62.0 起重排信息层级：主信息只放**时刻**，副信息放**日期 + 闹钟名**。
-     * 原来主信息是「10月26日 周一 07:00」一长串，时间被日期稀释；副信息还要缀
-     * 「未来 90 天共 140 个提醒」——那是统计，不是桌面一眼要看的东西。
+     * <p>v1.69.0 起改算 {@code nextRing}（下次真正会响的闹钟）而不是
+     * {@code nextRegisteredAlarm}（系统里已登记的下一个 PendingIntent）：
+     * 首页副信息用的是前者，部件要逐字对齐就只能用前者。前者是纯内存计算，
+     * 后者才要逐候选探测 PendingIntent（跨进程 IPC）——顺手还把首页刷新里
+     * 那次 IPC 探测省掉了。
      */
     static WidgetModel computeModel(Context ctx) {
-        return computeModel(ctx, ScheduleManager.nextRegisteredAlarm(ctx),
-                ScheduleManager.countScheduled(ctx));
+        return computeModel(ctx, ScheduleManager.nextRing(
+                Prefs.getAlarms(ctx), Prefs.getRule(ctx),
+                Prefs.getVacationDates(ctx), Prefs.getOvertimeDates(ctx),
+                LocalDateTime.now(), Prefs.getHorizonDays(ctx)));
     }
 
     /**
-     * 同上，但用调用方算好的结果（v1.29.0）。
-     *
-     * <p>主界面刷新时已经算过「下一个已登记闹钟」和「提醒总数」，这里再算一遍纯属重复；
-     * 而 {@code nextRegisteredAlarm} 每次都要逐候选探测 PendingIntent，是跨进程调用。
-     * v1.62.0 起提醒总数不再显示，{@code count} 只为兼容旧调用链保留。
+     * 同上，但「下一次响铃」由调用方给定（v1.29.0 的性能预留，现主要为测试服务：
+     * 构造一个确定的 NextAlarm，就能钉死今天 / 明天 / 后天的相对词）。
      */
-    static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next, int count) {
-        if (next == null) {
-            return new WidgetModel("暂无提醒",
-                    "未来 " + Prefs.getHorizonDays(ctx) + " 天没有可排的闹钟");
-        }
-        LocalDateTime when = next.when;
-        String title = TimeText.clock(when.getHour(), when.getMinute());
-        String label = next.label == null || next.label.isEmpty() ? "闹钟" : next.label;
-        String subtitle = datePart(when.toLocalDate()) + " · " + label;
-        return new WidgetModel(title, subtitle);
-    }
-
-    /** 副信息里的日期部分：今天 / 明天用相对词，其余「月日 + 星期」。 */
-    private static String datePart(LocalDate d) {
+    static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next) {
         LocalDate today = LocalDate.now();
-        if (d.equals(today)) return "今天";
-        if (d.equals(today.plusDays(1))) return "明天";
-        return TimeText.monthDayWeek(d);
+        WeekSchedule.Rule rule = Prefs.getRule(ctx);
+        WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
+        boolean vacation = Prefs.isVacation(ctx, today);
+        boolean baseWork = DayOffAction.isWorkDay(todayType);
+        boolean overtime = !vacation && !baseWork && Prefs.isOvertime(ctx, today);
+        boolean work = (baseWork && !vacation) || overtime;
+        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime, baseWork);
+        return new WidgetModel(
+                TodayCard.statusText(vacation, overtime, work),
+                TodayCard.chipText(rule, today),
+                TodayCard.subText(dayTag, next, today, work, vacation));
     }
 
     /**
-     * 4×2 固定布局：闹钟两行 + 本周七格（v1.51.0）。
+     * 4×2 固定布局：状态两行 + 本周七格（v1.51.0 并入七格，v1.69.0 重排信息层级）。
      *
      * <p>v1.50.0 之前这里只有闹钟两行，七格是「拉到 4×3 才出现」的第二档布局。
      * 尺寸锁死之后没有第二档了，七格直接并进来——用户实际用下来，
-     * 165dp 的卡片放「闹钟 + 七格」正好，比原来空着半张卡有用。
+     * 165dp 的卡片放「状态 + 七格」正好，比原来空着半张卡有用。
      */
     static RemoteViews buildViews(Context ctx, WidgetModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm);
@@ -83,8 +91,9 @@ public class NextAlarmWidget extends AppWidgetProvider {
         // 「已开启 + 暂无提醒」，自相矛盾。整月两张卡 v1.52.0 就接上了
         // Widgets.alarmStatusText，4×2 漏接，这次补上，几张卡一个口径。
         rv.setTextViewText(R.id.widget_status, Widgets.alarmStatusText(ctx));
-        rv.setTextViewText(R.id.widget_title, m.title);
-        rv.setTextViewText(R.id.widget_sub, m.subtitle);
+        rv.setTextViewText(R.id.widget_hero, m.status);
+        rv.setTextViewText(R.id.widget_chip, m.chip);
+        rv.setTextViewText(R.id.widget_sub, m.sub);
 
         WeekWidgetRender.WeekModel week = WeekWidgetRender.computeModel(ctx);
         WeekWidgetRender.fillWeekCells(rv, ctx, week);
@@ -122,16 +131,6 @@ public class NextAlarmWidget extends AppWidgetProvider {
         int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, NextAlarmWidget.class));
         if (ids == null) return;
         for (int id : ids) updateAppWidget(ctx, mgr, id);
-    }
-
-    /** 同上，复用调用方已算好的结果，省掉一次「下一个已登记闹钟」的探测（v1.29.0）。 */
-    public static void updateAll(Context ctx, ScheduleManager.NextAlarm next, int count) {
-        AppWidgetManager mgr = AppWidgetManager.getInstance(ctx);
-        if (mgr == null) return;
-        int[] ids = mgr.getAppWidgetIds(new ComponentName(ctx, NextAlarmWidget.class));
-        if (ids == null || ids.length == 0) return;   // 桌面没放小组件：一次模型都不算
-        WidgetModel m = computeModel(ctx, next, count);
-        for (int id : ids) mgr.updateAppWidget(id, buildViews(ctx, m));
     }
 
     @Override

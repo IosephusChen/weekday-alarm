@@ -2,6 +2,12 @@
 <resources>
     <color name="indigo">#4F46E5</color>
     <color name="indigo_dark">#4338CA</color>
+    <!-- 桌面图标专用底色（v1.69.0）。**故意不随 values-night 切换**：
+         启动器是系统 surface，资源解析走夜间配置——v1.69.0 之前图标背景直接引用
+         @color/indigo，而它在 values-night 里被提亮成 #818CF8（浅紫），
+         深夜色壁纸上整个图标发白，用户反馈「像变透明了」。
+         App 内界面该提亮提亮（indigo 的夜间版照留），图标这块必须日夜一个色。 -->
+    <color name="ic_launcher_bg">#4F46E5</color>
     <color name="violet">#7C3AED</color>
     <color name="ink">#1E2235</color>
     <color name="sub">#6B7189</color>

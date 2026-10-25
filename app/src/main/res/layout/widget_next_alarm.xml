@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 桌面小组件「下一个闹钟」4×2（v1.62.0 重排信息层级）。
+<!-- 桌面小组件「下一个闹钟」4×2（v1.69.0 对齐首页今天状态卡）。
 
-     主信息只放时刻（07:00），副信息放「今天 / 明天 / 月日 星期 · 闹钟名」。
-     原来主信息把日期、星期、时间连成一长串，时间被稀释；副信息还缀着
-     「未来 90 天共 N 个提醒」——统计信息不该占桌面一眼的位置。
+     信息层级抄首页状态卡：大字段放今天状态（今天休息 / 今天上班 / 今天请假 /
+     今天加班），右侧角标放周次（小周 · 休1天），副信息放「下次 明天 07:00 起床」。
+     v1.62.0 之前大字段放的是闹钟时刻——同一天首页说「今天休息」、桌面把 07:00
+     放最大，两处重点不一致；文案全部由 TodayCard 算，与首页逐字相同。
+
+     刻意不放「距下次响铃」秒表：widget 更新最快 30 分钟一次，秒表会冻结半小时，
+     静止的倒计时比没有更糟。
+
+     高度预算（合同高度 118dp 不裁字）：padding 24 + 标题行 18 + 状态行 26 +
+     副信息 15 + 七格 26 + 行间距 12 ≈ 121，七格是 weight=1 的可压缩项，
+     典型启动器给 4×2 约 150~165dp，届时七格拿到 50dp 以上，宽松。
 
      七格沿用班表组件的 id（day_0..6 / label_0..6 / hl_0..6），
      渲染直接调 WeekWidgetRender.fillWeekCells，不复制一份逻辑。 -->
@@ -13,7 +21,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_hero"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -47,18 +55,44 @@
             android:textSize="11sp" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/widget_title"
+    <!-- 状态行：大字段今天状态 + 右侧周次角标（抄首页状态卡的 tv_today_status + tv_week_chip）。
+         角标背景用首页 chip 同一张 bg_chip_white，渐变卡上观感一致。 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:text="—"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
+        <TextView
+            android:id="@+id/widget_hero"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="—"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_chip_white"
+            android:maxLines="1"
+            android:paddingStart="6dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="1dp"
+            android:text="—"
+            android:textColor="@color/white"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- 副信息：休息日 · 下次 明天 07:00 起床（TodayCard.subText，与首页逐字一致） -->
     <TextView
         android:id="@+id/widget_sub"
         android:layout_width="match_parent"
@@ -68,14 +102,14 @@
         android:maxLines="1"
         android:text="—"
         android:textColor="#E6E4FF"
-        android:textSize="12sp" />
+        android:textSize="11sp" />
 
-    <!-- 七格吃掉剩余高度：4×2 实测约 165dp，扣掉上面 46dp 后还有 30dp 左右，
-         正好放「日 + 班」两行。高度更小的启动器上会被压扁，但不会被裁出卡片。 -->
+    <!-- 七格吃掉剩余高度：4×2 实测约 165dp，扣掉上面约 70dp 后还有 50dp 左右，
+         放「日 + 班」两行宽松。合同高度 118dp 的启动器上会被压扁，但不裁出卡片。 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:layout_weight="1"
         android:orientation="horizontal">
 

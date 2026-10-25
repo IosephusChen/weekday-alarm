@@ -660,9 +660,8 @@ public class MainActivity extends AppCompatActivity {
             tvTodayLunar.setText(sub.toString());
             tvTodayLunar.setVisibility(View.VISIBLE);
         }
-        tvWeekChip.setText(WeekSchedule.describe(rule, today));
-        tvTodayStatus.setText(vacation ? "今天请假"
-                : overtime ? "今天加班" : work ? "今天上班" : "今天休息");
+        tvWeekChip.setText(TodayCard.chipText(rule, today));
+        tvTodayStatus.setText(TodayCard.statusText(vacation, overtime, work));
         // v1.22.5：倒计时和「下一个 / 下次」都改用 ScheduleManager.nextRing 统一计算。
         // 旧写法有两个洞：
         // ① 只算「今天 + 今天算上班」——休息日里设了「每天」闹钟、节假日里设了「每天」闹钟，
@@ -677,22 +676,10 @@ public class MainActivity extends AppCompatActivity {
         nextRingAt = next != null ? next.when : null;
         tickDay = today;
 
-        String dayTag = vacation ? "个人请假"
-                : overtime ? "个人加班"
-                : todayType == WeekSchedule.DayType.MAKEUP_WORK ? "调休补班"
-                : todayType == WeekSchedule.DayType.HOLIDAY ? "法定节假日"
-                : baseWork ? "" : "休息日";
-
-        String subText;
-        if (vacation) {
-            subText = "个人请假 · 闹钟全部跳过";
-        } else if (next == null) {
-            subText = work ? "今天上班，但没有要响的闹钟" : "没有启用的闹钟";
-        } else {
-            String tail = (next.when.toLocalDate().equals(today) ? "下一个 " : "下次 ")
-                    + fmtRing(next, today);
-            subText = dayTag.isEmpty() ? tail : dayTag + " · " + tail;
-        }
+        // v1.69.0：三行文案改调 TodayCard——4×2 桌面小组件改用同一套计算，
+        // 首页与桌面逐字一致。逻辑本身没动（dayTag / subText 的规则见 TodayCard）。
+        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime, baseWork);
+        String subText = TodayCard.subText(dayTag, next, today, work, vacation);
         tvTodaySub.setText(subText);
 
         // v1.68.0：假期倒计时。并进 refreshStatus——它已经按天重算（tickDay 发现跨天就
@@ -716,26 +703,11 @@ public class MainActivity extends AppCompatActivity {
 
         // v1.46.2：运行状态整块搬去设置页（SettingsActivity 的 row_run_status），
         // 首页不再展示「未来 N 天共 N 个提醒 / 系统已登记 ✓」这类核对信息。
-        // 这里只留下小组件要用的两个统计值。
-        int n = ScheduleManager.countScheduled(this, alarms);
-        ScheduleManager.NextAlarm nextAlarm = ScheduleManager.nextRegisteredAlarm(this, alarms);
+        // v1.69.0 起小组件自己按 nextRing 算（与首页副信息同一套算法），
+        // 不再需要这里探一次 nextRegisteredAlarm（逐候选 PendingIntent，跨进程 IPC）
+        // 传进去——刷新首页反而少付一次 IPC。
         // 主界面状态刷新后，同步刷新桌面小组件（v1.19 起；v1.20 起含「本周班表」）
-        // v1.29.0：把刚算好的 nextAlarm / n 传进去，小组件不必再做一次 PendingIntent 探测
-        Widgets.updateAll(this, nextAlarm, n);
-    }
-
-    /**
-     * 「下一次响铃」的完整写法（v1.22.5）：今天只写时分，明天 / 后天加前缀，
-     * 更远才补日期和星期——副标题只有一行，能省的字都省掉。
-     */
-    private String fmtRing(ScheduleManager.NextAlarm n, LocalDate today) {
-        LocalDate d = n.when.toLocalDate();
-        long days = ChronoUnit.DAYS.between(today, d);
-        String prefix = days == 0 ? "" : days == 1 ? "明天 " : days == 2 ? "后天 "
-                : TimeText.monthDayWeek(d) + " ";
-        String time = TimeText.clock(n.when.getHour(), n.when.getMinute());
-        String label = n.label == null || n.label.isEmpty() ? "" : " " + n.label;
-        return prefix + time + label;
+        Widgets.updateAll(this);
     }
 
 }

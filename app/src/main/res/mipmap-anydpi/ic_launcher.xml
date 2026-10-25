@@ -2,7 +2,7 @@
 <!-- legacy 图标兜底（API 26 以下或不支持自适应图标的启动器）：
      纯色底 + 安全区内缩放的闹钟前景，与 adaptive-icon 视觉一致 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/indigo" />
+    <item android:drawable="@color/ic_launcher_bg" />
     <item>
         <inset
             android:drawable="@drawable/ic_launcher_foreground"

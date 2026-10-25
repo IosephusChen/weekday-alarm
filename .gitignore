@@ -14,3 +14,7 @@ captures/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# JVM 崩溃转储（测试 JVM 偶发 JIT 段错误时生成，别误提交）
+hs_err_pid*.log
+replay_pid*.log

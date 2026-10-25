@@ -26,6 +26,7 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -286,6 +287,36 @@ public class ChangelogTest {
             assertEquals("只有当前版本卡带「当前版本」徽章：v" + e.version,
                     e.code == code, containsText(card, "当前版本"));
         }
+    }
+
+    /**
+     * v1.71.1：紧凑模式（升级弹窗）不画版本徽章与「当前版本」徽章。
+     *
+     * <p>弹窗标题已经写着「更新到 v1.71.0」，卡片里再放版本徽章、再跟一个
+     * 「当前版本」徽章，等于同一件事说三遍（用户反馈「看着怪怪的」）。
+     * 紧凑卡只留标题 + meta + 条目；列表页仍然要徽章（扫一页找「现在第几版」靠它），
+     * 那条由 {@link #cards_carryVersionPill_andOnlyCurrentHasBadge()} 钉着。
+     */
+    @Test
+    public void compactCard_dropsVersionPillAndCurrentBadge() {
+        List<Changelog.Entry> all = Changelog.all();
+        Changelog.Entry e = all.get(0);
+        // 当前版本卡在列表模式下是带「当前版本」徽章的，紧凑模式必须没有——
+        // 这样这条断言才对「compact 参数有没有生效」敏感
+        assertEquals("取的是当前版本", installedCode(), e.code);
+
+        LinearLayout box = new LinearLayout(ctx());
+        Changelog.renderInto(ctx(), box, Collections.singletonList(e), e.code, true);
+
+        assertEquals(1, box.getChildCount());
+        View card = box.getChildAt(0);
+        List<String> leaves = textLeaves(card);
+        assertTrue("标题应在", leaves.contains(e.title));
+        assertTrue("meta 应留着 versionCode", containsText(card, "versionCode"));
+        // 徽章按整段文案钉：要点里可能出现「v1.71.1」「当前版本」这样的子串
+        // （v1.71.1 的要点就写着「『当前版本』徽章都不画」），只有徽章是整段相等
+        assertFalse("紧凑卡不该有版本徽章", leaves.contains("v" + e.version));
+        assertFalse("紧凑卡不该有「当前版本」徽章", leaves.contains("当前版本"));
     }
 
     /**

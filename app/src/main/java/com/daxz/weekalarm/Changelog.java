@@ -55,6 +55,9 @@ public final class Changelog {
      * 真想知道为什么，去项目里的使用说明。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(179, "1.71.1", "2026/10/25", "修两处观感：升级弹窗不再把版本说三遍，长按菜单去掉副标题（无功能变化）",
+                    "升级弹窗的版本卡改紧凑模式：标题独占一行，版本徽章与「当前版本」徽章都不画——弹窗标题已经写着「更新到 v1.71.0」，卡片里再放两枚徽章是同一件事说三遍",
+                    "长按闹钟行的菜单去掉副标题：「副本叫什么」由复制结果的 Toast 自己说，「不可撤销」由删除的二次确认承担，都是点下去之后才发生的事，不必在菜单里预告"),
             new Entry(178, "1.71.0", "2026/10/25", "三页一窗排版收紧：运行状态 / 使用说明 / 更新日志 / 导入导出（无功能变化）",
                     "运行状态弹窗：五件事（排程量 / 下一个闹钟 / 注册上限 / 大周基准 / 节假日来源）从一段文字改成「标签: 值」信息行，「已登记」跟绿色徽章，没登记走红色——核对用的信息一眼能扫",
                     "使用说明页：条目改悬挂缩进（换行对齐正文不对齐圆点），小节标题带序号；更新日志页：版本号做成徽章、条目同样悬挂缩进，翻页找「现在第几版」不用逐行读",
@@ -805,8 +808,21 @@ public final class Changelog {
      */
     public static void renderInto(Context c, LinearLayout box, List<Entry> entries,
                                   int highlightCode) {
+        renderInto(c, box, entries, highlightCode, false);
+    }
+
+    /**
+     * 紧凑模式（v1.71.1）：给升级弹窗用。
+     *
+     * <p>弹窗标题已经写着「更新到 v1.71.0」，卡片里再放版本徽章、再跟一个
+     * 「当前版本」徽章，等于同一件事说三遍——用户反馈「看着怪怪的」。
+     * 紧凑卡只留标题 + meta + 条目：版本归标题，卡片不重复。
+     * 列表页仍然要徽章（扫一页找「现在第几版」靠它），所以两种模式并存。
+     */
+    public static void renderInto(Context c, LinearLayout box, List<Entry> entries,
+                                  int highlightCode, boolean compact) {
         box.removeAllViews();
-        appendInto(c, box, entries, 0, entries.size(), highlightCode);
+        appendInto(c, box, entries, 0, entries.size(), highlightCode, compact);
     }
 
     /**
@@ -821,6 +837,23 @@ public final class Changelog {
      */
     public static int appendInto(Context c, LinearLayout box, List<Entry> entries,
                                  int from, int count, int highlightCode) {
+        return appendInto(c, box, entries, from, count, highlightCode, false);
+    }
+
+    /**
+     * 从 {@code from} 起追加至多 {@code count} 张卡，返回下一张的下标。
+     *
+     * <p>v1.46.6：114 版一次性 inflate 约 570 个 View，进页面要卡一下。更新日志页改成
+     * 先画 {@link #PAGE_SIZE} 张、滚到接近底部再追加一批；全部画完时返回值等于
+     * {@code entries.size()}，调用方据此停止追加。
+     *
+     * <p>「同日」按绝对下标取上一版，所以分批画与一次性画的结果完全一致，
+     * 跨批次也不会把换日的那一版误写成「同日」。
+     *
+     * @param compact 紧凑模式（升级弹窗）：不画版本徽章与「当前版本」徽章
+     */
+    public static int appendInto(Context c, LinearLayout box, List<Entry> entries,
+                                 int from, int count, int highlightCode, boolean compact) {
         float d = c.getResources().getDisplayMetrics().density;
         int pad = Math.round(16 * d);
         int start = Math.max(0, from);
@@ -831,27 +864,29 @@ public final class Changelog {
             boolean current = e.code == highlightCode;
             // entries 从新到旧：同一批日期里，只有最上面那张写完整日期
             boolean sameDay = i > 0 && entries.get(i - 1).date.equals(e.date);
-            box.addView(buildCard(c, e, current, sameDay, pad, d));
+            box.addView(buildCard(c, e, current, sameDay, pad, d, compact));
         }
         return end;
     }
 
-    /** 画一张版本卡；样式与分批无关，只由这一处维护。 */
     /**
-     * 一张版本卡（v1.71.0 改版）。
+     * 一张版本卡（v1.71.0 改版，v1.71.1 加紧凑模式）。
      *
-     * <p>原来「v1.70.0  标题」是一行整TextView，版本号混在标题里，
-     * 扫一页要找「现在看到第几版了」得逐行读前几个字符。改成版本号实心
-     * 徽章（{@link RowKit#pill}）+ 标题两列：徽章一眼定位，标题自动换行。
-     *
-     * <p>「当前版本」也从 meta 行里的一段文字升级成徽章——以前它跟在
+     * <p>列表模式：「v1.70.0  标题」原来是一行整TextView，版本号混在标题里，
+     * 扫一页要找「现在看到第几版了」得逐行读前几个字符。改成版本号徽章
+     * （{@link RowKit#pill}）+ 标题两列：徽章一眼定位，标题自动换行。
+     * 「当前版本」也从 meta 行里的一段文字升级成徽章——以前它跟在
      * 「同日 · versionCode 177」后面，容易被当成普通文字扫过去。
      *
-     * <p>要点条目换成{@link RowKit#bullet}悬挂缩进行：长要点换行后
+     * <p>紧凑模式（升级弹窗）：标题已经说着「更新到 v1.71.0」，版本徽章和
+     * 「当前版本」徽章都是重复，且长标题挤在徽章旁边换行很别扭。紧凑卡
+     * 标题独占一行、meta 只留日期和 versionCode。
+     *
+     * <p>要点条目两种模式都用{@link RowKit#bullet}悬挂缩进行：长要点换行后
      * 第二行顶到最左、和圆点齐平，一页卡下来左右边界不齐。
      */
     private static LinearLayout buildCard(Context c, Entry e, boolean current, boolean sameDay,
-                                          int pad, float d) {
+                                          int pad, float d, boolean compact) {
         LinearLayout card = new LinearLayout(c);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setBackgroundResource(R.drawable.bg_card);
@@ -862,49 +897,70 @@ public final class Changelog {
         lp.bottomMargin = Math.round(10 * d);
         card.setLayoutParams(lp);
 
-        // 头部行：版本徽章 + 标题
-        LinearLayout head = new LinearLayout(c);
-        head.setOrientation(LinearLayout.HORIZONTAL);
-        head.setGravity(Gravity.TOP);
-        head.addView(RowKit.pill(c, "v" + e.version, R.color.indigo),
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        if (compact) {
+            // 紧凑：标题独占一行（弹窗标题已说版本，不再重复徽章）
+            TextView title = new TextView(c);
+            title.setText(e.title);
+            title.setTextSize(15f);
+            title.setTypeface(Typeface.DEFAULT_BOLD);
+            title.setTextColor(c.getColor(R.color.ink));
+            title.setLineSpacing(0, 1.2f);
+            card.addView(title);
 
-        TextView title = new TextView(c);
-        title.setText(e.title);
-        title.setTextSize(14f);
-        title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setTextColor(c.getColor(R.color.ink));
-        title.setLineSpacing(0, 1.2f);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        tlp.leftMargin = Math.round(7 * d);
-        head.addView(title, tlp);
-        card.addView(head);
-
-        // meta 行：日期 · versionCode，当前版本再跟一个徽章
-        LinearLayout metaRow = new LinearLayout(c);
-        metaRow.setOrientation(LinearLayout.HORIZONTAL);
-        metaRow.setGravity(Gravity.CENTER_VERTICAL);
-        TextView meta = new TextView(c);
-        meta.setText((sameDay ? "同日" : e.date) + " · versionCode " + e.code);
-        meta.setTextSize(11f);
-        meta.setTextColor(c.getColor(R.color.sub));
-        metaRow.addView(meta);
-        if (current) {
-            TextView badge = RowKit.pill(c, "当前版本", R.color.indigo);
-            LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+            TextView meta = new TextView(c);
+            meta.setText((sameDay ? "同日" : e.date) + " · versionCode " + e.code);
+            meta.setTextSize(11f);
+            meta.setTextColor(c.getColor(R.color.sub));
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            blp.leftMargin = Math.round(6 * d);
-            metaRow.addView(badge, blp);
+            clp.topMargin = Math.round(3 * d);
+            card.addView(meta, clp);
+        } else {
+            // 头部行：版本徽章 + 标题
+            LinearLayout head = new LinearLayout(c);
+            head.setOrientation(LinearLayout.HORIZONTAL);
+            head.setGravity(Gravity.TOP);
+            head.addView(RowKit.pill(c, "v" + e.version, R.color.indigo),
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            TextView title = new TextView(c);
+            title.setText(e.title);
+            title.setTextSize(14f);
+            title.setTypeface(Typeface.DEFAULT_BOLD);
+            title.setTextColor(c.getColor(R.color.ink));
+            title.setLineSpacing(0, 1.2f);
+            LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            tlp.leftMargin = Math.round(7 * d);
+            head.addView(title, tlp);
+            card.addView(head);
+
+            // meta 行：日期 · versionCode，当前版本再跟一个徽章
+            LinearLayout metaRow = new LinearLayout(c);
+            metaRow.setOrientation(LinearLayout.HORIZONTAL);
+            metaRow.setGravity(Gravity.CENTER_VERTICAL);
+            TextView meta = new TextView(c);
+            meta.setText((sameDay ? "同日" : e.date) + " · versionCode " + e.code);
+            meta.setTextSize(11f);
+            meta.setTextColor(c.getColor(R.color.sub));
+            metaRow.addView(meta);
+            if (current) {
+                TextView badge = RowKit.pill(c, "当前版本", R.color.indigo);
+                LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                blp.leftMargin = Math.round(6 * d);
+                metaRow.addView(badge, blp);
+            }
+            LinearLayout.LayoutParams mlp2 = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            mlp2.topMargin = Math.round(5 * d);
+            card.addView(metaRow, mlp2);
         }
-        LinearLayout.LayoutParams mlp2 = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        mlp2.topMargin = Math.round(5 * d);
-        card.addView(metaRow, mlp2);
 
         for (String s : e.points) {
             View b = RowKit.bullet(c, s, 12);

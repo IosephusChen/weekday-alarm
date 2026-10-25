@@ -142,6 +142,34 @@ public class QuickActionsTest {
         assertEquals("删除这个闹钟", optionTitle(options.getChildAt(1)));
     }
 
+    /**
+     * v1.71.1：长按菜单不显示副标题（用户反馈「副标题没必要」）。
+     *
+     * <p>副标题说的是「选它意味着什么」，可复制/删除都是点下去之后才发生的事：
+     * 副本叫什么由复制结果的 Toast 自己说，不可撤销由删除的二次确认承担——
+     * 菜单里再预告一遍只是噪音。选项卡的副标题位仍然占位（GONE），
+     * 这条断言钉的就是「占位但不显示」。
+     */
+    @Test
+    public void longPress_menuOptionsShowNoSubtitle() {
+        resetPrefs();
+        seedOneAlarm();
+        MainActivity a = launch();
+        LinearLayout list = a.findViewById(R.id.alarm_list);
+        list.getChildAt(0).performLongClick();
+        ShadowLooper.idleMainLooper();
+
+        LinearLayout options = ((AlertDialog) ShadowAlertDialog.getLatestDialog())
+                .findViewById(R.id.dlg_pick_list);
+        assertNotNull("自绘列表应有容器", options);
+        for (int i = 0; i < options.getChildCount(); i++) {
+            TextView sub = options.getChildAt(i).findViewWithTag("dlg_sub");
+            assertNotNull("第 " + i + " 项应有副标题占位（tag dlg_sub）", sub);
+            assertTrue("第 " + i + " 项不该显示副标题",
+                    sub.getVisibility() != View.VISIBLE);
+        }
+    }
+
     /** 点「复制」之后列表里真的多一条，并且原条不动。 */
     @Test
     public void menuCopy_addsSecondAlarm() {

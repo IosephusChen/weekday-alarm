@@ -73,6 +73,105 @@ public class DialogKitTest {
         return list;
     }
 
+    /** 列表里的卡片（组标题是 TextView，按类型跳过）。 */
+    private static java.util.List<View> cardsOf(LinearLayout list) {
+        java.util.List<View> out = new java.util.ArrayList<>();
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View c = list.getChildAt(i);
+            if (c instanceof LinearLayout) out.add(c);
+        }
+        return out;
+    }
+
+    // ---------- 分组单选（v1.70.0） ----------
+
+    /**
+     * 点一组里的卡片，只挪这一组的选中态。
+     *
+     * <p>这是 showGroupPick 与 showPick/showMultiPick 最大的差别：两组选项
+     * （音量键 / 电源键、间隔 / 次数）同屏，点第二组不能把第一组刚看好的选择清掉。
+     */
+    @Test
+    public void showGroupPick_clickMovesSelectionWithinGroupOnly() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        DialogKit.showGroupPick(a, "按键设置", "响铃时按分别会做什么",
+                new DialogKit.Group[]{
+                        new DialogKit.Group("音量键（响铃时按）",
+                                new String[]{"无", "稍后提醒", "关闭这次响铃"}, 0),
+                        new DialogKit.Group("电源键（响铃时按）",
+                                new String[]{"无", "稍后提醒", "关闭这次响铃"}, 1),
+                }, r -> {
+                });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = listOf(d);
+        assertEquals("两个组标题", 2, list.getChildCount() - cardsOf(list).size());
+        assertEquals("音量键（响铃时按）", String.valueOf(((TextView) list.getChildAt(0)).getText()));
+
+        java.util.List<View> cards = cardsOf(list);
+        assertEquals("两组各三项", 6, cards.size());
+        // 初始：一组第 1 项、二组第 2 项选中
+        assertTrue(cards.get(0).isSelected());
+        assertTrue(cards.get(4).isSelected());
+
+        // 点二组第 3 项：二组选中态跟过来，一组原封不动
+        cards.get(5).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue("二组第 3 项应选中", cards.get(5).isSelected());
+        assertTrue("勾也要跟着显隐", checkVisible(cards.get(5)));
+        assertFalse("二组第 2 项应取消", cards.get(4).isSelected());
+        assertTrue("一组的选择不该被顺手清掉", cards.get(0).isSelected());
+        assertFalse(checkVisible(cards.get(4)));
+    }
+
+    /** 确定回调带回每组最新下标；取消不回调。 */
+    @Test
+    public void showGroupPick_confirmReportsLatestIndices_cancelSilent() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        final int[][] got = {null};
+        DialogKit.showGroupPick(a, "稍后提醒", null,
+                new DialogKit.Group[]{
+                        new DialogKit.Group("间隔",
+                                new String[]{"3 分钟", "5 分钟", "10 分钟"}, 1),
+                        new DialogKit.Group("最多几次",
+                                new String[]{"1 次", "2 次", "3 次"}, 2),
+                }, r -> got[0] = r);
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        java.util.List<View> cards = cardsOf(listOf(d));
+        cards.get(0).performClick();   // 间隔 → 3 分钟
+        ShadowLooper.idleMainLooper();
+        cards.get(3).performClick();   // 次数 → 1 次
+        ShadowLooper.idleMainLooper();
+
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertNotNull("确定应回调", got[0]);
+        assertEquals("两组各回一个下标", 2, got[0].length);
+        assertEquals(0, got[0][0]);
+        assertEquals(0, got[0][1]);
+
+        // 取消不回调：再来一次，只按取消
+        ShadowAlertDialog.reset();
+        final boolean[] cancelled = {false};
+        DialogKit.showGroupPick(a, "稍后提醒", null,
+                new DialogKit.Group[]{
+                        new DialogKit.Group(null, new String[]{"甲", "乙"}, 0)},
+                r -> cancelled[0] = true);
+        AlertDialog d2 = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        // 组标题为空时不该留一行空白：第一个子视图就是卡片
+        assertEquals("无标题组不该插入组标题行", 2, listOf(d2).getChildCount());
+        d2.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse("取消不该回调", cancelled[0]);
+    }
+
     // ---------- 消息型 ----------
 
     /** 标题要进得去；没有标题时不该留一行空白。 */

@@ -438,38 +438,26 @@ public class SettingsActivity extends AppCompatActivity {
      * 排班（双休 / 单休是固定算术，大小周是 14 天循环，都不受影响），国务院公布 2027 年安排后
      * App 会更新数据，届时无需改任何设置。
      *
-     * 用自定义布局而非 setMessage + setSingleChoiceItems：后者在 MIUI 主题下单选列表
-     * 不渲染（消息文字把列表挤出可见区域），已实测复现；自绘布局三选项必然可见。
+     * <p>v1.70.0 从自绘 RadioGroup（{@code dialog_horizon}）换成 {@link DialogKit#showPick}：
+     * 这个弹窗本来就是「点哪项存哪项、没有确定按钮」，与 showPick 的交互逐字一致，
+     * 只是单选圈换成了卡片。自定义布局是当年为绕开 MIUI 系统列表渲染 bug 写的，
+     * 卡片积木本身就不走系统列表，顺带把布局删掉。
      */
     private void showHorizonDialog() {
-        View view = getLayoutInflater().inflate(R.layout.dialog_horizon, null);
-        RadioGroup group = view.findViewById(R.id.rg_horizon);
-
-        // 先设置默认选中，再注册监听——避免 setCheck 回调把旧值重设一遍
         int cur = Prefs.getHorizonDays(this);
-        if (cur == 180) {
-            group.check(R.id.rb_h180);
-        } else if (cur == 365) {
-            group.check(R.id.rb_h365);
-        } else {
-            group.check(R.id.rb_h90);
-        }
-
-        final boolean[] handled = {false};
-        AlertDialog dialog = new RoundedDialog.Builder(this)
-                .setView(view)
-                .setNegativeButton("取消", null)
-                .create();
-        group.setOnCheckedChangeListener((g, which) -> {
-            if (handled[0]) return;
-            handled[0] = true;
-            // 先关对话框再刷新，避免 ROM 上对话框持窗时操作视图树
-            dialog.dismiss();
-            int days = which == R.id.rb_h180 ? 180 : which == R.id.rb_h365 ? 365 : 90;
-            Prefs.setHorizonDays(this, days);
-            applySettingsNow();
-        });
-        dialog.show();
+        DialogKit.showPick(this,
+                getString(R.string.dialog_horizon_title),
+                getString(R.string.dialog_horizon_message),
+                new String[]{
+                        getString(R.string.dialog_horizon_90),
+                        getString(R.string.dialog_horizon_180),
+                        getString(R.string.dialog_horizon_365)},
+                cur == 180 ? 1 : cur == 365 ? 2 : 0,
+                which -> {
+                    int days = which == 1 ? 180 : which == 2 ? 365 : 90;
+                    Prefs.setHorizonDays(this, days);
+                    applySettingsNow();
+                });
     }
 
     // ================= 日历显示内容（v1.60.0 三开关合并）=================
@@ -484,8 +472,9 @@ public class SettingsActivity extends AppCompatActivity {
      * <p>Prefs 仍是三个键（{@code lunar_festivals / solar_terms / christian_festivals}）——
      * 备份格式不变，ConfigBackup 与 widget 渲染一行代码都不用动，只是换入口。
      *
-     * <p>用自绘布局而不是 {@code setMultiChoiceItems}：同 dialog_horizon 的理由，
-     * MIUI 主题下系统列表渲染有问题，自绘三行复选框必然可见。
+     * <p>用自绘卡片而不是 {@code setMultiChoiceItems}：MIUI 主题下系统列表渲染
+     * 有问题，自绘三行复选框必然可见（v1.70.0 起设置页弹窗统一走 DialogKit，
+     * 这条理由只对还没搬完的睡前提醒等自绘布局有效）。
      *
      * <p>节气变化时要 {@link Widgets#updateAll}——三个整月组件都画节气；
      * 另两个只影响 App 内日历，不碰小部件。
@@ -895,54 +884,86 @@ public class SettingsActivity extends AppCompatActivity {
         return "已选铃声";
     }
 
-    /** 响铃时长对话框：不限 / 1 / 3 / 5 / 10 分钟。 */
+    /** 响铃时长选项（v1.70.0 起与 Prefs 值的映射留在代码里，布局已删）。 */
+    private static final String[] RING_DURATION_ITEMS = {
+            "不限（一直响到手动停止）", "1 分钟", "3 分钟", "5 分钟", "10 分钟"};
+    private static final int[] RING_DURATION_VALUES = {0, 1, 3, 5, 10};
+    private static final String RING_DURATION_TIP =
+            "提示：到点自动停止响铃与震动，并撤下通知。设为「不限」则一直响到手动停止或稍后提醒。";
+
+    /**
+     * 响铃时长对话框：不限 / 1 / 3 / 5 / 10 分钟。
+     *
+     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 单选卡片：自绘 RadioGroup
+     * （{@code dialog_ring_duration}）的单选圈是系统样式，和卡片语言不搭。
+     * 确定才写 Prefs（和原来一样），映射逐字保留：{@code mins<=0→不限}、
+     * 否则取第一个「不小于 mins」的档位，都比它大就落最后一档。
+     */
     private void showRingDurationDialog() {
-        View view = getLayoutInflater().inflate(R.layout.dialog_ring_duration, null);
-        RadioGroup rg = view.findViewById(R.id.rg_ring_minutes);
         int mins = Prefs.getRingMinutes(this);
-        int id = mins <= 0 ? R.id.rb_ring_off
-                : mins <= 1 ? R.id.rb_ring_1
-                : mins <= 3 ? R.id.rb_ring_3
-                : mins <= 5 ? R.id.rb_ring_5
-                : R.id.rb_ring_10;
-        rg.check(id);
-        new RoundedDialog.Builder(this)
-                .setView(view)
-                .setPositiveButton("确定", (d, w) -> {
-                    int checked = rg.getCheckedRadioButtonId();
-                    int value;
-                    if (checked == R.id.rb_ring_1) value = 1;
-                    else if (checked == R.id.rb_ring_3) value = 3;
-                    else if (checked == R.id.rb_ring_5) value = 5;
-                    else if (checked == R.id.rb_ring_10) value = 10;
-                    else value = 0;
-                    Prefs.setRingMinutes(this, value);
+        int checked;
+        if (mins <= 0) {
+            checked = 0;
+        } else {
+            checked = RING_DURATION_ITEMS.length - 1;
+            for (int i = 1; i < RING_DURATION_VALUES.length; i++) {
+                if (mins <= RING_DURATION_VALUES[i]) {
+                    checked = i;
+                    break;
+                }
+            }
+        }
+        DialogKit.showGroupPick(this,
+                getString(R.string.dialog_ring_duration_title),
+                getString(R.string.dialog_ring_duration_message) + "\n" + RING_DURATION_TIP,
+                new DialogKit.Group[]{
+                        new DialogKit.Group(null, RING_DURATION_ITEMS, checked)},
+                picked -> {
+                    Prefs.setRingMinutes(this, RING_DURATION_VALUES[picked[0]]);
                     updateRingDurationText();
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                });
     }
 
-    /** 按键设置对话框：音量键 / 电源键在响铃时的作用（无 / 稍后提醒 / 关闭闹钟）。 */
+    /** 按键选项（v1.70.0 起与 Prefs 值的映射留在代码里，布局已删）。 */
+    static final String[] KEY_ITEMS_VOL = {
+            "无（按系统默认调音量）", "稍后提醒", "关闭这次响铃"};
+    static final String[] KEY_ITEMS_POWER = {
+            "无（按系统默认息屏）", "稍后提醒", "关闭这次响铃"};
+    static final int[] KEY_ACTION_VALUES = {
+            Prefs.KEY_ACTION_NONE, Prefs.KEY_ACTION_SNOOZE, Prefs.KEY_ACTION_STOP};
+    private static final String KEYS_TIP =
+            "提示：电源键在多数机型由系统接管（直接息屏、不传给应用），设置为「稍后提醒 / 关闭」可能不生效；息屏后闹钟界面仍会在点亮屏幕时显示。";
+
+    /**
+     * 按键设置对话框：音量键 / 电源键在响铃时的作用（无 / 稍后提醒 / 关闭这次响铃）。
+     *
+     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 两组单选卡片：自绘 RadioGroup
+     * （{@code dialog_keys}）的单选圈是系统样式。「无」的括注两个键各说各的
+     * （音量键调音量 / 电源键息屏），所以两组 items 不共用。
+     */
     private void showKeysDialog() {
-        View view = getLayoutInflater().inflate(R.layout.dialog_keys, null);
-        RadioGroup rgVol = view.findViewById(R.id.rg_volkey);
-        RadioGroup rgPower = view.findViewById(R.id.rg_powerkey);
-        checkKeyAction(rgVol, Prefs.getVolKeyAction(this),
-                R.id.rb_volkey_none, R.id.rb_volkey_snooze, R.id.rb_volkey_stop);
-        checkKeyAction(rgPower, Prefs.getPowerKeyAction(this),
-                R.id.rb_powerkey_none, R.id.rb_powerkey_snooze, R.id.rb_powerkey_stop);
-        new RoundedDialog.Builder(this)
-                .setView(view)
-                .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setVolKeyAction(this, actionOf(rgVol,
-                            R.id.rb_volkey_snooze, R.id.rb_volkey_stop));
-                    Prefs.setPowerKeyAction(this, actionOf(rgPower,
-                            R.id.rb_powerkey_snooze, R.id.rb_powerkey_stop));
+        DialogKit.showGroupPick(this,
+                getString(R.string.dialog_keys_title),
+                getString(R.string.dialog_keys_message) + "\n" + KEYS_TIP,
+                new DialogKit.Group[]{
+                        new DialogKit.Group("音量键（响铃时按）", KEY_ITEMS_VOL,
+                                keyActionIndex(Prefs.getVolKeyAction(this))),
+                        new DialogKit.Group("电源键（响铃时按）", KEY_ITEMS_POWER,
+                                keyActionIndex(Prefs.getPowerKeyAction(this))),
+                },
+                picked -> {
+                    Prefs.setVolKeyAction(this, KEY_ACTION_VALUES[picked[0]]);
+                    Prefs.setPowerKeyAction(this, KEY_ACTION_VALUES[picked[1]]);
                     updateKeysText();
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                });
+    }
+
+    /** Prefs 按键作用值 → 选项下标；认不出的值按「无」处理（同旧 actionOf 的兜底）。 */
+    private static int keyActionIndex(int action) {
+        for (int i = 0; i < KEY_ACTION_VALUES.length; i++) {
+            if (KEY_ACTION_VALUES[i] == action) return i;
+        }
+        return 0;
     }
 
     /** 稍后提醒对话框：与引导页共用 {@link PrefDialogs}。 */
@@ -953,18 +974,6 @@ public class SettingsActivity extends AppCompatActivity {
     /** 提前提醒对话框：与引导页共用 {@link PrefDialogs}。 */
     private void showPreNoticeDialog() {
         PrefDialogs.showPreNotice(this, this::updatePreNoticeText);
-    }
-
-    private void checkKeyAction(RadioGroup rg, int action, int idNone, int idSnooze, int idStop) {
-        rg.check(action == Prefs.KEY_ACTION_STOP ? idStop
-                : action == Prefs.KEY_ACTION_SNOOZE ? idSnooze : idNone);
-    }
-
-    private int actionOf(RadioGroup rg, int idSnooze, int idStop) {
-        int id = rg.getCheckedRadioButtonId();
-        if (id == idStop) return Prefs.KEY_ACTION_STOP;
-        if (id == idSnooze) return Prefs.KEY_ACTION_SNOOZE;
-        return Prefs.KEY_ACTION_NONE;
     }
 
     // ================= 睡前提醒（v1.20）=================

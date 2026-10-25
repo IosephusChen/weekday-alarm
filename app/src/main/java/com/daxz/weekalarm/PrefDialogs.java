@@ -1,15 +1,12 @@
 package com.daxz.weekalarm;
 
 import android.content.Context;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.RadioGroup;
 
 /**
  * 「稍后提醒 / 提前提醒」两个设置对话框（v1.26.3 抽出来，设置页与引导页共用）。
  *
  * <p>抽的原因不是代码重复本身，而是这两项最容易被改坏：
- * 「界面显示的档位」和「写进 Prefs 的值」是两套映射（check* 与 *Of），
+ * 「界面显示的档位」和「写进 Prefs 的值」是两套映射（{@code *_ITEMS} 与 {@code *_VALUES}），
  * 一旦某一处漏了新档位，用户选了「3 次」实际存成「1 次」，而且界面上完全看不出来。
  * 放一份，两处调用方都不可能各自漂移。
  */
@@ -78,99 +75,100 @@ public final class PrefDialogs {
     }
 
     /**
-     * 稍后提醒对话框：间隔（3/5/10/15/30 分钟）+ 最多几次（1/2/3/5/不限）。
+     * 稍后提醒间隔选项与 Prefs 值的映射（v1.70.0 起留在代码里，布局已删）。
+     *
+     * <p>两组数组必须等长、逐位对应：用户点第 {@code i} 项，
+     * 写进 Prefs 的就是 {@code VALUES[i]}。加档位只改这里。
+     */
+    private static final String[] SNOOZE_MINUTE_ITEMS =
+            {"3 分钟", "5 分钟", "10 分钟", "15 分钟", "30 分钟"};
+    private static final int[] SNOOZE_MINUTE_VALUES = {3, 5, 10, 15, 30};
+    private static final String[] SNOOZE_TIMES_ITEMS =
+            {"1 次", "2 次", "3 次", "5 次", "不限次数"};
+    private static final int[] SNOOZE_TIMES_VALUES = {1, 2, 3, 5, Prefs.SNOOZE_UNLIMITED};
+    private static final String SNOOZE_TIP =
+            "提示：次数用完后响铃界面只提供「滑动停止响铃」，需手动关闭；计数按「闹钟 × 日期」分别统计，次日自动重置。";
+
+    /**
+     * 稍后提醒：间隔 + 最多次数（v1.70.0 换成{@link DialogKit#showGroupPick} 单选卡片）。
+     *
+     * <p>自绘 RadioGroup（{@code dialog_snooze}）的单选圈是系统样式，与卡片语言不搭。
+     * 设置页与引导页共用这一个方法，两边同时换新视觉。确定才写 Prefs（同旧交互）。
      *
      * @param onChanged 确定后的回调，调用方用来刷新自己那一行文案
      */
     public static void showSnooze(Context c, Runnable onChanged) {
-        View view = LayoutInflater.from(c).inflate(R.layout.dialog_snooze, null);
-        RadioGroup rgMinutes = view.findViewById(R.id.rg_snooze_minutes);
-        RadioGroup rgTimes = view.findViewById(R.id.rg_snooze_times);
-        checkSnoozeMinutes(rgMinutes, Prefs.getSnoozeMinutes(c));
-        checkSnoozeTimes(rgTimes, Prefs.getSnoozeTimes(c));
-        new RoundedDialog.Builder(c)
-                .setView(view)
-                .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setSnoozeMinutes(c, minutesOf(rgMinutes));
-                    Prefs.setSnoozeTimes(c, timesOf(rgTimes));
+        DialogKit.showGroupPick(c,
+                c.getString(R.string.dialog_snooze_title),
+                c.getString(R.string.dialog_snooze_message) + "\n" + SNOOZE_TIP,
+                new DialogKit.Group[]{
+                        new DialogKit.Group("间隔", SNOOZE_MINUTE_ITEMS,
+                                snoozeIndex(SNOOZE_MINUTE_VALUES, Prefs.getSnoozeMinutes(c), 4)),
+                        new DialogKit.Group("最多几次（每次响铃分别计数）", SNOOZE_TIMES_ITEMS,
+                                snoozeIndex(SNOOZE_TIMES_VALUES, Prefs.getSnoozeTimes(c), 3)),
+                },
+                picked -> {
+                    Prefs.setSnoozeMinutes(c, SNOOZE_MINUTE_VALUES[picked[0]]);
+                    Prefs.setSnoozeTimes(c, SNOOZE_TIMES_VALUES[picked[1]]);
                     if (onChanged != null) onChanged.run();
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                });
     }
 
-    /** 提前提醒对话框：关闭 / 5 / 10 / 15 / 30 分钟 / 1 小时。 */
+    /**
+     * 值 → 选项下标。精确命中就用它；命中不了（存储里有旧值 / 非常规值）时
+     * 取第一个「不小于它」的档位，都比它大就落 {@code fallback}。
+     *
+     * <p>调用方传的 fallback 是「最后一档」——与旧 {@code checkSnoozeMinutes} /
+     * {@code checkSnoozeTimes} 逐档比较链最后的 else 分支同一套语义：
+     * 存了个比所有档位都大的数，就显示最大档，而不是跳回默认档。
+     */
+    private static int snoozeIndex(int[] values, int cur, int fallback) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] == cur) return i;
+        }
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] >= cur) return i;
+        }
+        return fallback;
+    }
+
+    /** 提前提醒选项与 Prefs 值的映射（v1.70.0 起留在代码里，布局已删）。 */
+    private static final String[] PRE_NOTICE_ITEMS = {
+            "关闭", "提前 5 分钟", "提前 10 分钟", "提前 15 分钟", "提前 30 分钟", "提前 1 小时"};
+    private static final int[] PRE_NOTICE_VALUES = {0, 5, 10, 15, 30, 60};
+    private static final String PRE_NOTICE_TIP =
+            "提示：到点前会主动弹窗（锁屏也能看到），可以顺手关掉这一次；弹窗本身不响铃、不震动，声音留给真正的闹钟。开启后每个响铃实例会多占一个系统闹钟名额，App 会自动把主闹钟排程上限减半（200），保证不超过 ROM 的 500 硬限。";
+
+    /**
+     * 提前提醒对话框：关闭 / 5 / 10 / 15 / 30 分钟 / 1 小时。
+     *
+     * <p>v1.70.0 换成{@link DialogKit#showGroupPick} 单选卡片（自绘 RadioGroup
+     * {@code dialog_pre_notice} 删除）。确定才写 Prefs 并重排——
+     * v1.18.2 修复：提前通知闹钟与主闹钟配对注册，改了提前量必须重排才生效。
+     */
     public static void showPreNotice(Context c, Runnable onChanged) {
-        View view = LayoutInflater.from(c).inflate(R.layout.dialog_pre_notice, null);
-        RadioGroup rg = view.findViewById(R.id.rg_pre_notice);
-        checkPreNotice(rg, Prefs.getPreNoticeMinutes(c));
-        new RoundedDialog.Builder(c)
-                .setView(view)
-                .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setPreNoticeMinutes(c, preNoticeOf(rg));
-                    // v1.18.2 修复：提前通知闹钟是与主闹钟配对注册的，
-                    // 改了提前量必须重排一次才生效（此前要等下次响铃 / 重启）
+        int cur = Prefs.getPreNoticeMinutes(c);
+        int checked = 0;
+        for (int i = 0; i < PRE_NOTICE_VALUES.length; i++) {
+            if (cur > 0 && cur <= PRE_NOTICE_VALUES[i]) {
+                checked = i;
+                break;
+            }
+        }
+        if (cur > 60) checked = PRE_NOTICE_ITEMS.length - 1;
+        DialogKit.showGroupPick(c,
+                c.getString(R.string.dialog_pre_notice_title),
+                c.getString(R.string.dialog_pre_notice_message) + "\n" + PRE_NOTICE_TIP,
+                new DialogKit.Group[]{
+                        new DialogKit.Group(null, PRE_NOTICE_ITEMS, checked)                },
+                picked -> {
+                    Prefs.setPreNoticeMinutes(c, PRE_NOTICE_VALUES[picked[0]]);
                     Reschedule.run(c, onChanged);
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                });
     }
 
-    private static void checkSnoozeMinutes(RadioGroup rg, int minutes) {
-        int id = minutes <= 3 ? R.id.rb_snooze_3
-                : minutes <= 5 ? R.id.rb_snooze_5
-                : minutes <= 10 ? R.id.rb_snooze_10
-                : minutes <= 15 ? R.id.rb_snooze_15
-                : R.id.rb_snooze_30;
-        rg.check(id);
-    }
+    /**
 
-    private static int minutesOf(RadioGroup rg) {
-        int id = rg.getCheckedRadioButtonId();
-        if (id == R.id.rb_snooze_3) return 3;
-        if (id == R.id.rb_snooze_5) return 5;
-        if (id == R.id.rb_snooze_10) return 10;
-        if (id == R.id.rb_snooze_15) return 15;
-        return 30;
-    }
-
-    private static void checkSnoozeTimes(RadioGroup rg, int times) {
-        int id = times == Prefs.SNOOZE_UNLIMITED ? R.id.rb_times_unlimited
-                : times <= 1 ? R.id.rb_times_1
-                : times <= 2 ? R.id.rb_times_2
-                : times <= 3 ? R.id.rb_times_3
-                : R.id.rb_times_5;
-        rg.check(id);
-    }
-
-    private static int timesOf(RadioGroup rg) {
-        int id = rg.getCheckedRadioButtonId();
-        if (id == R.id.rb_times_unlimited) return Prefs.SNOOZE_UNLIMITED;
-        if (id == R.id.rb_times_2) return 2;
-        if (id == R.id.rb_times_3) return 3;
-        if (id == R.id.rb_times_5) return 5;
-        return 1;
-    }
-
-    private static void checkPreNotice(RadioGroup rg, int minutes) {
-        int id = minutes <= 0 ? R.id.rb_pre_off
-                : minutes <= 5 ? R.id.rb_pre_5
-                : minutes <= 10 ? R.id.rb_pre_10
-                : minutes <= 15 ? R.id.rb_pre_15
-                : minutes <= 30 ? R.id.rb_pre_30
-                : R.id.rb_pre_60;
-        rg.check(id);
-    }
-
-    private static int preNoticeOf(RadioGroup rg) {
-        int id = rg.getCheckedRadioButtonId();
-        if (id == R.id.rb_pre_5) return 5;
-        if (id == R.id.rb_pre_10) return 10;
-        if (id == R.id.rb_pre_15) return 15;
-        if (id == R.id.rb_pre_30) return 30;
-        if (id == R.id.rb_pre_60) return 60;
-        return 0;
-    }
 
     /**
      * 音量行的文案（v1.49.6）。

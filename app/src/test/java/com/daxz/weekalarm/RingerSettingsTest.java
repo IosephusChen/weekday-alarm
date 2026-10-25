@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.view.View;
 import android.content.SharedPreferences;
 import android.view.KeyEvent;
 import android.widget.TextView;
@@ -21,6 +20,9 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * 响铃设置（v1.16）：音量条音量、按键作用、铃声渐响的存取与按键拦截行为。
@@ -183,27 +185,30 @@ public class RingerSettingsTest {
      *
      * <p>按下键只是关掉这一轮响铃，闹钟本身照旧、明天还会响。写「关闭闹钟」
      * 会让人以为把那个闹钟停了——和通知栏按钮有同样的问题。
+     *
+     * <p>v1.70.0：单选圈弹窗换成 {@link DialogKit} 卡片后选项不再来自布局，
+     * 改成直接钉 {@code SettingsActivity} 里的选项常量——文案只有一个来源，
+     * 钉常量比渲染出来再收集更贴保质目标的实质。
      */
     @Test
     public void keyDialog_optionsSayCloseThisRingOnly() {
-        View v = android.view.LayoutInflater.from(ctx())
-                .inflate(R.layout.dialog_keys, null);
-        java.util.List<String> labels = new java.util.ArrayList<>();
-        collectRadios(v, labels);
+        assertEquals("音量键三个选项", 3, SettingsActivity.KEY_ITEMS_VOL.length);
+        assertEquals("电源键三个选项", 3, SettingsActivity.KEY_ITEMS_POWER.length);
+        assertEquals("选项与 Prefs 值一一对应", 3, SettingsActivity.KEY_ACTION_VALUES.length);
 
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        Collections.addAll(labels, SettingsActivity.KEY_ITEMS_VOL);
+        Collections.addAll(labels, SettingsActivity.KEY_ITEMS_POWER);
         assertEquals("音量键和电源键各三个选项", 6, labels.size());
         assertTrue("应说「关闭这次响铃」", labels.contains("关闭这次响铃"));
         assertFalse("不该再说「关闭闹钟」", labels.contains("关闭闹钟"));
-    }
 
-    private static void collectRadios(View v, java.util.List<String> out) {
-        if (v instanceof android.widget.RadioButton) {
-            out.add(((android.widget.RadioButton) v).getText().toString());
-        }
-        if (v instanceof android.view.ViewGroup) {
-            android.view.ViewGroup g = (android.view.ViewGroup) v;
-            for (int i = 0; i < g.getChildCount(); i++) collectRadios(g.getChildAt(i), out);
-        }
+        assertEquals("「无」的括注两个键各说各的",
+                "无（按系统默认调音量）", SettingsActivity.KEY_ITEMS_VOL[0]);
+        assertEquals("无（按系统默认息屏）", SettingsActivity.KEY_ITEMS_POWER[0]);
+        assertEquals(Prefs.KEY_ACTION_NONE, SettingsActivity.KEY_ACTION_VALUES[0]);
+        assertEquals(Prefs.KEY_ACTION_SNOOZE, SettingsActivity.KEY_ACTION_VALUES[1]);
+        assertEquals(Prefs.KEY_ACTION_STOP, SettingsActivity.KEY_ACTION_VALUES[2]);
     }
 
     /**

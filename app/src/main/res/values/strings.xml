@@ -113,7 +113,9 @@
     <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知，免得打扰</string>
     <!-- v1.61.0：剩下几个 RadioGroup 对话框原来只有一个 13sp 的字段标签当标题，
          弹出来「不知道这是什么设置」。统一补上「17sp 粗体标题 + 12sp 说明」，
-         与 dialog_bedtime / dialog_horizon / dialog_week_mode 同一套版式。 -->
+         与 dialog_bedtime / dialog_week_mode 同一套版式。
+         （原同族的 dialog_horizon 等五个单选圈布局已在 v1.70.0 换成 DialogKit
+         卡片后删除，文案本身不变，仍由这几个 string 提供标题与说明。） -->
     <string name="dialog_volume_title">闹钟音量</string>
     <string name="dialog_volume_message">拖动调节，下次响铃即用新音量。调到 0 就是静音，届时只震动、不响铃。</string>
     <string name="dialog_snooze_title">稍后提醒</string>

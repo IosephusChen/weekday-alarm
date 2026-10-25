@@ -12,10 +12,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -94,7 +91,13 @@ public class PreNoticeTest {
         assertEquals(60, PreNoticeReceiver.actualMinutes(d, "", 60));
     }
 
-    /** 设置页的提前提醒对话框要有「提前 1 小时」，且存进去的是 60。 */
+    /**
+     * 设置页的提前提醒对话框要有「提前 1 小时」，且存进去的是 60。
+     *
+     * <p>v1.70.0：弹窗换成 {@link DialogKit#showGroupPick} 单选卡片（程序化建视图，
+     * 没有布局可 inflate），改成在卡片列表里按文案找卡、点它、再按「确定」。
+     * 盯的行为没变：档位在、点下去存对值。
+     */
     @Test
     public void preNoticeDialog_hasOneHourOption() {
         reset();
@@ -107,12 +110,10 @@ public class PreNoticeTest {
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
         assertNotNull("应弹出提前提醒设置", d);
-        RadioButton hour = d.findViewById(R.id.rb_pre_60);
+        View hour = findOptionCard(d, "提前 1 小时");
         assertNotNull("缺少「提前 1 小时」档位", hour);
-        assertEquals("提前 1 小时", hour.getText().toString());
 
-        RadioGroup rg = d.findViewById(R.id.rg_pre_notice);
-        rg.check(R.id.rb_pre_60);
+        hour.performClick();
         ((AlertDialog) d).getButton(AlertDialog.BUTTON_POSITIVE).performClick();
         // 对话框按钮的点击经 Handler 派发，要让主线程跑一轮才会执行回调
         ShadowLooper.idleMainLooper();
@@ -132,9 +133,34 @@ public class PreNoticeTest {
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
-        RadioGroup rg = d.findViewById(R.id.rg_pre_notice);
-        assertEquals(R.id.rb_pre_60, rg.getCheckedRadioButtonId());
+        View hour = findOptionCard(d, "提前 1 小时");
+        assertNotNull(hour);
+        // v1.70.0：选中态由 setSelected 驱动（bg_guide_option 的描边与底色），
+        // 只打勾不变色的话当前值看上去和没选中的项没区别
+        assertTrue("存了 60 分钟就应选中「提前 1 小时」", hour.isSelected());
+        assertFalse("没选的项不该是选中态",
+                findOptionCard(d, "提前 30 分钟").isSelected());
         ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 在单选卡片对话框里按主文案找卡。
+     *
+     * <p>{@link DialogKit#optionView} 的卡片结构固定：外层横排 LinearLayout，
+     * 第 0 个子视图是竖排文字列，文字列第 0 个是主文案 TextView。
+     * 组标题（TextView）没有文字列，按结构跳过即可。
+     */
+    private static View findOptionCard(Dialog d, String text) {
+        android.widget.LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View child = list.getChildAt(i);
+            if (!(child instanceof android.widget.LinearLayout)) continue;
+            View col = ((android.widget.LinearLayout) child).getChildAt(0);
+            if (!(col instanceof android.widget.LinearLayout)) continue;
+            TextView tv = (TextView) ((android.widget.LinearLayout) col).getChildAt(0);
+            if (text.contentEquals(tv.getText())) return child;
+        }
+        return null;
     }
 
     /**

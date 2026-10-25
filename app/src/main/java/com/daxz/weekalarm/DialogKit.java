@@ -20,7 +20,7 @@ import androidx.core.content.ContextCompat;
  * 引导页那一套卡片完全两个世界。用户截图反馈「太简陋」，这里把两件事各收一份。
  *
  * <p><b>消息型</b>：{@link #messageView} / {@link #showMessage}，版式与
- * {@code dialog_horizon} 一致——17sp 粗体标题 + 12sp 次要色正文，段落之间用间距
+ * {@code dialog_pick} / 引导页一致——17sp 粗体标题 + 12sp 次要色正文，段落之间用间距
  * 而不是空行。{@code "\n\n"} 拆段、段内 {@code "\n"} 保留（权限清单那种
  * 「· 通知 → 全屏通知」的罗列因此原样可读）。
  *
@@ -128,6 +128,9 @@ public final class DialogKit {
      * 上面的选项还是点之前的旧状态。日历的「标记为请假 / 取消请假」同一天因此能读出两种
      * 答案，再点一次还会把刚标的记录又取消掉，属于会吞数据的假象。
      *
+     * <p>初始选中态和 {@link #showMultiPick} 一样由 {@code setSelected} + {@link #showCheck}
+     * 双驱动（v1.70.0 补）：只打勾不变色的话，当前值看上去和没选中的项没区别。
+     *
      * @param subs 每项的副标题，可与 {@code items} 等长；{@code null} 或越界项按没有处理
      */
     public static void showPick(Context c, String title, String sub, String[] items,
@@ -154,6 +157,7 @@ public final class DialogKit {
         for (int i = 0; i < items.length; i++) {
             String itemSub = subs != null && i < subs.length ? subs[i] : null;
             View row = optionView(c, items[i], itemSub);
+            row.setSelected(i == checked);
             showCheck(row, i == checked);
             final int which = i;
             row.setOnClickListener(v -> {
@@ -231,6 +235,115 @@ public final class DialogKit {
     /** 多选完成：{@code checked} 与传入的 items 等长，是最新勾选态。 */
     public interface OnMultiPick {
         void onMultiPick(boolean[] checked);
+    }
+
+    /**
+     * 分组单选 + 确定/取消（v1.70.0）。
+     *
+     * <p>点卡片只移动本组选中态，「确定」才回调——介于{@link #showPick}（点即生效）
+     * 与{@link #showMultiPick}（多选）之间：选项是单选取舍（选了哪个直接决定存什么值），
+     * 但一次要看两组（音量键 / 电源键、间隔 / 次数），显式确认比「点哪存哪」稳。
+     *
+     * <p>v1.70.0 之前这些弹窗是自绘布局 + {@code RadioGroup}（响铃时长、按键设置、
+     * 稍后提醒、提前提醒），单选圈是系统样式，和卡片语言不搭；提醒范围本就是
+     * 「点即生效」改走{@link #showPick}。视觉全部收拢到 {@code bg_guide_option}
+     * 一套，交互语义逐字保留。
+     *
+     * @param groups 分组；回调里的 {@code checked} 与 groups 等长，是每组最新选中下标
+     */
+    public static void showGroupPick(Context c, String title, String sub,
+                                     Group[] groups, OnGroupPick onDone) {
+        View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
+        TextView tvTitle = view.findViewById(R.id.tv_pick_title);
+        TextView tvSub = view.findViewById(R.id.tv_pick_sub);
+        LinearLayout list = view.findViewById(R.id.dlg_pick_list);
+
+        if (title == null || title.isEmpty()) {
+            tvTitle.setVisibility(View.GONE);
+        } else {
+            tvTitle.setText(title);
+        }
+        if (sub == null || sub.isEmpty()) {
+            tvSub.setVisibility(View.GONE);
+        } else {
+            tvSub.setText(sub);
+        }
+
+        final int[] checked = new int[groups.length];
+        final View[][] cards = new View[groups.length][];
+        for (int g = 0; g < groups.length; g++) {
+            Group grp = groups[g];
+            checked[g] = grp.checked;
+            if (grp.title != null && !grp.title.isEmpty()) {
+                TextView gt = new TextView(c);
+                gt.setText(grp.title);
+                gt.setTextColor(ContextCompat.getColor(c, R.color.sub));
+                gt.setTextSize(12);
+                LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                glp.topMargin = dp(c, 16);
+                list.addView(gt, glp);
+            }
+            cards[g] = new View[grp.items.length];
+            for (int i = 0; i < grp.items.length; i++) {
+                String itemSub = grp.subs != null && i < grp.subs.length ? grp.subs[i] : null;
+                View row = optionView(c, grp.items[i], itemSub);
+                boolean on = i == grp.checked;
+                row.setSelected(on);
+                showCheck(row, on);
+                final int gg = g;
+                final int ii = i;
+                row.setOnClickListener(v -> {
+                    checked[gg] = ii;
+                    // 只动本组：另一组选什么是另一回事，不能被顺手清掉
+                    for (int j = 0; j < cards[gg].length; j++) {
+                        boolean sel = j == ii;
+                        cards[gg][j].setSelected(sel);
+                        showCheck(cards[gg][j], sel);
+                    }
+                });
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                if (i > 0 || list.getChildCount() > 0) lp.topMargin = dp(c, 10);
+                row.setLayoutParams(lp);
+                list.addView(row);
+                cards[g][i] = row;
+            }
+        }
+
+        RoundedDialog.Builder b = new RoundedDialog.Builder(c);
+        b.setView(view);
+        b.setPositiveButton("确定", (d, w) -> {
+            if (onDone != null) onDone.onPick(checked);
+        });
+        b.setNegativeButton("取消", null);
+        b.show();
+    }
+
+    /** 一组单选：组标题可空；{@code checked} 为初始选中下标，{@code <0} 不预选。 */
+    public static class Group {
+        public final String title;
+        public final String[] items;
+        public final String[] subs;
+        public final int checked;
+
+        public Group(String title, String[] items, int checked) {
+            this(title, items, null, checked);
+        }
+
+        public Group(String title, String[] items, String[] subs, int checked) {
+            this.title = title;
+            this.items = items;
+            this.subs = subs;
+            this.checked = checked;
+        }
+    }
+
+    /** 分组单选确定：{@code checked} 与 groups 等长，是每组最新选中下标。 */
+    public interface OnGroupPick {
+        void onPick(int[] checked);
     }
 
     /** 选项卡的选中态：卡片描边由 {@code bg_guide_option} 驱动，这里只切右侧的勾。 */

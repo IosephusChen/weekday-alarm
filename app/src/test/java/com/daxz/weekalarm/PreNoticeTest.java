@@ -28,7 +28,6 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -78,17 +77,22 @@ public class PreNoticeTest {
      */
     @Test
     public void actualMinutes_usesRealRemainingTime() {
-        LocalDate d = LocalDate.now();
-        String in5 = LocalTime.now().plusMinutes(5).format(DateTimeFormatter.ofPattern("HH:mm"));
-        int m = PreNoticeReceiver.actualMinutes(d, in5, 60);
+        // v1.71.3：日期跟着时刻一起取，不能只取 HH:mm。
+        // 「现在 +5 分钟」在 23:55 之后会跨到明天，日期却还是今天，
+        // 于是算出来是负的、返回 0——这条测试在午夜前五分钟必红
+        // （v1.71.3 的恢复演练正好撞上 23:58）。
+        LocalDateTime soon = LocalDateTime.now().plusMinutes(5);
+        int m = PreNoticeReceiver.actualMinutes(soon.toLocalDate(),
+                soon.format(DateTimeFormatter.ofPattern("HH:mm")), 60);
         assertTrue("还剩约 5 分钟，不能报 60（实际 " + m + "）", m >= 4 && m <= 6);
 
         // 已经到点 / 过点：返回 0，调用方据此不再补发过期的预告
-        String past = LocalTime.now().minusMinutes(3).format(DateTimeFormatter.ofPattern("HH:mm"));
-        assertEquals(0, PreNoticeReceiver.actualMinutes(d, past, 60));
+        LocalDateTime past = LocalDateTime.now().minusMinutes(3);
+        assertEquals(0, PreNoticeReceiver.actualMinutes(past.toLocalDate(),
+                past.format(DateTimeFormatter.ofPattern("HH:mm")), 60));
 
         // 文案缺失时回退到配置值
-        assertEquals(60, PreNoticeReceiver.actualMinutes(d, "", 60));
+        assertEquals(60, PreNoticeReceiver.actualMinutes(LocalDate.now(), "", 60));
     }
 
     /**

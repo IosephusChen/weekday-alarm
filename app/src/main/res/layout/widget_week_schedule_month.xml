@@ -33,28 +33,37 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
+        <!-- 周次做成 chip（v1.71.5）：原来它与「闹钟已开启」都是 10sp 裸文字、中间只隔 6dp，
+             读起来像一句话「大周 · 休2天 闹钟已开启」，分不清哪半是本周属性、哪半是附注。
+             改用 4×2 同一张 bg_chip_white（首页 chip 也是这张），一眼是「徽章 vs 附注」。 -->
         <TextView
             android:id="@+id/widget_month_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
+            android:background="@drawable/bg_chip_white"
             android:ellipsize="end"
             android:maxLines="1"
+            android:paddingStart="6dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="1dp"
             android:text="本周 · 大周"
-            android:textColor="#E6E4FF"
+            android:textColor="#FFFFFF"
             android:textSize="10sp" />
 
         <!-- 闹钟状态（v1.52.0）：原来单独占一行、写「10月24日 周六 07:30」，
-             用户嫌信息太多。收成一句话并进标题行，和 4×2 本周班表一个样子。 -->
+             用户嫌信息太多。收成一句话并进标题行，和 4×2 本周班表一个样子。
+             v1.71.5 起颜色降到 #C9C4FF：它是最次要的附注，不能和周次 chip 抢。 -->
         <TextView
             android:id="@+id/widget_month_alarm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="12dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:text="闹钟已开启"
-            android:textColor="#E6E4FF"
+            android:textColor="#C9C4FF"
             android:textSize="10sp"
             android:visibility="gone" />
     </LinearLayout>
@@ -148,6 +157,7 @@
                 android:id="@+id/m_hl_0"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -163,16 +173,19 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_0"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:maxLines="1"
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -185,6 +198,7 @@
                 android:id="@+id/m_hl_1"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -200,15 +214,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -221,6 +238,7 @@
                 android:id="@+id/m_hl_2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -236,15 +254,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -257,6 +278,7 @@
                 android:id="@+id/m_hl_3"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -272,15 +294,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -293,6 +318,7 @@
                 android:id="@+id/m_hl_4"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -308,15 +334,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_4"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -329,6 +358,7 @@
                 android:id="@+id/m_hl_5"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -344,15 +374,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_5"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -365,6 +398,7 @@
                 android:id="@+id/m_hl_6"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -380,15 +414,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_6"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
@@ -409,6 +446,7 @@
                 android:id="@+id/m_hl_7"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -424,15 +462,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_7"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -445,6 +486,7 @@
                 android:id="@+id/m_hl_8"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -460,15 +502,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_8"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -481,6 +526,7 @@
                 android:id="@+id/m_hl_9"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -496,15 +542,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_9"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -517,6 +566,7 @@
                 android:id="@+id/m_hl_10"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -532,15 +582,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_10"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -553,6 +606,7 @@
                 android:id="@+id/m_hl_11"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -568,15 +622,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_11"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -589,6 +646,7 @@
                 android:id="@+id/m_hl_12"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -604,15 +662,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_12"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -625,6 +686,7 @@
                 android:id="@+id/m_hl_13"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -640,15 +702,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_13"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
@@ -669,6 +734,7 @@
                 android:id="@+id/m_hl_14"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -684,15 +750,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_14"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -705,6 +774,7 @@
                 android:id="@+id/m_hl_15"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -720,15 +790,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_15"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -741,6 +814,7 @@
                 android:id="@+id/m_hl_16"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -756,15 +830,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_16"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -777,6 +854,7 @@
                 android:id="@+id/m_hl_17"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -792,15 +870,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_17"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -813,6 +894,7 @@
                 android:id="@+id/m_hl_18"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -828,15 +910,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_18"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -849,6 +934,7 @@
                 android:id="@+id/m_hl_19"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -864,15 +950,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_19"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -885,6 +974,7 @@
                 android:id="@+id/m_hl_20"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -900,15 +990,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_20"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
@@ -929,6 +1022,7 @@
                 android:id="@+id/m_hl_21"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -944,15 +1038,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_21"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -965,6 +1062,7 @@
                 android:id="@+id/m_hl_22"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -980,15 +1078,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_22"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1001,6 +1102,7 @@
                 android:id="@+id/m_hl_23"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1016,15 +1118,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_23"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1037,6 +1142,7 @@
                 android:id="@+id/m_hl_24"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1052,15 +1158,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_24"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1073,6 +1182,7 @@
                 android:id="@+id/m_hl_25"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1088,15 +1198,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_25"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1109,6 +1222,7 @@
                 android:id="@+id/m_hl_26"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1124,15 +1238,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_26"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1145,6 +1262,7 @@
                 android:id="@+id/m_hl_27"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1160,15 +1278,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_27"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
@@ -1189,6 +1310,7 @@
                 android:id="@+id/m_hl_28"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1204,15 +1326,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_28"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1225,6 +1350,7 @@
                 android:id="@+id/m_hl_29"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1240,15 +1366,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_29"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1261,6 +1390,7 @@
                 android:id="@+id/m_hl_30"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1276,15 +1406,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_30"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1297,6 +1430,7 @@
                 android:id="@+id/m_hl_31"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1312,15 +1446,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_31"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1333,6 +1470,7 @@
                 android:id="@+id/m_hl_32"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1348,15 +1486,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_32"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1369,6 +1510,7 @@
                 android:id="@+id/m_hl_33"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1384,15 +1526,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_33"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1405,6 +1550,7 @@
                 android:id="@+id/m_hl_34"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1420,15 +1566,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_34"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
@@ -1449,6 +1598,7 @@
                 android:id="@+id/m_hl_35"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1464,15 +1614,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_35"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1485,6 +1638,7 @@
                 android:id="@+id/m_hl_36"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1500,15 +1654,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_36"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1521,6 +1678,7 @@
                 android:id="@+id/m_hl_37"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1536,15 +1694,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_37"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1557,6 +1718,7 @@
                 android:id="@+id/m_hl_38"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1572,15 +1734,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_38"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1593,6 +1758,7 @@
                 android:id="@+id/m_hl_39"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1608,15 +1774,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_39"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1629,6 +1798,7 @@
                 android:id="@+id/m_hl_40"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1644,15 +1814,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_40"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -1665,6 +1838,7 @@
                 android:id="@+id/m_hl_41"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today"
                 android:visibility="gone" />
 
@@ -1680,15 +1854,18 @@
                     android:layout_height="wrap_content"
                     android:text=""
                     android:textColor="#FFFFFF"
-                    android:textSize="10sp" />
+                    android:textSize="10sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/m_tag_41"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
                     android:text=""
                     android:textColor="#C9C4FF"
-                    android:textSize="8.5sp" />
+                    android:textSize="8.5sp"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>

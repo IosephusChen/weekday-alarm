@@ -124,6 +124,12 @@
             android:name=".PreNoticeReceiver"
             android:exported="false" />
 
+        <!-- 每日零点后的组件刷新（v1.71.4）：由 WidgetTicker 挂的精确闹钟触发，
+             只做「重画三个组件」一件事。显式 Intent 指定组件，不需要 intent-filter。 -->
+        <receiver
+            android:name=".WidgetTickReceiver"
+            android:exported="false" />
+
         <!-- 响铃自动停止（v1.18）：由 AlarmService 注册的定时广播触发，停掉前台服务。 -->
         <receiver
             android:name=".StopReceiver"

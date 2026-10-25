@@ -45,5 +45,9 @@ public final class Widgets {
             MonthMinimalWidget.updateAll(ctx);
         } catch (Throwable ignore) {
         }
+        // v1.71.4：顺带把「跨日刷新」挂上。放在这里而不是每个调用点——
+        // 组件的所有刷新入口（开 App、开机、改设置、导入、闹钟变化）都会走到这，
+        // 漏一个就有一类设备在零点后停在昨天。
+        WidgetTicker.scheduleNext(ctx);
     }
 }

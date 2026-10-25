@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 小组件里的次要按钮（v1.31）：半透明白底，压在紫色渐变上不抢主信息。
-     不用 MaterialButton / 主题色——RemoteViews 只认最基础的 View 与背景图。 -->
+     不用 MaterialButton / 主题色——RemoteViews 只认最基础的 View 与背景图。
+
+     v1.71.6 二次降权：20% 白 → 12%，10dp 圆角 → 全圆。原注释写着「不抢主信息」，
+     但实测没做到——4×4 底部这两个满宽按钮是整个组件里唯一的连续色块：日历是零散
+     短线、标题是线、底部是面，面永远比线重，第一眼落在按钮上而不是「这月哪天上班」。
+     全圆是为了和标题行的周次 chip（同一张 bg_chip_white）成套：卡片 22dp、小元素全圆，
+     只留两档，不再有 10dp 这第三档——10dp 配 20dp 高正好卡在「pill 还是矩形」的中间地带。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#33FFFFFF" />
-    <corners android:radius="10dp" />
+    <solid android:color="#1FFFFFFF" />
+    <corners android:radius="999dp" />
 </shape>

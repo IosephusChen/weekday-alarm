@@ -1870,13 +1870,20 @@
         </FrameLayout>
     </LinearLayout>
     <!-- 今天 / 明天请假（v1.49.12）：4×2 那套本来就有，切到整月后一度消失了。
-         这里是同一份结构、同一批 id，MonthWidgetRender 直接复用 bindAction。 -->
+         这里是同一份结构、同一批 id，MonthWidgetRender 直接复用 bindAction。
+
+         v1.71.6 降权：原来两个按钮 0dp+weight=1 撑满整行、20dp 高、10sp bold，
+         是组件里唯一的连续色块，横贯底部像标签栏（tab bar 的语义是「切视图」，
+         不是「执行动作」）。现在两侧各让出 34dp、高度降到 18dp，从「占满一条」
+         变成「居中两个小按钮」，面积少了约 30%。字重与字色的改动在下面两个 TextView 上。 -->
     <LinearLayout
         android:id="@+id/widget_month_actions"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_marginTop="4dp"
-        android:orientation="horizontal">
+        android:layout_height="18dp"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal"
+        android:paddingStart="34dp"
+        android:paddingEnd="34dp">
 
         <FrameLayout
             android:id="@+id/wrap_today_action"
@@ -1885,6 +1892,8 @@
             android:layout_marginEnd="4dp"
             android:layout_weight="1">
 
+            <!-- 常态：12% 白底、全圆、10sp 常规字重。原来这里是 bold + 纯白，
+                 比日历数字（10sp 常规）和标记（8.5sp 常规）还重，主次是倒的。 -->
             <TextView
                 android:id="@+id/widget_today_action"
                 android:layout_width="match_parent"
@@ -1894,9 +1903,8 @@
                 android:gravity="center"
                 android:maxLines="1"
                 android:text="今天不上班"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="#E6E4FF"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/widget_today_action_on"
@@ -1928,9 +1936,8 @@
                 android:gravity="center"
                 android:maxLines="1"
                 android:text="明天不上班"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textColor="#E6E4FF"
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/widget_tomorrow_action_on"

@@ -27,19 +27,16 @@ import java.util.List;
 final class AlarmEditor {
 
     /**
-     * 四种重复规则（v1.71.2 卡片化）：主文案 + 一句解释 + 对应的模式值。
+     * 四种重复规则（v1.71.2 卡片化，v1.71.3 去副标题）：主文案 + 对应的模式值。
      *
      * <p>顺序就是界面顺序，{@code MODE_VALUES} 与文案一一对应——
      * 保存时按下标取值，不再靠 RadioButton 的 id 分支。
+     *
+     * <p>v1.71.3 删掉每张卡的副标题（用户反馈「没必要」）：四张卡本身就是
+     * 自解释的，「仅上班日」不需要再跟一句「按周休制度」。
      */
     static final String[] MODE_TITLES = {
             "仅上班日", "每天", "仅休息日", "仅一次"
-    };
-    static final String[] MODE_SUBS = {
-            "按周休制度，节假日不响",
-            "周一到周日都响",
-            "双休休周末，单休休那一天",
-            "临时闹钟，响过自动关闭"
     };
     static final Alarm.Mode[] MODE_VALUES = {
             Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND, Alarm.Mode.ONCE
@@ -114,7 +111,7 @@ final class AlarmEditor {
         int gap = Math.round(10 * activity.getResources().getDisplayMetrics().density);
         final View[] modeCards = new View[MODE_TITLES.length];
         for (int i = 0; i < MODE_TITLES.length; i++) {
-            View card = DialogKit.optionView(activity, MODE_TITLES[i], MODE_SUBS[i]);
+            View card = DialogKit.optionView(activity, MODE_TITLES[i], null);
             boolean on = i == modeSel[0];
             card.setSelected(on);
             DialogKit.showCheck(card, on);

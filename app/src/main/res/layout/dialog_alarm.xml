@@ -46,7 +46,9 @@
         android:layout_marginTop="18dp"
         android:text="时间" />
 
-    <!-- 时间是这张卡里最该被看见的东西：34sp、居中、字距略开 -->
+    <!-- 时间是这张卡里最该被看见的东西：34sp、居中、字距略开。
+         v1.71.3：去掉「点按修改时间」——控件本身的可点性一眼就能看出来，
+         这行小字只是噪音。 -->
     <TextView
         android:id="@+id/tv_alarm_pick_time"
         android:layout_width="match_parent"
@@ -62,15 +64,6 @@
         android:textColor="@color/ink"
         android:textSize="34sp"
         android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:gravity="center"
-        android:text="点按修改时间"
-        android:textColor="@color/sub"
-        android:textSize="11sp" />
 
     <TextView
         style="@style/FieldLabel"

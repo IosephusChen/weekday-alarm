@@ -1,57 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 「时 / 分」双列滚轮时间选择器（与系统闹钟同款交互）。
      不用框架 TimePicker：澎湃 OS 会无视 spinner 主题、强制渲染成表盘拨轮；
-     自绘 NumberPicker 双列在澎湃 OS 下会自动套用其滚轮风格（居中大字高亮）。 -->
+     自绘 NumberPicker 双列在澎湃 OS 下会自动套用其滚轮风格（居中大字高亮）。
+
+     v1.71.3 版式：
+     - 两列滚轮放进一块软底「井」（bg_time_well），不再直接浮在白色弹窗上；
+     - 两列之间加冒号，读起来是一个时刻，不是两个数字列表；
+     - 列头「时 / 分」与列宽对齐（中间留 32dp 给冒号），不再错位。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:paddingLeft="24dp"
-    android:paddingRight="24dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp">
+    android:orientation="vertical"
+    android:paddingLeft="20dp"
+    android:paddingRight="20dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="10dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:background="@drawable/bg_time_well"
+        android:orientation="vertical"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="时"
-            android:textColor="@color/sub"
-            android:textSize="13sp" />
-
-        <NumberPicker
-            android:id="@+id/np_hour"
+        <!-- 列头：两列各占 weight 1，中间 32dp 与冒号同宽 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:descendantFocusability="blocksDescendants"
-            android:theme="@style/WheelPickerText" />
-    </LinearLayout>
+            android:orientation="horizontal">
 
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:letterSpacing="0.12"
+                android:text="时"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:text="分"
-            android:textColor="@color/sub"
-            android:textSize="13sp" />
+            <Space
+                android:layout_width="32dp"
+                android:layout_height="1dp" />
 
-        <NumberPicker
-            android:id="@+id/np_minute"
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:letterSpacing="0.12"
+                android:text="分"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 滚轮行：冒号与两列滚轮垂直居中对齐 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:descendantFocusability="blocksDescendants"
-            android:theme="@style/WheelPickerText" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <NumberPicker
+                android:id="@+id/np_hour"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:descendantFocusability="blocksDescendants"
+                android:theme="@style/WheelPickerText" />
+
+            <TextView
+                android:id="@+id/tv_time_colon"
+                android:layout_width="32dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text=":"
+                android:textColor="@color/indigo"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <NumberPicker
+                android:id="@+id/np_minute"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:descendantFocusability="blocksDescendants"
+                android:theme="@style/WheelPickerText" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

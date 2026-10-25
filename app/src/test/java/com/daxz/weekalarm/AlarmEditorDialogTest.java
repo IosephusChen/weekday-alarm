@@ -81,9 +81,14 @@ public class AlarmEditorDialogTest {
         return false;
     }
 
-    /** 四张卡，每张都有主文案和一句解释——解释不能丢，它替掉了旧版括号里的长句。 */
+    /**
+     * 四张卡只有主文案，不显示副标题（v1.71.3 用户反馈「副标题没必要」）。
+     *
+     * <p>选项卡的副标题位仍然占位（GONE）——那是 DialogKit 的通用结构，
+     * 这条断言钉的是「占位但不显示」。
+     */
     @Test
-    public void modeCards_areFour_withTitleAndExplanation() {
+    public void modeCards_areFour_titlesOnly() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
         assertEquals("四种重复规则", 4, box.getChildCount());
@@ -91,8 +96,10 @@ public class AlarmEditorDialogTest {
             View card = box.getChildAt(i);
             assertTrue("第 " + i + " 张卡缺主文案：" + AlarmEditor.MODE_TITLES[i],
                     containsText(card, AlarmEditor.MODE_TITLES[i]));
-            assertTrue("第 " + i + " 张卡缺解释：" + AlarmEditor.MODE_SUBS[i],
-                    containsText(card, AlarmEditor.MODE_SUBS[i]));
+            View sub = card.findViewWithTag("dlg_sub");
+            assertNotNull("第 " + i + " 张卡应有副标题占位", sub);
+            assertTrue("第 " + i + " 张卡不该显示副标题",
+                    sub.getVisibility() != View.VISIBLE);
         }
     }
 

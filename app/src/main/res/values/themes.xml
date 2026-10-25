@@ -48,6 +48,9 @@
         <item name="android:textColorSecondary">@color/sub</item>
         <item name="android:textSize">22sp</item>
         <item name="colorControlActivated">@color/indigo</item>
+        <!-- v1.71.3：分隔线原来是深靛蓝（跟随 colorControlNormal），
+             两列各画一条、在弹窗上横贯成两条长线；改成发丝线色后只剩「选中行」的暗示。 -->
+        <item name="android:colorControlNormal">@color/line</item>
     </style>
 
     <style name="WeekChip">

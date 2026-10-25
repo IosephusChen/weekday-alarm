@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,7 +26,34 @@ import java.util.List;
  */
 final class AlarmEditor {
 
+    /**
+     * 四种重复规则（v1.71.2 卡片化）：主文案 + 一句解释 + 对应的模式值。
+     *
+     * <p>顺序就是界面顺序，{@code MODE_VALUES} 与文案一一对应——
+     * 保存时按下标取值，不再靠 RadioButton 的 id 分支。
+     */
+    static final String[] MODE_TITLES = {
+            "仅上班日", "每天", "仅休息日", "仅一次"
+    };
+    static final String[] MODE_SUBS = {
+            "按周休制度，节假日不响",
+            "周一到周日都响",
+            "双休休周末，单休休那一天",
+            "临时闹钟，响过自动关闭"
+    };
+    static final Alarm.Mode[] MODE_VALUES = {
+            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND, Alarm.Mode.ONCE
+    };
+
     private AlarmEditor() {
+    }
+
+    /** 模式在卡片列表里的下标；未知值按「仅上班日」处理（与旧默认一致）。 */
+    static int modeIndex(Alarm.Mode mode) {
+        for (int i = 0; i < MODE_VALUES.length; i++) {
+            if (MODE_VALUES[i] == mode) return i;
+        }
+        return 0;
     }
 
     /**
@@ -39,7 +65,7 @@ final class AlarmEditor {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_alarm, null);
         EditText etLabel = view.findViewById(R.id.et_alarm_label);
         TextView tvTime = view.findViewById(R.id.tv_alarm_pick_time);
-        RadioGroup group = view.findViewById(R.id.rg_alarm_mode);
+        LinearLayout modeList = view.findViewById(R.id.ll_alarm_modes);
         TextView btnDelete = view.findViewById(R.id.btn_alarm_delete);
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
@@ -52,25 +78,15 @@ final class AlarmEditor {
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
+        // v1.71.2：重复规则从系统单选圈改成卡片。选中态只记一个下标，
+        // 保存时按下标取 MODE_VALUES——不再靠 RadioButton 的 id 分支。
+        final int[] modeSel = {target != null ? modeIndex(target.mode)
+                : modeIndex(Alarm.Mode.WORKDAY)};
         // v1.61.0：编辑页的配色圆点取消——一条闹钟一个色，日常根本没人在用，
         // 反而让列表五颜六色。color 字段仍留在数据层（老备份照常还原），
         // 只是不再有入口去改它
         if (target != null) {
             etLabel.setText(target.label);
-            switch (target.mode) {
-                case DAILY:
-                    group.check(R.id.rb_mode_daily);
-                    break;
-                case WEEKEND:
-                    group.check(R.id.rb_mode_weekend);
-                    break;
-                case ONCE:
-                    group.check(R.id.rb_mode_once);
-                    break;
-                default:
-                    group.check(R.id.rb_mode_workday);
-                    break;
-            }
             LocalDate saved = target.parseOnceDate();
             if (saved != null) once[0] = saved;
         } else {
@@ -80,7 +96,6 @@ final class AlarmEditor {
                 hour[0] = primary.hour;
                 minute[0] = primary.minute;
             }
-            group.check(R.id.rb_mode_workday);
         }
         if (target == null) {
             btnDelete.setVisibility(View.GONE);
@@ -94,11 +109,37 @@ final class AlarmEditor {
             tvTime.setText(TimeText.clock(h, m));
         }));
 
-        // 日期行：勾上「仅一次」才出现
+        // 四张规则卡片：点哪张就把选中态挪过去（同一时刻只有一张是选中的），
+        // 只有「仅一次」显示「哪一天」行
+        int gap = Math.round(10 * activity.getResources().getDisplayMetrics().density);
+        final View[] modeCards = new View[MODE_TITLES.length];
+        for (int i = 0; i < MODE_TITLES.length; i++) {
+            View card = DialogKit.optionView(activity, MODE_TITLES[i], MODE_SUBS[i]);
+            boolean on = i == modeSel[0];
+            card.setSelected(on);
+            DialogKit.showCheck(card, on);
+            final int idx = i;
+            card.setOnClickListener(v -> {
+                modeSel[0] = idx;
+                for (int j = 0; j < modeCards.length; j++) {
+                    boolean sel = j == idx;
+                    modeCards[j].setSelected(sel);
+                    DialogKit.showCheck(modeCards[j], sel);
+                }
+                rowOnceDate.setVisibility(
+                        idx == modeIndex(Alarm.Mode.ONCE) ? View.VISIBLE : View.GONE);
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (i > 0) lp.topMargin = gap;
+            modeList.addView(card, lp);
+            modeCards[i] = card;
+        }
+
+        // 日期行：选中「仅一次」才出现
         tvOnceDate.setText(onceDateText(once[0]));
-        group.setOnCheckedChangeListener((g, checkedId) ->
-                rowOnceDate.setVisibility(checkedId == R.id.rb_mode_once ? View.VISIBLE : View.GONE));
-        rowOnceDate.setVisibility(group.getCheckedRadioButtonId() == R.id.rb_mode_once
+        rowOnceDate.setVisibility(modeSel[0] == modeIndex(Alarm.Mode.ONCE)
                 ? View.VISIBLE : View.GONE);
         rowOnceDate.setOnClickListener(v -> pickOnceDate(activity, once[0], picked -> {
             once[0] = picked;
@@ -116,17 +157,7 @@ final class AlarmEditor {
                     // 先关对话框再执行业务逻辑（与其它对话框回调时序保持一致）
                     d.dismiss();
                     String label = normalizeLabel(etLabel.getText().toString());
-                    Alarm.Mode mode;
-                    int mid = group.getCheckedRadioButtonId();
-                    if (mid == R.id.rb_mode_daily) {
-                        mode = Alarm.Mode.DAILY;
-                    } else if (mid == R.id.rb_mode_weekend) {
-                        mode = Alarm.Mode.WEEKEND;
-                    } else if (mid == R.id.rb_mode_once) {
-                        mode = Alarm.Mode.ONCE;
-                    } else {
-                        mode = Alarm.Mode.WORKDAY;
-                    }
+                    Alarm.Mode mode = MODE_VALUES[modeSel[0]];
                     // only ONCE 存日期。换成别的模式时把 onceDate 清掉，
                     // 否则以后再切回 ONCE 会读到一条陈旧的日期，用户会莫名被吵醒。
                     LocalDate onceDay = once[0];

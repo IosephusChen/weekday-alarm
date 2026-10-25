@@ -93,13 +93,13 @@
     <string name="holiday_checking">正在检查…</string>
     <string name="dialog_holiday_check_failed_title">在线检查未成功</string>
     <string name="dialog_run_status_title">运行状态</string>
-    <string name="pin_confirm_title">看桌面有没有弹出确认框</string>
-    <string name="pin_confirm_message">弹了就直接点「添加」，组件放上桌面就完成。
+    <string name="pin_confirm_title">已请求添加到桌面</string>
+    <string name="pin_confirm_message">桌面弹出「添加」确认框的话，点一下组件就上去了。
 
-没有弹出的话，按下面手动加：
-长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。</string>
+没有弹出的话，点下面的「手动添加」，两步就能放上去。</string>
+    <string name="pin_manual_button">手动添加</string>
     <string name="pin_manual_title">需要手动添加</string>
-    <string name="pin_manual_message">你的桌面（澎湃 / MIUI）暂时不支持从 App 里一键添加，两步就好：
+    <string name="pin_manual_message">你的桌面暂时不支持从 App 里一键添加，两步就好：
 
 长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」，选一个放上去。</string>
     <string name="pin_manual_title_plain">请手动添加</string>

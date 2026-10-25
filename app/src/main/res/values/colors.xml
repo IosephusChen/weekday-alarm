@@ -43,6 +43,8 @@
          深色模式下 #DC2626 / #16A34A 压在 #1C1F35 卡片上对比度只有 3:1 左右。 -->
     <color name="danger">#DC2626</color>
     <color name="success">#16A34A</color>
+    <!-- 危险操作的淡底（v1.71.2）：删除按钮用它托底，不再是白底红字 -->
+    <color name="danger_soft">#FDF1F1</color>
 
     <!-- ===== 日历格子与图例语义色（日间）=====
          底色与 bg_day_*.xml 的 solid 一致；描边为同色系淡边（今天为 indigo 主色）。

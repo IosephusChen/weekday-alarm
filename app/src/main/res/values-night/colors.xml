@@ -38,6 +38,8 @@
 
     <color name="danger">#F87171</color>   <!-- red-400 -->
     <color name="success">#4ADE80</color>  <!-- green-400 -->
+    <!-- 危险操作的淡底（夜间）：比卡片底略偏红，红字压上去才立得住 -->
+    <color name="danger_soft">#3A1D22</color>
 
     <!-- ===== 日历格子与图例语义色（夜间）===== -->
     <color name="day_work_bg">#232847</color>

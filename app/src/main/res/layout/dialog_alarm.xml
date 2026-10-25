@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 闹钟编辑对话框：名称 + 时间 + 重复规则 + 删除。
-     用自定义布局而非 setMessage + setSingleChoiceItems：后者在 MIUI 主题下
-     单选列表不渲染（已实测复现），自绘 RadioGroup 三选项必然可见。 -->
+     v1.71.2：重复规则从系统单选圈改成卡片（DialogKit.optionView），
+     与设置页、引导页同一套卡片语言；时间做成大字主信息；删除改淡红卡片。 -->
 <!-- v1.27.1：外面套一层 ScrollView。加了第四个模式与「哪一天」行之后，
      内容在小屏上会超出对话框高度——而对话框本身不会滚，底部的「删除 / 取消 / 保存」
      会被顶出屏幕，等于没保存按钮。ScrollView 让内容自己滚，按钮始终在。 -->
@@ -43,9 +43,10 @@
         style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="18dp"
         android:text="时间" />
 
+    <!-- 时间是这张卡里最该被看见的东西：34sp、居中、字距略开 -->
     <TextView
         android:id="@+id/tv_alarm_pick_time"
         android:layout_width="match_parent"
@@ -55,58 +56,37 @@
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
-        android:padding="11dp"
+        android:letterSpacing="0.02"
+        android:padding="14dp"
         android:text="07:30"
         android:textColor="@color/ink"
-        android:textSize="20sp"
+        android:textSize="34sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="点按修改时间"
+        android:textColor="@color/sub"
+        android:textSize="11sp" />
 
     <TextView
         style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="18dp"
         android:text="重复规则" />
 
-    <RadioGroup
-        android:id="@+id/rg_alarm_mode"
+    <!-- v1.71.2：卡片在 AlarmEditor 里用 DialogKit.optionView 填，
+         与设置页的单选弹窗同一套视觉（选中淡紫底 + 右侧勾） -->
+    <LinearLayout
+        android:id="@+id/ll_alarm_modes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:orientation="vertical">
-
-        <RadioButton
-            android:id="@+id/rb_mode_workday"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="仅上班日（按周休制度，节假日不响）" />
-
-        <RadioButton
-            android:id="@+id/rb_mode_daily"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="每天" />
-
-        <RadioButton
-            android:id="@+id/rb_mode_weekend"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="仅休息日（双休休周末，单休休那一天）" />
-
-        <RadioButton
-            android:id="@+id/rb_mode_once"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="仅一次（临时闹钟，响过自动关闭）" />
-    </RadioGroup>
+        android:layout_marginTop="8dp"
+        android:orientation="vertical" />
 
     <!-- v1.27：只有选中「仅一次」才出现的那一天。默认隐藏，
          勾上即显示——免得每次编辑普通闹钟都让一个用不上的日期控件占位。 -->
@@ -142,12 +122,12 @@
         android:id="@+id/btn_alarm_delete"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:background="@drawable/bg_time_outline"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_danger_soft"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
-        android:padding="11dp"
+        android:padding="12dp"
         android:text="删除这个闹钟"
         android:textColor="@color/danger"
         android:textSize="14sp"

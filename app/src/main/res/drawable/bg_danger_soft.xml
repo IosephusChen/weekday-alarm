@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 危险操作的淡底（v1.71.2）：删除按钮用。
+     不做成 selector——它没有选中态，只是「一眼看出这是删除」的底。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/danger_soft" />
+    <corners android:radius="12dp" />
+</shape>

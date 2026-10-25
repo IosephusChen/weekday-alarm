@@ -715,18 +715,17 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 「添加到桌面」（v1.49.9，v1.59.0 按澎湃实测重写）。
+     * 「添加到桌面」（v1.49.9，v1.59.0 按澎湃实测重写，v1.71.2 改回先发请求）。
      *
      * <p>澎湃把第三方小部件统一收进「安卓小部件」二级列表，用户要翻三层才找得到。
      * {@code requestPinAppWidget} 本意是让系统直接弹「是否添加到桌面」，点一下就放上去。
      *
-     * <p><b>v1.59.0 为什么重写</b>：真机实测（用户反馈）——HyperOS 上
-     * {@code isRequestPinAppWidgetSupported()} 返回 true，请求也「发出去了」，
-     * 但桌面**根本不弹确认框**，用户看到的只有我们弹的 Toast 文案。
-     * 「API 可用」和「启动器真的弹框」是两回事，这个 Gap 只能靠诚实兜底。
+     * <p><b>v1.59.0</b>：真机实测（用户反馈）HyperOS 上 {@code isRequestPinAppWidgetSupported()}
+     * 返回 true、请求也「发出去了」，但桌面不弹确认框。当时按「小米桌面就直接给手动路径」处理。
      *
-     * <p>现在：认得出小米桌面就直接给手动路径（不发无效请求）；其他桌面照旧请求，
-     * 但结果反馈从「一闪而过的 Toast」升级成一个说全两种可能的对话框。
+     * <p><b>v1.71.2</b>：用户反馈「还是没法直接添加」——新版 HyperOS 已经支持一键添加，
+     * 按桌面直接放弃等于把能用的路堵死。现在不认桌面，先发请求；返回 false 才给手动路径。
+     * 弹没弹框 API 没有回调，所以确认对话框里同时留一个「手动添加」出口，不让用户卡住。
      */
     private void showPinWidgetDialog() {
         DialogKit.showPick(this,
@@ -750,27 +749,7 @@ public class SettingsActivity extends AppCompatActivity {
                 });
     }
 
-    /** 小米桌面（HyperOS / MIUI）：实测不支持一键添加，直接给手动路径。 */
-    private boolean isXiaomiLauncher() {
-        try {
-            Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-            android.content.pm.ResolveInfo ri = getPackageManager()
-                    .resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
-            if (ri == null || ri.activityInfo == null) return false;
-            String pkg = ri.activityInfo.packageName;
-            return pkg != null && (pkg.startsWith("com.miui.home")
-                    || pkg.startsWith("com.android.launcher"));
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     private void pinWidget(Class<?> provider, int heightDp) {
-        // 澎湃桌面：不发无效请求，直接教手动加（附原因，不然用户以为 App 坏了）
-        if (isXiaomiLauncher()) {
-            showPinManualGuide();
-            return;
-        }
         android.appwidget.AppWidgetManager mgr =
                 android.appwidget.AppWidgetManager.getInstance(this);
         if (!mgr.isRequestPinAppWidgetSupported()) {
@@ -789,11 +768,12 @@ public class SettingsActivity extends AppCompatActivity {
             showPinFallback();
             return;
         }
-        // 请求发出去了。弹没弹框无法检测（API 无回调），所以一次说全两种可能：
-        // 弹了 → 点确认；没弹 → 手动路径。v1.49.x 用 Toast，用户实测「只弹文案」，
-        // Toast 会被桌面盖住也看不清步骤，换成对话框。
+        // 请求发出去了。弹没弹框无法检测（API 无回调），所以一次说全两种可能，
+        // 并把「手动添加」做成按钮——不弹也能就地拿到路径，不用退出去找。
         DialogKit.showMessage(this, getString(R.string.pin_confirm_title),
-                getString(R.string.pin_confirm_message));
+                getString(R.string.pin_confirm_message),
+                "知道了", null,
+                getString(R.string.pin_manual_button), (d, w) -> showPinManualGuide());
     }
 
     /** 小米桌面的手动引导（v1.59.0）：说清为什么不能一键加。 */

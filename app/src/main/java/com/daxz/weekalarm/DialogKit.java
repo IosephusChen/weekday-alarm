@@ -410,6 +410,16 @@ public final class DialogKit {
      * 选中与不选中之间卡片宽度不跳。
      */
     static View optionView(Context c, String title, String sub) {
+        return optionView(c, title, sub, false);
+    }
+
+    /**
+     * 紧凑变体（v1.71.7）：上下内边距 13dp → 10dp，一张矮 6dp。
+     *
+     * <p>睡前提醒一屏要放六张卡，按标准高度会把弹窗撑到屏幕四分之三。别的弹窗
+     * 三到五张卡、内容也不挤，保持标准高度更舒展——所以做成参数而不是全局改。
+     */
+    static View optionView(Context c, String title, String sub, boolean compact) {
         LinearLayout card = new LinearLayout(c);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
@@ -417,7 +427,8 @@ public final class DialogKit {
         card.setClickable(true);
         card.setFocusable(true);
         int padH = dp(c, 16);
-        card.setPadding(padH, dp(c, 13), padH, dp(c, 13));
+        int padV = dp(c, compact ? 10 : 13);
+        card.setPadding(padH, padV, padH, padV);
 
         LinearLayout textCol = new LinearLayout(c);
         textCol.setOrientation(LinearLayout.VERTICAL);

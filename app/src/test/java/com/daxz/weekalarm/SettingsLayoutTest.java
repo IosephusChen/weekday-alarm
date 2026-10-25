@@ -332,7 +332,7 @@ public class SettingsLayoutTest {
      * 同一个决策要理解两遍。现在并进对话框：回显当前值，勾选即时生效。
      */
     @Test
-    public void bedtimeDialog_hasWorkdayOnlyCheckbox() {
+    public void bedtimeDialog_hasWorkdayOnlySwitch() {
         Prefs.setBedtimeMinutes(ctx(), 22 * 60);
         Prefs.setBedtimeWorkdayOnly(ctx(), true);
         ActivityController<SettingsActivity> ctl = openHome();
@@ -342,12 +342,37 @@ public class SettingsLayoutTest {
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
         assertNotNull("点睡前提醒行应弹出对话框", d);
-        android.widget.CheckBox cb = d.findViewById(R.id.cb_bedtime_workday);
-        assertNotNull("对话框里应有「仅在明天上班时提醒」复选框", cb);
-        assertTrue("回显当前值（开着）", cb.isChecked());
+        // v1.71.7：裸 CheckBox 换成开关行卡片里的 SwitchCompat——它是个开关不是选项
+        SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
+        assertNotNull("对话框里应有「仅在明天上班时提醒」开关", sw);
+        assertTrue("回显当前值（开着）", sw.isChecked());
 
-        cb.performClick();
-        assertFalse("勾选即时生效", Prefs.isBedtimeWorkdayOnly(ctx()));
+        sw.performClick();
+        assertFalse("切换即时生效", Prefs.isBedtimeWorkdayOnly(ctx()));
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 睡前提醒关着时，「仅在明天上班时提醒」必须压暗禁用。
+     *
+     * <p>没有提醒可发，这个条件无从谈起；可点会让人以为改了它就会开始提醒。
+     */
+    @Test
+    public void bedtimeDialog_workdaySwitchDisabledWhenOff() {
+        Prefs.setBedtimeMinutes(ctx(), Prefs.BEDTIME_OFF);
+        ActivityController<SettingsActivity> ctl = openHome();
+        ctl.get().findViewById(R.id.row_bedtime).performClick();
+        ShadowLooper.idleMainLooper();
+
+        androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull(d);
+        SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
+        assertNotNull(sw);
+        assertFalse("关闭态下开关应禁用", sw.isEnabled());
+        View row = d.findViewById(R.id.bed_workday_row);
+        assertTrue("整行应压暗", row.getAlpha() < 1f);
 
         ctl.pause().stop().destroy();
     }

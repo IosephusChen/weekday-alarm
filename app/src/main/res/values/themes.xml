@@ -133,12 +133,6 @@
         <item name="android:lineSpacingMultiplier">1.35</item>
     </style>
 
-    <style name="WeekRadio">
-        <item name="android:textSize">13sp</item>
-        <item name="android:textColor">@color/ink</item>
-        <item name="android:buttonTint">@color/indigo</item>
-    </style>
-
     <!-- ===== 设置列表（v1.19.8）=====
          所有行统一「左标题 + 右值/开关」，行高与左右内边距一致，
          避免旧版「有的居中、有的左对齐」造成的视觉错位。 -->

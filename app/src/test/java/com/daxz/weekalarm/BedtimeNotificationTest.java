@@ -276,9 +276,12 @@ public class BedtimeNotificationTest {
         Dialog d = ShadowAlertDialog.getLatestDialog();
         assertNotNull("应弹出睡前提醒设置", d);
         // 选「关闭」当场生效并收起对话框（没有确定按钮）。
-        // 用 performClick 而不是 RadioGroup.check：后者在 Robolectric 里不一定派发
-        // OnCheckedChangeListener，偏好会一直是旧值——这条第一次写就踩到了。
-        ((RadioButton) d.findViewById(R.id.rb_bed_off)).performClick();
+        // v1.71.7 卡片化后选项不再是 RadioButton，按位置取第一张卡：
+        // 顺序固定为 关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间…
+        ViewGroup list = d.findViewById(R.id.dlg_bed_list);
+        assertNotNull("应有时间选项列表", list);
+        assertEquals("六个时间选项", 6, list.getChildCount());
+        list.getChildAt(0).performClick();
         ShadowLooper.idleMainLooper();
 
         assertEquals(Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));

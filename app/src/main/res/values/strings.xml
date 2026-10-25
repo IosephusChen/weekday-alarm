@@ -117,7 +117,7 @@
     <string name="dialog_calendar_content_solar">二十四节气</string>
     <string name="dialog_calendar_content_christian">基督教节日</string>
     <string name="dialog_bedtime_title">睡前提醒</string>
-    <string name="dialog_bedtime_message">到点发一条安静的通知，告诉你明天要不要早起、闹钟几点响。通知里的「明天请假」可一键把明天标为请假并取消明早闹钟。</string>
+    <string name="dialog_bedtime_message">到点发一条安静的通知，可一键标记明天请假。</string>
     <string name="dialog_bedtime_off">关闭</string>
     <string name="dialog_bedtime_2130">21:30</string>
     <string name="dialog_bedtime_2200">22:00</string>
@@ -125,7 +125,7 @@
     <string name="dialog_bedtime_2300">23:00</string>
     <string name="dialog_bedtime_custom">其他时间…</string>
     <string name="dialog_bedtime_workday_only">仅在明天上班时提醒</string>
-    <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知，免得打扰</string>
+    <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知</string>
     <!-- v1.61.0：剩下几个 RadioGroup 对话框原来只有一个 13sp 的字段标签当标题，
          弹出来「不知道这是什么设置」。统一补上「17sp 粗体标题 + 12sp 说明」，
          与 dialog_bedtime / dialog_week_mode 同一套版式。

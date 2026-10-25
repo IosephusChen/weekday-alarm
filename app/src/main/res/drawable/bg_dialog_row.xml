@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 对话框里的「开关行」卡片（v1.71.7）。
+     睡前提醒弹窗里「仅在明天上班时提醒」那一行用它：左边两行文字（标题 + 说明），
+     右边一个 SwitchCompat。
+
+     圆角 14dp 与 DialogKit.optionView 的 bg_guide_option 一致——两者在同一个弹窗里
+     上下相邻，圆角不同会显得没对齐。底与描边也取同一对 token（card / line）。
+
+     为什么不直接复用 bg_guide_option：那张是 selector，带 state_selected 分支。
+     这行是个开关，永远不会被 setSelected；万一以后有人顺手设了，会莫名其妙变紫。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/card" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/line" />
+    <corners android:radius="14dp" />
+</shape>

@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 睡前提醒时间选择（v1.20）。
-     与其它设置一样用自绘 RadioGroup：MIUI / 澎湃 OS 上 setSingleChoiceItems
-     经常只显示标题不显示选项（已实测），自绘布局最稳。
-     选「其他时间」会接着弹出时/分滚轮。 -->
+<!-- 睡前提醒（v1.20；v1.71.7 卡片化）。
+
+     原来六个选项是自绘 RadioGroup（系统 setSingleChoiceItems 在 MIUI / 澎湃上
+     只显示标题不显示选项，已实测），配一个裸 CheckBox。v1.71.7 换成 DialogKit 的
+     选项卡积木：与「日历显示内容」「重复规则」「提醒范围」同一套语言，
+     全 App 最后一个还在用系统单选圈的弹窗到此收尾。
+
+     六张卡由代码填进 dlg_bed_list（DialogKit.optionView），不在 XML 里写死——
+     取值与下标一一对应，写死要维护六份重复的 id 与文案。
+
+     「仅在明天上班时提醒」从裸 CheckBox 改成开关行卡片：它是个开关不是选项，
+     用 Switch 比用勾选框更贴语义，也和设置页那行的开关长一个样。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -26,81 +34,55 @@
         android:textColor="@color/sub"
         android:textSize="12sp" />
 
-    <RadioGroup
-        android:id="@+id/rg_bedtime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:orientation="vertical">
-
-        <RadioButton
-            android:id="@+id/rb_bed_off"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_off" />
-
-        <RadioButton
-            android:id="@+id/rb_bed_2130"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_2130" />
-
-        <RadioButton
-            android:id="@+id/rb_bed_2200"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_2200" />
-
-        <RadioButton
-            android:id="@+id/rb_bed_2230"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_2230" />
-
-        <RadioButton
-            android:id="@+id/rb_bed_2300"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_2300" />
-
-        <RadioButton
-            android:id="@+id/rb_bed_custom"
-            style="@style/WeekRadio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="44dp"
-            android:text="@string/dialog_bedtime_custom" />
-    </RadioGroup>
-
-    <!-- v1.60.0：「仅在明天上班时提醒」从更多设置里的独立开关行并入本对话框——
-         它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
-         勾选即时生效；睡前提醒关着时压暗禁用（由代码控制）。 -->
-    <CheckBox
-        android:id="@+id/cb_bedtime_workday"
+    <!-- 六张选项卡：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间… -->
+    <LinearLayout
+        android:id="@+id/dlg_bed_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:minHeight="44dp"
-        android:text="@string/dialog_bedtime_workday_only"
-        android:textColor="@color/ink"
-        android:textSize="15sp" />
+        android:orientation="vertical" />
 
-    <TextView
+    <!-- 仅在明天上班时提醒：开关行卡片。睡前提醒关着时整行压暗禁用（代码控制） -->
+    <LinearLayout
+        android:id="@+id/bed_workday_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="2dp"
-        android:text="@string/dialog_bedtime_workday_hint"
-        android:textColor="@color/sub"
-        android:textSize="12sp" />
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_dialog_row"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/dialog_bedtime_workday_only"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:lineSpacingMultiplier="1.2"
+                android:text="@string/dialog_bedtime_workday_hint"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sw_bed_workday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp" />
+    </LinearLayout>
 </LinearLayout>

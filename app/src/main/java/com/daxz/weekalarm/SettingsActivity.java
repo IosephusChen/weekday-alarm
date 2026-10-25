@@ -6,10 +6,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1020,66 +1018,108 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 睡前提醒时间：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间（滚轮）。
-     * 自绘 RadioGroup，不用 setSingleChoiceItems（MIUI 上不渲染，已实测）。
+     * 睡前提醒：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间（滚轮）。
+     *
+     * <p>v1.71.7 卡片化：六个选项从系统单选圈换成 {@link DialogKit#optionView} 卡片，
+     * 裸 {@code CheckBox} 换成开关行卡片。交互一点没变——点一项即保存并关窗
+     * （选择本身就是一步操作，再问一次是多余的），开关勾选即时生效、不关窗
+     * （它只影响「发不发」，用户可能还想接着改时刻）。
+     *
+     * <p>原来用自绘 {@code RadioGroup} 是因为 {@code setSingleChoiceItems} 在
+     * MIUI / 澎湃上只显示标题不显示选项（已实测）。换卡片积木后这个问题自然消失。
      */
     private void showBedtimeDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_bedtime, null);
-        RadioGroup rg = view.findViewById(R.id.rg_bedtime);
+        LinearLayout list = view.findViewById(R.id.dlg_bed_list);
         int cur = Prefs.getBedtimeMinutes(this);
-        int id;
-        if (cur == Prefs.BEDTIME_OFF) id = R.id.rb_bed_off;
-        else if (cur == 21 * 60 + 30) id = R.id.rb_bed_2130;
-        else if (cur == 22 * 60) id = R.id.rb_bed_2200;
-        else if (cur == 22 * 60 + 30) id = R.id.rb_bed_2230;
-        else if (cur == 23 * 60) id = R.id.rb_bed_2300;
-        else id = R.id.rb_bed_custom;
-        rg.check(id);   // 先选中再挂监听，避免 setChecked 反过来触发一次保存
+        boolean off = cur == Prefs.BEDTIME_OFF;
 
-        // v1.60.0：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框。
-        // 勾选即时生效（和时刻「点哪项存哪项」同一风格）；睡前提醒关着时压暗禁用——
-        // 没有提醒可发，这个条件无从谈起，不禁用会让人以为改了它就会开始提醒。
-        CheckBox cbWorkday = view.findViewById(R.id.cb_bedtime_workday);
-        boolean bedOn = cur != Prefs.BEDTIME_OFF;
-        cbWorkday.setChecked(Prefs.isBedtimeWorkdayOnly(this));
-        cbWorkday.setEnabled(bedOn);
-        cbWorkday.setAlpha(bedOn ? 1f : 0.45f);
-        cbWorkday.setOnCheckedChangeListener((b, checked) -> {
-            Prefs.setBedtimeWorkdayOnly(this, checked);
+        // 下标与取值一一对应；最后一项「其他时间」没有固定值，走滚轮（占位 -2 不会被读到）
+        final int[] values = {Prefs.BEDTIME_OFF, 21 * 60 + 30, 22 * 60, 22 * 60 + 30,
+                23 * 60, -2};
+        final String[] titles = {
+                getString(R.string.dialog_bedtime_off),
+                getString(R.string.dialog_bedtime_2130),
+                getString(R.string.dialog_bedtime_2200),
+                getString(R.string.dialog_bedtime_2230),
+                getString(R.string.dialog_bedtime_2300),
+                getString(R.string.dialog_bedtime_custom)};
+
+        // 当前值落在哪个下标；不是预设值就落在「其他时间」
+        int checked = 0;
+        if (!off) {
+            checked = titles.length - 1;
+            for (int i = 1; i < titles.length - 1; i++) {
+                if (cur == values[i]) checked = i;
+            }
+        }
+        // 「其他时间」选中时把具体时刻写进标题：只写「其他时间…」用户看不出自己设的是几点
+        if (checked == titles.length - 1 && !off) {
+            titles[checked] = getString(R.string.dialog_bedtime_custom)
+                    + " · " + BedtimeReminder.timeText(cur);
+        }
+
+        final AlertDialog[] dialog = new AlertDialog[1];
+        final boolean[] done = {false};
+        final int gap = Math.round(6 * getResources().getDisplayMetrics().density);
+        for (int i = 0; i < titles.length; i++) {
+            View card = DialogKit.optionView(this, titles[i], null, true);
+            card.setSelected(i == checked);
+            DialogKit.showCheck(card, i == checked);
+            final int idx = i;
+            card.setOnClickListener(v -> {
+                // 卡片点了就关窗，但 View 还在——快速双击会进来第二次，把刚存的值再写一遍
+                if (done[0]) return;
+                done[0] = true;
+                if (dialog[0] != null) dialog[0].dismiss();
+                if (idx == titles.length - 1) {
+                    pickCustomBedtime(cur);
+                } else {
+                    Prefs.setBedtimeMinutes(this, values[idx]);
+                    applyBedtime();
+                }
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (i > 0) lp.topMargin = gap;
+            list.addView(card, lp);
+        }
+
+        // v1.60.0：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框——
+        // 它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
+        // 睡前提醒关着时压暗禁用：没有提醒可发，这个条件无从谈起，
+        // 不禁用会让人以为改了它就会开始提醒。
+        View workdayRow = view.findViewById(R.id.bed_workday_row);
+        SwitchCompat sw = view.findViewById(R.id.sw_bed_workday);
+        boolean bedOn = !off;
+        sw.setChecked(Prefs.isBedtimeWorkdayOnly(this));
+        sw.setEnabled(bedOn);
+        workdayRow.setAlpha(bedOn ? 1f : 0.45f);
+        // 先 setChecked 再挂监听：反过来的话初始化这一次就会写一次 Prefs、重排一次闹钟
+        sw.setOnCheckedChangeListener((b, isChecked) -> {
+            Prefs.setBedtimeWorkdayOnly(this, isChecked);
             // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
             BedtimeReminder.reschedule(this);
             // 主页那行的副标题要跟着变（「21:30 · 仅明天上班」）
             updateBedtimeText();
         });
 
-        final boolean[] handled = {false};
-        AlertDialog dialog = new RoundedDialog.Builder(this)
+        dialog[0] = new RoundedDialog.Builder(this)
                 .setView(view)
                 .setNegativeButton("取消", null)
                 .create();
-        rg.setOnCheckedChangeListener((g, which) -> {
-            if (handled[0]) return;
-            handled[0] = true;
-            dialog.dismiss();
-            if (which == R.id.rb_bed_custom) {
-                int h = cur == Prefs.BEDTIME_OFF ? 22 : cur / 60;
-                int m = cur == Prefs.BEDTIME_OFF ? 0 : cur % 60;
-                TimeWheelDialog.show(this, "睡前提醒时间", h, m, (hh, mm) -> {
-                    Prefs.setBedtimeMinutes(this, hh * 60 + mm);
-                    applyBedtime();
-                });
-                return;
-            }
-            int value;
-            if (which == R.id.rb_bed_off) value = Prefs.BEDTIME_OFF;
-            else if (which == R.id.rb_bed_2130) value = 21 * 60 + 30;
-            else if (which == R.id.rb_bed_2200) value = 22 * 60;
-            else if (which == R.id.rb_bed_2230) value = 22 * 60 + 30;
-            else value = 23 * 60;
-            Prefs.setBedtimeMinutes(this, value);
+        dialog[0].show();
+    }
+
+    /** 「其他时间…」选完接滚轮；初始值取当前设置，关着时从 22:00 起。 */
+    private void pickCustomBedtime(int cur) {
+        int h = cur == Prefs.BEDTIME_OFF ? 22 : cur / 60;
+        int m = cur == Prefs.BEDTIME_OFF ? 0 : cur % 60;
+        TimeWheelDialog.show(this, "睡前提醒时间", h, m, (hh, mm) -> {
+            Prefs.setBedtimeMinutes(this, hh * 60 + mm);
             applyBedtime();
         });
-        dialog.show();
     }
 
     private void applyBedtime() {

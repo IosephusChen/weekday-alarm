@@ -29,6 +29,8 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvTodayDate, tvTodayLunar, tvTodayStatus, tvTodaySub;
+    /** 假期倒计时（v1.68.0）：「距元旦还有 23 天」；看不到那么远时隐藏。 */
+    private TextView tvHolidayCountdown;
     private TextView tvWeekChip;
     /** 今日卡里的「今天 / 明天不上班」两个按钮（v1.28.1 起，v1.34 起并排）。 */
     private TextView btnDayOff, btnDayOffTomorrow;
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         tvTodayLunar = findViewById(R.id.tv_today_lunar);
         tvTodayStatus = findViewById(R.id.tv_today_status);
         tvTodaySub = findViewById(R.id.tv_today_sub);
+        tvHolidayCountdown = findViewById(R.id.tv_holiday_countdown);
         tvCountdown = findViewById(R.id.tv_countdown);
         tvWeekChip = findViewById(R.id.tv_week_chip);
         btnDayOff = findViewById(R.id.btn_day_off);
@@ -691,6 +694,17 @@ public class MainActivity extends AppCompatActivity {
             subText = dayTag.isEmpty() ? tail : dayTag + " · " + tail;
         }
         tvTodaySub.setText(subText);
+
+        // v1.68.0：假期倒计时。并进 refreshStatus——它已经按天重算（tickDay 发现跨天就
+        // refreshAll），不需要新的刷新通道。请假 / 加班 / 闹钟全关都不影响这一行：
+        // 假期倒计时与今天上不上班无关。
+        HolidayCountdown.Result hc = HolidayCountdown.compute(today);
+        if (hc.visible) {
+            tvHolidayCountdown.setText(hc.text);
+            tvHolidayCountdown.setVisibility(View.VISIBLE);
+        } else {
+            tvHolidayCountdown.setVisibility(View.GONE);
+        }
 
         // 倒计时槽位的标题固定写「距下次响铃」，关着 / 没闹钟时数字留空档：
         // 为什么没有数字，上一行的副标题已经说清楚了，这里再写一遍就是重复。

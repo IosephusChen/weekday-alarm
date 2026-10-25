@@ -86,7 +86,11 @@ public class App extends Application {
         BedtimeReminder.reschedule(this);
         // 节假日数据：先合入上次缓存的远程数据（离线也生效），再按 7 天节流静默检查更新
         HolidayUpdater.loadCached(this);
-        if (HolidayUpdater.shouldAutoCheck(this)) {
+        // v1.68.0：debug 构建跳过自动检查。auto-check 会真的连网，而后台线程落地时机
+        // 不受控——它会整体替换 HolidayData 的远程层，把同一时刻正在跑的单元测试自己
+        // 注入的数据冲掉（实测：隔离跑全绿、全套跑随机红，探针证实注入在 activity
+        // setup 期间被冲掉）。release 包不受影响：用户装的就是 release，该拉的照拉。
+        if (!BuildConfig.DEBUG && HolidayUpdater.shouldAutoCheck(this)) {
             HolidayUpdater.check(this, false, result -> {
                 // 静默检查不直接弹提示；置标志等界面可见时由 MainActivity 提示
                 if (result == HolidayUpdater.Result.UPDATED) {

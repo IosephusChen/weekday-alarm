@@ -10,8 +10,8 @@ android {
         applicationId "com.daxz.weekalarm"
         minSdk 26
         targetSdk 34
-        versionCode 172
-        versionName "1.67.0"
+        versionCode 173
+        versionName "1.68.0"
     }
 
     // 签名配置（v1.63.0 起改为条件式，为公开仓库准备）：
@@ -44,6 +44,14 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // v1.68.0：显式开启 BuildConfig 生成（AGP 8 起默认关闭）。App.onCreate 要用
+    // BuildConfig.DEBUG 区分「debug 构建不自动拉节假日数据」——单元测试跑的是
+    // debug 变体，自动检查的后台线程会真的连网、整体替换远程数据层，
+    // 把同一 JVM 里别的测试注入的数据冲掉（隔离跑全绿、全套跑随机红）。
+    buildFeatures {
+        buildConfig true
     }
 
     testOptions {

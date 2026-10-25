@@ -185,6 +185,20 @@
                 android:textSize="14sp"
                 android:lineSpacingMultiplier="1.15" />
 
+            <!-- 假期倒计时（v1.68.0）：「距元旦还有 23 天」/「春节假期第 2 天」。
+                 12sp + 暗一档的字色，与副信息视觉从属——副信息管闹钟，这行管假期，
+                 两件事不混在一行。看不到那么远（120 天窗口内无假日数据）时整行隐藏，
+                 由 HolidayCountdown.compute 决定显隐。 -->
+            <TextView
+                android:id="@+id/tv_holiday_countdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text=""
+                android:textColor="#C9CEFD"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
             <!-- 距下次响铃倒计时（v1.22.5）：
                  左边一句说明，右边等宽数字每秒跳。没有启用的闹钟时数字留空档，
                  副标题会写清原因，不会让用户盯着一个不动的时刻以为闹钟还会响。

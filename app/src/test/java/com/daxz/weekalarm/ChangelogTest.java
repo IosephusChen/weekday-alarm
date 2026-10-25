@@ -282,10 +282,14 @@ public class ChangelogTest {
         for (int i = 0; i < all.size(); i++) {
             View card = box.getChildAt(i);
             Changelog.Entry e = all.get(i);
+            // 按整段文案钉：要点里可能提到别的版本号或「当前版本」四个字
+            // （v1.71.1 的要点就写着「『当前版本』徽章都不画」），
+            // 子串匹配会把正文当成徽章，v1.71.2 发版时真红过一次
+            List<String> leaves = textLeaves(card);
             assertTrue("每张卡都应有版本徽章：v" + e.version,
-                    containsText(card, "v" + e.version));
+                    leaves.contains("v" + e.version));
             assertEquals("只有当前版本卡带「当前版本」徽章：v" + e.version,
-                    e.code == code, containsText(card, "当前版本"));
+                    e.code == code, leaves.contains("当前版本"));
         }
     }
 

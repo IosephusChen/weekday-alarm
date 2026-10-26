@@ -17,12 +17,12 @@
     <string name="settings_ringtone_title">铃声</string>
     <string name="settings_ringtone_default">系统默认</string>
     <string name="settings_more_ring_title">更多响铃设置</string>
-    <string name="settings_section_schedule">上班日怎么算</string>
+    <string name="settings_section_schedule">排班与节假日</string>
     <string name="settings_week_mode_title">周休制度</string>
     <string name="settings_week_mode_default">大小周</string>
     <string name="settings_holiday_data_title">节假日数据</string>
     <string name="settings_holiday_data_default">—</string>
-    <string name="settings_section_remind">什么时候提醒</string>
+    <string name="settings_section_remind">提醒</string>
     <string name="settings_bedtime_title">睡前提醒</string>
     <string name="settings_bedtime_default">关闭</string>
     <string name="settings_bedtime_hint">到点发一条安静的通知</string>

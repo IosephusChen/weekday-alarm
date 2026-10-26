@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(188, "0.82.1", "2026/10/26", "组名去掉口语化说法",
+                    "「上班日怎么算」「什么时候提醒」改回「排班与节假日」「提醒」",
+                    "「闹钟」改「响铃」、「其他」改「更多」这两处保留"),
             new Entry(187, "0.82.0", "2026/10/26", "设置页分组改成用户说法",
                     "「稍后提醒」搬回主页，与「响铃前提醒」放在同一组",
                     "四组改名：响铃 / 上班日怎么算 / 什么时候提醒 / 更多",

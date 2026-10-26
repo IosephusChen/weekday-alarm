@@ -75,6 +75,8 @@
 <b>② 二级页「更多」是个垃圾桶，十项不分家</b>；<b>③ 改「一周从周几开始」得先记住它藏在「更多设置」里</b>。
 三处都不是视觉问题，是<b>归属问题</b>——所以下面只动「哪一项放哪一组、组叫什么」，颜色间距一律沿用现状。</p>
 <p class="meta">2026-10-26 · 基线 v0.81.0（主页 4 组 8 行 / 二级页 5 组 15 行）· 高度是 dp 估算，真机再量</p>
+<p class="meta" style="color:#4f46e5">已落地：v0.82.0 按方案 A 发出；两处问句式组名当天被判定太口语化，
+v0.82.1 改回「排班与节假日」「提醒」。下图组名已是定稿。</p>
 
 <div class="row">
 
@@ -177,7 +179,7 @@
 
   <div class="col">
     <h2>③ 方案 A · 主页（推荐）</h2>
-    <p class="hint">9 行 4 组。只动两件事：<b>把「稍后提醒」搬上来</b>，四组改成用户视角的说法。</p>
+    <p class="hint">9 行 4 组。只动两件事：<b>把「稍后提醒」搬上来</b>；「闹钟→响铃」「其他→更多」两处改口径。</p>
     <div class="phone">
       <div class="status"><span>7:36</span><span>5G · 76</span></div>
       <div class="head"><span class="back">←</span><span class="h1">设置</span></div>
@@ -192,7 +194,7 @@
           <div class="item"><span class="t">更多响铃设置</span><span class="r"><span class="chev">›</span></span></div>
         </div>
 
-        <div class="seclabel good">上班日怎么算</div>
+        <div class="seclabel good">排班与节假日</div>
         <div class="card">
           <div class="item"><span class="t">周休制度</span>
             <span class="r"><span class="v">大小周</span><span class="chev">›</span></span></div>
@@ -200,7 +202,7 @@
             <span class="sub">2027 年待发布 · 联网后自动更新</span></div>
         </div>
 
-        <div class="seclabel good">什么时候提醒</div>
+        <div class="seclabel good">提醒</div>
         <div class="card">
           <div class="item tall"><span class="t">睡前提醒</span>
             <span class="sub">睡前发一条安静的通知</span>
@@ -289,7 +291,7 @@
             <span class="r"><span class="v">系统默认</span><span class="chev">›</span></span></div>
           <div class="item"><span class="t">响铃细节</span><span class="r"><span class="chev">›</span></span></div>
         </div>
-        <div class="seclabel good">上班日怎么算</div>
+        <div class="seclabel good">排班与节假日</div>
         <div class="card">
           <div class="item"><span class="t">周休制度</span>
             <span class="r"><span class="v">大小周</span><span class="chev">›</span></span></div>
@@ -302,7 +304,7 @@
           <div class="item"><span class="t">日历显示内容</span>
             <span class="r"><span class="v">都不显示</span><span class="chev">›</span></span></div>
         </div>
-        <div class="seclabel good">什么时候提醒</div>
+        <div class="seclabel good">提醒</div>
         <div class="card">
           <div class="item"><span class="t">睡前提醒</span>
             <span class="r"><span class="v">关闭</span><span class="chev">›</span></span></div>
@@ -359,9 +361,9 @@
   <table>
     <tr><th>现值</th><th>位置</th><th>变化</th><th>为什么</th></tr>
     <tr><td>闹钟音量 / 铃声 / 更多响铃设置</td><td>主页 · 响铃</td><td>组名「闹钟」→「响铃」</td><td>这一组说的都是「响的时候什么样」，不是「闹钟长什么样」</td></tr>
-    <tr><td>周休制度 / 节假日数据</td><td>主页 · 上班日怎么算</td><td>组名「排班与节假日」→「上班日怎么算」</td><td>用户脑子里的问题是「今天上不上班」，不是「排班模块」</td></tr>
-    <tr><td><b>稍后提醒</b></td><td><b>主页 · 什么时候提醒</b></td><td><b>从二级页搬上来</b></td><td>毛病①：「响铃前提醒」在这儿，「响了没起怎么办」却在下一层，同一天里的一件事被拆成两页</td></tr>
-    <tr><td>睡前提醒 / 响铃前提醒</td><td>主页 · 什么时候提醒</td><td>组内按发生顺序排：睡前 → 响前 → 响后</td><td>三个提醒本来就是一条时间线，排在一起就不用解释</td></tr>
+    <tr><td>周休制度 / 节假日数据</td><td>主页 · 排班与节假日</td><td>组名不变（试过「上班日怎么算」，太口语化，已改回）</td><td>问题想改成「今天上不上班」，但问句式做标签太口语，见顶部说明</td></tr>
+    <tr><td><b>稍后提醒</b></td><td><b>主页 · 提醒</b></td><td><b>从二级页搬上来</b></td><td>毛病①：「响铃前提醒」在这儿，「响了没起怎么办」却在下一层，同一天里的一件事被拆成两页</td></tr>
+    <tr><td>睡前提醒 / 响铃前提醒</td><td>主页 · 提醒</td><td>组内按发生顺序排：睡前 → 响前 → 响后</td><td>三个提醒本来就是一条时间线，排在一起就不用解释</td></tr>
     <tr><td>响铃时长 / 渐响 / 震动 / 按键</td><td>二级页 · 响铃</td><td>5 行 → 4 行</td><td>一次设好基本不动，留在二层</td></tr>
     <tr><td>一周开始日 / 排到多远 / 日历内容</td><td>二级页 · 排班与显示</td><td>组名不变</td><td>组名本身已经回答了「这里有什么」</td></tr>
     <tr><td>运行状态 / 引导 / 说明 / 日志</td><td>二级页 · 帮助与关于</td><td>「检查与帮助」→「帮助与关于」</td><td>「检查」这个词只对「运行状态」成立，另外三项是「查资料」</td></tr>
@@ -370,16 +372,16 @@
 </div>
 
 <div class="sum">
-  <h3>组名三个候选（只挑一组，别混着用）</h3>
+  <h3>组名结论（v0.82.1 定稿）</h3>
   <table>
-    <tr><th>组</th><th>候选 1（推荐）</th><th>候选 2（更短）</th><th>候选 3（保守）</th></tr>
-    <tr><td>音量 / 铃声 / 更多响铃</td><td><b>响铃</b></td><td>声音</td><td>闹钟（现状）</td></tr>
-    <tr><td>周休 / 节假日</td><td><b>上班日怎么算</b></td><td>上班日</td><td>排班与节假日（现状）</td></tr>
-    <tr><td>三个提醒</td><td><b>什么时候提醒</b></td><td>提醒</td><td>提醒（现状）</td></tr>
-    <tr><td>二级页第三组</td><td><b>数据与桌面</b></td><td>数据</td><td>备份与恢复（现状）</td></tr>
+    <tr><th>组</th><th>定稿</th><th>试过但否掉</th><th>为什么</th></tr>
+    <tr><td>音量 / 铃声 / 更多响铃</td><td><b>响铃</b></td><td>声音</td><td>这一组装的是「响的时候什么样」，叫「闹钟」名不副实；「声音」又会被理解成系统音量</td></tr>
+    <tr><td>周休 / 节假日</td><td><b>排班与节假日</b></td><td>上班日怎么算 / 上班日</td><td>问句式太口语（用户 2026-10-26 原话「太口语化了」）；「上班日」单看像日历标签</td></tr>
+    <tr><td>三个提醒</td><td><b>提醒</b></td><td>什么时候提醒</td><td>同上。三项自己都带「提醒」二字，组名再解释一遍是重复</td></tr>
+    <tr><td>二级页第三组</td><td><b>数据与桌面</b></td><td>数据 / 备份与恢复</td><td>「备份」漏了添加到桌面，「数据」太泛；三件事都是「把东西搬进搬出」</td></tr>
   </table>
-  <p class="flow">推荐列的理由：三条都是「用户会怎么问」的原话。<b>候选 2 更短但更含糊</b>——「声音」会被理解成系统音量，「上班日」像日历标签。
-  候选 3 的三个里，「排班与节假日」和「检查与帮助」是这轮要改掉的（前者是模块名，后者半对半错）。</p>
+  <p class="flow"><b>定稿原则</b>：组名是标签，负责两秒内定位；解释「这组为什么这么分」是副标题的事。
+  上一版把「回答用户的问题」当命名原则，写出了「上班日怎么算」这种问句——信息多了，扫读反而变慢。</p>
 </div>
 
 <div class="sum">

@@ -306,21 +306,27 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 主页四个分组名用「用户会怎么问」的说法（v0.82.0 · T6）。
+     * 主页四个分组名（v0.82.0 起，v0.82.1 定稿）。
      *
-     * <p>旧名是模块名：「排班与节假日」「其他」。用户脑子里的问题是「今天上不上班」，
-     * 而且「其他」里只有一项，等于没分类。这里连旧名一起否掉，防止下次改回来。
+     * <p>定稿：「响铃 / 排班与节假日 / 提醒 / 更多」。只改了两处口径——
+     * 「闹钟」这一组装的都是响铃时的样子（音量 / 铃声 / 时长），不是「闹钟」这个对象；
+     * 「其他」里只有一项，等于没分类。
+     *
+     * <p>试过把后两组改成「上班日怎么算」「什么时候提醒」，用户 2026-10-26 判定
+     * 太口语化，改回名词。**别再来一轮**：组名是标签，说明文字才负责解释。
      */
     @Test
-    public void homeSectionTitlesSpeakUserLanguage() {
+    public void homeSectionTitlesAreNouns() {
         ActivityController<SettingsActivity> ctl = openHome();
         String all = collectText(ctl.get().getWindow().getDecorView());
 
-        assertTrue("应有「响铃」", all.contains("响铃"));
-        assertTrue("应有「上班日怎么算」", all.contains("上班日怎么算"));
-        assertTrue("应有「什么时候提醒」", all.contains("什么时候提醒"));
-        assertFalse("模块名「排班与节假日」已换掉", all.contains("排班与节假日"));
+        assertTrue("应有「响铃」组", all.contains("\n响铃\n"));
+        assertTrue("应有「排班与节假日」组", all.contains("\n排班与节假日\n"));
+        assertTrue("应有「提醒」组", all.contains("\n提醒\n"));
+        assertFalse("「闹钟」这一组装的是响铃时的样子，已改名", all.contains("\n闹钟\n"));
         assertFalse("「其他」等于没分类，已改成「更多」", all.contains("\n其他\n"));
+        assertFalse("口语化的组名已否掉，别再改回来", all.contains("上班日怎么算"));
+        assertFalse("口语化的组名已否掉，别再改回来", all.contains("什么时候提醒"));
 
         ctl.pause().stop().destroy();
     }

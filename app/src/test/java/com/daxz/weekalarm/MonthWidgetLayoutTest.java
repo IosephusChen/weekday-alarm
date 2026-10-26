@@ -183,6 +183,29 @@ public class MonthWidgetLayoutTest {
                 stats.getWidth() > 0);
     }
 
+    /**
+     * 最长的那句文案必须放得下（v1.71.10）。
+     *
+     * <p>底部这一行现在是「19 天班 · 12 天休 · 下次闹钟 明天 07:30」——三段拼起来
+     * 比 v1.71.9 的「距元旦还有 67 天」更长。放不下时 `ellipsize="end"` 会默默
+     * 砍掉尾字（「下次闹钟 明天 07:3…」），桌面上看着像显示错了，而不是像省略。
+     * 所以钉住「最坏情况不折行、不省略」。
+     */
+    @Test
+    public void footer_worstCaseFitsWithoutEllipsis() {
+        View root = inflate(R.layout.widget_week_schedule_month, 250);
+        TextView stats = root.findViewById(R.id.widget_month_stats);
+        stats.setText("19 天班 · 12 天休 · 下次闹钟 明天 07:30");
+        stats.measure(MeasureSpec.makeMeasureSpec(stats.getWidth(), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+
+        assertNotNull("重新测量后应产出 Layout", stats.getLayout());
+        assertEquals("最长文案也不能折成两行", 1, stats.getLayout().getLineCount());
+        assertTrue("最长文案不该被省略号截断，实际 " + stats.getLayout().getLineWidth(0)
+                        + "px / 可用 " + stats.getWidth() + "px",
+                stats.getLayout().getLineWidth(0) <= stats.getWidth());
+    }
+
     private static int numId(int i) {
         return ctx0().getResources().getIdentifier("m_num_" + i, "id",
                 ctx0().getPackageName());

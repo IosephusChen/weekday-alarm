@@ -207,12 +207,22 @@ public class MonthWidgetTest {
 
     /** 假期倒计时与首页今天卡同源，不能各算各的。 */
     @Test
-    public void countdown_matchesHomeCard() {
+    public void next_matchesHomeCard() {
         LocalDate today = LocalDate.of(2026, 10, 22);
-        MonthWidgetRender.Model m = MonthWidgetRender.compute(ctx(), today);
-        HolidayCountdown.Result r = HolidayCountdown.compute(today);
-        assertEquals(r.visible, m.countdownVisible);
-        assertEquals(r.visible ? r.text : "", m.countdown);
+        ScheduleManager.NextAlarm next = new ScheduleManager.NextAlarm(
+                today.plusDays(1).atTime(7, 30), "起床", 1);
+        MonthWidgetRender.Model m = MonthWidgetRender.compute(ctx(), today, next);
+        assertTrue("底部第二段与首页今天卡同一句，实际：" + m.footerText(),
+                m.footerText().endsWith(" · " + TodayCard.nextTail(next, today)));
+        assertTrue("应为「下次闹钟 明天 07:30」，实际：" + m.footerText(),
+                m.footerText().contains("下次闹钟 明天 07:30"));
+    }
+
+    @Test
+    public void next_hiddenWhenNoAlarm() {
+        MonthWidgetRender.Model m = MonthWidgetRender.compute(ctx(), LocalDate.of(2026, 10, 22), null);
+        assertEquals("没有启用的闹钟时只剩统计，不留半句空话",
+                m.stats, m.footerText());
     }
 
     /** 布局必须真的能 inflate——RemoteViews 的允许列表很窄，写错一个控件就整块加载失败。 */

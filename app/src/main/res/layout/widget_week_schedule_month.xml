@@ -1890,7 +1890,7 @@
         android:ellipsize="end"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="19 天班 · 12 天休 · 距元旦 67 天"
+        android:text="19 天班 · 12 天休 · 下次闹钟 明天 07:30"
         android:textColor="#C9C4FF"
         android:textSize="10sp" />
 </LinearLayout>

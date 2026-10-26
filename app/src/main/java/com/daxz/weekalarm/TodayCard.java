@@ -58,6 +58,18 @@ final class TodayCard {
     }
 
     /**
+     * 「下一次响铃」那半句，统一写成「下次闹钟 13:40 午休」。
+     *
+     * <p>v1.71.10 之前这里按「今天 / 以后」分两种说法：当天的闹钟写「下一个 13:40 午休」，
+     * 以后的写「下次 明天 07:00 起床」。用户看到桌面上「下一个 13:40 午休」的第一反应是
+     * 「下一个什么」——「下一个」是个没有宾语的量词，得自己脑补「闹钟」两个字。
+     * 现在两种合成一种：**主语写出来**（闹钟），时间关系交给 ringText 的「明天 / 后天」前缀。
+     */
+    static String nextTail(ScheduleManager.NextAlarm next, LocalDate today) {
+        return "下次闹钟 " + ringText(next, today);
+    }
+
+    /**
      * 副信息整行。没有要响的闹钟时把原因说清楚，不留一个不动的时刻
      * 让人误以为闹钟还会响。
      */
@@ -67,8 +79,7 @@ final class TodayCard {
         if (next == null) {
             return work ? "今天上班，但没有要响的闹钟" : "没有启用的闹钟";
         }
-        String tail = (next.when.toLocalDate().equals(today) ? "下一个 " : "下次 ")
-                + ringText(next, today);
+        String tail = nextTail(next, today);
         return dayTag.isEmpty() ? tail : dayTag + " · " + tail;
     }
 }

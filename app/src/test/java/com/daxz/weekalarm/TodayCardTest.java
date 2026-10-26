@@ -93,16 +93,25 @@ public class TodayCardTest {
     }
 
     @Test
-    public void subText_prefixAndNextVsFuture() {
-        assertEquals("当天用「下一个」，无前缀时直接接",
-                "下一个 23:59",
+    public void subText_alwaysNamesTheSubject() {
+        assertEquals("当天也写「下次闹钟」，不再用没宾语的「下一个」",
+                "下次闹钟 23:59",
                 TodayCard.subText("", at(0, 23, 59), today, true, false));
-        assertEquals("非当天用「下次」，前缀用「 · 」连接",
-                "休息日 · 下次 明天 07:00",
+        assertEquals("明天靠相对词表达，前缀用「 · 」连接",
+                "休息日 · 下次闹钟 明天 07:00",
                 TodayCard.subText("休息日", at(1, 7, 0), today, false, false));
         assertEquals("调休补班日也带前缀",
-                "调休补班 · 下次 明天 07:00",
+                "调休补班 · 下次闹钟 明天 07:00",
                 TodayCard.subText("调休补班", at(1, 7, 0), today, true, false));
+    }
+
+    @Test
+    public void nextTail_isTheSameWordsAsSubTextTail() {
+        // 4×2 部件与本月班表底部都用这一句，三处必须是同一串字
+        assertEquals("下次闹钟 明天 07:00",
+                TodayCard.nextTail(at(1, 7, 0), today));
+        assertEquals("下次闹钟 23:59",
+                TodayCard.nextTail(at(0, 23, 59), today));
     }
 
     // ---------- 工具 ----------

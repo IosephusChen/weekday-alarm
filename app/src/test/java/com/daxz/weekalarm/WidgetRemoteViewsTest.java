@@ -72,7 +72,7 @@ public class WidgetRemoteViewsTest {
      * 两件日历格子答不了的事。
      */
     @Test
-    public void monthWidget_footerShowsStatsAndCountdown() {
+    public void monthWidget_footerShowsStatsAndNext() {
         resetPrefs();
         MonthWidgetRender.Model m =
                 MonthWidgetRender.compute(ctx(), LocalDate.now());

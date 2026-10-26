@@ -100,7 +100,7 @@ public class NextAlarmWidgetTest {
         NextAlarmWidget.WidgetModel today = NextAlarmWidget.computeModel(ctx(),
                 new ScheduleManager.NextAlarm(now.withHour(23).withMinute(59), "测试", 1));
         assertTrue("当天的闹钟不写「今天」二字，只写时分（v1.22.5 规则），实际：" + today.sub,
-                today.sub.contains("下一个 23:59 测试"));
+                today.sub.contains("下次闹钟 23:59 测试"));
 
         NextAlarmWidget.WidgetModel tomorrow = NextAlarmWidget.computeModel(ctx(),
                 new ScheduleManager.NextAlarm(now.plusDays(1).withHour(7).withMinute(0),

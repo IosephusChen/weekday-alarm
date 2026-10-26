@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 /**
@@ -84,21 +85,31 @@ final class MonthWidgetRender {
         String subtitle = "";
         /** 本月统计（v1.71.9）：「22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
         String stats = "";
-        /** 下一个假期的倒计时（v1.71.9），与首页今天卡同源；数据边界外为空。 */
-        String countdown = "";
-        boolean countdownVisible;
+        /** 下次响铃（v1.71.10）：「下次闹钟 明天 07:30」，与首页今天卡 / 4×2 部件同一句。 */
+        String nextText = "";
+        boolean nextVisible;
         final String[] nums = new String[CELLS];
         final String[] tags = new String[CELLS];
         final int[] colors = new int[CELLS];
         final boolean[] today = new boolean[CELLS];
 
-        /** 底部那一行：统计 + （有数据时的）假期倒计时。 */
+        /** 底部那一行：统计 + （有闹钟时的）下次响铃。 */
         String footerText() {
-            return countdownVisible && !countdown.isEmpty() ? stats + " · " + countdown : stats;
+            return nextVisible && !nextText.isEmpty() ? stats + " · " + nextText : stats;
         }
     }
 
     static Model compute(Context ctx, LocalDate today) {
+        return compute(ctx, today, ScheduleManager.nextRing(ctx, LocalDateTime.now()));
+    }
+
+    /**
+     * 同上，但「下次响铃」由调用方给定。
+     *
+     * <p>为测试而留的入口：`nextRing` 读真实时钟，而这里的 {@code today} 是参数，
+     * 不注入就没法钉死「明天 / 后天」这类相对词。
+     */
+    static Model compute(Context ctx, LocalDate today, ScheduleManager.NextAlarm next) {
         Model m = new Model();
         YearMonth ym = YearMonth.from(today);
         m.title = ym.getYear() + " 年 " + ym.getMonthValue() + " 月";
@@ -168,9 +179,11 @@ final class MonthWidgetRender {
         }
 
         m.stats = workDays + " 天班 · " + (len - workDays) + " 天休";
-        HolidayCountdown.Result cd = HolidayCountdown.compute(today);
-        m.countdownVisible = cd.visible;
-        m.countdown = cd.visible ? cd.text : "";
+        // v1.71.10：倒计时换成「下次闹钟」——假期倒计时受 HolidayCountdown.SCAN_DAYS
+        // 限制，2026 年 10 月查下一个假已经是 2027 元旦，超出窗口就整段消失，底部
+        // 常年只剩统计。下次响铃天天都有，这一行才稳定是两段。
+        m.nextVisible = next != null;
+        m.nextText = next == null ? "" : TodayCard.nextTail(next, today);
         return m;
     }
 
@@ -191,12 +204,12 @@ final class MonthWidgetRender {
      * 现在与 4×2 闹钟卡同一个口径：永远显示「闹钟已开启 / 未开启」。
      *
      * <p>v1.71.9：{@code withActions} 换成 {@code withFooter}。4×4 底部两个请假按钮
-     * 被删掉（误触风险），位置改成「本月统计 + 假期倒计时」。4×3 只有 200dp 高，
+     * 被删掉（误触风险），位置改成「本月统计 + 下次闹钟」。4×3 只有 200dp 高，
      * 42 格已经排到极限（v1.71.5 刚修完压字），不能再挤一行——所以 4×3 不显示。
      *
      * @param layout     4×4 用 {@code widget_week_schedule_month}，
      *                   4×3 用 {@code widget_month_compact}
-     * @param withFooter 是否显示底部「本月统计 + 假期倒计时」
+     * @param withFooter 是否显示底部「本月统计 + 下次闹钟」
      */
     static RemoteViews build(Context ctx, Model m, int layout,
                              boolean withFooter) {
@@ -223,8 +236,8 @@ final class MonthWidgetRender {
         bindAlarm(rv, ctx);
 
         if (withFooter) {
-            // 一句话写完两件事。倒计时拿不到时（2027 那段要等远程增量）就只留统计，
-            // 不做「右边空着」的分栏——那会让左边孤零零挂在角上。
+            // 一句话写完两件事。没有启用的闹钟时就只留统计，不做「右边空着」的分栏
+            // ——那会让左边孤零零挂在角上。
             rv.setTextViewText(R.id.widget_month_stats, m.footerText());
         }
 

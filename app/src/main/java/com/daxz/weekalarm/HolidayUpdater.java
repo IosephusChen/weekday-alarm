@@ -31,9 +31,15 @@ import java.util.Map;
  *
  * <p>更新时机：
  * <ul>
- *   <li>启动时静默检查：距上次检查 ≥ {@link #AUTO_CHECK_INTERVAL_MS}（7 天）才发起；</li>
+ *   <li>启动时静默检查：距上次检查 ≥ {@link #autoCheckIntervalMs} 才发起——
+ *       缺次年数据时 1 天一次，拿到后回到 7 天一次（T7 · v0.81.0）；</li>
  *   <li>用户点「节假日数据」行手动检查：立即发起。</li>
  * </ul>
+ *
+ * <p><b>为什么缺次年数据要每天查</b>：国务院 11 月初公布次年安排，公布到
+ * holiday-cn 更新要 1–3 天，再等 7 天的节流，用户手上最坏要十几天才有数据；
+ * 而 1 月 1 日起没有次年数据，节假日与调休会退化成「只认周末」，用户看不出
+ * 是数据缺了还是班表设错了。11–12 月每天一次 HTTPS 只有几 KB，其余月份仍 7 天。
  */
 public final class HolidayUpdater {
 
@@ -48,6 +54,9 @@ public final class HolidayUpdater {
     private static final String[] SOURCES = {URL_CDN, URL_RAW};
 
     private static final long AUTO_CHECK_INTERVAL_MS = 7L * 24 * 60 * 60 * 1000;
+
+    /** 缺次年数据时的检查间隔：1 天（国务院公布后尽快拿到，见类注释）。 */
+    private static final long PENDING_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000;
 
     private static final String KEY_LAST_CHECK = "holiday_last_check";
     private static final String KEY_PENDING_NOTICE = "holiday_pending_notice";
@@ -84,10 +93,21 @@ public final class HolidayUpdater {
         return prefs(ctx).getLong(KEY_LAST_CHECK, 0);
     }
 
-    /** 启动时静默检查是否到了该检查的时间（7 天一次）。 */
+    /**
+     * 自动检查间隔：缺次年数据时 1 天，已拿到则 7 天。
+     *
+     * <p>{@code today} 走参数而不是直接读 {@code LocalDate.now()}，是为了能钉死日期断言——
+     * 读真实时钟的话，这个判断只能在「次年确实还没发布」的那几个月里测出对错。
+     */
+    static long autoCheckIntervalMs(LocalDate today) {
+        return HolidayData.effectiveYear() < today.getYear() + 1
+                ? PENDING_CHECK_INTERVAL_MS : AUTO_CHECK_INTERVAL_MS;
+    }
+
+    /** 启动时静默检查是否到了该检查的时间（缺次年数据 1 天一次，否则 7 天一次）。 */
     public static boolean shouldAutoCheck(Context ctx) {
         long last = prefs(ctx).getLong(KEY_LAST_CHECK, 0);
-        return System.currentTimeMillis() - last >= AUTO_CHECK_INTERVAL_MS;
+        return System.currentTimeMillis() - last >= autoCheckIntervalMs(LocalDate.now());
     }
 
     /**

@@ -383,6 +383,23 @@ public final class HolidayData {
         return remotePublished != null ? remotePublished : BUILT_IN_PUBLISHED;
     }
 
+    /**
+     * 次年放假安排还没发布时的提示文案（T7 · v0.81.0）；不需要提示时返回 {@code null}。
+     *
+     * <p><b>只在 12 月提示</b>：国务院 11 月初才公布，11 月挂一句「明年待发布」是废话；
+     * 到 12 月还没拿到才是真问题——用户 1 月 1 日会看到节假日与调休退化成「只认周末」，
+     * 不说清是「数据没发布」，他只会以为班表设错了。
+     *
+     * <p>{@code today} 走参数是为了能钉死日期断言，道理同
+     * {@link HolidayUpdater#autoCheckIntervalMs}。
+     */
+    public static String nextYearPendingHint(LocalDate today) {
+        if (today.getMonthValue() != 12) return null;
+        int next = today.getYear() + 1;
+        if (effectiveYear() >= next) return null;
+        return next + " 年待发布 · 联网后自动更新";
+    }
+
     /** 是否已合入远程数据。 */
     public static boolean hasRemote() {
         return remoteVersion > 0;

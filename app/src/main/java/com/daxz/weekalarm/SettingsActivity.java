@@ -516,15 +516,25 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 节假日数据（v0.22.0 由主界面迁入）=================
 
-    /** 节假日数据行摘要：内置覆盖范围 / 远程版本。 */
+    /** 节假日数据行摘要：12 月起缺次年数据先说「明年待发布」，否则写内置范围 / 远程版本。 */
     private void updateHolidayDataText() {
+        tvHolidayData.setText(holidayDataLabel(LocalDate.now()));
+    }
+
+    /**
+     * 「节假日数据」行的值文案（抽成静态方法是为了能用固定日期断言）。
+     *
+     * <p>原来这行只写「2007–2026 年 · 内置」，用户看不出「明年还没有」——直到 1 月 1 日
+     * 班表少算了元旦，才发现是数据缺了（T7）。所以 12 月起改说「2027 年待发布 · 联网后自动更新」。
+     */
+    static String holidayDataLabel(LocalDate today) {
+        String pending = HolidayData.nextYearPendingHint(today);
+        if (pending != null) return pending;
         if (HolidayData.hasRemote()) {
-            tvHolidayData.setText(HolidayData.effectiveYear() + " 年 · 在线 · "
-                    + HolidayData.effectivePublished() + " 发布");
-        } else {
-            tvHolidayData.setText(HolidayData.BUILT_IN_FIRST_YEAR + "–"
-                    + HolidayData.BUILT_IN_YEAR + " 年 · 内置");
+            return HolidayData.effectiveYear() + " 年 · 在线 · "
+                    + HolidayData.effectivePublished() + " 发布";
         }
+        return HolidayData.BUILT_IN_FIRST_YEAR + "–" + HolidayData.BUILT_IN_YEAR + " 年 · 内置";
     }
 
     /** 手动检查节假日数据更新（点击「节假日数据」行）。 */

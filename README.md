@@ -1,4 +1,6 @@
-# 打工人闹钟
+# 打工人闹钟 · Weekday Alarm
+
+*A shift-aware alarm clock for Android — rings only on the days you actually work. [English](#english)*
 
 **按你的周休制度推算上班日，只在上班日响的闹钟。**
 
@@ -98,6 +100,34 @@ Parcelable CREATOR），见 `proguard-rules.pro`。
 个人自用项目，随缘维护：功能以「够用、不出错」为准，**issue 欢迎，暂不接受 Pull Request**。
 开发节奏与版本记录见 [`docs/`](docs/)——那是给下一个接手的人（包括未来的自己）看的开发日志，
 不是使用文档；使用说明在 `docs/打工人闹钟-使用说明.md`。
+
+## English
+
+**Weekday Alarm** is an Android alarm clock that knows your work schedule.
+
+Most alarm apps treat "weekday" as Monday–Friday. If you work 6-day weeks, alternate between
+5- and 6-day weeks (大小周), or have to show up on a Chinese make-up workday (调休), a plain
+weekly alarm is wrong roughly half the time.
+
+This app computes actual workdays from three inputs:
+
+- your schedule pattern (5-day / 6-day / alternating 5–6)
+- Chinese public holidays and make-up workdays (fetched online, bundled fallback for 2007–2026)
+- your own leave / overtime marks
+
+…and only rings on days you actually work. Bedtime reminder → pre-alarm notice → alarm →
+snooze, each configurable. Three home-screen widgets (next alarm, full month, compact month).
+
+**Facts**: single-module Java, no third-party runtime dependencies, no account, no ads,
+no analytics, all data stays on device, MIT licensed. Android 8.0+ (API 26).
+
+**Interface is Chinese only** — deliberately. The concepts it models (大小周, 调休补班) don't
+translate cleanly into English, and a half-translated UI reads worse than an honest one.
+
+```bash
+./gradlew assembleRelease      # JDK 17, Android SDK 34
+./gradlew testDebugUnitTest    # 688 unit tests
+```
 
 ##  License
 

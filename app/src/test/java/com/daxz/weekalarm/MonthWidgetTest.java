@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -167,6 +168,51 @@ public class MonthWidgetTest {
         MonthWidgetRender.Model m = oct2026();
         assertEquals("假", m.tags[14]);
         assertEquals("加", m.tags[19]);
+    }
+
+    /**
+     * 底部统计（v1.71.9）：一天不差地数完整月。
+     *
+     * <p>不写死「22 天班」这种数字——国庆、调休补班都在 {@link HolidayData} 里，
+     * 内置数据一变数字就变。这里用同一套口径独立数一遍，和模型对账。
+     */
+    @Test
+    public void stats_countsWholeMonth() {
+        MonthWidgetRender.Model m = oct2026();
+        WeekSchedule.Rule rule = Prefs.getRule(ctx());
+        int work = 0;
+        int len = 31;
+        for (int day = 1; day <= len; day++) {
+            LocalDate d = LocalDate.of(2026, 10, day);
+            boolean baseWork = DayOffAction.isWorkDay(WeekSchedule.dayType(d, rule));
+            boolean leave = Prefs.isVacation(ctx(), d);
+            boolean overtime = Prefs.isOvertime(ctx(), d);
+            if (baseWork ? !leave : overtime) work++;
+        }
+        assertEquals(work + " 天班 · " + (len - work) + " 天休", m.stats);
+    }
+
+    /** 请了一天假，统计里的「班」要跟着少一天——它得和格子说同一件事。 */
+    @Test
+    public void stats_followsVacationMark() {
+        String before = oct2026().stats;
+        Prefs.addVacation(ctx(), LocalDate.of(2026, 10, 12));   // 本来是班
+        String after = oct2026().stats;
+        assertNotEquals("标了假统计该变", before, after);
+
+        int beforeWork = Integer.parseInt(before.substring(0, before.indexOf(" 天班")));
+        int afterWork = Integer.parseInt(after.substring(0, after.indexOf(" 天班")));
+        assertEquals("少上一天班", beforeWork - 1, afterWork);
+    }
+
+    /** 假期倒计时与首页今天卡同源，不能各算各的。 */
+    @Test
+    public void countdown_matchesHomeCard() {
+        LocalDate today = LocalDate.of(2026, 10, 22);
+        MonthWidgetRender.Model m = MonthWidgetRender.compute(ctx(), today);
+        HolidayCountdown.Result r = HolidayCountdown.compute(today);
+        assertEquals(r.visible, m.countdownVisible);
+        assertEquals(r.visible ? r.text : "", m.countdown);
     }
 
     /** 布局必须真的能 inflate——RemoteViews 的允许列表很窄，写错一个控件就整块加载失败。 */

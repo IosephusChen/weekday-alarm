@@ -25,23 +25,6 @@ public class BedtimeReceiver extends BroadcastReceiver {
 
     public static final String ACTION_BEDTIME = "com.daxz.weekalarm.BEDTIME";
     public static final String ACTION_SKIP_TOMORROW = "com.daxz.weekalarm.SKIP_TOMORROW";
-    /**
-     * 桌面小组件的「明天不上班 / 明天要加班」按钮（v1.31）。
-     *
-     * <p>与 {@link #ACTION_SKIP_TOMORROW} 的区别：那个只能单向请假（通知里的动作，
-     * 点完通知就没了）；小组件上的按钮一直在，必须是可来回切的开关，
-     * 否则点错一次就只能进 App 改回来。
-     */
-    public static final String ACTION_TOGGLE_TOMORROW = "com.daxz.weekalarm.TOGGLE_TOMORROW";
-
-    /**
-     * 小组件按钮的通用版（v1.33）：带一个 {@link #EXTRA_DAY_OFFSET}（0 = 今天，1 = 明天）。
-     *
-     * <p>为什么不再加一个 ACTION_TOGGLE_TODAY：两个按钮的逻辑一模一样，只有日期差一天；
-     * 复制一份等于给以后埋一个「改了一处忘了另一处」的坑。旧 action 保留，是因为
-     * 1.31 那版组件实例的 PendingIntent 里还烧着它——升级后不认，用户点旧组件就没反应。
-     */
-    public static final String ACTION_TOGGLE_DAY = "com.daxz.weekalarm.TOGGLE_DAY";
 
     /**
      * 午夜刷新（v1.48.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
@@ -50,21 +33,12 @@ public class BedtimeReceiver extends BroadcastReceiver {
      * 触发一次即结束——第二天晚上发新提醒时会重新排。
      */
     public static final String ACTION_MIDNIGHT = "com.daxz.weekalarm.BEDTIME_MIDNIGHT";
-    public static final String EXTRA_DAY_OFFSET = "day_offset";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_SKIP_TOMORROW.equals(action)) {
             skipTomorrow(context, intent);
-            return;
-        }
-        if (ACTION_TOGGLE_TOMORROW.equals(action)) {
-            toggleDay(context, 1);
-            return;
-        }
-        if (ACTION_TOGGLE_DAY.equals(action)) {
-            toggleDay(context, intent.getIntExtra(EXTRA_DAY_OFFSET, 1));
             return;
         }
         if (ACTION_MIDNIGHT.equals(action)) {
@@ -147,36 +121,6 @@ public class BedtimeReceiver extends BroadcastReceiver {
             BedtimeReminder.scheduleMidnightRefresh(ctx);
         } catch (Exception ignore) {
         }
-    }
-
-    /**
-     * 小组件上的「今天 / 明天不上班」：按那一天的实际类型来回切（v1.31，v1.33 起支持今天）。
-     *
-     * <p>v1.34 起语义只剩一份实现（{@link DayOffAction}），这里只负责广播场景该做的事：
-     * 先弹提示，再 goAsync 到后台重排——重排是上百次 IPC，不能占着广播主线程。
-     */
-    private void toggleDay(Context ctx, int dayOffset) {
-        String msg = DayOffAction.toggle(ctx, dayOffset);
-        try {
-            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show();
-        } catch (Exception ignore) {
-        }
-        // v1.46.7：App 可能正开着，改完得让它立刻刷新，不能等用户退到桌面再进来；
-        // 通知栏上那条睡前提醒也可能正说着「明天要上班」，一并改口
-        UiRefresh.request(ctx);
-        BedtimeReminder.refreshIfShown(ctx);
-        // 重排是上百次 IPC，不能占着广播主线程（10 秒上限）——与 skipTomorrow 同一套做法
-        final PendingResult pending = goAsync();
-        final Context app = ctx.getApplicationContext();
-        new Thread(() -> {
-            try {
-                ScheduleManager.rescheduleAll(app);
-                Widgets.updateAll(app);
-            } catch (Throwable ignore) {
-            } finally {
-                if (pending != null) pending.finish();   // 直接调用（测试）时为 null
-            }
-        }, "widget-toggle-day").start();
     }
 
     /**

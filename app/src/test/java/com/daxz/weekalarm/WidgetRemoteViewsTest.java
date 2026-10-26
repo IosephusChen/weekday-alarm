@@ -1,6 +1,7 @@
 package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -63,47 +64,38 @@ public class WidgetRemoteViewsTest {
         assertEquals(m.status, ((TextView) root.findViewById(R.id.widget_hero)).getText().toString());
     }
 
-    /** 4×4 整月卡的底部两个按钮：文案要真的写进 RemoteViews，而不是只存在于模型里。 */
+    /**
+     * 4×4 整月卡的底部信息行（v1.71.9）：统计与倒计时要真的写进 RemoteViews。
+     *
+     * <p>替掉的是原来那两个请假按钮——它们 18dp 高横在桌面上，误触率不低，
+     * 而标记请假点一下卡片进 App 也能做完。空出来的位置放「本月统计 + 假期倒计时」，
+     * 两件日历格子答不了的事。
+     */
     @Test
-    public void monthWidget_actionButtonsShowText() {
+    public void monthWidget_footerShowsStatsAndCountdown() {
         resetPrefs();
-        WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
+        MonthWidgetRender.Model m =
+                MonthWidgetRender.compute(ctx(), LocalDate.now());
         View root = inflate(MonthScheduleWidget.build(ctx()));
 
-        TextView today = root.findViewById(R.id.widget_today_action);
-        TextView tomorrow = root.findViewById(R.id.widget_tomorrow_action);
-        assertNotNull("应有「今天不上班」按钮", today);
-        assertNotNull("应有「明天不上班」按钮", tomorrow);
-        assertEquals(m.todayAction, today.getText().toString());
-        assertEquals(m.tomorrowAction, tomorrow.getText().toString());
-        assertTrue("今天按钮要写今天，实际：" + today.getText(),
-                today.getText().toString().startsWith("今天"));
-        assertTrue("明天按钮要写明天，实际：" + tomorrow.getText(),
-                tomorrow.getText().toString().startsWith("明天"));
+        TextView stats = root.findViewById(R.id.widget_month_stats);
+        assertNotNull("应有底部信息行", stats);
+        assertEquals(m.footerText(), stats.getText().toString());
+        assertTrue("应以「N 天班 · M 天休」开头，实际：" + stats.getText(),
+                stats.getText().toString().matches("\\d+ 天班 · \\d+ 天休.*"));
+
+        assertEquals("请假按钮已删", 0,
+                ctx().getResources().getIdentifier("widget_today_action", "id",
+                        ctx().getPackageName()));
     }
 
-    /** 未标记时显示半透明层、藏起实底层；标记后反过来。 */
+    /** 4×3 只有 200dp，42 格已到极限，不显示底部信息行。 */
     @Test
-    public void monthWidget_markedSwitchesLayer() {
+    public void minimalWidget_hasNoFooter() {
         resetPrefs();
-        LocalDate today = LocalDate.now();
-        WeekSchedule.DayType type = WeekSchedule.dayType(today, Prefs.getRule(ctx()));
-        boolean work = type == WeekSchedule.DayType.WORK
-                || type == WeekSchedule.DayType.MAKEUP_WORK;
-        if (work) {
-            Prefs.addVacation(ctx(), today);
-        } else {
-            Prefs.addOvertime(ctx(), today);
-        }
-
-        View root = inflate(MonthScheduleWidget.build(ctx()));
-        assertEquals("今天已标记：实底层可见", View.VISIBLE,
-                root.findViewById(R.id.widget_today_action_on).getVisibility());
-        assertEquals("半透明层应隐藏", View.GONE,
-                root.findViewById(R.id.widget_today_action).getVisibility());
-        assertEquals("明天没标记：仍是半透明层", View.VISIBLE,
-                root.findViewById(R.id.widget_tomorrow_action).getVisibility());
-        assertEquals(View.GONE, root.findViewById(R.id.widget_tomorrow_action_on).getVisibility());
+        View root = inflate(MonthMinimalWidget.build(ctx()));
+        assertNull("4×3 不该有底部信息行", root.findViewById(R.id.widget_month_stats));
+        assertNotNull("但格子要照常在", root.findViewById(R.id.m_num_41));
     }
 
     /**
@@ -147,15 +139,20 @@ public class WidgetRemoteViewsTest {
         }
     }
 
-    /** 两个按钮都要可点（点击挂在最外层容器上，内层只负责显示）。 */
+    /**
+     * 整张卡仍然可点（v1.71.9）：按钮删掉后，「进 App 标记请假」全靠这一下。
+     *
+     * <p>点击挂在最外层 widget_month_root 上，底部信息行不拦截——它是纯文字。
+     */
     @Test
-    public void monthWidget_actionWrappersAreClickable() {
+    public void monthWidget_rootIsStillClickable() {
         resetPrefs();
         View root = inflate(MonthScheduleWidget.build(ctx()));
-        assertTrue("今天按钮必须可点",
-                root.findViewById(R.id.wrap_today_action).isClickable());
-        assertTrue("明天按钮必须可点",
-                root.findViewById(R.id.wrap_tomorrow_action).isClickable());
+        View card = root.findViewById(R.id.widget_month_root);
+        assertNotNull("应有卡片根容器", card);
+        assertTrue("整卡必须可点（按钮删了，这是唯一入口）", card.isClickable());
+        assertFalse("底部信息行不该自己消费点击",
+                root.findViewById(R.id.widget_month_stats).isClickable());
     }
 
     // ================= 大尺寸分档（v1.49.12）=================
@@ -182,26 +179,22 @@ public class WidgetRemoteViewsTest {
         assertNotNull(v.findViewById(R.id.widget_sub));
     }
 
-    /** 4×2 卡不放请假按钮——那是整月卡的事，塞进来会把七格挤没。 */
+    /**
+     * 4×2 卡不放请假按钮——那是整月卡的事，塞进来会把七格挤没。
+     *
+     * <p>v1.71.9 起整月卡也没有了（按钮全删），这条只剩「4×2 别加回来」的意思。
+     */
     @Test
     public void compactLayout_hasNoLeaveButtons() {
         NextAlarmWidget.WidgetModel m =
                 new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天", "休息日 · 下次 明天 07:00 起床");
         View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
-        assertNull("4×2 不放请假按钮", v.findViewById(R.id.wrap_today_action));
-        assertNull(v.findViewById(R.id.wrap_tomorrow_action));
-    }
-
-    /** 整月版也必须有请假按钮——v1.49.10 切到整月后这两个按钮一度消失。 */
-    @Test
-    public void monthLayout_keepsLeaveButtons() {
-        View v = MonthWidgetRender.build(ctx(), MonthWidgetRender.compute(ctx(), LocalDate.now()))
-                .apply(ctx(), new FrameLayout(ctx()));
-
-        assertNotNull("整月版不能丢请假按钮", v.findViewById(R.id.wrap_today_action));
-        assertNotNull(v.findViewById(R.id.wrap_tomorrow_action));
-        assertNotNull(v.findViewById(R.id.widget_today_action));
+        // 整月卡那份布局里的东西，4×2 一个都不该有
+        assertNull("4×2 不该有底部信息行", v.findViewById(R.id.widget_month_stats));
+        assertNull("4×2 不该有底部信息行", v.findViewById(R.id.widget_month_stats));
+        assertEquals("4×2 的主信息要照常显示", View.VISIBLE,
+                v.findViewById(R.id.widget_hero).getVisibility());
     }
 
     /**

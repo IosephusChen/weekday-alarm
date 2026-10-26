@@ -82,10 +82,20 @@ final class MonthWidgetRender {
     static final class Model {
         String title = "";
         String subtitle = "";
+        /** 本月统计（v1.71.9）：「22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
+        String stats = "";
+        /** 下一个假期的倒计时（v1.71.9），与首页今天卡同源；数据边界外为空。 */
+        String countdown = "";
+        boolean countdownVisible;
         final String[] nums = new String[CELLS];
         final String[] tags = new String[CELLS];
         final int[] colors = new int[CELLS];
         final boolean[] today = new boolean[CELLS];
+
+        /** 底部那一行：统计 + （有数据时的）假期倒计时。 */
+        String footerText() {
+            return countdownVisible && !countdown.isEmpty() ? stats + " · " + countdown : stats;
+        }
     }
 
     static Model compute(Context ctx, LocalDate today) {
@@ -102,6 +112,7 @@ final class MonthWidgetRender {
         int lead = (firstDow - startDow + 7) % 7;
         int len = ym.lengthOfMonth();
 
+        int workDays = 0;
         for (int i = 0; i < CELLS; i++) {
             int day = i - lead + 1;
             if (day < 1 || day > len) {
@@ -117,6 +128,9 @@ final class MonthWidgetRender {
             boolean work = DayOffAction.isWorkDay(type);
             boolean leave = Prefs.isVacation(ctx, d);
             boolean overtime = Prefs.isOvertime(ctx, d);
+
+            // v1.71.9 底部统计用：请了假就不算上班，休息日加了班就算上班
+            if (work ? !leave : overtime) workDays++;
 
             // 颜色始终表达上班 / 休息；文字在有节日时换成节日名（v1.49.11）。
             // 与日历页同一套优先级：法定节假日 > 农历节日 > 基督教节日 > 班 / 休。
@@ -152,10 +166,15 @@ final class MonthWidgetRender {
             }
             m.today[i] = d.equals(today);
         }
+
+        m.stats = workDays + " 天班 · " + (len - workDays) + " 天休";
+        HolidayCountdown.Result cd = HolidayCountdown.compute(today);
+        m.countdownVisible = cd.visible;
+        m.countdown = cd.visible ? cd.text : "";
         return m;
     }
 
-    /** 4×4 完整版（带按钮、带闹钟状态）。 */
+    /** 4×4 完整版（带底部信息行、带闹钟状态）。 */
     static RemoteViews build(Context ctx, Model m) {
         return build(ctx, m, R.layout.widget_week_schedule_month, true);
     }
@@ -163,7 +182,7 @@ final class MonthWidgetRender {
     /**
      * 两个变体共用这一个渲染入口（v1.51.1 三个，v1.53.0 定为两个）。
      *
-     * <p>变体只在「哪份布局 / 有没有请假按钮」上不同，42 格的算与画完全一样。
+     * <p>变体只在「哪份布局 / 有没有底部信息行」上不同，42 格的算与画完全一样。
      * 分成三个类各写一遍渲染，等于把同一段代码复制三份——改一处颜色要改三处。
      *
      * <p>v1.59.0：闹钟状态从「按设置开关显示」改为**恒定显示**。开关是 v1.51.1
@@ -171,12 +190,16 @@ final class MonthWidgetRender {
      * 不再挤任何东西，开关的存在理由已经没了——用户反馈「这个开关没必要」。
      * 现在与 4×2 闹钟卡同一个口径：永远显示「闹钟已开启 / 未开启」。
      *
-     * @param layout       4×4 用 {@code widget_week_schedule_month}，
-     *                     4×3 用 {@code widget_month_compact}
-     * @param withActions  是否显示底部「今天 / 明天不上班」
+     * <p>v1.71.9：{@code withActions} 换成 {@code withFooter}。4×4 底部两个请假按钮
+     * 被删掉（误触风险），位置改成「本月统计 + 假期倒计时」。4×3 只有 200dp 高，
+     * 42 格已经排到极限（v1.71.5 刚修完压字），不能再挤一行——所以 4×3 不显示。
+     *
+     * @param layout     4×4 用 {@code widget_week_schedule_month}，
+     *                   4×3 用 {@code widget_month_compact}
+     * @param withFooter 是否显示底部「本月统计 + 假期倒计时」
      */
     static RemoteViews build(Context ctx, Model m, int layout,
-                             boolean withActions) {
+                             boolean withFooter) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), layout);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
@@ -199,17 +222,10 @@ final class MonthWidgetRender {
 
         bindAlarm(rv, ctx);
 
-        // 今天 / 明天请假：与 4×2 那套同一个实现，切到整月后按钮不能消失
-        rv.setViewVisibility(R.id.widget_month_actions,
-                withActions ? View.VISIBLE : View.GONE);
-        if (withActions) {
-            WeekWidgetRender.WeekModel week = WeekWidgetRender.computeModel(ctx);
-            WeekWidgetRender.bindAction(rv, ctx, week.todayAction, week.todayMarked, 0,
-                    R.id.widget_today_action, R.id.widget_today_action_on,
-                    R.id.wrap_today_action, 22);
-            WeekWidgetRender.bindAction(rv, ctx, week.tomorrowAction, week.tomorrowMarked, 1,
-                    R.id.widget_tomorrow_action, R.id.widget_tomorrow_action_on,
-                    R.id.wrap_tomorrow_action, 23);
+        if (withFooter) {
+            // 一句话写完两件事。倒计时拿不到时（2027 那段要等远程增量）就只留统计，
+            // 不做「右边空着」的分栏——那会让左边孤零零挂在角上。
+            rv.setTextViewText(R.id.widget_month_stats, m.footerText());
         }
 
         Intent open = new Intent(ctx, MainActivity.class);

@@ -20,7 +20,7 @@ public class MonthScheduleWidget extends MonthWidgetBase {
     }
 
     @Override
-    boolean withActions() {
+    boolean withFooter() {
         return true;
     }
 

@@ -2,6 +2,7 @@ package com.daxz.weekalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import android.app.Application;
 import android.appwidget.AppWidgetManager;
@@ -201,13 +202,13 @@ public class WidgetProviderConfigTest {
         assertNotNull(m.findViewById(R.id.widget_month_title));
         assertNotNull(m.findViewById(R.id.m_num_0));
         assertNotNull(m.findViewById(R.id.m_num_41));
-        assertNotNull(m.findViewById(R.id.widget_month_actions));
+        // v1.71.9：底部两个请假按钮删了，换成「本月统计 + 假期倒计时」
+        assertNotNull(m.findViewById(R.id.widget_month_stats));
 
-        // 4×3 极简：和 4×4 同一份布局，只是不显示按钮（v1.53.0 删掉了中间的紧凑版）
+        // 4×3 极简：和 4×4 同一份布局，只是不显示底部信息行（200dp 装不下）
         View minimal = inflate(MonthMinimalWidget.build(ctx()));
         assertNotNull(minimal.findViewById(R.id.m_num_41));
-        assertEquals("极简版不要请假按钮", View.GONE,
-                minimal.findViewById(R.id.widget_month_actions).getVisibility());
+        assertNull("极简版不要底部信息行", minimal.findViewById(R.id.widget_month_stats));
     }
 
     /** 把 RemoteViews 真正 inflate 成 View 树；失败会抛 InflateException。 */

@@ -1,8 +1,6 @@
 package com.daxz.weekalarm;
 
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.widget.RemoteViews;
 
 import androidx.core.content.ContextCompat;
@@ -17,10 +15,13 @@ import java.util.Set;
  *
  * <p>这段原来长在 {@code WeekScheduleWidget} 里。那个类同时干两件事：既是桌面上的
  * 4×2 本周班表组件，又是整月卡、闹钟卡共用的渲染工具——{@link #computeModel} 算七格，
- * {@link #fillWeekCells} 把格子填进任意布局，{@link #bindAction} 绑「今天 / 明天不上班」。
+ * {@link #fillWeekCells} 把格子填进任意布局。
  *
- * <p>v1.53.0 用户要求删掉 4×2 本周班表：组件没了，但工具还得用——4×2 闹钟卡的
- * 七格、4×4 与 4×3 的底部按钮都靠它。所以把工具部分单独搬到这里，组件类整个删除。
+ * <p>v1.53.0 用户要求删掉 4×2 本周班表：组件没了，但工具还得用——4×2 闹钟卡的七格
+ * 靠它。所以把工具部分单独搬到这里，组件类整个删除。
+ *
+ * <p>v1.71.9：4×4 底部那两个请假按钮删了（{@code bindAction} 随之删除），
+ * 这条链路只剩「算七格 + 填格子」。
  *
  * <p>与 App 内日历完全同源：同样走 {@link WeekSchedule#dayType} + 个人请假/加班标记，
  * 因此节假日、调休补班、请假、加班都会如实体现在这 7 个格子里。
@@ -65,42 +66,12 @@ final class WeekWidgetRender {
         final String title;      // 大周 · 休2天
         final String subtitle;   // 一句状态
         final List<DayCell> days;
-        /** 底部两个按钮（v1.33）：文案 + 是否已生效（已生效时换成实底白字那一层）。 */
-        final String todayAction;
-        final boolean todayMarked;
-        final String tomorrowAction;
-        final boolean tomorrowMarked;
 
-        WeekModel(String title, String subtitle, List<DayCell> days,
-                  String todayAction, boolean todayMarked,
-                  String tomorrowAction, boolean tomorrowMarked) {
-
+        WeekModel(String title, String subtitle, List<DayCell> days) {
             this.title = title;
             this.subtitle = subtitle;
             this.days = days;
-            this.todayAction = todayAction;
-            this.todayMarked = todayMarked;
-            this.tomorrowAction = tomorrowAction;
-            this.tomorrowMarked = tomorrowMarked;
         }
-    }
-
-    /**
-     * 底部按钮文案（v1.31）。跟主界面今日卡的按钮同一套语义，只是把「今天」换成「明天」。
-     *
-     * <p>抽成静态纯函数：真机上「明天」是星期几由不得测试决定，写成方法内部的分支
-     * 就只能测到跑测试那天的那一半。
-     *
-     * <p>v1.34.1 起实现搬到 {@link DayOffAction#actionText}：首页也要显示「已请假 / 已加班」，
-     * 同一句话没必要存在两份。这里保留签名，测试与调用方不用动。
-     */
-    static String actionText(String prefix, WeekSchedule.DayType type, boolean marked) {
-        return DayOffAction.actionText(prefix, type, marked);
-    }
-
-    /** 明天那一格的文案，保留旧签名给测试与调用方用。 */
-    static String actionText(WeekSchedule.DayType type, boolean marked) {
-        return actionText("明天", type, marked);
     }
 
     /** 计算本周 7 天的展示内容（按设置的一周开始日排列，v1.22.2）。 */
@@ -131,23 +102,7 @@ final class WeekWidgetRender {
         // 与整月变体共用同一句状态，桌面上几张卡不会各说各话。
         String sub = Widgets.alarmStatusText(ctx);
 
-        // 底部两个按钮：今天和明天各一个。早上关心「今天能不能不去」，
-        // 睡前关心「明早能不能不去」——同一件事的两个时间点，都放在手边
-        LocalDate tomorrow = today.plusDays(1);
-        WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
-        WeekSchedule.DayType tomorrowType = WeekSchedule.dayType(tomorrow, rule);
-        boolean todayMarked = isMarked(todayType, today, vacations, overtimes);
-        boolean tomorrowMarked = isMarked(tomorrowType, tomorrow, vacations, overtimes);
-        return new WeekModel(title, sub, cells,
-                actionText("今天", todayType, todayMarked), todayMarked,
-                actionText("明天", tomorrowType, tomorrowMarked), tomorrowMarked);
-    }
-
-    /** 上班 / 补班日看请假集合，休息 / 法定假看加班集合——与日历格子同一套口径。 */
-    private static boolean isMarked(WeekSchedule.DayType type, LocalDate d,
-                                    Set<LocalDate> vacations, Set<LocalDate> overtimes) {
-        return DayOffAction.isWorkDay(type)
-                ? vacations.contains(d) : overtimes.contains(d);
+        return new WeekModel(title, sub, cells);
     }
 
     /**
@@ -170,28 +125,6 @@ final class WeekWidgetRender {
             rv.setTextColor(DAY_IDS[i], ContextCompat.getColor(ctx,
                     c.today ? R.color.white : R.color.widget_dim));
         }
-    }
-
-    /**
-     * 绑定一个「今天 / 明天不上班」按钮。
-     *
-     * <p>点击挂在最外层的 FrameLayout 上，而不是内层 TextView：两层叠着，只有外层
-     * 能保证点哪儿都响应。
-     */
-    static void bindAction(RemoteViews rv, Context ctx, String text, boolean marked,
-                           int dayOffset, int offId, int onId, int wrapId, int reqCode) {
-        rv.setTextViewText(offId, text);
-        rv.setTextViewText(onId, text);
-        rv.setViewVisibility(offId, marked ? android.view.View.GONE : android.view.View.VISIBLE);
-        rv.setViewVisibility(onId, marked ? android.view.View.VISIBLE : android.view.View.GONE);
-
-        Intent toggle = new Intent(ctx, BedtimeReceiver.class)
-                .setAction(BedtimeReceiver.ACTION_TOGGLE_DAY)
-                .putExtra(BedtimeReceiver.EXTRA_DAY_OFFSET, dayOffset)
-                .setData(android.net.Uri.parse("daxz://widget/toggle-day/" + dayOffset));
-        PendingIntent pi = PendingIntent.getBroadcast(ctx, reqCode, toggle,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        rv.setOnClickPendingIntent(wrapId, pi);
     }
 
     /** 标签颜色：在紫色渐变底上取同色系的浅色，保证对比度又不刺眼。 */

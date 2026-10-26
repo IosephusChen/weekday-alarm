@@ -6,10 +6,11 @@ import android.widget.RemoteViews;
 /**
  * 本月班表 · 极简（4×3，v1.51.1）。
  *
- * <p>和「紧凑」同一份布局，只是不显示底部两个请假按钮——省下 24dp 全给日历行，
- * 格子更高、日期更好认。请假走「点卡片进 App」，不是没有入口。
+ * <p>和 4×4 同一份布局，只是不显示底部信息行——省下的高度全给日历行，
+ * 格子更高、日期更好认。200dp 高度下 42 格已经排到极限（v1.71.5 刚修完压字），
+ * 再加一行会把字又压回去。
  *
- * <p>为什么不复制一份布局：42 格的 XML 有 1700 行，为「有没有按钮」复制一遍，
+ * <p>为什么不复制一份布局：42 格的 XML 有 1800 行，为「有没有底部那一行」复制一遍，
  * 以后改颜色、改字号要改两处，迟早改漏一处。
  */
 public class MonthMinimalWidget extends MonthWidgetBase {
@@ -20,7 +21,7 @@ public class MonthMinimalWidget extends MonthWidgetBase {
     }
 
     @Override
-    boolean withActions() {
+    boolean withFooter() {
         return false;
     }
 

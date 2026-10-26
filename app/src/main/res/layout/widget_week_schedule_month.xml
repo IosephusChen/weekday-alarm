@@ -1869,89 +1869,28 @@
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
-    <!-- 今天 / 明天请假（v1.49.12）：4×2 那套本来就有，切到整月后一度消失了。
-         这里是同一份结构、同一批 id，MonthWidgetRender 直接复用 bindAction。
+    <!-- 底部信息行（v1.71.9）：替掉原来的「今天 / 明天不上班」两个按钮。
 
-         v1.71.6 降权：原来两个按钮 0dp+weight=1 撑满整行、20dp 高、10sp bold，
-         是组件里唯一的连续色块，横贯底部像标签栏（tab bar 的语义是「切视图」，
-         不是「执行动作」）。现在两侧各让出 34dp、高度降到 18dp，从「占满一条」
-         变成「居中两个小按钮」，面积少了约 30%。字重与字色的改动在下面两个 TextView 上。 -->
-    <LinearLayout
-        android:id="@+id/widget_month_actions"
+         那对按钮 18dp 高、横在桌面上，是整张卡唯一的可点区域，误触率不低；而它干的事
+         （标记请假 / 加班）点一下卡片进 App 两秒也能做完，代价完全不对等。
+         用户 2026-10-26 拍板去掉：「请假加班没必要做到小部件上，增加误触风险」。
+
+         空出来的位置放两件日历格子答不了的事，用一句连起来：
+         「19 天班 · 12 天休」——这个月一共要上几天，不用自己数；
+         「距元旦 67 天」——下一个假还有多远，与首页今天卡同一套口径（HolidayCountdown）。
+
+         为什么写成一句话而不是左右分栏：倒计时依赖节假日数据，2027 年那段要等远程增量，
+         拿不到时整段不出现。分栏会让右边空着、左边孤零零挂在角上；一句话则自然变短，
+         两种状态都读得通。 -->
+    <TextView
+        android:id="@+id/widget_month_stats"
         android:layout_width="match_parent"
-        android:layout_height="18dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:orientation="horizontal"
-        android:paddingStart="34dp"
-        android:paddingEnd="34dp">
-
-        <FrameLayout
-            android:id="@+id/wrap_today_action"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1">
-
-            <!-- 常态：12% 白底、全圆、10sp 常规字重。原来这里是 bold + 纯白，
-                 比日历数字（10sp 常规）和标记（8.5sp 常规）还重，主次是倒的。 -->
-            <TextView
-                android:id="@+id/widget_today_action"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_widget_action"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="今天不上班"
-                android:textColor="#E6E4FF"
-                android:textSize="10sp" />
-
-            <TextView
-                android:id="@+id/widget_today_action_on"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_widget_action_on"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="今天已请假"
-                android:textColor="@color/hero_text"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/wrap_tomorrow_action"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
-            <TextView
-                android:id="@+id/widget_tomorrow_action"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_widget_action"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="明天不上班"
-                android:textColor="#E6E4FF"
-                android:textSize="10sp" />
-
-            <TextView
-                android:id="@+id/widget_tomorrow_action_on"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_widget_action_on"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:text="明天已请假"
-                android:textColor="@color/hero_text"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </FrameLayout>
-    </LinearLayout>
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="19 天班 · 12 天休 · 距元旦 67 天"
+        android:textColor="#C9C4FF"
+        android:textSize="10sp" />
 </LinearLayout>

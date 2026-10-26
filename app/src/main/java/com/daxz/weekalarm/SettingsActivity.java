@@ -1142,6 +1142,13 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * 落盘并重排。v1.71.9 起不再弹 Toast。
+     *
+     * <p>设置页那一行右侧就写着时刻，点完卡片当场从「22:00」变成「22:30」——
+     * 再飘一条「已设置 22:30 的睡前提醒」是把同一句话说了两遍（用户 2026-10-26 反馈
+     * 「设置好之后有个弹窗提示，我觉得没必要」）。关掉同理，那一行会变成「关闭」。
+     */
     private void applyBedtime() {
         BedtimeReminder.reschedule(this);
         updateBedtimeText();
@@ -1154,10 +1161,6 @@ public class SettingsActivity extends AppCompatActivity {
             // 记住这次的时刻：关掉再打开要回到它，不是重置成 22:00
             Prefs.setBedtimeLast(this, cur);
         }
-        Toast.makeText(this, cur == Prefs.BEDTIME_OFF
-                ? "已关闭睡前提醒"
-                : "已设置 " + BedtimeReminder.timeText(cur) + " 的睡前提醒",
-                Toast.LENGTH_SHORT).show();
     }
 
     // ================= 配置导出 / 导入（v1.20）=================

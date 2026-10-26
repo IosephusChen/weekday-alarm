@@ -1011,6 +1011,9 @@
         </ScrollView>
 
         <!-- ===================== 第 4 页：当场验一下 ===================== -->
+        <!-- v0.85.2：内容整体垂直居中。这一页只有「标题 + 三行 + 一句」，
+             按顶部对齐时内容块早早结束，下面留下比前三页大一截的空白——
+             用户看着就是「这页比别的页高」。居中后上下留白对半，前三页不动。 -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -1019,7 +1022,8 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
                 android:paddingStart="@dimen/space_24"
                 android:paddingEnd="@dimen/space_24"

@@ -25,6 +25,9 @@
     <string name="settings_section_remind">提醒</string>
     <string name="settings_bedtime_title">睡前提醒</string>
     <string name="settings_bedtime_default">关闭</string>
+    <string name="settings_bedtime_hint">到点发一条安静的通知</string>
+    <string name="settings_bedtime_workday">仅明天上班</string>
+    <string name="settings_bedtime_daily">每天提醒</string>
     <string name="settings_pre_notice_title">响铃前提醒</string>
     <string name="settings_pre_notice_summary">响铃前先在通知栏提醒一次</string>
     <string name="settings_section_other">其他</string>

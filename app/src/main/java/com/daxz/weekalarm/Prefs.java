@@ -631,7 +631,13 @@ public final class Prefs {
         return sp(c).getInt(KEY_PRE_NOTICE_MINUTES, PRE_NOTICE_DEFAULT);
     }
 
-    /** 上次选过的非零提前量，用于「关掉再打开」时恢复。从没设过则给默认值。 */
+    /**
+     * 上次选过的非零提前量，用于「关掉再打开」时恢复。从没设过则给默认值。
+     *
+     * <p>v1.72.1 起设置页那行的开关已去掉（改成「值 + 箭头」进对话框），
+     * App 内暂时没有调用方；键和写入逻辑保留，因为 {@link #setPreNoticeMinutes}
+     * 仍在顺带维护它，删了会让老备份里这个键变成孤儿。
+     */
     public static int getPreNoticeLastMinutes(Context c) {
         return sp(c).getInt(KEY_PRE_NOTICE_LAST, PRE_NOTICE_DEFAULT);
     }

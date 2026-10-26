@@ -301,8 +301,12 @@ public class SnoozePreNoticeTest {
                 MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertEquals("10 分钟 × 2 次",
                 ((TextView) ring.findViewById(R.id.tv_snooze)).getText().toString());
-        assertEquals("响铃前 15 分钟提醒",
+        // v1.72.1：副标题恒定讲机制，具体提前量搬到右边当「值」——
+        // 原来一句「响铃前 15 分钟提醒」把「开没开」和「提前多久」都塞进 11sp 灰字
+        assertEquals("响铃前先在通知栏提醒一次",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
+        assertEquals("提前 15 分钟",
+                ((TextView) activity.findViewById(R.id.tv_pre_notice_value)).getText().toString());
         // v1.29.0：两个键各占一行（原来挤在一行，窄屏 + 大字号会断在词中间）
         String keys = ((TextView) ring.findViewById(R.id.tv_keys)).getText().toString();
         assertTrue("按键行应摘要显示音量键的作用，实际：" + keys, keys.contains("音量键 · 关闭"));

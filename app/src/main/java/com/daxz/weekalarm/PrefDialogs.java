@@ -31,20 +31,6 @@ public final class PrefDialogs {
     }
 
     /**
-     * 提前提醒的副标题（v1.27，设置页开关下方那行）。
-     *
-     * <p>关着时说的是「这东西开着会怎样」，而不是只复述「关闭」——
-     * 后者等于把开关状态念一遍，用户看完仍然不知道开了有什么用。
-     *
-     * <p>开着时把提前量带出来：一个开关同时承担「开不开」和「开多久」两件事，
-     * 副标题就是那个「多久」的答案，不用再点进去看。
-     */
-    public static String preNoticeSummary(Context c) {
-        int mins = Prefs.getPreNoticeMinutes(c);
-        return mins <= 0 ? "响铃前先在通知栏提醒一次" : "响铃前 " + durationText(mins) + "提醒";
-    }
-
-    /**
      * 纯时长（「1 小时」/「5 分钟」），不带「提前」二字。
      *
      * <p>v1.45.0 拆出来的原因：副标题要读成「响铃前 1 小时提醒」，
@@ -57,21 +43,6 @@ public final class PrefDialogs {
     /** 「提前 1 小时」——对话框档位与引导页右侧那一列用它。 */
     private static String leadText(int mins) {
         return "提前 " + durationText(mins);
-    }
-
-    /**
-     * 开关式写入提前提醒（v1.27）。
-     *
-     * <p>打开时回到「上次选过的那个值」，而不是写死默认 1 小时：关掉再打开
-     * 还是自己原来那个数，不会被人悄悄改成别的。只有从没设过的人才落到默认值。
-     *
-     * <p>这里不能读 {@code getPreNoticeMinutes}——关着的时候它返回 0，
-     * 拿 0 去当「上次的值」等于每次都回落默认，那句「关掉再打开还是原来的数」
-     * 就成了空话。记忆存在 {@code KEY_PRE_NOTICE_LAST}，由 set 时顺带更新。
-     */
-    public static void setPreNoticeEnabled(Context c, boolean enabled) {
-        Prefs.setPreNoticeMinutes(c, enabled ? Prefs.getPreNoticeLastMinutes(c) : 0);
-        Reschedule.run(c, null);
     }
 
     /**

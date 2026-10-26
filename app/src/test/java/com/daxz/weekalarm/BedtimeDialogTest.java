@@ -3,6 +3,7 @@ package com.daxz.weekalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -168,6 +169,50 @@ public class BedtimeDialogTest {
         ShadowLooper.idleMainLooper();
 
         assertEquals("应存成关闭", Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 底部只有一个「完成」，没有「取消」（v1.72.1）。
+     *
+     * <p>原来那张「取消」在说谎：点任意一张卡都已经即时存下并关窗了，
+     * 没有任何东西可取消。现在它只在「只切了开关、没点卡片」时用到——
+     * 开关即时生效不关窗，用户需要一个出口。
+     */
+    @Test
+    public void bottomButton_isDoneNotCancel() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog d = openDialog(ctl);
+
+        // appcompat 会把三个按钮都 inflate 出来，没设文案的那个只是 GONE，
+        // 所以判「有没有取消」要看可见性，不是看 getButton 是否为 null
+        View cancel = d.getButton(AlertDialog.BUTTON_NEGATIVE);
+        assertTrue("不该再有「取消」", cancel == null || cancel.getVisibility() != View.VISIBLE);
+        View done = d.getButton(AlertDialog.BUTTON_POSITIVE);
+        assertNotNull("应有一个「完成」", done);
+        assertEquals("完成", ((TextView) done).getText().toString());
+        assertEquals("「完成」应可见", View.VISIBLE, done.getVisibility());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 点「其他时间…」不关主弹窗（v1.72.1）。
+     *
+     * <p>原来先 dismiss 再弹滚轮：滚轮上按「取消」回到设置页，弹窗已经没了、
+     * 什么都没改，像误触。现在滚轮叠在上面，主弹窗原样留着。
+     */
+    @Test
+    public void tapCustom_keepsMainDialogUnderWheel() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog main = openDialog(ctl);
+
+        list(main).getChildAt(EXPECTED.length - 1).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertTrue("主弹窗不该被关掉", main.isShowing());
+        assertNotNull("应叠了一个时间轮盘", ShadowAlertDialog.getLatestDialog());
         ctl.pause().stop().destroy();
     }
 

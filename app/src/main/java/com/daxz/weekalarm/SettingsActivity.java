@@ -40,11 +40,16 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView tvHorizon, tvHolidayData, tvVolume, tvBedtime, tvWeekStart;
     /** 周休制度三行（v1.46.3 从首页「排班」卡搬来）。 */
     private TextView tvWeekMode;
-    private SwitchCompat swFadeIn, swVibrate, swPreNotice;
+    /**
+     * 「提醒」组两行的右侧值（v1.72.1）。
+     *
+     * <p>这两行原本右侧是开关，用户看不出点进去还能设置；现在值直接摆在右边，
+     * 关掉时写「关闭」，与「周休制度」那行同一套「值 + 箭头」语言。
+     */
+    private TextView tvBedtimeValue, tvPreNoticeValue;
+    private SwitchCompat swFadeIn, swVibrate;
     /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
-    /** 主页睡前提醒开关（v1.49.0）。 */
-    private SwitchCompat swBedtime;
 
     /** 开关同步保护：回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
@@ -112,9 +117,10 @@ public class SettingsActivity extends AppCompatActivity {
         tvHolidayData = findViewById(R.id.tv_holiday_data);
         tvVolume = findViewById(R.id.tv_volume);
         tvBedtime = findViewById(R.id.tv_bedtime);
+        tvBedtimeValue = findViewById(R.id.tv_bedtime_value);
+        tvPreNoticeValue = findViewById(R.id.tv_pre_notice_value);
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
-        swBedtime = findViewById(R.id.switch_bedtime);
         sbVolume = findViewById(R.id.seek_volume_embed);
 
         // 周休制度（v1.46.3）：从首页「排班」卡搬来，放在「一周开始日」之前——
@@ -128,28 +134,12 @@ public class SettingsActivity extends AppCompatActivity {
         bind(R.id.row_ringtone, v -> openRingtonePicker());
         bind(R.id.row_ring_duration, v -> showRingDurationDialog());
         bind(R.id.row_snooze, v -> showSnoozeDialog());
-        swPreNotice = findViewById(R.id.switch_pre_notice);
-        // 整行点开关（跟震动、渐响一致），副标题那一小块点进对话框调提前量
-        bind(R.id.row_pre_notice, v -> { if (swPreNotice != null) swPreNotice.toggle(); });
-        bind(R.id.tv_pre_notice, v -> showPreNoticeDialog());
+        // v1.72.1：整行进对话框——开关去掉了。原来整行点开关、只有副标题那一小块
+        // 能改提前量（约 60dp 宽），几乎没人发现；现在跟睡前提醒一样，值摆右边。
+        bind(R.id.row_pre_notice, v -> showPreNoticeDialog());
         bind(R.id.row_keys, v -> showKeysDialog());
         // v1.20：睡前提醒（时刻 + 是否只在上班前提醒）
         bind(R.id.row_bedtime, v -> showBedtimeDialog());
-        // v1.49.0：整行点开关，点下面的时间改时刻——与「响铃前提醒」同一套操作
-        if (swBedtime != null) {
-            swBedtime.setOnCheckedChangeListener((v, checked) -> {
-                if (swAttaching) return;
-                if (checked) {
-                    Prefs.setBedtimeMinutes(this, Prefs.getBedtimeLast(this));
-                } else {
-                    Prefs.setBedtimeLast(this, Prefs.getBedtimeMinutes(this));
-                    Prefs.setBedtimeMinutes(this, Prefs.BEDTIME_OFF);
-                }
-                BedtimeReminder.reschedule(this);
-                updateBedtimeText();
-                BedtimeReminder.refreshIfShown(this);
-            });
-        }
         // v1.49.0：主页的两个入口
         bind(R.id.row_more_ring, v -> startActivity(new Intent(this, MoreSettingsActivity.class)
                 .putExtra(MoreSettingsActivity.EXTRA_SECTION, MoreSettingsActivity.SECTION_RING)));
@@ -247,8 +237,6 @@ public class SettingsActivity extends AppCompatActivity {
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
-        if (swPreNotice != null) swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
-        if (swBedtime != null) swBedtime.setChecked(Prefs.getBedtimeMinutes(this) != Prefs.BEDTIME_OFF);
         if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this));
         refreshCalendarContentValue();
         swAttaching = false;
@@ -857,17 +845,17 @@ public class SettingsActivity extends AppCompatActivity {
         tvSnooze.setText(PrefDialogs.snoozeText(this));
     }
 
-    /** 提前提醒行文案：0 = 关闭。 */
+    /**
+     * 提前提醒行文案（v1.72.1）：副标题恒定说「这功能干什么」，值在右边说「现在是多少」。
+     *
+     * <p>v1.71.7 之前副标题会写成「响铃前 1 小时提醒」——一句话把「开没开」和
+     * 「提前多久」都塞进 11sp 灰字里，而整行点击又是开关，两件事拧在一起。
+     * 现在拆开：值（{@code 提前 1 小时} / {@code 关闭}）走 {@code SettingsValue}，
+     * 副标题只讲机制。
+     */
     private void updatePreNoticeText() {
-        tvPreNotice.setText(PrefDialogs.preNoticeSummary(this));
-        // 开关回显时不能触发 OnCheckedChange——否则会在这里反向写回 Prefs，
-        // 把用户刚点的状态又覆盖掉（典型的自激）
-        swPreNotice.setOnCheckedChangeListener(null);
-        swPreNotice.setChecked(Prefs.getPreNoticeMinutes(this) > 0);
-        swPreNotice.setOnCheckedChangeListener((v, checked) -> {
-            PrefDialogs.setPreNoticeEnabled(this, checked);
-            updatePreNoticeText();
-        });
+        if (tvPreNotice != null) tvPreNotice.setText(R.string.settings_pre_notice_summary);
+        if (tvPreNoticeValue != null) tvPreNoticeValue.setText(PrefDialogs.preNoticeText(this));
     }
 
     /** 响铃时长行文案：0 = 不限。 */
@@ -1005,25 +993,41 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 睡前提醒（v1.20）=================
 
+    /**
+     * 睡前提醒行文案（v1.72.1 拆成两段）。
+     *
+     * <p>右边 {@code tvBedtimeValue} 只写时刻（或「关闭」），是这一行的「值」；
+     * 左边副标题写条件——v1.58.0 加「仅明天上班」是因为这个条件决定提醒发不发，
+     * 不写用户会以为休息日也有通知。关掉时副标题退回功能说明，
+     * 因为此时「条件」无从谈起。
+     */
     private void updateBedtimeText() {
         int cur = Prefs.getBedtimeMinutes(this);
-        // v1.58.0：副标题带上「仅明天上班」条件。这个条件在二级页，而它决定提醒发不发——
-        // 主页只写「21:30」的话，用户以为每天到点都有通知，其实休息日被静默跳过。
-        // 不动页面结构（把条件并进来要重做交互），让主页这行自己把状态说全。
-        String text = BedtimeReminder.timeText(cur);
-        if (cur != Prefs.BEDTIME_OFF && Prefs.isBedtimeWorkdayOnly(this)) {
-            text = text + " · 仅明天上班";
+        boolean off = cur == Prefs.BEDTIME_OFF;
+        if (tvBedtimeValue != null) {
+            tvBedtimeValue.setText(BedtimeReminder.timeText(cur));
         }
-        tvBedtime.setText(text);
+        if (tvBedtime == null) return;
+        if (off) {
+            tvBedtime.setText(R.string.settings_bedtime_hint);
+        } else if (Prefs.isBedtimeWorkdayOnly(this)) {
+            tvBedtime.setText(R.string.settings_bedtime_workday);
+        } else {
+            tvBedtime.setText(R.string.settings_bedtime_daily);
+        }
     }
 
     /**
      * 睡前提醒：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间（滚轮）。
      *
      * <p>v1.71.7 卡片化：六个选项从系统单选圈换成 {@link DialogKit#optionView} 卡片，
-     * 裸 {@code CheckBox} 换成开关行卡片。交互一点没变——点一项即保存并关窗
-     * （选择本身就是一步操作，再问一次是多余的），开关勾选即时生效、不关窗
-     * （它只影响「发不发」，用户可能还想接着改时刻）。
+     * 裸 {@code CheckBox} 换成开关行卡片。点一项即保存并关窗（选择本身就是一步操作，
+     * 再问一次是多余的），开关勾选即时生效、不关窗（它只影响「发不发」，
+     * 用户可能还想接着改时刻）。
+     *
+     * <p>v1.72.1 收了三处别扭：底部「取消」→「完成」（原来那张取消取消不了任何东西）；
+     * 「其他时间」不再先关弹窗再弹滚轮（取消滚轮会连弹窗一起丢掉）；
+     * 入口从设置页的开关改成「值 + 箭头」，用户才看得出这里能设置。
      *
      * <p>原来用自绘 {@code RadioGroup} 是因为 {@code setSingleChoiceItems} 在
      * MIUI / 澎湃上只显示标题不显示选项（已实测）。换卡片积木后这个问题自然消失。
@@ -1070,14 +1074,20 @@ public class SettingsActivity extends AppCompatActivity {
             card.setOnClickListener(v -> {
                 // 卡片点了就关窗，但 View 还在——快速双击会进来第二次，把刚存的值再写一遍
                 if (done[0]) return;
+                if (idx == titles.length - 1) {
+                    // v1.72.1：不再先关主弹窗。原来点「其他时间」会先把整个弹窗关掉再弹滚轮，
+                    // 滚轮上按返回就回到设置页，弹窗没了、什么都没改——像误触。
+                    // 现在滚轮叠在上面，取消就退回原弹窗接着选。
+                    pickCustomBedtime(cur, () -> {
+                        done[0] = true;
+                        if (dialog[0] != null) dialog[0].dismiss();
+                    });
+                    return;
+                }
                 done[0] = true;
                 if (dialog[0] != null) dialog[0].dismiss();
-                if (idx == titles.length - 1) {
-                    pickCustomBedtime(cur);
-                } else {
-                    Prefs.setBedtimeMinutes(this, values[idx]);
-                    applyBedtime();
-                }
+                Prefs.setBedtimeMinutes(this, values[idx]);
+                applyBedtime();
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -1101,24 +1111,34 @@ public class SettingsActivity extends AppCompatActivity {
             Prefs.setBedtimeWorkdayOnly(this, isChecked);
             // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
             BedtimeReminder.reschedule(this);
-            // 主页那行的副标题要跟着变（「21:30 · 仅明天上班」）
+            // 主页那行的副标题要跟着变（「仅明天上班」/「每天提醒」）
             updateBedtimeText();
         });
 
+        // v1.72.1：底部按钮从「取消」改成「完成」。
+        // 原来那张「取消」在说谎——点任意一张卡都已经即时存下并关窗了，没有任何东西可取消。
+        // 现在它只在「只切了开关、没点卡片」时用到：开关即时生效不关窗，用户需要一个出口，
+        // 「完成」就是「我改完了，关掉吧」，名副其实。
         dialog[0] = new RoundedDialog.Builder(this)
                 .setView(view)
-                .setNegativeButton("取消", null)
+                .setPositiveButton("完成", null)
                 .create();
         dialog[0].show();
     }
 
-    /** 「其他时间…」选完接滚轮；初始值取当前设置，关着时从 22:00 起。 */
-    private void pickCustomBedtime(int cur) {
+    /**
+     * 「其他时间…」选完接滚轮；初始值取当前设置，关着时从 22:00 起。
+     *
+     * @param onSaved 滚轮确认并落盘后回调（调用方用来关掉底下的主弹窗）；
+     *                滚轮上按「取消」不会回调，主弹窗原样留着
+     */
+    private void pickCustomBedtime(int cur, Runnable onSaved) {
         int h = cur == Prefs.BEDTIME_OFF ? 22 : cur / 60;
         int m = cur == Prefs.BEDTIME_OFF ? 0 : cur % 60;
         TimeWheelDialog.show(this, "睡前提醒时间", h, m, (hh, mm) -> {
             Prefs.setBedtimeMinutes(this, hh * 60 + mm);
             applyBedtime();
+            if (onSaved != null) onSaved.run();
         });
     }
 

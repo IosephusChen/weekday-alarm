@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.View;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.test.core.app.ApplicationProvider;
@@ -197,21 +198,40 @@ public class SettingsLayoutTest {
         ctl.pause().stop().destroy();
     }
 
-    /** 睡前提醒开关：关掉写 OFF，再打开回到上次的时间。 */
+    /**
+     * 睡前提醒行（v1.72.1）：右侧是「时刻 + 箭头」，不再是开关。
+     *
+     * <p>原来右侧画着开关，用户以为这一行只能开或关，不知道点进去还能改时刻
+     * （v1.71.7 真机反馈）。现在关掉这件事交给对话框里第一张「关闭」卡，
+     * 行上只报当前状态。
+     */
     @Test
-    public void bedtimeSwitch_togglesAndRestoresLastTime() {
+    public void bedtimeRow_showsTimeInsteadOfSwitch() {
         Prefs.setBedtimeMinutes(ctx(), 21 * 60 + 30);
+        Prefs.setBedtimeWorkdayOnly(ctx(), true);
         ActivityController<SettingsActivity> ctl = openHome();
         SettingsActivity a = ctl.get();
-        SwitchCompat sw = a.findViewById(R.id.switch_bedtime);
-        assertNotNull(sw);
-        assertTrue("开着时应是选中态", sw.isChecked());
 
-        sw.performClick();
-        assertEquals(Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));
+        // 开关的 id 已经从布局里删掉了，R 类里根本没有它——按资源名查一次，
+        // 返回 0 就说明布局里确实没有这个控件
+        assertEquals("这一行不该再有开关", 0,
+                ctx().getResources().getIdentifier("switch_bedtime", "id",
+                        ctx().getPackageName()));
+        assertEquals("右侧应是当前时刻",
+                "21:30",
+                ((TextView) a.findViewById(R.id.tv_bedtime_value)).getText().toString());
+        assertEquals("副标题只说条件",
+                "仅明天上班",
+                ((TextView) a.findViewById(R.id.tv_bedtime)).getText().toString());
 
-        sw.performClick();
-        assertEquals("再打开要回到 21:30", 21 * 60 + 30, Prefs.getBedtimeMinutes(ctx()));
+        Prefs.setBedtimeMinutes(ctx(), Prefs.BEDTIME_OFF);
+        SettingsActivity off = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertEquals("关掉时值写「关闭」",
+                "关闭",
+                ((TextView) off.findViewById(R.id.tv_bedtime_value)).getText().toString());
+        assertEquals("关掉时副标题退回功能说明",
+                "到点发一条安静的通知",
+                ((TextView) off.findViewById(R.id.tv_bedtime)).getText().toString());
 
         ctl.pause().stop().destroy();
     }

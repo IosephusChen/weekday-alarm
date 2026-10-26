@@ -10,7 +10,8 @@
      取值与下标一一对应，写死要维护六份重复的 id 与文案。
 
      「仅在明天上班时提醒」从裸 CheckBox 改成开关行卡片：它是个开关不是选项，
-     用 Switch 比用勾选框更贴语义，也和设置页那行的开关长一个样。 -->
+     用 Switch 比用勾选框更贴语义。v1.72.1 起设置页那行的开关已去掉
+     （改成「时刻 + 箭头」），这个开关成了全 App 唯一控制它的地方。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"

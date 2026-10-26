@@ -108,8 +108,8 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 0);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        // v1.27：整行改成了开关（点了就是开/关），调提前量要点副标题那一行
-        ctl.get().findViewById(R.id.tv_pre_notice).performClick();
+        // v1.72.1：整行点开对话框（开关已去掉），不再要点副标题那一小块
+        ctl.get().findViewById(R.id.row_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
@@ -132,8 +132,8 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 60);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        // v1.27：整行改成了开关（点了就是开/关），调提前量要点副标题那一行
-        ctl.get().findViewById(R.id.tv_pre_notice).performClick();
+        // v1.72.1：整行点开对话框（开关已去掉），不再要点副标题那一小块
+        ctl.get().findViewById(R.id.row_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
@@ -168,31 +168,32 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.27：整行改成开关。关掉写 0，再打开要回到上次选的 15 分钟。
+     * v1.72.1：这一行右侧从开关换成「值 + 箭头」。
      *
-     * <p>这条防的是「关一下就被悄悄改成 1 小时」——那是最容易被忽略、
-     * 又最容易被用户当成 bug 的行为：明明显式关过一次，回来却变了数。
+     * <p>换掉开关的原因是可发现性——原来整行点击是开关、只有副标题那一小块
+     * （约 60dp 宽）能改提前量，用户看不出这里还能设置。现在值直接摆在右边，
+     * 关掉写「关闭」，与「周休制度」那行同一套语言。
      */
     @Test
-    public void switchOff_thenOn_restoresPreviousMinutes() {
+    public void rowValue_followsMinutes() {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 15);
-        ActivityController<SettingsActivity> ctl =
-                Robolectric.buildActivity(SettingsActivity.class).setup();
-        SettingsActivity a = ctl.get();
+        SettingsActivity on = Robolectric.buildActivity(SettingsActivity.class).setup().get();
 
-        a.findViewById(R.id.row_pre_notice).performClick();
-        assertEquals("关掉应写 0", 0, Prefs.getPreNoticeMinutes(ctx()));
-        assertEquals("关着时副标题该说明「开着会怎样」，而不是复述「关闭」",
+        assertEquals("提前 15 分钟",
+                ((TextView) on.findViewById(R.id.tv_pre_notice_value)).getText().toString());
+        assertEquals("副标题讲机制，不重复值",
                 "响铃前先在通知栏提醒一次",
-                ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
+                ((TextView) on.findViewById(R.id.tv_pre_notice)).getText().toString());
 
-        a.findViewById(R.id.row_pre_notice).performClick();
-        assertEquals("再打开要回到上次选的 15 分钟，不是默认 1 小时",
-                15, Prefs.getPreNoticeMinutes(ctx()));
-        assertEquals("响铃前 15 分钟提醒",
-                ((TextView) a.findViewById(R.id.tv_pre_notice)).getText().toString());
-        ctl.pause().stop().destroy();
+        Prefs.setPreNoticeMinutes(ctx(), 0);
+        SettingsActivity off = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertEquals("关掉时值应写「关闭」",
+                "关闭",
+                ((TextView) off.findViewById(R.id.tv_pre_notice_value)).getText().toString());
+        assertEquals("关掉后副标题仍是同一句机制说明",
+                "响铃前先在通知栏提醒一次",
+                ((TextView) off.findViewById(R.id.tv_pre_notice)).getText().toString());
     }
 
     /**

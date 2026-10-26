@@ -4,7 +4,7 @@
      主页 8 项：
        闹钟    —— 音量（就地滑块）、铃声、更多响铃设置 ›
        排班    —— 周休制度、节假日数据
-       提醒    —— 睡前提醒、响铃前提醒（行尾开关）
+       提醒    —— 睡前提醒、响铃前提醒（行尾值 + 箭头，点进去设置）
        其他    —— 更多设置 ›
      版式沿用原有语言（居中顶栏、行间 1dp 分隔线、左标题右值），
      大标题 / 去分割线等视觉改动留给 A11，不和结构改动混在一起。 -->
@@ -285,8 +285,12 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 睡前提醒（v1.49.0）：整行点开关，点下面的时间改时刻——
-                 与「响铃前提醒」同一套操作，不给用户两套规则。 -->
+            <!-- 睡前提醒（v1.72.1）：从「开关行」改成「导航行」。
+                 v1.71.7 真机反馈：右侧画着开关，用户就以为这一行只能开或关，
+                 根本不知道点进去还能改时刻——它长得像「振动」「渐响」那种纯开关行，
+                 行为却是「周休制度」那种导航行。现在右侧给「当前时刻 + ›」，
+                 与「周休制度」「节假日数据」同一套语言：有配置的项，值在右、箭头收尾。
+                 「关掉」不再是开关，而是对话框里和各个时刻并列的第一张卡。 -->
             <LinearLayout
                 android:id="@+id/row_bedtime"
                 android:layout_width="match_parent"
@@ -314,23 +318,24 @@
                         android:layout_height="wrap_content"
                         android:text="@string/settings_bedtime_title" />
 
+                    <!-- 副标题只说「条件」，不说时刻——时刻已经搬到右边当值了 -->
                     <TextView
                         android:id="@+id/tv_bedtime"
                         style="@style/SettingsSummary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/settings_bedtime_default" />
+                        android:text="@string/settings_bedtime_hint" />
                 </LinearLayout>
 
-                <!-- 这个开关自己消费点击（与「响铃前提醒」不同）：
-                     点整行是改时刻，点开关才是开/关。 -->
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_bedtime"
+                <TextView
+                    android:id="@+id/tv_bedtime_value"
+                    style="@style/SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true" />
+                    android:text="@string/settings_bedtime_default" />
+
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
 
             <View style="@style/SettingsDivider" />
@@ -371,12 +376,16 @@
                                     android:text="@string/settings_pre_notice_summary" />
                             </LinearLayout>
 
-                            <androidx.appcompat.widget.SwitchCompat
-                                android:id="@+id/switch_pre_notice"
+                            <!-- v1.72.1：与睡前提醒同一套——开关去掉，右侧给值 + 箭头。
+                                 原来「提前量」藏在副标题那一小块可点区域里（约 60dp 宽），
+                                 几乎没人发现点它能改；整行点击反而是开关，两件事拧着。 -->
+                            <TextView
+                                android:id="@+id/tv_pre_notice_value"
+                                style="@style/SettingsValue"
                                 android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:clickable="false"
-                                android:focusable="false" />
+                                android:layout_height="wrap_content" />
+
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                         <View style="@style/SettingsDivider" />

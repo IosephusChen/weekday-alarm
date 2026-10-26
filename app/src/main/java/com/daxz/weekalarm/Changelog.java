@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(193, "0.85.1", "2026/10/27", "副标题不再断在词中间",
+                    "三页副标题各压到一行：16 / 19 / 15 字，不再「补 / 班」这样断开",
+                    "「自启动」状态改成「系统读不到 · 点开自查」，不再催已开的人"),
             new Entry(192, "0.85.0", "2026/10/26", "引导末页加通知测试",
                     "「测试通知」发一条不响的通知，只看通知栏收不收得到",
                     "第 2 页删掉「之后可以在主界面加更多闹钟」，少滚一行",

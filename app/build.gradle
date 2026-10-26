@@ -10,8 +10,8 @@ android {
         applicationId "com.daxz.weekalarm"
         minSdk 26
         targetSdk 34
-        versionCode 192
-        versionName "0.85.0"
+        versionCode 193
+        versionName "0.85.1"
     }
 
     // 签名配置（v1.63.0 起改为条件式，为公开仓库准备）：

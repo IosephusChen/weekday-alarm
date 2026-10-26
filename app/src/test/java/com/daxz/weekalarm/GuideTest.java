@@ -466,6 +466,21 @@ public class GuideTest {
     }
 
     /**
+     * 自启动那一行不能假装知道状态（v0.85.1）。
+     *
+     * <p>用户实测：自启动明明已经开了，界面还写着「去开启」。这一项系统没有任何 API
+     * 能读，写死「去开启」等于永远在催一个已经做完的人——和 v0.58.2 删电池优化、
+     * v0.73.5 改锁屏显示文案是同一个判断：<b>不知道就说不知道</b>。
+     */
+    @Test
+    public void autostartRow_doesNotPretendToKnowState() {
+        GuideActivity a = fresh();
+        String s = text(a, R.id.st_autostart);
+        assertFalse("不该写「去开启」催已经开过的人，实际：" + s, s.startsWith("去开启"));
+        assertTrue("要说清「读不到」，实际：" + s, s.contains("读不到"));
+    }
+
+    /**
      * 「闹钟和提醒」整行已删（v0.58.3）：我们声明了 {@code USE_EXACT_ALARM}，
      * Android 13+ 安装即授予且用户在系统里关不掉（开关是灰的）。留一行只能点、
      * 进去还改不了的项，只会让用户以为哪里没设置好。

@@ -104,7 +104,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="选一次就行。之后每周的班自动排，法定节假日和调休补班也会算进去。"
+                    android:text="选一次就行，之后每周的班自动排。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -371,7 +371,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="只在上班日响，休息日和法定节假日自动跳过。点时间可以改。"
+                    android:text="只在上班日响，休息日和节假日自动跳过。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -934,7 +934,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="@dimen/space_2"
-                                    android:text="去开启"
+                                    android:text="系统读不到 · 点开自查"
                                     android:textColor="@color/indigo"
                                     android:textSize="12sp" />
                             </LinearLayout>
@@ -1056,7 +1056,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="这三下只验「响不响、锁屏看不看得见、通知收不收得到」，不影响正式排班。"
+                    android:text="这些只是试一下，不占正式排班。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 

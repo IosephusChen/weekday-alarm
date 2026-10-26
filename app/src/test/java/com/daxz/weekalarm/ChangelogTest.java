@@ -69,6 +69,29 @@ public class ChangelogTest {
         return false;
     }
 
+    /**
+     * 等升级弹窗出现 / 确认它不出现（v0.82.0 补）。
+     *
+     * <p>弹窗不是 onCreate 里同步建的：v0.73.3 把重排挪到后台线程后，弹窗也由那条线程
+     * 建好后 {@code runOnUiThread} 过来。单次 {@code idleMainLooper()} 不保证赶在它 post
+     * 之前——机器慢一点，「应弹出」的用例会红，「不该弹」的用例反而会假绿。
+     * 所以两边都等：要弹的等它出现，不该弹的等一小会儿确认它没来。
+     */
+    private static Dialog awaitDialog(long timeoutMs) {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        do {
+            ShadowLooper.idleMainLooper();
+            Dialog d = ShadowAlertDialog.getLatestDialog();
+            if (d != null) return d;
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException ignore) {
+                Thread.currentThread().interrupt();
+            }
+        } while (System.currentTimeMillis() < deadline);
+        return null;
+    }
+
     /** 深度优先找第一个文案含 {@code needle} 的 TextView；找不到返回 null。 */
     private static TextView findText(View root, String needle) {
         if (root instanceof TextView) {
@@ -185,7 +208,7 @@ public class ChangelogTest {
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        Dialog d = ShadowAlertDialog.getLatestDialog();
+        Dialog d = awaitDialog(2000);
         assertNotNull("升级后应弹出本次更新日志", d);
         assertTrue("弹窗里应写着本版版本号",
                 containsText(d.getWindow().getDecorView(), Changelog.all().get(0).version));
@@ -199,7 +222,7 @@ public class ChangelogTest {
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        assertNull("首次安装不该弹更新日志", ShadowAlertDialog.getLatestDialog());
+        assertNull("首次安装不该弹更新日志", awaitDialog(400));
         ctl.pause().stop().destroy();
     }
 
@@ -210,7 +233,7 @@ public class ChangelogTest {
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        assertNull("同一版本再次打开不该重复弹", ShadowAlertDialog.getLatestDialog());
+        assertNull("同一版本再次打开不该重复弹", awaitDialog(400));
         ctl.pause().stop().destroy();
     }
 
@@ -221,16 +244,16 @@ public class ChangelogTest {
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
-        assertNotNull(ShadowAlertDialog.getLatestDialog());
+        Dialog first = awaitDialog(2000);
+        assertNotNull(first);
         assertEquals(installedCode(), Prefs.getLastRunVersion(ctx()));
 
         // 模拟关闭弹窗后切后台再回来
-        ShadowAlertDialog.getLatestDialog().dismiss();
+        first.dismiss();
         ShadowAlertDialog.reset();
         ctl.pause().resume();
-        ShadowLooper.idleMainLooper();
         // Robolectric 的 shadow 会留着上一个对话框的引用，这里看「是否还在显示」
-        Dialog again = ShadowAlertDialog.getLatestDialog();
+        Dialog again = awaitDialog(400);
         assertTrue("看过一次后不该再弹", again == null || !again.isShowing());
         ctl.pause().stop().destroy();
     }

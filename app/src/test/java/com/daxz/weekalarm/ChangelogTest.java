@@ -109,6 +109,31 @@ public class ChangelogTest {
         }
     }
 
+    /**
+     * 最近 20 版：每条要点不超过 45 字，一版最多四条（v0.80.4）。
+     *
+     * <p>类注释里从 v0.40.0 就写着「每条要点一行说完，一版最多三四条」，但没有测试守，
+     * 于是慢慢长回去了——2026-10-26 一查，最近 20 版里有 15 版最长那条超过 80 字，
+     * 0.80.1 那版五条加起来 520 字，一屏放不下两版。用户原话：「更新日志里的文案太长了」。
+     *
+     * <p>为什么是 45：手机上一行放得下约 22 个汉字，45 字正好两行；超过就要三行，
+     * 一版四条加起来顶满一屏。为什么只守最近 20 版：老版本没人往回翻，
+     * 而且它们的详细取舍都在 {@code docs/更新日志.md} 里，压掉反而丢线索。
+     */
+    @Test
+    public void latestEntries_stayShort() {
+        List<Changelog.Entry> all = Changelog.all();
+        for (Changelog.Entry e : all.subList(0, Math.min(20, all.size()))) {
+            assertTrue("一版最多 4 条要点，v" + e.version + " 有 " + e.points.length + " 条",
+                    e.points.length <= 4);
+            for (String p : e.points) {
+                assertTrue("每条要点不超过 45 字，v" + e.version + " 这条 " + p.length()
+                                + " 字：" + p,
+                        p.length() <= 45);
+            }
+        }
+    }
+
     /** 当前安装包的 versionCode，从 PackageManager 读，避免每发一版就来改测试。 */
     private int installedCode() {
         try {

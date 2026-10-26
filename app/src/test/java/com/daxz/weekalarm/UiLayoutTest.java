@@ -126,7 +126,20 @@ public class UiLayoutTest {
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        Dialog d = ShadowAlertDialog.getLatestDialog();
+        // 升级弹窗晚一步：MainActivity 把重排挪到后台线程（v0.73.3）后，弹窗也是那条线程
+        // runOnUiThread 过来的。单次 idleMainLooper 不保证赶在它 post 之前，慢机器上会
+        // 偶发「弹窗还没建好」——这里等它最多 2 秒，别把线程调度当成断言。
+        Dialog d = null;
+        for (int i = 0; i < 100 && d == null; i++) {
+            ShadowLooper.idleMainLooper();
+            d = ShadowAlertDialog.getLatestDialog();
+            if (d == null) {
+                try {
+                    Thread.sleep(20);
+                } catch (InterruptedException ignore) {
+                }
+            }
+        }
         assertNotNull("应弹出更新日志", d);
         Drawable bg = d.getWindow().getDecorView().getBackground();
         assertTrue("对话框背景应是圆角 shape，实际：" + bg, bg instanceof GradientDrawable);

@@ -703,65 +703,17 @@ public class SettingsActivity extends AppCompatActivity {
      * 按桌面直接放弃等于把能用的路堵死。现在不认桌面，先发请求；返回 false 才给手动路径。
      * 弹没弹框 API 没有回调，所以确认对话框里同时留一个「手动添加」出口，不让用户卡住。
      */
+    /**
+     * 「添加到桌面」：直接给三步教程（v0.84.0）。
+     *
+     * <p>原来先弹「选哪个组件」再调 {@code requestPinAppWidget}，接口报支持、调用也返回
+     * true，但小米桌面就是不弹框——用户看到「已请求添加」，桌面上什么也没发生。
+     * 一个看起来成功、实际没有效果的按钮，比一句「要从桌面加」更伤人。
+     * 所以不再尝试请求，直接把路径写清楚：三个尺寸叫什么、加完长什么样。
+     */
     private void showPinWidgetDialog() {
-        DialogKit.showPick(this,
-                getString(R.string.more_pin_widget_title),
-                "选一个组件加到桌面",
-                new String[]{"下一个闹钟（4×2）", "本月班表 · 完整（4×4）", "本月班表 · 极简（4×3）"},
-                new String[]{"只看下一次响铃", "整月班表 + 图例", "整月班表，格子更小"},
-                -1,
-                which -> {
-                    switch (which) {
-                        case 0:
-                            pinWidget(NextAlarmWidget.class, 118);
-                            break;
-                        case 1:
-                            pinWidget(MonthScheduleWidget.class, 250);
-                            break;
-                        default:
-                            pinWidget(MonthMinimalWidget.class, 200);
-                            break;
-                    }
-                });
-    }
-
-    private void pinWidget(Class<?> provider, int heightDp) {
-        android.appwidget.AppWidgetManager mgr =
-                android.appwidget.AppWidgetManager.getInstance(this);
-        if (!mgr.isRequestPinAppWidgetSupported()) {
-            showPinFallback();
-            return;
-        }
-        // 带上默认尺寸：部分启动器对 null options 直接丢弃请求。
-        // v0.67.0：高度按组件给——4×4 那两份写 110 会被系统按 4×2 摆，
-        // 固定尺寸的组件一旦初始框给小了，内容当场就被裁。
-        android.os.Bundle opts = new android.os.Bundle();
-        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
-        opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, heightDp);
-        boolean asked = mgr.requestPinAppWidget(
-                new android.content.ComponentName(this, provider), opts, null);
-        if (!asked) {
-            showPinFallback();
-            return;
-        }
-        // 请求发出去了。弹没弹框无法检测（API 无回调），所以一次说全两种可能，
-        // 并把「手动添加」做成按钮——不弹也能就地拿到路径，不用退出去找。
-        DialogKit.showMessage(this, getString(R.string.pin_confirm_title),
-                getString(R.string.pin_confirm_message),
-                "知道了", null,
-                getString(R.string.pin_manual_button), (d, w) -> showPinManualGuide());
-    }
-
-    /** 小米桌面的手动引导（v0.73.4）：说清为什么不能一键加。 */
-    private void showPinManualGuide() {
-        DialogKit.showMessage(this, getString(R.string.pin_manual_title),
-                getString(R.string.pin_manual_message));
-    }
-
-    /** 请求发出不去的兜底说明（v0.64.0）。 */
-    private void showPinFallback() {
-        DialogKit.showMessage(this, getString(R.string.pin_manual_title_plain),
-                getString(R.string.pin_manual_message_plain));
+        DialogKit.showMessage(this, getString(R.string.more_pin_widget_title),
+                getString(R.string.pin_guide_message));
     }
 
     /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */

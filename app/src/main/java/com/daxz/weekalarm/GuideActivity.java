@@ -53,7 +53,7 @@ public class GuideActivity extends AppCompatActivity {
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
-    private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
+    private TextView tvVolume, tvFade, tvVibrate, tvSnooze, tvPreNotice;
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow;
@@ -294,11 +294,18 @@ public class GuideActivity extends AppCompatActivity {
     private void bindRing() {
         tvVolume = findViewById(R.id.tv_volume);
         tvFade = findViewById(R.id.tv_fade);
+        tvVibrate = findViewById(R.id.tv_vibrate);
         tvSnooze = findViewById(R.id.tv_snooze);
         tvPreNotice = findViewById(R.id.tv_prenotice);
         findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
         findViewById(R.id.row_fade).setOnClickListener(v -> {
             Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
+            refreshRing();
+        });
+        // v0.84.0：震动搬进来。它决定「静音时还叫不叫得醒」，和音量是同一件事的两半，
+        // 原来只藏在设置页 → 更多响铃设置里。音量行在 0 时的文案也依赖它。
+        findViewById(R.id.row_vibrate).setOnClickListener(v -> {
+            Prefs.setVibrate(this, !Prefs.isVibrate(this));
             refreshRing();
         });
         // v0.40.0：这两个对话框与设置页共用同一份（PrefDialogs），
@@ -319,6 +326,7 @@ public class GuideActivity extends AppCompatActivity {
         int v = Prefs.getVolume(this);
         tvVolume.setText(PrefDialogs.volumeText(v, Prefs.isVibrate(this)));
         tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
+        if (tvVibrate != null) tvVibrate.setText(Prefs.isVibrate(this) ? "开" : "关");
         tvSnooze.setText(PrefDialogs.snoozeText(this));
         tvPreNotice.setText(PrefDialogs.preNoticeText(this));
     }

@@ -52,7 +52,7 @@
     <string name="more_week_start_default">周一</string>
     <string name="more_horizon_title">闹钟排到多远</string>
     <string name="more_horizon_default">未来 90 天</string>
-    <string name="more_calendar_content_title">日历显示内容</string>
+    <string name="more_calendar_content_title">节日与节气</string>
     <string name="more_calendar_content_default">都不显示</string>
     <string name="more_section_check">帮助与关于</string>
     <string name="more_run_status_title">运行状态</string>
@@ -65,7 +65,7 @@
     <string name="more_changelog_version_placeholder">v—</string>
     <string name="more_section_widget">数据与桌面</string>
     <string name="more_pin_widget_title">添加到桌面</string>
-    <string name="more_pin_widget_summary">选一个放上桌面；部分桌面要手动加，会教你路径</string>
+    <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→ 找「打工人闹钟」</string>
     <string name="more_export_title">导出配置</string>
     <string name="more_export_summary">把闹钟、排班、请假/加班标记、音量铃声存成一个文件</string>
     <string name="more_import_title">导入配置</string>
@@ -108,7 +108,7 @@
     <string name="help_s5_title">设置与备份</string>
     <string name="help_s5_b1">换手机：「导出配置」存成文件，新机「导入配置」，闹钟和排班一起搬过去</string>
     <string name="help_s5_b2">被系统杀后台漏响：允许自启动、加入电池优化白名单、最近任务里锁定本应用</string>
-    <string name="help_s5_b3">日历想清爽点：日历显示内容里关掉农历 / 节气 / 基督教节日</string>
+    <string name="help_s5_b3">日历想清爽点：「节日与节气」里关掉农历节日 / 节气 / 基督教节日</string>
 
     <string name="help_jump_settings">这些都在「设置 → 更多设置」里</string>
     <string name="help_jump_settings_action">打开设置 ›</string>
@@ -141,17 +141,18 @@
     <string name="holiday_checking">正在检查…</string>
     <string name="dialog_holiday_check_failed_title">在线检查未成功</string>
     <string name="dialog_run_status_title">运行状态</string>
-    <string name="pin_confirm_title">已请求添加到桌面</string>
-    <string name="pin_confirm_message">桌面弹出「添加」确认框的话，点一下组件就上去了。
+    <!-- v0.84.0：不再尝试 requestPinAppWidget（小米桌面实机无效：接口报支持，
+         调用也返回 true，桌面就是不弹框），直接给步骤。 -->
+    <string name="pin_guide_message">组件不能由 App 直接放到桌面，要从桌面加：
 
-没有弹出的话，点下面的「手动添加」，两步就能放上去。</string>
-    <string name="pin_manual_button">手动添加</string>
-    <string name="pin_manual_title">需要手动添加</string>
-    <string name="pin_manual_message">你的桌面暂时不支持从 App 里一键添加，两步就好：
+1. 长按桌面空白处
+2. 点「小部件」（有的桌面叫「添加工具」）
+3. 找「打工人闹钟」，把要的那个拖到桌面
 
-长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」，选一个放上去。</string>
-    <string name="pin_manual_title_plain">请手动添加</string>
-    <string name="pin_manual_message_plain">长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。</string>
+三个尺寸：
+4×2 下一个闹钟 — 只看下次响铃
+4×4 本月班表 · 完整 — 整月 + 图例
+4×3 本月班表 · 极简 — 格子更大</string>
 
     <!-- ===== 设置页对话框布局（v0.73.7 从内联迁入）===== -->
     <string name="dialog_horizon_title">提醒范围</string>
@@ -159,7 +160,7 @@
     <string name="dialog_horizon_90">90 天（默认）</string>
     <string name="dialog_horizon_180">180 天</string>
     <string name="dialog_horizon_365">365 天（一整年）</string>
-    <string name="dialog_calendar_content_title">日历显示内容</string>
+    <string name="dialog_calendar_content_title">节日与节气</string>
     <string name="dialog_calendar_content_message">日历格子里除了「班 / 休」，还可以显示这些名字。挑想看的，不影响闹钟排班。</string>
     <string name="dialog_calendar_content_lunar">农历节日</string>
     <string name="dialog_calendar_content_solar">二十四节气</string>

@@ -364,7 +364,10 @@ public class SettingsLayoutTest {
         ShadowLooper.idleMainLooper();
 
         android.app.Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
-        assertNotNull("点「添加到桌面」应弹出选择哪个小组件的对话框", d);
+        assertNotNull("点「添加到桌面」应弹出教程", d);
+        // v0.84.0：不再弹「选哪个组件」——小米桌面收下请求也不弹框，改成直接给步骤
+        assertTrue("应写清第一句怎么做",
+                collectText(d.getWindow().getDecorView()).contains("长按桌面空白处"));
 
         ctl.pause().stop().destroy();
     }
@@ -390,7 +393,7 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「日历显示内容」一行：三个开关合并后行还在，值跟着 Prefs 走（v0.73.7）。
+     * 「节日与节气」一行（v0.84.0 由「日历显示内容」改名）：三个开关合并后行还在，值跟着 Prefs 走（v0.73.7）。
      *
      * <p>v0.73.7 前这里是农历节日 / 二十四节气 / 基督教节日三个开关行。
      * 合并后 Prefs 三个键不动，行右侧的值要实时反映勾选。
@@ -406,7 +409,7 @@ public class SettingsLayoutTest {
         MoreSettingsActivity a = ctl.get();
 
         android.widget.TextView tv = a.findViewById(R.id.tv_calendar_content);
-        assertNotNull("应有「日历显示内容」这一行", tv);
+        assertNotNull("应有「节日与节气」这一行（v0.84.0 改名）", tv);
         assertEquals("只勾了节气，值就只写节气（短名，全名在对话框里）",
                 "节气", tv.getText().toString());
 

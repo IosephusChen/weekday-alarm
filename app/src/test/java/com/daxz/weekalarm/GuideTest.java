@@ -333,6 +333,28 @@ public class GuideTest {
     }
 
     /**
+     * 震动开关（v0.84.0）：搬进「响铃细节」，默认开，点一下切换并落盘。
+     *
+     * <p>它和音量是同一件事的两半——音量调到 0 时，文案会跟着变成「静音（仅震动）」
+     * 或「静音（不震动）」，所以两行必须放在一起看。
+     */
+    @Test
+    public void vibrateRow_togglesAndWrites() {
+        GuideActivity a = fresh();
+        a.findViewById(R.id.ring_toggle).performClick();   // v0.83.0：响铃细节默认收起
+        assertTrue("默认开", Prefs.isVibrate(ctx()));
+        assertEquals("开", text(a, R.id.tv_vibrate));
+
+        tap(a, R.id.row_vibrate);
+        assertFalse("点一下应关掉", Prefs.isVibrate(ctx()));
+        assertEquals("关", text(a, R.id.tv_vibrate));
+
+        tap(a, R.id.row_vibrate);
+        assertTrue(Prefs.isVibrate(ctx()));
+        assertEquals("开", text(a, R.id.tv_vibrate));
+    }
+
+    /**
      * 响铃细节默认收起（v0.83.0）。
      *
      * <p>四项（音量 / 渐响 / 稍后 / 响前）一次设好基本不动，摆在第一次打开的人面前

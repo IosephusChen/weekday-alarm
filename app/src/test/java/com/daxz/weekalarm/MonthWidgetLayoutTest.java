@@ -184,18 +184,21 @@ public class MonthWidgetLayoutTest {
     }
 
     /**
-     * 最长的那句文案必须放得下（v0.80.1）。
+     * 最长的那句文案必须放得下（v0.80.1，v0.80.4 换成带标签的最坏串）。
      *
-     * <p>底部这一行现在是「本月 19 天班 · 12 天休 · 下次闹钟 明天 07:30」——三段拼起来
-     * 比 v0.80.0 的「距元旦还有 67 天」更长。放不下时 `ellipsize="end"` 会默默
-     * 砍掉尾字（「下次闹钟 明天 07:3…」），桌面上看着像显示错了，而不是像省略。
-     * 所以钉住「最坏情况不折行、不省略」。
+     * <p>底部这一行是「本月 N 天班 · M 天休 · 下次闹钟 …」三段拼起来，比 v0.80.0 的
+     * 「距元旦还有 67 天」长得多。放不下时 `ellipsize="end"` 会默默砍掉尾字
+     * （「下次闹钟 明天 07:3…」），桌面上看着像显示错了，而不是像省略。
+     *
+     * <p>原来钉的串没带闹钟标签，而真实数据几乎都带——2026-10-26 补量：可用 678px，
+     * 无标签 582px、四字标签 642px、六字标签 652px（实测最坏），七字以上才会溢出。
+     * 现在钉六字标签这条，余量 26px；标签再长就该在渲染层截断标签，而不是让整行被砍。
      */
     @Test
     public void footer_worstCaseFitsWithoutEllipsis() {
         View root = inflate(R.layout.widget_week_schedule_month, 250);
         TextView stats = root.findViewById(R.id.widget_month_stats);
-        stats.setText("本月 19 天班 · 12 天休 · 下次闹钟 明天 07:30");
+        stats.setText("本月 30 天班 · 1 天休 · 下次闹钟 明天 07:30 开组会汇报");
         stats.measure(MeasureSpec.makeMeasureSpec(stats.getWidth(), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
 

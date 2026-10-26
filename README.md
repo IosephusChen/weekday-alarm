@@ -11,7 +11,7 @@
   <img src="docs/screenshots/3-ringing.jpg" width="235" alt="响铃页：滑动停止、5 分钟后再响">
 </p>
 
-<p align="center"><sub>首页 · 设置 · 响铃（截图取自 v0.85.x，与 1.0.0 界面相同）</sub></p>
+<p align="center"><sub>首页 · 设置 · 响铃</sub></p>
 
 ## 功能
 
@@ -26,8 +26,11 @@
 
 ## 下载
 
-- GitHub Releases（首个正式版本待发布）
+- **[Releases](../../releases/latest)** —— 最新版 `打工人闹钟-v1.0.0.apk`，Android 8.0 及以上
 - Gitee 镜像（待配置）
+
+> 从 v0.85.x 及更早版本升到 1.0.0 **不能覆盖安装**（换了签名证书），
+> 需要先在旧版「更多设置 → 导出配置」，卸载后装新版再「导入配置」。只此一次，之后都能覆盖。
 
 ## 权限说明（全部 11 条，逐条对得上用途）
 

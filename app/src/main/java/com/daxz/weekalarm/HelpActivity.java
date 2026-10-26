@@ -47,7 +47,7 @@ public class HelpActivity extends AppCompatActivity {
         // 原来写「设置 → 更多设置 → 使用说明」，改版就过期（v0.82.0 已经过了一次）。
         findViewById(R.id.help_jump_settings)
                 .setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
-        // 引导只在设置页里有常驻入口，这里给的是同一条路：重看 = 再走一遍那 3 页
+        // 引导只在设置页里有常驻入口，这里给的是同一条路：重看 = 再走一遍那 4 页
         findViewById(R.id.help_jump_guide)
                 .setOnClickListener(v -> startActivity(new Intent(this, GuideActivity.class)));
     }

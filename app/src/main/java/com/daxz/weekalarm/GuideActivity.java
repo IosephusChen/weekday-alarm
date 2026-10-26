@@ -24,11 +24,12 @@ import java.util.List;
 /**
  * 新手引导页（v0.23.0 初版；v0.35.0 改成「顺手把配置做完」）。
  *
- * <p>三页不再是纯讲解，而是每页做一件事：
+ * <p>四页，每页只做一件事（v0.84.1 由三页拆成四页，为的是每页都不需要滚）：
  * <ol>
  *   <li>选周休制度 —— 点哪个写哪个；大小周顺手定「本周大 / 小周」，单休顺手定「休周日 / 休周六」</li>
- *   <li>设第一个闹钟 —— 默认 07:30、仅上班日，点时间可改</li>
+ *   <li>设第一个闹钟 —— 默认 07:30、仅上班日，点时间可改；响铃细节默认收起</li>
  *   <li>权限清单 —— 实时显示已开 / 未开，点一下直接跳到对应系统页</li>
+ *   <li>当场验一下 —— 试听响铃、测锁屏，验完点「开始使用」</li>
  * </ol>
  *
  * <p>「看完」的定义也改了：v0.23.0 是拉起引导前就写标记，用户中途退出就再也看不到；
@@ -40,7 +41,10 @@ import java.util.List;
 public class GuideActivity extends AppCompatActivity {
 
     /** 页数：与 activity_guide.xml 里 ViewFlipper 的子页数量一致。 */
-    private static final int PAGES = 3;
+    private static final int PAGES = 4;
+
+    /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
+    private static final int PAGE_PERMISSIONS = 2;
 
     private ViewFlipper flipper;
     private LinearLayout dots;
@@ -617,8 +621,10 @@ public class GuideActivity extends AppCompatActivity {
             tvTimeHint.setText("改时间会直接改第一个闹钟；更多闹钟在主界面添加。");
         }
         syncModeUi();
-        goTo(PAGES - 1);
-        Toast.makeText(this, result.message + "。最后一步把权限开一下",
+        // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，
+        // 不是送去测试。用常量而不是 PAGES-1，免得下次再拆页又跑偏。
+        goTo(PAGE_PERMISSIONS);
+        Toast.makeText(this, result.message + "。下一步把权限开一下",
                 Toast.LENGTH_LONG).show();
     }
 

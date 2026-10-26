@@ -74,15 +74,15 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="84dp"
-                    android:layout_height="84dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_10"
+                    android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
                         android:layout_gravity="center"
                         android:contentDescription="日历"
                         android:src="@drawable/ic_guide_calendar" />
@@ -91,7 +91,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
+                    android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
                     android:text="你的周休制度是哪一种？"
                     android:textColor="@color/ink"
@@ -342,14 +342,14 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="84dp"
-                    android:layout_height="84dp"
-                    android:layout_marginTop="@dimen/space_10"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
                         android:layout_gravity="center"
                         android:contentDescription="闹钟"
                         android:src="@drawable/ic_guide_bell" />
@@ -358,7 +358,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
+                    android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
                     android:text="先设一个起床闹钟"
                     android:textColor="@color/ink"
@@ -379,12 +379,12 @@
                     android:id="@+id/tv_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="30dp"
+                    android:layout_marginTop="@dimen/space_12"
                     android:fontFeatureSettings="tnum"
                     android:letterSpacing="0.02"
                     android:text="07:30"
                     android:textColor="@color/ink"
-                    android:textSize="54sp"
+                    android:textSize="46sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -396,9 +396,9 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:paddingStart="18dp"
-                    android:paddingTop="@dimen/space_10"
+                    android:paddingTop="@dimen/space_6"
                     android:paddingEnd="18dp"
-                    android:paddingBottom="@dimen/space_10"
+                    android:paddingBottom="@dimen/space_6"
                     android:text="改时间"
                     android:textColor="@color/indigo"
                     android:textSize="14sp" />
@@ -407,10 +407,10 @@
                     android:id="@+id/tv_time_hint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="之后可以在主界面加更多闹钟：午休、下班、只在休息日响的都行。"
+                    android:text="之后可以在主界面加更多闹钟（午休、下班、只在休息日响的都行）。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 
@@ -421,7 +421,7 @@
                     android:id="@+id/ring_toggle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
@@ -651,6 +651,9 @@
         </ScrollView>
 
         <!-- ===================== 第 3 页：权限清单 ===================== -->
+        <!-- v0.84.1：五项并成一张卡。原来每项一张卡、卡间 10dp，五项光间隙就 40dp；
+             并成一张卡后中间用分隔线，高度省下来才放得进一屏。
+             「当场验一下」拆去第 4 页——它是「验完就走」，和「去开权限」不是同一件事。 -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -666,15 +669,15 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="84dp"
-                    android:layout_height="84dp"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_10"
+                    android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="38dp"
-                        android:layout_height="38dp"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
                         android:layout_gravity="center"
                         android:contentDescription="设置"
                         android:src="@drawable/ic_guide_tune" />
@@ -683,7 +686,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
+                    android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
                     android:text="最后，别让它哑掉"
                     android:textColor="@color/ink"
@@ -696,321 +699,376 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="前三项不开闹钟会哑，系统能检测，开了这里会打勾；后两项系统读不到状态，要自己确认。"
+                    android:text="前三项不开闹钟会哑，系统能检测，开了这里会打勾。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
-                <!-- 通知权限：关掉后没有通知栏那个「停止」按钮；响铃页与首页兜底行还能停。 -->
                 <LinearLayout
-                    android:id="@+id/perm_notif"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_10"
+                    android:layout_marginTop="@dimen/space_12"
                     android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="@dimen/space_10">
+                    android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:id="@+id/perm_notif"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="通知权限"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="通知权限"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，闹钟响时没有通知，要进 App 才能关。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_notif"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:id="@+id/perm_overlay"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，闹钟响时没有通知，要进 App 才能关。"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
 
-                        <TextView
-                            android:id="@+id/st_notif"
-                            android:layout_width="wrap_content"
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="显示悬浮窗"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，响铃时顶部不弹横幅，只能进通知栏找。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_overlay"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:id="@+id/perm_fsi"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="去开启"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
 
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="后台弹出界面"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，响铃时不会自动弹出界面。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_fsi"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启 · 进「其他权限」"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+
+                    <!-- 分档说明（v0.83.0）：三项会打勾、两项永远不会，
+                         平铺在一起会让人以为「还有两项没成功」。 -->
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="›"
+                        android:background="@color/bg"
+                        android:lineSpacingExtra="2dp"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
+                        android:text="下面两项系统读不到状态，要自己确认"
                         android:textColor="@color/sub"
-                        android:textSize="20sp" />
+                        android:textSize="11sp" />
+
+                        <LinearLayout
+                            android:id="@+id/perm_autostart"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="自启动"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，划掉 App 后闹钟到点不响。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_autostart"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:id="@+id/perm_lock"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="锁屏显示"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_lock"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启 · 同上一页"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
                 </LinearLayout>
-                <!-- 显示悬浮窗（v0.55.3）：解锁响铃时那张贴顶横幅要它才能挂上。
-                     这一项有标准 API（Settings.canDrawOverlays），能直接打勾。 -->
-                <LinearLayout
-                    android:id="@+id/perm_overlay"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_10"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="@dimen/space_10">
+            </LinearLayout>
+        </ScrollView>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+        <!-- ===================== 第 4 页：当场验一下 ===================== -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="显示悬浮窗"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/space_24"
+                android:paddingEnd="@dimen/space_24"
+                android:paddingBottom="@dimen/space_8">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，响铃时顶部不弹横幅，只能进通知栏找。"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/space_6"
+                    android:background="@drawable/bg_guide_badge">
 
-                        <TextView
-                            android:id="@+id/st_overlay"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="去开启"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                    <ImageView
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="试听"
+                        android:src="@drawable/ic_guide_bell" />
+                </FrameLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-                <!-- 后台弹出界面（v0.58.1 起指向小米权限编辑页）：真机 2×2 实测，它管「后台能不能
-                     把界面拉起来」——关掉时锁屏、解锁都不弹，只剩通知栏。开它会连带开全屏通知。
-                     「锁屏显示」与它在同一页，见下一行。 -->
-                <LinearLayout
-                    android:id="@+id/perm_fsi"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_10"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="@dimen/space_10">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="后台弹出界面"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，响铃时不会自动弹出界面，锁屏、解锁都只在通知栏躺着。"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/st_fsi"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="去开启 · 进去点「其他权限」"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-                <!-- v0.83.0：这两项读不到状态，单独起一段。
-                     五项长得一样，但结果不一样——上面三项开了会变绿，这两项永远不会，
-                     平铺在一起会让人以为「还有两项没成功」。 -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:layout_marginBottom="@dimen/space_2"
-                    android:text="这两项系统读不到状态，要自己确认"
-                    android:textColor="@color/sub"
-                    android:textSize="12sp" />
-
-                <!-- 自启动（v0.73.5 提到第一位）：国产 ROM 的后台白名单，不是 Android 权限。
-                     没有它，App 被划掉后闹钟到点广播直接被丢弃——排着，但不响。
-                     没有任何 API 能读到状态，所以这一行只写「去开启」，不给勾。 -->
-                <LinearLayout
-                    android:id="@+id/perm_autostart"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="@dimen/space_10">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="自启动"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，划掉 App 后闹钟到点不响——排着，但没声。"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/st_autostart"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="去开启"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-                <!-- 锁屏显示（v0.73.5）：真机 2×2 实测，它管「拉起来的界面能不能盖在锁屏上」——
-                     关掉时锁屏看不到、解锁才出现。和「后台弹出界面」在同一页，路径共用。
-                     没有 API 能读状态，探针结果写在状态行；没测过时不无端指责用户。 -->
-                <LinearLayout
-                    android:id="@+id/perm_lock"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_10"
-                    android:background="@drawable/bg_guide_perm"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:minHeight="58dp"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="14dp"
-                    android:paddingBottom="@dimen/space_10">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="锁屏显示"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="1dp"
-                            android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/st_lock"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="去开启 · 同上一页"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="20sp" />
-                </LinearLayout>
-
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
+                    android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
-                    android:text="开完了？当场验一下，别等明早才发现不响"
+                    android:text="当场听一声，再开始用"
                     android:textColor="@color/ink"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="这两下只验「响不响、锁屏看不看得见」，不影响正式排班。"
+                    android:textColor="@color/sub"
                     android:textSize="13sp" />
 
-                <!-- v0.36.0 / v0.73.5：两个当场测试。v0.83.0 从两个通栏按钮收成两行——
-                     它们是「验一下」，不是「下一步」，不该和主按钮抢同一个视觉层级。 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_10"
+                    android:layout_marginTop="@dimen/space_16"
                     android:background="@drawable/bg_guide_perm"
                     android:orientation="vertical"
                     android:paddingStart="@dimen/space_16"
@@ -1024,7 +1082,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:minHeight="46dp"
+                        android:minHeight="56dp"
                         android:orientation="horizontal">
 
                         <LinearLayout
@@ -1038,11 +1096,12 @@
                                 android:layout_height="wrap_content"
                                 android:text="试听响铃"
                                 android:textColor="@color/ink"
-                                android:textSize="14sp" />
+                                android:textSize="15sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
                                 android:text="响一声并弹出响铃页，点「结束测试」就停"
                                 android:textColor="@color/sub"
                                 android:textSize="11sp" />
@@ -1069,7 +1128,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:minHeight="46dp"
+                        android:minHeight="56dp"
                         android:orientation="horizontal">
 
                         <LinearLayout
@@ -1083,11 +1142,12 @@
                                 android:layout_height="wrap_content"
                                 android:text="测锁屏响铃"
                                 android:textColor="@color/ink"
-                                android:textSize="14sp" />
+                                android:textSize="15sp" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
                                 android:text="锁屏上能不能看到响铃页，当场试出来"
                                 android:textColor="@color/sub"
                                 android:textSize="11sp" />
@@ -1101,8 +1161,19 @@
                             android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="没响？回到上一步把权限开齐，再试一次。"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
             </LinearLayout>
         </ScrollView>
+
     </ViewFlipper>
 
     <!-- 页脚（v0.83.0）：两个方向键收到同一行。

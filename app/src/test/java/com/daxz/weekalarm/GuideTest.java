@@ -248,7 +248,8 @@ public class GuideTest {
 
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
-        tap(a, R.id.btn_next); // 末页 = 开始使用
+        tap(a, R.id.btn_next);
+        tap(a, R.id.btn_next); // 末页 = 开始使用（v0.84.1 起四页）
 
         List<Alarm> alarms = Prefs.getAlarms(ctx());
         assertEquals("预置的起床 / 午休两条都在，不该多出第三条", 2, alarms.size());
@@ -271,6 +272,7 @@ public class GuideTest {
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
+        tap(a, R.id.btn_next);
 
         List<Alarm> alarms = Prefs.getAlarms(ctx());
         assertEquals(1, alarms.size());
@@ -288,6 +290,7 @@ public class GuideTest {
         assertEquals("重看引导要显示已有闹钟的时间", "09:00", text(a, R.id.tv_time));
 
         a.setTime(6, 15);
+        tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
@@ -602,7 +605,7 @@ public class GuideTest {
     public void dots_matchPageCount_andLastPageSaysStart() {
         GuideActivity a = fresh();
         LinearLayout dots = a.findViewById(R.id.dots);
-        assertEquals(3, dots.getChildCount());
+        assertEquals("v0.84.1 起四页", 4, dots.getChildCount());
         assertEquals("下一步", text(a, R.id.btn_next));
         assertEquals("第一页没有「上一步」", View.INVISIBLE, visibility(a, R.id.btn_prev));
 
@@ -610,7 +613,8 @@ public class GuideTest {
         assertEquals("第二页要出现「上一步」", View.VISIBLE, visibility(a, R.id.btn_prev));
 
         tap(a, R.id.btn_next);
-        assertEquals("开始使用", text(a, R.id.btn_next));
+        tap(a, R.id.btn_next);
+        assertEquals("末页（第 4 页）才写「开始使用」", "开始使用", text(a, R.id.btn_next));
         assertEquals("末页不再有「跳过」", View.GONE, visibility(a, R.id.btn_skip));
 
         tap(a, R.id.btn_prev);
@@ -709,7 +713,9 @@ public class GuideTest {
                 ((TextView) a.findViewById(R.id.tv_time)).getText().toString());
         assertEquals("应跳到第 3 页（权限）", 2,
                 ((ViewFlipper) a.findViewById(R.id.flipper)).getDisplayedChild());
-        assertEquals("末页主按钮应变「开始使用」", "开始使用",
+        // v0.84.1：权限页不是末页了（末页是「当场验一下」），所以按钮仍是「下一步」——
+        // 开完权限要接着去验一下，不能在这里就「开始使用」
+        assertEquals("权限页的按钮仍是「下一步」", "下一步",
                 ((TextView) a.findViewById(R.id.btn_next)).getText().toString());
     }
 }

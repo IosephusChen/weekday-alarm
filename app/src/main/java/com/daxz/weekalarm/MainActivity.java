@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
 
         refreshAll();
 
-        // v0.23.0：首次安装先看 3 页新手引导。通知权限请求刻意推迟到引导关闭之后
+        // v0.23.0：首次安装先看新手引导（v0.84.1 起 4 页）。通知权限请求刻意推迟到引导关闭之后
         // （见 onResume），否则系统权限对话框会盖在引导页上，两套引导互相打架。
         if (!Prefs.isOnboardDone(this)) {
             // v0.35.0：标记改到引导页「完成 / 跳过」时才写。

@@ -18,7 +18,7 @@
   .col{width:301px}
   .col h2{font-size:13.5px;margin:0 0 2px}
   .col .hint{font-size:11.5px;color:var(--sub);height:34px;margin:0 0 8px}
-  .phone{position:relative;width:301px;height:668px;background:#f7f8fa;
+  .phone{position:relative;width:301px;height:820px;background:#f7f8fa;
          border:1px solid #cfd2d9;border-radius:16px;overflow:hidden}
   .status{height:22px;font-size:9px;color:#8a8f99;display:flex;justify-content:space-between;
           padding:0 14px;align-items:center}
@@ -41,9 +41,10 @@
   .item.tall .r{position:absolute;right:14px;top:16px}
   .item.tall .sub{font-size:10.5px;color:#9aa0aa;font-weight:400}
   .item.moved{background:var(--markbg)}
-  .item.moved::after{content:"搬上来";position:absolute;right:10px;top:6px;font-size:9px;
-                     color:var(--mark);background:#fff;border:1px solid #c9cdfb;
-                     border-radius:3px;padding:0 4px}
+  .item.moved .t::after{content:"搬上来";display:inline-block;margin-left:5px;font-size:9px;
+                        font-weight:400;color:var(--mark);background:#fff;
+                        border:1px solid #c9cdfb;border-radius:3px;padding:0 4px;
+                        position:relative;top:-1px}
   .item.renamed .t::after{content:"（改名）";font-size:9px;color:var(--mark);font-weight:400}
   .sw{width:38px;height:22px;border-radius:11px;background:#d6d9df;position:relative;flex:none}
   .sw.on{background:var(--mark)}
@@ -54,9 +55,8 @@
   .slider i{position:absolute;left:0;top:0;bottom:0;width:80%;background:var(--mark);border-radius:3px}
   .slider b{position:absolute;left:80%;top:-5px;width:16px;height:16px;margin-left:-8px;
             border-radius:50%;background:#fff;border:3px solid var(--mark)}
-  .cut{position:absolute;left:12px;right:12px;bottom:56px;border:1px dashed #e11d48;
-       border-radius:8px;color:#e11d48;font-size:10px;text-align:center;padding:5px;
-       background:repeating-linear-gradient(45deg,#fff5f7,#fff5f7 6px,#fff 6px,#fff 12px)}
+  .cut{position:absolute;left:0;right:0;bottom:0;color:#e11d48;font-size:10px;text-align:center;
+       padding:7px 12px;background:#fff;border-top:1px solid #f3c9d4}
   .sum{margin-top:8px;background:#fff;border:1px solid #d9dce3;border-radius:12px;padding:16px 18px}
   .sum h3{font-size:14px;margin:0 0 8px}
   .sum table{border-collapse:collapse;font-size:12.5px;width:100%;max-width:1060px}

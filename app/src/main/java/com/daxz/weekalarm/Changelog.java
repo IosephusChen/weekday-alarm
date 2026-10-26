@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(197, "0.85.5", "2026/10/27", "版本号只留在设置页底部",
+                    "「更新日志」行右侧的 v0.85.4 删掉，改成「查看」",
+                    "底部那行带 versionCode，反馈对得上 mapping"),
             new Entry(196, "0.85.4", "2026/10/27", "第 3 页标题去掉「最后」",
                     "引导拆成四页后，权限页不再是最后一页",
                     "「最后，别让它哑掉」→「别让它哑掉」，不承诺位置"),

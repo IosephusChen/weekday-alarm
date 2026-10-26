@@ -496,12 +496,14 @@
                                     android:layout_weight="1"
                                     android:text="@string/more_changelog_title" />
 
+                                <!-- v0.85.5：右侧不再重复版本号。主页最底下那行「版本 x.y.z (code)」
+                                     已经写全了，这里再写一遍「v0.85.4」只是同一串数字换个地方——
+                                     而它属于「动作入口」（点进去看日志），不是「当前取值」。 -->
                                 <TextView
-                                    android:id="@+id/tv_changelog_version"
                                     style="@style/SettingsValue"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/more_changelog_version_placeholder" />
+                                    android:text="@string/more_help_action" />
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>

@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
-import java.util.List;
 
 /**
  * 设置的二级页（v0.60.0）。
@@ -41,15 +40,8 @@ public class MoreSettingsActivity extends SettingsActivity {
         findViewById(R.id.sec_ring).setVisibility(ring ? View.VISIBLE : View.GONE);
         findViewById(R.id.sec_all).setVisibility(ring ? View.GONE : View.VISIBLE);
         ((TextView) findViewById(R.id.tv_title)).setText(ring ? "更多响铃设置" : "更多设置");
-        if (!ring) {
-            // v0.73.4：更新日志行右侧显示当前版本。XML 里那个 v0.29.0 是从
-            // v0.29.0 加这行起就写死的占位——从没有任何代码刷新它，用户装机
-            // 后看到「更新日志 v0.29.0」以为日志停更了四年。
-            List<Changelog.Entry> entries = Changelog.all();
-            if (!entries.isEmpty()) {
-                ((TextView) findViewById(R.id.tv_changelog_version))
-                        .setText("v" + entries.get(0).version);
-            }
-        }
+        // v0.85.5：这里原来会往「更新日志」行右侧写「v当前版本」。删了——
+        // 主页最底部已有「版本 x.y.z (versionCode)」，同一屏出现两次同一串数字，
+        // 第二次不增加任何信息；而且那一行是动作入口，右侧该写「查看」。
     }
 }

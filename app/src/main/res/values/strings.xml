@@ -62,7 +62,6 @@
     <string name="more_help_title">使用说明</string>
     <string name="more_help_action">查看</string>
     <string name="more_changelog_title">更新日志</string>
-    <string name="more_changelog_version_placeholder">v—</string>
     <string name="more_section_widget">数据与桌面</string>
     <string name="more_pin_widget_title">添加到桌面</string>
     <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→ 找「打工人闹钟」</string>

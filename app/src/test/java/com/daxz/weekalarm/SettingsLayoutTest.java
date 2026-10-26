@@ -373,23 +373,45 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「更新日志」那一行要显示当前版本号（v0.73.4）。
+     * 版本号只在主页底部出现一处（v0.85.5）。
      *
-     * <p>XML 里写死了一个「v0.29.0」，而没有任何代码去刷新它——用户装机后
-     * 看到更新日志停在四年前的版本，以为日志停更了。现在由 onCreate 动态刷。
+     * <p>v0.73.4 曾在「更新日志」行右侧也写一个「v当前版本」——当时的理由是
+     * 「一眼看出日志是不是这一版」。但主页最底下那行本来就写着完整版本，而且带
+     * versionCode；同一串数字在同一屏出现两次，第二次不告诉读的人任何新东西。
+     * 更要紧的是右侧那一格的语义：这一页里它装的是「当前取值」（周日 / 未来 90 天 /
+     * 全部显示）或「动作」（重看 / 查看）。「更新日志」是动作入口，不是取值。
+     *
+     * <p>所以右侧改成「查看」，与上面「使用说明」同一口径；底部那行保留（它带
+     * versionCode，重打包时才分得清是哪一个包）。
      */
     @Test
-    public void morePage_changelogRowShowsCurrentVersion() {
-        ActivityController<MoreSettingsActivity> ctl =
-                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
-        ShadowLooper.idleMainLooper();
-        MoreSettingsActivity a = ctl.get();
+    public void versionShownOnce_atBottomOfHome() {
+        ActivityController<SettingsActivity> ctl = openHome();
+        SettingsActivity a = ctl.get();
 
-        android.widget.TextView v = a.findViewById(R.id.tv_changelog_version);
-        assertNotNull("应有更新日志这一行", v);
-        assertEquals("v" + Changelog.all().get(0).version, v.getText().toString());
+        android.widget.TextView v = a.findViewById(R.id.tv_version);
+        assertNotNull("主页底部应有版本号", v);
+        assertTrue("应带 versionCode——同一个 versionName 可能重打过多次包，"
+                        + "只有 code 能对上 mapping。实际：" + v.getText(),
+                v.getText().toString().matches("版本 \\S+ \\(\\d+\\)"));
 
         ctl.pause().stop().destroy();
+
+        ActivityController<MoreSettingsActivity> ctl2 =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity b = ctl2.get();
+        // id 从布局里删掉了，所以这里不能写 R.id.tv_changelog_version——用名字查，
+        // 断言它为 0。比「找到但文字不对」更狠：连这个控件都不该存在。
+        assertEquals("「更新日志」行右侧不该再有版本号控件", 0,
+                ctx().getResources().getIdentifier("tv_changelog_version", "id",
+                        ctx().getPackageName()));
+        String all = collectText(b.getWindow().getDecorView());
+        assertTrue("那一行右侧应是「查看」，和「使用说明」一致", all.contains("查看"));
+        assertFalse("不该再出现 v0.85 / v0.8x 这种版本字样",
+                java.util.regex.Pattern.compile("v0\\.[0-9]").matcher(all).find());
+
+        ctl2.pause().stop().destroy();
     }
 
     /**

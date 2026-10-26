@@ -748,7 +748,13 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
     }
 
-    /** 底部版本号：方便确认手机上实际安装的版本。 */
+    /**
+     * 底部版本号：方便确认手机上实际安装的版本。
+     *
+     * <p>版本号只在这一处出现（v0.85.5）。它带 versionCode——同一个 versionName 可能
+     * 重打过多次包，只有 code 能对上 mapping，反馈问题时以它为准。二级页「更新日志」
+     * 行右侧的那个「v0.85.4」已删：同一串数字换个地方再写一遍，读的人不会多知道什么。
+     */
     private void updateVersionText() {
         try {
             android.content.pm.PackageInfo pi = getPackageManager()
@@ -757,9 +763,6 @@ public class SettingsActivity extends AppCompatActivity {
             if (v == null) return;
             v.setText("版本 " + pi.versionName + " ("
                     + PackageInfoCompat.getLongVersionCode(pi) + ")");
-            // 「更新日志」行右侧直接显示版本号，一眼看出日志是不是这一版
-            ((TextView) findViewById(R.id.tv_changelog_version))
-                    .setText("v" + pi.versionName);
         } catch (Exception ignored) {
         }
     }

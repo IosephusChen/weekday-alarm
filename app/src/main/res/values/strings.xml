@@ -66,7 +66,7 @@
     <string name="more_pin_widget_title">添加到桌面</string>
     <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→ 找「打工人闹钟」</string>
     <string name="more_export_title">导出配置</string>
-    <string name="more_export_summary">把闹钟、排班、请假/加班标记、音量铃声存成一个文件</string>
+    <string name="more_export_summary">闹钟、排班、请假/加班、响铃与日历设置存成一个文件</string>
     <string name="more_import_title">导入配置</string>
     <string name="more_import_summary">选择之前导出的文件恢复设置（会覆盖当前配置）</string>
 
@@ -128,7 +128,7 @@
     <string name="dialog_export_done_title">已导出</string>
     <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。</string>
     <string name="dialog_import_confirm_title">导入配置？</string>
-    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、音量铃声、睡前提醒。</string>
+    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、音量铃声、睡前提醒、日历显示。</string>
     <string name="import_confirm_guide_extra">包括你刚才选的班表。</string>
     <string name="import_confirm_warning">覆盖后无法撤销，当前设置不会自动备份。</string>
     <string name="import_confirm_positive">覆盖导入</string>

@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(198, "1.0.0", "2026/10/27", "正式版：功能到此冻结",
+                    "0.x 的设置与数据全部沿用，升级不用重设",
+                    "改用正式签名，以后各版都能直接覆盖安装",
+                    "1.0 起只修问题、不加功能"),
             new Entry(197, "0.85.5", "2026/10/27", "版本号只留在设置页底部",
                     "「更新日志」行右侧的 v0.85.4 删掉，改成「查看」",
                     "底部那行带 versionCode，反馈对得上 mapping"),
@@ -878,14 +882,18 @@ public final class Changelog {
         return null;
     }
 
-    /** 安装包的 versionCode；读不到返回 0。 */
-    public static int installedCode(Context c) {
-        try {
-            return (int) PackageInfoCompat.getLongVersionCode(
-                    c.getPackageManager().getPackageInfo(c.getPackageName(), 0));
-        } catch (Exception e) {
-            return 0;
-        }
+    /**
+     * 当前安装包的 versionCode（v1.0.0 起直接读 {@link BuildConfig}）。
+     *
+     * <p>原来走 {@code PackageManager.getPackageInfo}：每次判断「要不要弹升级日志」、
+     * 每次画更新日志页都要跨一次 binder，而 versionCode 在编译期就是常量。
+     * R8 会把 BuildConfig 常量内联，连一次方法调用都不剩。
+     *
+     * <p>唯一要知道的差别：动态测试框架（比如改 manifest 重打包）改的是 APK，
+     * 改不动已编译进去的常量——本项目所有测试都在同一份构建里跑，不受影响。
+     */
+    public static int installedCode() {
+        return BuildConfig.VERSION_CODE;
     }
 
     /** 更新日志页首批画多少版，以及每次追加多少版（v0.56.5）。 */

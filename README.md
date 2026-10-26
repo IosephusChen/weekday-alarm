@@ -5,7 +5,7 @@
 双休、单休（周日休 / 周六休）、大小周都支持；法定节假日与调休补班自动算进去。
 不管哪种排班，都不用再手动改闹钟。
 
-> 仓库名 / 应用名 / 图标等对外物料以最终发布为准，本文截图为占位。
+> 截图放在 `docs/screenshots/`，四个界面：首页（带日历）、月历、响铃页、设置页。
 
 ## 功能
 
@@ -47,7 +47,7 @@
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（577 条，Robolectric + JUnit）
+# 单元测试（674 条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
@@ -61,10 +61,16 @@ release 包经过 R8 混淆：线上崩溃栈要用 `app/build/outputs/mapping/r
 反混淆（`retrace`）。规则只保四样兜底（源文件名与行号、自定义 View 构造器、枚举、
 Parcelable CREATOR），见 `proguard-rules.pro`。
 
-**签名**：`app/build.gradle` 的签名配置是条件式的——本机存在 `~/.android/debug.keystore`
-才用它签；没有就产出未签名的 release 包，debug 包用 AGP 默认签名，照样能装能测。
-想自己签：在 `signingConfigs` 里加一个指向你自己 keystore 的 `release` 配置。
-**仓库不包含任何密钥文件。**
+**签名**：正式版用 RSA 4096 的自签证书（`daxz-release.jks`，有效期到 2054 年）。
+密钥与口令都不在仓库里：
+
+- 仓库根有 `keystore.properties`（已 gitignore）→ 用里面的正式签名；
+- 没有这个文件 → 回落 `~/.android/debug.keystore`，照样能构建、能跑测试；
+- 两者都没有 → 产出未签名的 release 包，debug 包走 AGP 默认签名。
+
+想自己签：在仓库根建一份 `keystore.properties`，写 `storeFile` / `storePassword` /
+`keyAlias` / `keyPassword` 四项即可，不用改 `build.gradle`。
+**仓库不包含任何密钥文件，也不需要包含。**
 
 ## 项目状态
 

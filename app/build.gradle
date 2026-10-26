@@ -10,30 +10,46 @@ android {
         applicationId "com.daxz.weekalarm"
         minSdk 26
         targetSdk 34
-        versionCode 197
-        versionName "0.85.5"
+        versionCode 198
+        versionName "1.0.0"
     }
 
-    // 签名配置（v1.63.0 起改为条件式，为公开仓库准备）：
-    // 本机有 ~/.android/debug.keystore 时用它签（作者自己的构建，覆盖安装靠它）；
-    // 别人 clone 下来没有这个文件，就什么也不配——AGP 会产出未签名的 release 包，
-    // debug 包退回 AGP 默认签名，照样能装能跑测试。想自己签：在 signingConfigs 里
-    // 加一个指向你自己 keystore 的 release 配置即可。
-    // 下面两处 "android" 是 Google 公开文档里的调试密钥通用默认值（不是秘密，
-    // 真正的密钥文件在 ~/.android/debug.keystore、不在仓库里）；要换成自己的
-    // release 签名，在 ~/.gradle/gradle.properties 里定义 RELEASE_STORE_PASSWORD /
-    // RELEASE_KEY_PASSWORD 覆盖即可，不必改这里。
-    def localKeystore = file(System.getProperty("user.home") + "/.android/debug.keystore")
-    def hasLocalKeystore = localKeystore.exists()
+    // 签名配置（v1.0.0 起用正式 keystore；v1.63.0 的「条件式」思路保留）：
+    //   1. 仓库根有 keystore.properties → 用里面的正式签名（作者本机、发布构建）
+    //   2. 没有这个文件 → 回落 ~/.android/debug.keystore（别人 clone 下来照样能构建）
+    //   3. 两者都没有 → 不配签名，AGP 出未签名 release 包，debug 走默认签名
+    // keystore.properties 已 gitignore，密码不进仓库；keystore 文件本身也不在仓库里。
+    //
+    // 为什么 1.0 换掉 debug 签名：调试证书的私钥是公开的（口令就是 android），
+    // 任何人都能签一个同包名的包去覆盖安装；而且以后想换正式签名时，
+    // 已装用户必须先卸载 —— 卸载等于设置全丢。这一步只能在发布前做。
+    def propsFile = rootProject.file("keystore.properties")
+    def ksProps = new Properties()
+    if (propsFile.exists()) {
+        propsFile.withInputStream { ksProps.load(it) }
+    }
+    def hasReleaseSigning = ksProps.getProperty("storeFile") != null
+    def localDebugKeystore = file(System.getProperty("user.home") + "/.android/debug.keystore")
+    def hasLocalKeystore = localDebugKeystore.exists()
 
     signingConfigs {
-        if (hasLocalKeystore) {
+        if (hasReleaseSigning) {
             release {
-                storeFile localKeystore
+                storeFile rootProject.file(ksProps.getProperty("storeFile"))
+                storePassword ksProps.getProperty("storePassword")
+                keyAlias ksProps.getProperty("keyAlias")
+                keyPassword ksProps.getProperty("keyPassword")
+                // v1+v2+v3 全开，保证各类安装器与低版本系统都能识别
+                enableV1Signing true
+                enableV2Signing true
+                enableV3Signing true
+            }
+        } else if (hasLocalKeystore) {
+            release {
+                storeFile localDebugKeystore
                 storePassword (project.findProperty("RELEASE_STORE_PASSWORD") ?: "android")
                 keyAlias "androiddebugkey"
                 keyPassword (project.findProperty("RELEASE_KEY_PASSWORD") ?: "android")
-                // v1+v2+v3 全开，保证各类安装器与低版本系统都能识别
                 enableV1Signing true
                 enableV2Signing true
                 enableV3Signing true
@@ -62,7 +78,7 @@ android {
 
     buildTypes {
         debug {
-            if (hasLocalKeystore) signingConfig signingConfigs.release
+            if (hasReleaseSigning || hasLocalKeystore) signingConfig signingConfigs.release
         }
         release {
             // v1.66.0：开启 R8 + 资源压缩。主代码零反射、无动态加载类，AndroidX 的
@@ -71,7 +87,7 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"),
                     "proguard-rules.pro"
-            if (hasLocalKeystore) signingConfig signingConfigs.release
+            if (hasReleaseSigning || hasLocalKeystore) signingConfig signingConfigs.release
         }
     }
 }

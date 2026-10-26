@@ -11,6 +11,9 @@ captures/
 *.jks
 *.keystore
 
+# 正式签名凭据（v1.0.0）：口令与路径，绝不入库
+keystore.properties
+
 # 系统文件
 .DS_Store
 Thumbs.db

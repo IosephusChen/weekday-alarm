@@ -384,7 +384,7 @@
                     android:letterSpacing="0.02"
                     android:text="07:30"
                     android:textColor="@color/ink"
-                    android:textSize="46sp"
+                    android:textSize="42sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -403,16 +403,11 @@
                     android:textColor="@color/indigo"
                     android:textSize="14sp" />
 
-                <TextView
-                    android:id="@+id/tv_time_hint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="之后可以在主界面加更多闹钟（午休、下班、只在休息日响的都行）。"
-                    android:textColor="@color/sub"
-                    android:textSize="12sp" />
+                <!-- v0.85.0：删掉「之后可以在主界面加更多闹钟」这一行。
+                     它是「以后再说」的信息，第一次用的人不需要；而第 2 页已经有
+                     大时间 + 改时间 + 响铃细节三块，多这一行就要滚一行（用户实测）。
+                     重看引导时「改的是已有闹钟还是新建」由那行大字本身说明——
+                     显示的就是已有闹钟的时间。 -->
 
                 <!-- 响铃细节（v0.83.0 收起来）：音量 / 渐响 / 稍后 / 响前四项，
                      一次设好基本不动。摆在第一次打开的人面前，等于还没听到闹钟响就先做四次选择——
@@ -1061,7 +1056,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="这两下只验「响不响、锁屏看不看得见」，不影响正式排班。"
+                    android:text="这三下只验「响不响、锁屏看不看得见、通知收不收得到」，不影响正式排班。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -1157,6 +1152,55 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="试一次 ›"
+                            android:textColor="@color/indigo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/line" />
+
+                    <!-- 通知测试（v0.85.0）：试听响铃也会发通知，但那条只在响铃过程中存在、
+                         还带一个全屏页——只想验「通知权限有没有给」的人，不该被迫听一遍闹钟。
+                         这一条不响、不跳页，下拉能看到就说明通。 -->
+                    <LinearLayout
+                        android:id="@+id/btn_notify_try"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="56dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="测试通知"
+                                android:textColor="@color/ink"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:text="不响铃，只看通知栏收不收得到"
+                                android:textColor="@color/sub"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="发一条 ›"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
                     </LinearLayout>

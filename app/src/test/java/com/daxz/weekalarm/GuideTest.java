@@ -8,6 +8,7 @@ import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
@@ -411,6 +412,57 @@ public class GuideTest {
         a.onResume(); // 从系统设置回来
         ShadowLooper.idleMainLooper();
         assertEquals("开了之后回来自动变「已开启」", "已开启", text(a, R.id.st_notif));
+    }
+
+    // ================= 第四页：当场验一下 =================
+
+    /** 通知测试（v0.85.0）：点一下发出一张不响的测试通知，走「测试响铃」渠道。 */
+    @Test
+    public void notifyTest_postsSilentNotification() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        // v0.85.0 起真的要过 POST_NOTIFICATIONS 这一关（lint 逼出来的显式检查），
+        // Robolectric 默认是「没授权」，所以先把权限给上
+        shadowOf((Application) ctx()).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        shadowOf(nm).setNotificationsEnabled(true);
+
+        GuideActivity a = fresh();
+        a.findViewById(R.id.btn_notify_try).performClick();
+        ShadowLooper.idleMainLooper();
+
+        Notification n = shadowOf(nm).getNotification(9401);
+        assertNotNull("应发出测试通知", n);
+        assertEquals("测试通知", n.extras.getString(Notification.EXTRA_TITLE));
+        assertEquals("走「测试响铃」渠道：低优先级，不响不跳页",
+                App.CHANNEL_TEST, n.getChannelId());
+    }
+
+    /** 通知没开时不发：提示去开权限，别发一条用户自己看不到的通知。 */
+    @Test
+    public void notifyTest_refusesWhenNotificationsOff() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf(nm).setNotificationsEnabled(false);
+
+        GuideActivity a = fresh();
+        a.findViewById(R.id.btn_notify_try).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertNull("权限没开时不该发", shadowOf(nm).getNotification(9401));
+    }
+
+    /**
+     * 第 2 页不要再长出「之后可以在主界面加更多闹钟」那一行（v0.85.0）。
+     *
+     * <p>用户实测 0.84.1 第 2 页「打开折叠后还要滚一行」，收掉的就是它：
+     * 那是「以后再说」的信息，而这一页已经有 大时间 + 改时间 + 响铃细节 三块。
+     * 这条断言的是「它真的没了」——不是隐藏，是删掉：隐藏也会占一次布局计算的功夫，
+     * 而且下次有人「顺手」把它设回 VISIBLE，就又长回来了。
+     */
+    @Test
+    public void timeHintRow_isGone() {
+        assertEquals("这一行应该已经被删掉", 0, ctx().getResources()
+                .getIdentifier("tv_time_hint", "id", ctx().getPackageName()));
     }
 
     /**

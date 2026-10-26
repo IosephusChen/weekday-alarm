@@ -48,7 +48,7 @@ public class GuideActivity extends AppCompatActivity {
 
     private ViewFlipper flipper;
     private LinearLayout dots;
-    private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime, tvTimeHint;
+    private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
     /** 导入旧备份（v0.57.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSingleDay;
@@ -80,7 +80,6 @@ public class GuideActivity extends AppCompatActivity {
         btnImport = findViewById(R.id.btn_import);
         importLauncher = BackupImporter.register(this, this::onImportedFromBackup, true);
         tvTime = findViewById(R.id.tv_time);
-        tvTimeHint = findViewById(R.id.tv_time_hint);
         rowWeekBig = findViewById(R.id.row_weekbig);
         optBig = findViewById(R.id.opt_big);
         optSmall = findViewById(R.id.opt_small);
@@ -123,7 +122,7 @@ public class GuideActivity extends AppCompatActivity {
         if (!existing.isEmpty()) {
             hour = existing.get(0).hour;
             minute = existing.get(0).minute;
-            tvTimeHint.setText("改时间会直接改第一个闹钟；更多闹钟在主界面添加。");
+
         }
 
         syncModeUi();
@@ -391,6 +390,7 @@ public class GuideActivity extends AppCompatActivity {
         // v0.73.5：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
         // 真机 2×2 实测确认；探针只验「锁屏上能不能看到响铃页」，不碰业务。
         findViewById(R.id.btn_lock_try).setOnClickListener(v -> showLockScreenHint());
+        findViewById(R.id.btn_notify_try).setOnClickListener(v -> tryNotify());
     }
 
     /**
@@ -422,6 +422,46 @@ public class GuideActivity extends AppCompatActivity {
         full.putExtra(AlarmActivity.EXTRA_TEST, true);
         full.putExtra(AlarmActivity.EXTRA_LABEL, "试听");
         startActivity(full);
+    }
+
+    /**
+     * 通知测试（v0.85.0）：发一条不响的测试通知。
+     *
+     * <p>试听响铃其实也会发通知，但那条只在响铃过程中存在，还带一个全屏页——
+     * 只想验「通知权限有没有给」的人，不该被迫听一遍闹钟再手动关掉。
+     * 这条不响、不跳页：下拉能看到就说明通。
+     */
+    private void tryNotify() {
+        // 两道都要过：POST_NOTIFICATIONS 是「授权」，areNotificationsEnabled 还包含
+        // 用户在系统里把本应用的通知总开关关掉的情况。lint 只认 checkSelfPermission。
+        boolean granted = android.os.Build.VERSION.SDK_INT < 33
+                || ContextCompat.checkSelfPermission(this,
+                        android.Manifest.permission.POST_NOTIFICATIONS)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        if (!granted || !NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            Toast.makeText(this, "通知权限还没开，先回上一页点「通知权限」", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent open = new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        android.app.PendingIntent pi = android.app.PendingIntent.getActivity(this, 91, open,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                        | android.app.PendingIntent.FLAG_IMMUTABLE);
+        androidx.core.app.NotificationCompat.Builder nb =
+                new androidx.core.app.NotificationCompat.Builder(this, App.CHANNEL_TEST)
+                        .setSmallIcon(R.drawable.ic_notification)
+                        .setContentTitle("测试通知")
+                        .setContentText("能看到这条，说明通知权限正常。点它可回到 App。")
+                        .setContentIntent(pi)
+                        .setColor(ContextCompat.getColor(this, R.color.indigo))
+                        .setAutoCancel(true);
+        try {
+            NotificationManagerCompat.from(this).notify(9401, nb.build());
+            Toast.makeText(this, "已发出，下拉通知栏看看", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            // 个别 ROM 会因「通知总开关」拒绝；这里不静默吞掉，给一句人话
+            Toast.makeText(this, "系统拒绝了这条通知，检查一下通知权限", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void refreshPermissions() {
@@ -618,7 +658,7 @@ public class GuideActivity extends AppCompatActivity {
             hour = alarms.get(0).hour;
             minute = alarms.get(0).minute;
             updateTimeText();
-            tvTimeHint.setText("改时间会直接改第一个闹钟；更多闹钟在主界面添加。");
+
         }
         syncModeUi();
         // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，

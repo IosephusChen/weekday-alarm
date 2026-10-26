@@ -111,6 +111,14 @@
             android:label="更新日志"
             android:parentActivityName=".MainActivity" />
 
+        <!-- 关于（v0.87.1）：版本、源码、许可、免责、隐私、崩溃日志导出。
+             闹钟类应用必须写清「不保证一定响」，这一页是它的落点。 -->
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="关于"
+            android:parentActivityName=".MainActivity" />
+
         <service
             android:name=".AlarmService"
             android:exported="false"
@@ -187,9 +195,11 @@
                 android:resource="@xml/month_minimal_widget_info" />
         </receiver>
 
+        <!-- v0.87.1：exported 改 false。系统广播（开机 / 时区 / 改时间 / 覆盖安装）由系统发出，
+             不受 exported 限制；原来设 true 等于任何 App 都能显式启动它、反复触发全量重排。 -->
         <receiver
             android:name=".BootReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

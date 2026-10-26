@@ -173,8 +173,11 @@ public class App extends Application {
 
     /**
      * 崩溃日志自捕获：把未捕获异常的完整栈写到 App 外部 files 目录
-     * （/sdcard/Android/data/io.github.iosephuschen.weekdayalarm/files/crash-*.txt，普通用户用
-     * 文件管理器即可看到），写完后仍按系统默认行为闪退——不吞异常。
+     * （/sdcard/Android/data/io.github.iosephuschen.weekdayalarm/files/crash-*.txt）。
+     *
+     * <p>v0.87.1 修正：这里原来写着「普通用户用文件管理器即可看到」——Android 11 起不对，
+     * 那个目录连系统文件管理器都进不去。所以「关于」页加了「导出崩溃日志」，
+     * 把文件合并成一份让用户自己选去处。写完之后仍按系统默认行为闪退——不吞异常。
      * 用于定位只在特定 ROM 上出现的崩溃（MIUI 等），不改变原有崩溃语义。
      */
     private void installCrashLogger() {

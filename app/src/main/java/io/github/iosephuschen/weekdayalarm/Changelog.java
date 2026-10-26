@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(201, "0.87.1", "2026/10/27", "补「关于」页：免责声明与源码入口",
+                    "设置 → 更多设置 → 关于：源码、许可、免责、隐私都在这",
+                    "崩溃日志现在能导出了——原来写了也拿不到",
+                    "导入配置改成后台读文件，从网盘选文件不再卡界面"),
             new Entry(200, "0.87.0", "2026/10/27", "换英文名：Weekday Alarm",
                     "包名改为 io.github.iosephuschen.weekdayalarm",
                     "这是另一个 App，要从旧版导出配置后再重装导入",

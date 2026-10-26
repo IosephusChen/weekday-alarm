@@ -62,6 +62,7 @@
     <string name="more_help_title">使用说明</string>
     <string name="more_help_action">查看</string>
     <string name="more_changelog_title">更新日志</string>
+    <string name="more_about_title">关于</string>
     <string name="more_section_widget">数据与桌面</string>
     <string name="more_pin_widget_title">添加到桌面</string>
     <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→ 找「打工人闹钟」</string>
@@ -115,6 +116,34 @@
     <string name="help_jump_guide_action">去查看 ›</string>
     <string name="help_footer">说明随版本更新 · 有不清楚的地方，去设置里逐项看一遍比翻说明快</string>
 
+
+    <!-- ===== 关于页（v0.87.1）=====
+         1.0 前补的门面：版本、源码、许可、免责、隐私、崩溃日志。
+         免责声明是闹钟类 App 最该写清楚的一条——系统策略能让它不响，
+         不写等于默认承诺「一定响」。 -->
+    <string name="about_title">关于</string>
+    <string name="about_app_name">打工人闹钟</string>
+    <string name="about_app_name_en">Weekday Alarm</string>
+    <string name="about_source">源代码</string>
+    <string name="about_source_value">GitHub ›</string>
+    <string name="about_license">开源许可</string>
+    <string name="about_license_value">MIT ›</string>
+    <string name="about_disclaimer">免责声明</string>
+    <string name="about_privacy">隐私说明</string>
+    <string name="about_export_crash">导出崩溃日志</string>
+    <string name="about_export_crash_value">发给开发者 ›</string>
+    <string name="about_footer">用 Java 写的，没有第三方依赖\nMIT License · 无账号 · 无统计 · 无广告</string>
+
+    <string name="about_license_body">本应用以 MIT 许可发布，源码公开在 GitHub，可以自由使用、修改、分发。\n\n使用了 AndroidX（Apache License 2.0）。Robolectric 只在开发期跑单元测试，不打包进安装包。\n\n完整许可文本见仓库根目录的 LICENSE 文件。</string>
+
+    <string name="about_disclaimer_body">本应用通过系统闹钟接口触发提醒，实际能否响铃还取决于系统的后台管理策略、厂商省电设置与权限状态。\n\n重要场合（考试、航班、面试、就医）请另设一个备用闹钟。\n\n所有数据只存在本机：不上传、不备份到云端。卸载应用或清除数据即永久丢失，换机前请先用「导出配置」存一份。</string>
+
+    <string name="about_privacy_body">本应用不收集任何个人信息：没有账号、没有统计 SDK、没有广告、没有设备指纹。\n\n唯一的网络请求是从 GitHub 拉取节假日数据，只带版本号作标识，不携带任何设备信息或使用记录。\n\n闹钟、班表、请假加班记录全部存在本机，只有你自己能看到。导出的配置文件也由你决定放在哪里、给谁。</string>
+
+    <string name="about_crash_none">还没有崩溃记录。\n\n应用崩溃时会把调用栈写到本机，方便反馈问题时带上——现在这里空的，说明它一直好好活着。</string>
+    <string name="about_crash_done">崩溃日志已导出。把它发到 GitHub Issues 即可。</string>
+    <string name="about_crash_failed">导出失败，换一个位置再试。</string>
+
     <!-- ===== 设置页对话框与提示（v0.73.7 从 Java 字面量迁入）===== -->
     <string name="toast_no_file_manager_export">没有可用的文件管理器，无法导出</string>
     <string name="toast_no_file_manager_import">没有可用的文件管理器，无法导入</string>
@@ -126,7 +155,7 @@
          导出完成从 Toast 升级成小结对话框，导入确认从一大段文字改成
          「一句说明 + 摘要信息行 + 警告」。文案都在这里，不在 Java 里。 -->
     <string name="dialog_export_done_title">已导出</string>
-    <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。</string>
+    <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。\n\n文件里有你的请假 / 加班日期，发给别人前留意。</string>
     <string name="dialog_import_confirm_title">导入配置？</string>
     <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、音量铃声、睡前提醒、日历显示。</string>
     <string name="import_confirm_guide_extra">包括你刚才选的班表。</string>

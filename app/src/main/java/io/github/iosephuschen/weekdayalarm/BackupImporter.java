@@ -47,23 +47,33 @@ public final class BackupImporter {
         return activity.registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(), uri -> {
                     if (uri == null) return;      // 用户取消
-                    String json = readText(activity, uri);
-                    if (json == null) {
-                        Toast.makeText(activity, "读取文件失败，换一个文件试试",
-                                Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    ConfigBackup.Result check = ConfigBackup.validate(json);
-                    if (!check.ok) {
-                        DialogKit.showMessage(activity, "这个文件不能导入", check.message);
-                        return;
-                    }
-                    DialogKit.showMessage(activity,
-                            activity.getString(R.string.dialog_import_confirm_title),
-                            confirmBody(activity, json, fromGuide),
-                            activity.getString(R.string.import_confirm_positive),
-                            (d, w) -> importNow(activity, json, callback),
-                            activity.getString(R.string.dialog_cancel), null);
+                    // v0.87.1：读文件挪到后台线程。本地文件只有几 KB，主线程也无所谓；
+                    // 但用户从网盘 / 云盘选文件时，SAF 会先把文件下载下来——下载期间主线程
+                    // 卡住就是 ANR，而它偏偏发生在刚点完「导入」的那一刻，用户只会觉得
+                    // 「这 App 卡死了」。上限 512KB 的读法不变，只是换了线程。
+                    new Thread(() -> {
+                        String json = readText(activity, uri);
+                        ConfigBackup.Result check =
+                                json == null ? null : ConfigBackup.validate(json);
+                        activity.runOnUiThread(() -> {
+                            if (activity.isFinishing() || activity.isDestroyed()) return;
+                            if (json == null) {
+                                Toast.makeText(activity, "读取文件失败，换一个文件试试",
+                                        Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            if (!check.ok) {
+                                DialogKit.showMessage(activity, "这个文件不能导入", check.message);
+                                return;
+                            }
+                            DialogKit.showMessage(activity,
+                                    activity.getString(R.string.dialog_import_confirm_title),
+                                    confirmBody(activity, json, fromGuide),
+                                    activity.getString(R.string.import_confirm_positive),
+                                    (d, w) -> importNow(activity, json, callback),
+                                    activity.getString(R.string.dialog_cancel), null);
+                        });
+                    }, "backup-import-read").start();
                 });
     }
 

@@ -68,8 +68,6 @@ public final class HolidayUpdater {
 
     /** 最近一次失败的可读原因（成功时为空串），用于给用户具体提示。 */
     private static volatile String lastFailure = "";
-    /** 最近一次失败是否值得重试（域名解析失败重试也没用，超时则值得重试）。 */
-    private static volatile boolean lastFailureRetryable = false;
 
     public enum Result {
         /** 拉到了新数据并已合入。 */
@@ -138,7 +136,6 @@ public final class HolidayUpdater {
      */
     public static synchronized Result checkBlocking(Context ctx) {
         lastFailure = "";
-        lastFailureRetryable = false;
 
         int thisYear = LocalDate.now().getYear();
         boolean anyOk = false;
@@ -226,7 +223,6 @@ public final class HolidayUpdater {
         // 两个源都说「没有这个文件」= 该年份确实还没发布，不是网络故障
         if (anyNotFound) return Result.ALREADY_LATEST;
         lastFailure = year + " 年数据获取失败（" + lastErr + "）";
-        lastFailureRetryable = true;
         return Result.FAILED;
     }
 

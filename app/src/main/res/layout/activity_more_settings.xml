@@ -507,6 +507,40 @@
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
+
+                            <!-- 关于（v0.87.1）：版本、源码、许可、免责、隐私、崩溃日志都在这。
+                                 1.0 前补——原来只有主页底部一行版本号，别人想报问题都不知道去哪。 -->
+                            <View style="@style/SettingsDivider" />
+                            <LinearLayout
+                                android:id="@+id/row_about"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="@dimen/space_16"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="@dimen/space_10"
+                                android:paddingBottom="@dimen/space_10">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/more_about_title" />
+
+                                <TextView
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/more_help_action" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
             </LinearLayout>
 
             <!-- 数据与桌面（v0.82.0 由「桌面小组件」+「备份与恢复」合并）：

@@ -160,6 +160,8 @@ public class SettingsActivity extends AppCompatActivity {
         bind(R.id.row_onboard, v -> startActivity(new Intent(this, GuideActivity.class)));
         // v0.29.0：更新日志——每版改了什么都能翻，不联网
         bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
+        // v0.87.1：关于——版本、源码、许可、免责、隐私、崩溃日志导出
+        bind(R.id.row_about, v -> startActivity(new Intent(this, AboutActivity.class)));
         bind(R.id.row_pin_widget, v -> showPinWidgetDialog());
         // v0.73.4：「本月班表显示闹钟」开关已删——v0.70.1 起闹钟并进标题行不再挤
         // 周次，开关的存在理由没了，用户反馈「没必要」。现在恒定显示，与 4×2 同口径。

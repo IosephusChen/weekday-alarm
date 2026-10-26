@@ -113,9 +113,13 @@ public final class PrefDialogs {
     /**
      * 提前提醒对话框：关闭 / 5 / 10 / 15 / 30 分钟 / 1 小时。
      *
-     * <p>v1.70.0 换成{@link DialogKit#showGroupPick} 单选卡片（自绘 RadioGroup
-     * {@code dialog_pre_notice} 删除）。确定才写 Prefs 并重排——
-     * v1.18.2 修复：提前通知闹钟与主闹钟配对注册，改了提前量必须重排才生效。
+     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 单选卡片（自绘 RadioGroup
+     * {@code dialog_pre_notice} 删除）。
+     *
+     * <p>v1.71.8 从「选完按确定」改成「点一项即生效并关窗」（{@link DialogKit#showPick}）：
+     * 它只有一组选项，不需要二次确认；而同组的睡前提醒早就是「点即生效」，
+     * 两个弹窗挨着打开却是两套规则，用户会觉得哪个都不顺手。
+     * 提前通知闹钟与主闹钟配对注册，改了提前量必须重排才生效（v1.18.2）。
      */
     public static void showPreNotice(Context c, Runnable onChanged) {
         int cur = Prefs.getPreNoticeMinutes(c);
@@ -127,13 +131,12 @@ public final class PrefDialogs {
             }
         }
         if (cur > 60) checked = PRE_NOTICE_ITEMS.length - 1;
-        DialogKit.showGroupPick(c,
+        DialogKit.showPick(c,
                 c.getString(R.string.dialog_pre_notice_title),
                 c.getString(R.string.dialog_pre_notice_message) + "\n" + PRE_NOTICE_TIP,
-                new DialogKit.Group[]{
-                        new DialogKit.Group(null, PRE_NOTICE_ITEMS, checked)                },
+                PRE_NOTICE_ITEMS, checked,
                 picked -> {
-                    Prefs.setPreNoticeMinutes(c, PRE_NOTICE_VALUES[picked[0]]);
+                    Prefs.setPreNoticeMinutes(c, PRE_NOTICE_VALUES[picked]);
                     Reschedule.run(c, onChanged);
                 });
     }

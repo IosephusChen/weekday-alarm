@@ -15,7 +15,6 @@ import android.content.Intent;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -98,9 +97,10 @@ public class PreNoticeTest {
     /**
      * 设置页的提前提醒对话框要有「提前 1 小时」，且存进去的是 60。
      *
-     * <p>v1.70.0：弹窗换成 {@link DialogKit#showGroupPick} 单选卡片（程序化建视图，
-     * 没有布局可 inflate），改成在卡片列表里按文案找卡、点它、再按「确定」。
-     * 盯的行为没变：档位在、点下去存对值。
+     * <p>v1.70.0：弹窗换成单选卡片（程序化建视图，没有布局可 inflate），
+     * 改成在卡片列表里按文案找卡。
+     * v1.71.8：从「选完按确定」改成「点一项即生效并关窗」——它只有一组选项，
+     * 不需要二次确认，而同组的睡前提醒早就是点即生效。
      */
     @Test
     public void preNoticeDialog_hasOneHourOption() {
@@ -118,10 +118,9 @@ public class PreNoticeTest {
         assertNotNull("缺少「提前 1 小时」档位", hour);
 
         hour.performClick();
-        ((AlertDialog) d).getButton(AlertDialog.BUTTON_POSITIVE).performClick();
-        // 对话框按钮的点击经 Handler 派发，要让主线程跑一轮才会执行回调
         ShadowLooper.idleMainLooper();
         assertEquals("选「提前 1 小时」应存成 60 分钟", 60, Prefs.getPreNoticeMinutes(ctx()));
+        assertFalse("点一项就该关窗（不再有确定按钮）", d.isShowing());
         ctl.pause().stop().destroy();
     }
 

@@ -7,7 +7,7 @@ import android.content.Intent;
 import java.time.LocalDate;
 
 /**
- * 通知栏「稍后再响」卡片上的「取消」按钮（v1.38.0）。
+ * 通知栏「稍后再响」卡片上的「取消」按钮（v0.53.1）。
  *
  * <p>单独一个接收器，是因为它要做的既不是「关闭这次闹钟」（{@link PreNoticeReceiver}），
  * 也不是「明天请假」（{@link BedtimeReceiver}）：只撤掉待触发的那一次小睡。

@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 /**
  * 排班计算（纯逻辑，无 Android 依赖，可单测）。
  *
- * <p>v1.22 起不再只服务「大小周」，而是支持四种周休制度：
+ * <p>v0.27.0 起不再只服务「大小周」，而是支持四种周休制度：
  * <ul>
  *   <li>{@link Mode#BIG_SMALL} 大小周：一周双休、一周单休，14 天循环</li>
  *   <li>{@link Mode#DOUBLE_REST} 双休：每周六、周日都休</li>
@@ -39,7 +39,7 @@ public final class WeekSchedule {
         }
     }
 
-    /** 周休制度（v1.22）。顺序即设置页对话框的顺序。 */
+    /** 周休制度（v0.27.0）。顺序即设置页对话框的顺序。 */
     public enum Mode {
         BIG_SMALL("大小周"),
         DOUBLE_REST("双休"),
@@ -99,7 +99,7 @@ public final class WeekSchedule {
     /**
      * 日期所在「自然周（周一 ~ 周日）」的周六。
      *
-     * <p>v1.22.1 修正：旧实现用 ISO 周（周日归属下一周），于是每个周日
+     * <p>v0.27.1 修正：旧实现用 ISO 周（周日归属下一周），于是每个周日
      * {@code saturdayOf(周日)} 会跳到下周六，界面上「本周是大周 / 小周」和日历里
      * 这一行的班休对不上（周日在大周的格里，标签却说小周）。大小周以周六为切换点，
      * 周日理应属于刚过去的那个周六所在的周。
@@ -108,7 +108,7 @@ public final class WeekSchedule {
         return d.plusDays(5L - (d.getDayOfWeek().getValue() - 1L));
     }
 
-    // ================= 一周开始日（v1.22.2，仅影响显示）=================
+    // ================= 一周开始日（v0.28.0，仅影响显示）=================
 
     private static final String[] LETTERS_MON = {"一", "二", "三", "四", "五", "六", "日"};
     private static final String[] LETTERS_SUN = {"日", "一", "二", "三", "四", "五", "六"};

@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.time.LocalDate;
 
 /**
- * 提前提醒弹窗（v1.23）。
+ * 提前提醒弹窗（v0.31.0）。
  *
  * <p>由 {@link PreNoticeReceiver} 通过全屏 intent 拉起：锁屏、息屏或正在用别的 App 时
  * 直接出现在最上层，告诉用户「还有多久响铃」，并给出「关闭这次响铃」的入口。
@@ -56,7 +56,7 @@ public class PreNoticeActivity extends AppCompatActivity {
 
         TextView title = findViewById(R.id.tv_pre_title);
         TextView sub = findViewById(R.id.tv_pre_sub);
-        // v1.40.0：打开这一刻现算剩余时间。extra 里的 minutes 是「排程时的提前量」，
+        // v0.54.0：打开这一刻现算剩余时间。extra 里的 minutes 是「排程时的提前量」，
         // 补发路径下已经过时（4:23 说「还有 1 小时」，闹钟 4:24 就响）；
         // 而且从通知栏点进来时可能已经过了几分钟，重新算才对得上。
         minutes = PreNoticeReceiver.actualMinutes(date, timeText, minutes);
@@ -74,7 +74,7 @@ public class PreNoticeActivity extends AppCompatActivity {
         });
     }
 
-    /** 措辞与通知栏共用一份（v1.37.0 挪到 {@link PreNoticeReceiver}），两边不会说出两种日期。 */
+    /** 措辞与通知栏共用一份（v0.53.0 挪到 {@link PreNoticeReceiver}），两边不会说出两种日期。 */
     private String dayWord(LocalDate d) {
         return PreNoticeReceiver.dayWord(d);
     }

@@ -11,16 +11,16 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 七格班表的算与画（v1.53.0）。
+ * 七格班表的算与画（v0.71.0）。
  *
  * <p>这段原来长在 {@code WeekScheduleWidget} 里。那个类同时干两件事：既是桌面上的
  * 4×2 本周班表组件，又是整月卡、闹钟卡共用的渲染工具——{@link #computeModel} 算七格，
  * {@link #fillWeekCells} 把格子填进任意布局。
  *
- * <p>v1.53.0 用户要求删掉 4×2 本周班表：组件没了，但工具还得用——4×2 闹钟卡的七格
+ * <p>v0.71.0 用户要求删掉 4×2 本周班表：组件没了，但工具还得用——4×2 闹钟卡的七格
  * 靠它。所以把工具部分单独搬到这里，组件类整个删除。
  *
- * <p>v1.71.9：4×4 底部那两个请假按钮删了（{@code bindAction} 随之删除），
+ * <p>v0.80.0：4×4 底部那两个请假按钮删了（{@code bindAction} 随之删除），
  * 这条链路只剩「算七格 + 填格子」。
  *
  * <p>与 App 内日历完全同源：同样走 {@link WeekSchedule#dayType} + 个人请假/加班标记，
@@ -74,7 +74,7 @@ final class WeekWidgetRender {
         }
     }
 
-    /** 计算本周 7 天的展示内容（按设置的一周开始日排列，v1.22.2）。 */
+    /** 计算本周 7 天的展示内容（按设置的一周开始日排列，v0.28.0）。 */
     static WeekModel computeModel(Context ctx) {
         LocalDate today = LocalDate.now();
         // 与 App 内日历同一个设置：周一起始或周日起始，只换列顺序，班 / 休不变
@@ -98,7 +98,7 @@ final class WeekWidgetRender {
         }
         // 标题取显示周的最后一天（周六）：周一 / 周日起始下都落在同一周，不会差一周
         String title = WeekSchedule.describe(rule, start.plusDays(6));
-        // v1.52.0：原来这里写死「闹钟已开启」，闹钟全关也照样这么显示。
+        // v0.70.1：原来这里写死「闹钟已开启」，闹钟全关也照样这么显示。
         // 与整月变体共用同一句状态，桌面上几张卡不会各说各话。
         String sub = Widgets.alarmStatusText(ctx);
 
@@ -106,7 +106,7 @@ final class WeekWidgetRender {
     }
 
     /**
-     * 把七格填进任意布局（v1.49.12）。
+     * 把七格填进任意布局（v0.66.0）。
      *
      * <p>本来这段只服务 4×2 的班表组件。4×4 的「闹钟 + 本周」合并版也要同一批格子，
      * 抽出来一份，两边的 id 数组因此必须一致（day_0..6 / label_0..6 / hl_0..6）。

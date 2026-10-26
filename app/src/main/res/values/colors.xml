@@ -2,8 +2,8 @@
 <resources>
     <color name="indigo">#4F46E5</color>
     <color name="indigo_dark">#4338CA</color>
-    <!-- 桌面图标专用底色（v1.69.0）。**故意不随 values-night 切换**：
-         启动器是系统 surface，资源解析走夜间配置——v1.69.0 之前图标背景直接引用
+    <!-- 桌面图标专用底色（v0.76.1）。**故意不随 values-night 切换**：
+         启动器是系统 surface，资源解析走夜间配置——v0.76.1 之前图标背景直接引用
          @color/indigo，而它在 values-night 里被提亮成 #818CF8（浅紫），
          深夜色壁纸上整个图标发白，用户反馈「像变透明了」。
          App 内界面该提亮提亮（indigo 的夜间版照留），图标这块必须日夜一个色。 -->
@@ -14,15 +14,15 @@
     <color name="card">#FFFFFF</color>
     <color name="bg">#F4F5FB</color>
     <color name="line">#E7E9F3</color>
-    <!-- 引导页「已选中」选项卡的底（v1.39.0）。
+    <!-- 引导页「已选中」选项卡的底（v0.53.2）。
          以前写死在 bg_guide_option.xml 里是 #EEF0FE（近白），
          而卡片文字用的是 @color/ink —— 深色模式下 ink 变近白，
          白字压白底，选中那一项等于消失了。 -->
     <color name="guide_option_selected">#EEF0FE</color>
     <color name="section_bg">#F7F8FD</color>
-    <!-- 响铃横幅（v1.43.0）：深色半透明卡，白天夜里都用这一张。
+    <!-- 响铃横幅（v0.55.0）：深色半透明卡，白天夜里都用这一张。
 
-         v1.42.0 是暖桃色，用户看过后要的是「透明感，和其他通知栏一样」。
+         v0.54.2 是暖桃色，用户看过后要的是「透明感，和其他通知栏一样」。
          真模糊拿不到（第三方悬浮窗基本吃不到系统跨窗口模糊，见 FloatingAlarm 注释），
          所以用「深色 + 88% 不透明」近似通知栏那种浮在内容之上的观感：
          底下透出一点点壁纸，但字仍然压得住。
@@ -38,12 +38,12 @@
     <color name="float_btn_outline_line">#B3FFFFFF</color>   <!-- 白 70% -->
     <color name="float_stop_bg">#7C3AED</color>              <!-- 实色紫 -->
     <color name="white">#FFFFFFFF</color>
-    <!-- 语义色（v1.28）：删除 / 危险操作与「已开启」状态。
+    <!-- 语义色（v0.43.0）：删除 / 危险操作与「已开启」状态。
          以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，
          深色模式下 #DC2626 / #16A34A 压在 #1C1F35 卡片上对比度只有 3:1 左右。 -->
     <color name="danger">#DC2626</color>
     <color name="success">#16A34A</color>
-    <!-- 危险操作的淡底（v1.71.2）：删除按钮用它托底，不再是白底红字 -->
+    <!-- 危险操作的淡底（v0.77.0）：删除按钮用它托底，不再是白底红字 -->
     <color name="danger_soft">#FDF1F1</color>
 
     <!-- ===== 日历格子与图例语义色（日间）=====
@@ -70,7 +70,7 @@
     <color name="day_vacation_stroke">#DDD6FE</color>
     <color name="day_vacation_text">#7C3AED</color>
 
-    <!-- 个人加班（v1.15）：橙色，与调休补班（红）明确区分 -->
+    <!-- 个人加班（v0.13.0）：橙色，与调休补班（红）明确区分 -->
     <color name="day_overtime_bg">#FFEDD5</color>
     <color name="day_overtime_stroke">#FDBA74</color>
     <color name="day_overtime_text">#C2410C</color>
@@ -82,9 +82,9 @@
     <!-- 非当月格子数字 -->
     <color name="day_dim_text">#C9CEED</color>
 
-    <!-- ===== 紫色卡片渐变（v1.56.0）=====
+    <!-- ===== 紫色卡片渐变（v0.73.1）=====
          小部件根背景、首页「今日状态」卡、响铃页整屏共用同一套紫。
-         v1.56.0 之前它们直接引用 @color/indigo / @color/violet，而这两个色在
+         v0.73.1 之前它们直接引用 @color/indigo / @color/violet，而这两个色在
          values-night 里被提亮成 indigo-400 / violet-400——于是深色模式下
          三张卡一起变成淡粉紫，压在深色壁纸上发灰，用户截图反馈「不好看」，
          要求「和浅色一样就行」。
@@ -93,7 +93,7 @@
          深浅模式下都该是同一个紫。所以这三个色故意不进 values-night，
          并在 ColorTokenTest.NIGHTLESS 里登记。
 
-         注意别把这些值又「顺手」改成引用 indigo / violet——那等于改回 v1.55.x。 -->
+         注意别把这些值又「顺手」改成引用 indigo / violet——那等于改回 v0.73.x。 -->
     <color name="hero_start">#4F46E5</color>   <!-- indigo-600，渐变起点 -->
     <color name="hero_end">#7C3AED</color>     <!-- violet-600，渐变终点 -->
     <!-- 压在实白底上的紫字（小组件「今天已请假 / 明天已请假」）。
@@ -101,13 +101,13 @@
          白底上对比度从 7:1 掉到 5.6:1。小部件不随明暗变，这里也跟着固定。 -->
     <color name="hero_text">#4338CA</color>
 
-    <!-- ===== 本周班表小组件（v1.20）=====
+    <!-- ===== 本周班表小组件（v0.24.0）=====
          组件底色是紫色渐变（bg_hero），因此标签取同色系浅色：
          上班用纯白最醒目，休息降到淡紫灰，节假日/补班/请假/加班各自沿用日历语义色系的亮版。 -->
     <!-- 注意：这一组「故意」没有 values-night 版本。
          小组件的底是固定紫色渐变（hero_start → hero_end，见上），
          深浅模式下都一样，标签色压在那块紫上，跟着明暗变反而会失真。
-         v1.56.0 之前这条注释说「底是固定的」其实不成立——bg_hero 引用的
+         v0.73.1 之前这条注释说「底是固定的」其实不成立——bg_hero 引用的
          indigo / violet 有夜间版，只是当时没人在小部件上看出来。
          如果哪天小组件改成跟随主题的底，记得回来把这六个色补进夜间配色，
          并把 ColorTokenTest.NIGHTLESS 里对应的名字删掉。 -->

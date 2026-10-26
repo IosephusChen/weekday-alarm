@@ -5,7 +5,7 @@ import android.content.Context;
 import android.os.PowerManager;
 
 /**
- * 屏幕 / 锁屏状态（v1.23.1）。
+ * 屏幕 / 锁屏状态（v0.31.1）。
  *
  * <p>闹钟、提前提醒、测试响铃都面临同一个选择：弹窗还是只发通知。
  * 规则很简单——**解锁使用中只发通知，息屏或锁屏才弹窗**：

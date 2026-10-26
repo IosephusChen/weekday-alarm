@@ -25,7 +25,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         }
         // 锁屏 / 息屏：直接拉整屏（那时候通知和小窗都没人看得见）。
         // 解锁使用中：不在这里拉界面，交给 AlarmService 弹一个 300dp 的小悬浮窗——
-        // v1.39.0 试过「解锁也整屏」，用户反馈太粗暴：正在用手机时被整屏盖住，
+        // v0.53.2 试过「解锁也整屏」，用户反馈太粗暴：正在用手机时被整屏盖住，
         // 要的是「小窗提醒一下」。挂不上悬浮窗时服务自己退回整屏。
         final boolean popup = ScreenLock.shouldPopup(context);
         if (popup) {
@@ -41,7 +41,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             }
         }
         // 已经响铃了，提前提醒的「即将响铃」通知就没用了——顺手撤掉，
-        // 否则它会在通知栏一直挂到用户手动清理（v1.23 修）
+        // 否则它会在通知栏一直挂到用户手动清理（v0.31.0 修）
         try {
             NotificationManagerCompat.from(context)
                     .cancel(PreNoticeReceiver.NOTIF_ID_BASE + alarmId);
@@ -61,7 +61,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             AlarmService.postFallbackNotification(context, alarmId, label, dateStr, popup);
         }
         // 触发后按当前排班重排，保证窗口始终有闹钟。
-        // v1.19.9：重排要取消并重新注册上百个系统闹钟（每次都是跨进程 IPC，累计可达数百毫秒
+        // v0.23.0：重排要取消并重新注册上百个系统闹钟（每次都是跨进程 IPC，累计可达数百毫秒
         // 到数秒），放在广播主线程会拖慢响铃、极端情况下还会广播超时。改用 goAsync 挪到
         // 后台线程，主线程把界面和服务拉起后立即返回。
         final PendingResult pending = goAsync();
@@ -69,7 +69,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         new Thread(() -> {
             try {
                 ScheduleManager.rescheduleAll(app);
-                // 响铃后下一个闹钟已变，同步刷新桌面小组件（v1.19；v1.20 起含本周班表）
+                // 响铃后下一个闹钟已变，同步刷新桌面小组件（v0.18.0；v0.24.0 起含本周班表）
                 Widgets.updateAll(app);
             } catch (Throwable ignore) {
                 // 重排失败不影响本次响铃；下次响铃 / 重启会再补

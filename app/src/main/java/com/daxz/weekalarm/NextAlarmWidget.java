@@ -12,9 +12,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 桌面小组件（v1.19）：在桌面一眼看到「下次什么时候响、今天上不上班」。
+ * 桌面小组件（v0.18.0）：在桌面一眼看到「下次什么时候响、今天上不上班」。
  *
- * <p><b>v1.69.0 改版</b>：信息结构对齐 App 首页的「今天状态卡」——
+ * <p><b>v0.76.1 改版</b>：信息结构对齐 App 首页的「今天状态卡」——
  * 大字段放今天状态（今天休息 / 今天上班 / 今天请假 / 今天加班），
  * 右侧角标放周次（小周 · 休1天），副信息放「下次 明天 07:00 起床」，
  * 底部仍是本周七格。原来大字段放的是闹钟时刻，与首页的「状态优先」不是一个层级，
@@ -46,7 +46,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
     /**
      * 计算小组件要展示的内容；与主 App 首页状态卡共用同一套排班与文案计算。
      *
-     * <p>v1.69.0 起改算 {@code nextRing}（下次真正会响的闹钟）而不是
+     * <p>v0.76.1 起改算 {@code nextRing}（下次真正会响的闹钟）而不是
      * {@code nextRegisteredAlarm}（系统里已登记的下一个 PendingIntent）：
      * 首页副信息用的是前者，部件要逐字对齐就只能用前者。前者是纯内存计算，
      * 后者才要逐候选探测 PendingIntent（跨进程 IPC）——顺手还把首页刷新里
@@ -60,7 +60,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
     }
 
     /**
-     * 同上，但「下一次响铃」由调用方给定（v1.29.0 的性能预留，现主要为测试服务：
+     * 同上，但「下一次响铃」由调用方给定（v0.45.0 的性能预留，现主要为测试服务：
      * 构造一个确定的 NextAlarm，就能钉死今天 / 明天 / 后天的相对词）。
      */
     static WidgetModel computeModel(Context ctx, ScheduleManager.NextAlarm next) {
@@ -79,16 +79,16 @@ public class NextAlarmWidget extends AppWidgetProvider {
     }
 
     /**
-     * 4×2 固定布局：状态两行 + 本周七格（v1.51.0 并入七格，v1.69.0 重排信息层级）。
+     * 4×2 固定布局：状态两行 + 本周七格（v0.68.0 并入七格，v0.76.1 重排信息层级）。
      *
-     * <p>v1.50.0 之前这里只有闹钟两行，七格是「拉到 4×3 才出现」的第二档布局。
+     * <p>v0.67.0 之前这里只有闹钟两行，七格是「拉到 4×3 才出现」的第二档布局。
      * 尺寸锁死之后没有第二档了，七格直接并进来——用户实际用下来，
      * 165dp 的卡片放「状态 + 七格」正好，比原来空着半张卡有用。
      */
     static RemoteViews buildViews(Context ctx, WidgetModel m) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), R.layout.widget_next_alarm);
-        // v1.58.0：状态跟着实际走。原来写死「已开启」——闹钟全关时这张卡显示
-        // 「已开启 + 暂无提醒」，自相矛盾。整月两张卡 v1.52.0 就接上了
+        // v0.73.3：状态跟着实际走。原来写死「已开启」——闹钟全关时这张卡显示
+        // 「已开启 + 暂无提醒」，自相矛盾。整月两张卡 v0.70.1 就接上了
         // Widgets.alarmStatusText，4×2 漏接，这次补上，几张卡一个口径。
         rv.setTextViewText(R.id.widget_status, Widgets.alarmStatusText(ctx));
         rv.setTextViewText(R.id.widget_hero, m.status);
@@ -98,7 +98,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
         WeekWidgetRender.WeekModel week = WeekWidgetRender.computeModel(ctx);
         WeekWidgetRender.fillWeekCells(rv, ctx, week);
 
-        // 点击整卡打开 App（v1.19）
+        // 点击整卡打开 App（v0.18.0）
         Intent open = new Intent(ctx, MainActivity.class);
         open.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pi = PendingIntent.getActivity(ctx, 0, open,
@@ -114,7 +114,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
     /**
      * 尺寸变化回调。
      *
-     * <p>v1.51.0 起布局只有一份、尺寸由 resizeMode 锁死，理论上不会再触发。
+     * <p>v0.68.0 起布局只有一份、尺寸由 resizeMode 锁死，理论上不会再触发。
      * 保留是因为部分启动器首次绑定后才补 options，重推一次没有坏处。
      */
     @Override

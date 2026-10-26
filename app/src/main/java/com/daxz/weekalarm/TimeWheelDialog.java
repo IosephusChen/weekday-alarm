@@ -7,7 +7,7 @@ import android.widget.NumberPicker;
 import androidx.appcompat.app.AlertDialog;
 
 /**
- * 「时 / 分」双列滚轮时间选择对话框（v1.16 起用，v1.20 抽成公共类）。
+ * 「时 / 分」双列滚轮时间选择对话框（v0.14.0 起用，v0.24.0 抽成公共类）。
  *
  * 刻意不用框架的 TimePickerDialog：澎湃 OS（HyperOS）会无视主题里的
  * timePickerMode=spinner，强制渲染成表盘拨轮，且部分 ROM 上表盘在深色主题下不可读。

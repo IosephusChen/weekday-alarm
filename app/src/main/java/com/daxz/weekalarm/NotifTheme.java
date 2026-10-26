@@ -6,7 +6,7 @@ import android.content.res.Configuration;
 import androidx.core.content.ContextCompat;
 
 /**
- * 通知卡片（RemoteViews）的配色（v1.43.0）。
+ * 通知卡片（RemoteViews）的配色（v0.55.0）。
  *
  * <p><b>为什么单独一个类</b>：{@link NotifCard} 与 {@code PreNoticeReceiver} 各自画一套
  * RemoteViews，两边都要「按明暗模式给文字上色」，于是同一个 {@code uiMode} 判断
@@ -44,7 +44,7 @@ final class NotifTheme {
     /**
      * 品牌紫底上的文字与图标：两套模式都是纯白。
      *
-     * <p>v1.37.0 起图标底与主按钮底固定为品牌紫渐变（{@code bg_notif_icon} /
+     * <p>v0.53.0 起图标底与主按钮底固定为品牌紫渐变（{@code bg_notif_icon} /
      * {@code bg_notif_action}），不随明暗切换，所以压在上面的东西不需要分模式。
      */
     static final int ON_BRAND = 0xFFFFFFFF;

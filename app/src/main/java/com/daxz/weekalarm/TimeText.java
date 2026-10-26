@@ -8,7 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
 /**
- * 时刻 / 日期文案的唯一出处（v1.60.0）。
+ * 时刻 / 日期文案的唯一出处（v0.73.7）。
  *
  * <p>收敛前这些格式散在 8 个文件里各写一遍：{@code "HH:mm"} 四个
  * {@link DateTimeFormatter}、三个 {@code String.format("%02d:%02d")}、

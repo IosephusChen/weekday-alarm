@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 睡前提醒的接收器（v1.20）：到点发通知，并顺手把「明天请假」做掉。
+ * 睡前提醒的接收器（v0.24.0）：到点发通知，并顺手把「明天请假」做掉。
  *
  * 触发源只有一条：{@link BedtimeReminder#reschedule} 注册的固定 PendingIntent。
  * 每次触发后立即续订下一天——这是它唯一的续命机制，漏了这一步提醒就只发一次。
@@ -27,7 +27,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
     public static final String ACTION_SKIP_TOMORROW = "com.daxz.weekalarm.SKIP_TOMORROW";
 
     /**
-     * 午夜刷新（v1.48.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
+     * 午夜刷新（v0.59.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
      *
      * <p>只在这一条通知还挂着时才由 {@link BedtimeReminder#scheduleMidnightRefresh} 排出来，
      * 触发一次即结束——第二天晚上发新提醒时会重新排。
@@ -58,7 +58,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 重发同一条提醒，只换内容不再响（v1.46.7）。供 {@link BedtimeReminder#refreshIfShown} 调用：
+     * 重发同一条提醒，只换内容不再响（v0.56.6）。供 {@link BedtimeReminder#refreshIfShown} 调用：
      * 用户把「明天没有闹钟」那条改成了真闹钟，通知栏上那句话得跟着变，但没必要再提醒一次。
      */
     static void repost(Context ctx, BedtimeReminder.Model m) {
@@ -77,15 +77,15 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setContentTitle(m.title)
                 .setContentText(m.text)
                 .setContentIntent(contentPi)
-                // v1.37.0：强调色统一成品牌紫，和「即将响铃」那条看起来是一家的
+                // v0.53.0：强调色统一成品牌紫，和「即将响铃」那条看起来是一家的
                 .setColor(ctx.getColor(R.color.indigo))
                 .setAutoCancel(true)
                 // quiet=true 时只更新内容：同 id 重发不会再次弹横幅 / 响铃
                 .setOnlyAlertOnce(quiet)
                 .setPriority(Notification.PRIORITY_DEFAULT);
 
-        // 「请假」按钮的文案跟着目标日期走（v1.58.0 修复）：
-        // 跨午夜后这条通知说的已是「今天早上 07:30」（v1.48.0 的改口），按钮再写
+        // 「请假」按钮的文案跟着目标日期走（v0.73.3 修复）：
+        // 跨午夜后这条通知说的已是「今天早上 07:30」（v0.59.0 的改口），按钮再写
         // 「明天请假」就会标错一天——用户想拦今早的闹钟，标的却是明天，今早照响。
         // data URI 一直带着真实目标日期（showNotification 里按 m.tomorrow 生成），
         // 这里从 URI 解析；解析不了才回退「明天」（旧版本烧死的 PendingIntent 没有日期）。
@@ -102,14 +102,14 @@ public class BedtimeReceiver extends BroadcastReceiver {
                     Icon.createWithResource(ctx, R.drawable.ic_notif_calendar),
                     dayWord + "请假", skipPi).build());
         }
-        // v1.38.0：折叠态换自绘卡片。
+        // v0.53.1：折叠态换自绘卡片。
         //
         // 设置里写着「可一键标记请假」，但 addAction 的按钮只在**展开后**出现——
         // 锁屏和刚弹出来时用户看到的是一张没有按钮的卡片，等于这句话没兑现。
-        // 和提前提醒（v1.23.6）、响铃（本版）一样把按钮画进布局里，说了就要能点。
+        // 和提前提醒（v0.33.0）、响铃（本版）一样把按钮画进布局里，说了就要能点。
         nb.setCustomContentView(NotifCard.build(ctx, m.title, m.text, 0, contentPi,
                 canSkip ? NotifCard.Button.primary(dayWord + "请假", skipPi) : null));
-        // v1.47.9：这条提醒只对「今晚」有效。用户不点也不划，它会一直挂到第二天白天，
+        // v0.58.8：这条提醒只对「今晚」有效。用户不点也不划，它会一直挂到第二天白天，
         // 那时内容已经错了——写着「明天 07:30 起床」，其实说的是今天早上。
         // 让它自带过期时间：到次日 05:00 由系统移除，App 从没被打开也一样。
         nb.setTimeoutAfter(millisUntilNextMorning());
@@ -126,8 +126,8 @@ public class BedtimeReceiver extends BroadcastReceiver {
     /**
      * 一键「请假」：把通知指向的那天标为个人请假，取消那天已排的全部闹钟。
      *
-     * <p><b>目标日期从 intent 的 data URI 取，不再硬编码「明天」</b>（v1.58.0 修复）：
-     * 跨午夜后 v1.48.0 的午夜刷新会把通知改口成「今天早上 07:30」，按钮也跟着变成
+     * <p><b>目标日期从 intent 的 data URI 取，不再硬编码「明天」</b>（v0.73.3 修复）：
+     * 跨午夜后 v0.59.0 的午夜刷新会把通知改口成「今天早上 07:30」，按钮也跟着变成
      * 「今天请假」——此时点的就是今天。旧实现写死 {@code now + 1}，凌晨点下去标的是
      * 明天，今早的闹钟照响，按钮与行为对不上。
      *
@@ -156,7 +156,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
                     + "标记为请假，闹钟不会响", Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
-        // v1.46.7：同上——用户正看着 App 时点了通知，界面必须当场变
+        // v0.56.6：同上——用户正看着 App 时点了通知，界面必须当场变
         UiRefresh.request(ctx);
         final PendingResult pending = goAsync();
         final Context app = ctx.getApplicationContext();
@@ -172,7 +172,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 距次日 05:00 还有多少毫秒（v1.47.9）。
+     * 距次日 05:00 还有多少毫秒（v0.58.8）。
      *
      * <p>为什么是 05:00：那是这一夜结束、起床闹钟开始响的时段，再往后这条提醒就没有意义了。
      * 下限给 1 小时——极端情况（用户把提醒设在凌晨 4 点多）也不会刚发出就消失。

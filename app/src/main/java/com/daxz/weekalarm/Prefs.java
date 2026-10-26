@@ -18,9 +18,9 @@ public final class Prefs {
     private static final String NAME = "daxz_alarm";
     public static final String KEY_WEEK_BIG = "week_big";        // 本周是否大周
     public static final String KEY_ANCHOR = "anchor";            // 基准周六（大周周六）yyyy-MM-dd
-    public static final String KEY_WEEK_MODE = "week_mode";      // 周休制度序号（v1.22，见 WeekSchedule.Mode）
-    public static final String KEY_WEEK_START = "week_start";    // 一周开始日：0=周一，1=周日（v1.22.2，仅影响显示）
-    public static final String KEY_ALARM_HOUR = "alarm_hour";    // 旧单闹钟时间（v1.13 起迁移到 alarms）
+    public static final String KEY_WEEK_MODE = "week_mode";      // 周休制度序号（v0.27.0，见 WeekSchedule.Mode）
+    public static final String KEY_WEEK_START = "week_start";    // 一周开始日：0=周一，1=周日（v0.28.0，仅影响显示）
+    public static final String KEY_ALARM_HOUR = "alarm_hour";    // 旧单闹钟时间（v0.11.0 起迁移到 alarms）
     public static final String KEY_ALARM_MIN = "alarm_min";
     public static final String KEY_ALARMS = "alarms_json";       // 多闹钟列表（Alarm.toJson）
     public static final String KEY_ALARMS_MIGRATED = "alarms_migrated";
@@ -42,30 +42,30 @@ public final class Prefs {
     public static final String KEY_SNOOZE_MINUTES = "snooze_minutes"; // 稍后提醒间隔（分钟），默认 5
     public static final String KEY_SNOOZE_TIMES = "snooze_times";       // 每次响铃最多稍后几次，-1 = 不限
     public static final String KEY_PRE_NOTICE_MINUTES = "pre_notice_minutes"; // 提前多久发通知栏提醒，0 = 关闭
-    // v1.27：上次选过的非零提前量。关掉再打开时要回到这个数，而不是默认值——
+    // v0.41.0：上次选过的非零提前量。关掉再打开时要回到这个数，而不是默认值——
     // 否则「临时关一下」会被人悄悄改成 1 小时，用户下次被提前一小时吵醒会莫名其妙
     public static final String KEY_PRE_NOTICE_LAST = "pre_notice_last_minutes";
-    public static final String KEY_GUIDE_SEEN = "guide_seen";             // 使用说明是否已自动展开过（v1.19.8）
-    public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v1.19.9）
-    public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v1.19.9）
-    public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v1.20）
-    public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v1.20）
-    public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v1.20）
-    public static final String KEY_CHRISTIAN_FESTIVALS = "christian_festivals"; // 日历显示基督教节日（v1.21）
+    public static final String KEY_GUIDE_SEEN = "guide_seen";             // 使用说明是否已自动展开过（v0.22.1）
+    public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v0.23.0）
+    public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
+    public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
+    public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
+    public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
+    public static final String KEY_CHRISTIAN_FESTIVALS = "christian_festivals"; // 日历显示基督教节日（v0.26.0）
     private static final String KEY_SNOOZE_COUNT_PREFIX = "snooze_count_";   // + "{alarmId}_{date}"
 
-    // 锁屏显示自测（v1.45.0）：这一项没有 API 可查，只能「试一下」。
+    // 锁屏显示自测（v0.55.3）：这一项没有 API 可查，只能「试一下」。
     // 存结果而不是存布尔，是因为「还没测过」和「测了没通过」要分开显示——
     // 都写成 false 的话，第一次打开引导页就会说「没通过」，像在指责用户
     private static final String KEY_LOCK_PROBE_RESULT = "lock_probe_result";
     private static final String KEY_LOCK_PROBE_AT = "lock_probe_at";
 
-    // 按键作用取值（v1.16）
+    // 按键作用取值（v0.14.0）
     public static final int KEY_ACTION_NONE = 0;
     public static final int KEY_ACTION_SNOOZE = 1;
     public static final int KEY_ACTION_STOP = 2;
 
-    /** 稍后提醒次数上限的可选值：-1 表示不限次数（v1.17）。 */
+    /** 稍后提醒次数上限的可选值：-1 表示不限次数（v0.15.0）。 */
     public static final int SNOOZE_UNLIMITED = -1;
 
     private Prefs() {
@@ -100,7 +100,7 @@ public final class Prefs {
     }
 
     /**
-     * 周休制度（v1.22）：双休 / 单休（周日）/ 单休（周六）/ 大小周。
+     * 周休制度（v0.27.0）：双休 / 单休（周日）/ 单休（周六）/ 大小周。
      *
      * 默认大小周——老用户升级后没有这个键，必须保持原来的排班不变，
      * 否则一升级日历全变、闹钟全错。
@@ -119,7 +119,7 @@ public final class Prefs {
         return new WeekSchedule.Rule(getWeekMode(c), getAnchor(c), isSmallRestSat(c));
     }
 
-    // ================= 一周开始日（v1.22.2）=================
+    // ================= 一周开始日（v0.28.0）=================
 
     public static final int WEEK_START_MONDAY = 0;
     public static final int WEEK_START_SUNDAY = 1;
@@ -145,7 +145,7 @@ public final class Prefs {
         return getWeekStart(c) == WEEK_START_SUNDAY;
     }
 
-    // ================= 二十四节气（v1.51.2）=================
+    // ================= 二十四节气（v0.70.0）=================
 
     /**
      * 节气开关，与「农历节日」分开。
@@ -177,7 +177,7 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_ALARM_HOUR, hour).putInt(KEY_ALARM_MIN, min).apply();
     }
 
-    // ================= 多闹钟（v1.13 起）=================
+    // ================= 多闹钟（v0.11.0 起）=================
 
     /**
      * 原始读取：首次读取时把旧版单闹钟（alarm_hour/alarm_min）迁移为「起床」闹钟，
@@ -201,7 +201,7 @@ public final class Prefs {
     }
 
     /**
-     * 读取闹钟列表。<b>纯读</b>，不修改任何状态、不落盘（v1.28.1）。
+     * 读取闹钟列表。<b>纯读</b>，不修改任何状态、不落盘（v0.44.0）。
      *
      * <p>这里曾经挂着一层副作用：读的时候顺手把已经过期的一次性闹钟置为关闭。
      * 「收在唯一读取入口，三条消费路径自动都对」这个出发点是对的，代价是
@@ -216,7 +216,7 @@ public final class Prefs {
     /**
      * 把已经响过的一次性闹钟置为关闭，并落盘。返回是否真的关掉了什么。
      *
-     * <p>只置 {@code enabled = false}，不删除（v1.27.2）。用户反馈「响过就消失」
+     * <p>只置 {@code enabled = false}，不删除（v0.42.0）。用户反馈「响过就消失」
      * 比「留着但关掉」更难接受——他会怀疑自己是不是建错了、或者想照着这条
      * 再设一次却找不到参照。留着一条关掉的记录，既能说明「这条已经响过了」，
      * 也能一键再打开（见 {@link Alarm#reviveOnce}）。
@@ -261,7 +261,7 @@ public final class Prefs {
         // 必须同时置「已迁移」：否则「先写列表、后读列表」会被迁移逻辑当成首次启动，
         // 用预置的起床/午休把刚写的整份列表覆盖掉。真机上的触发条件是
         // 「装好后还没读过列表就写」——比如恢复备份、或引导页在首次读取前落库。
-        // 用 commit 而不是 apply（v1.29.0）：写完之后紧接着就会读——rescheduleAll 要拿列表
+        // 用 commit 而不是 apply（v0.45.0）：写完之后紧接着就会读——rescheduleAll 要拿列表
         // 排程、refreshAll 要重画列表。apply 的落盘是异步的，读回旧值时迁移逻辑会以为
         // 「这台机器还没初始化」，把预置的起床 / 午休塞回来，用户刚删掉的闹钟就复活了。
         // 这份 JSON 只有几百字节，同步写一次的代价远小于这种错乱。
@@ -332,7 +332,7 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_LAST_RUN_VERSION, v).apply();
     }
 
-    // ================= 个人请假（v1.14 起）=================
+    // ================= 个人请假（v0.12.0 起）=================
 
     /** 全部请假日期（损坏条目自动忽略）。 */
     public static Set<LocalDate> getVacationDates(Context c) {
@@ -368,7 +368,7 @@ public final class Prefs {
         if (cur.remove(d)) setVacationDates(c, cur);
     }
 
-    // ================= 个人加班（v1.15 起）=================
+    // ================= 个人加班（v0.13.0 起）=================
 
     /** 全部加班日期（损坏条目自动忽略）。 */
     public static Set<LocalDate> getOvertimeDates(Context c) {
@@ -404,7 +404,7 @@ public final class Prefs {
         if (cur.remove(d)) setOvertimeDates(c, cur);
     }
 
-    // ================= 响铃设置（v1.16 起）=================
+    // ================= 响铃设置（v0.14.0 起）=================
 
     /** 闹钟音量 0-100；0 = 静音（是否震动另由 {@link #isVibrate} 决定）。默认 80。 */
     public static int getVolume(Context c) {
@@ -452,18 +452,18 @@ public final class Prefs {
     }
 
     /**
-     * 标记「使用说明」的展开状态（v1.19.8）。
+     * 标记「使用说明」的展开状态（v0.22.1）。
      *
-     * <p>v1.46.6：读取侧 {@code isGuideSeen()} 已删——v1.34.0 把使用说明收成一行入口、
+     * <p>v0.56.5：读取侧 {@code isGuideSeen()} 已删——v0.48.1 把使用说明收成一行入口、
      * 交给引导页之后，生产代码不再读这个标记。写入侧暂时保留，因为 13 个测试文件
-     * 在初始化时仍调用它；等 v1.47.0 一并清理测试初始化，届时这个 key 可以整个删掉。
+     * 在初始化时仍调用它；等 v0.57.0 一并清理测试初始化，届时这个 key 可以整个删掉。
      */
     public static void setGuideSeen(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_GUIDE_SEEN, v).apply();
     }
 
     /**
-     * 旧版 requestCode 残留是否已清理（v1.19.9）。
+     * 旧版 requestCode 残留是否已清理（v0.23.0）。
      * 只在升级后第一次重排时做一次兼容清理，之后每次重排不必再多做两轮 IPC 查询。
      */
     public static boolean isLegacyAlarmsCleaned(Context c) {
@@ -483,7 +483,7 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_ONBOARD_DONE, v).apply();
     }
 
-    // ================= 睡前提醒与农历（v1.20）=================
+    // ================= 睡前提醒与农历（v0.24.0）=================
 
     /**
      * 睡前提醒时刻：当天 0 点起的分钟数（如 22:00 = 1320）。
@@ -504,7 +504,7 @@ public final class Prefs {
     }
 
     /** 睡前提醒是否只在「明天要上班」时发送；默认 true（休息日不打扰）。 */
-    /** 通知栏那条睡前提醒是哪天发的（ISO 日期，v1.47.9）。没发过为 null。 */
+    /** 通知栏那条睡前提醒是哪天发的（ISO 日期，v0.58.8）。没发过为 null。 */
     public static final String KEY_BEDTIME_NOTICE_DAY = "bedtime_notice_day";
 
     public static String getBedtimeNoticeDay(Context c) {
@@ -515,7 +515,7 @@ public final class Prefs {
         sp(c).edit().putString(KEY_BEDTIME_NOTICE_DAY, isoDay).apply();
     }
 
-    /** 上次开启时的睡前时刻（v1.49.0）：关掉再打开要回到原来的时间，不是重置成 22:00。 */
+    /** 上次开启时的睡前时刻（v0.60.0）：关掉再打开要回到原来的时间，不是重置成 22:00。 */
     public static final String KEY_BEDTIME_LAST = "bedtime_last_minutes";
 
     public static int getBedtimeLast(Context c) {
@@ -563,7 +563,7 @@ public final class Prefs {
     /**
      * 响铃多少分钟后自动停止（防扰民 / 省电）。0 = 不限，一直响到手动停止。
      *
-     * <p>v1.26.2 起默认 10 分钟：没人管的时候不该一直响——
+     * <p>v0.39.1 起默认 10 分钟：没人管的时候不该一直响——
      * 尤其响铃页改成滑动停止后，睡过头或滑不动时「一直响」没有下限。
      * 想要一直响的人去设置里改回「不限」，一行的事。
      */
@@ -587,7 +587,7 @@ public final class Prefs {
         sp(c).edit().putString(KEY_RINGTONE_URI, uri == null ? null : uri.toString()).apply();
     }
 
-    // ================= 稍后提醒与提前通知（v1.17 起）=================
+    // ================= 稍后提醒与提前通知（v0.15.0 起）=================
 
     /** 稍后提醒间隔（分钟）：默认 5，可选 3 / 5 / 10 / 15 / 30。 */
     public static int getSnoozeMinutes(Context c) {
@@ -602,7 +602,7 @@ public final class Prefs {
     /**
      * 每次响铃最多「稍后提醒」几次：默认 3；{@link #SNOOZE_UNLIMITED} = 不限次数。
      *
-     * <p>v1.26.2 从 1 次放宽到 3 次：只给一次的话，按掉之后想再眯五分钟就没机会了，
+     * <p>v0.39.1 从 1 次放宽到 3 次：只给一次的话，按掉之后想再眯五分钟就没机会了，
      * 人得彻底清醒才能决定「今天要不要再睡」——而这恰恰是刚响铃时最做不到的事。
      * 5 分钟 × 3 次 = 最多多睡 15 分钟，仍在多数人的可控范围内。
      */
@@ -618,7 +618,7 @@ public final class Prefs {
     }
 
     /**
-     * 响铃前提前多少分钟推送通知栏提醒：0 = 关闭。默认提前 1 小时（v1.26.2）。
+     * 响铃前提前多少分钟推送通知栏提醒：0 = 关闭。默认提前 1 小时（v0.39.1）。
      *
      * <p>以前默认关着，理由是「不该在用户没同意时先发通知」。但对闹钟来说，
      * 提前一小时知道「还有一小时就要响了」是有用的信息——够决定要不要今晚早点睡，
@@ -634,7 +634,7 @@ public final class Prefs {
     /**
      * 上次选过的非零提前量，用于「关掉再打开」时恢复。从没设过则给默认值。
      *
-     * <p>v1.72.1 起设置页那行的开关已去掉（改成「值 + 箭头」进对话框），
+     * <p>v0.79.0 起设置页那行的开关已去掉（改成「值 + 箭头」进对话框），
      * App 内暂时没有调用方；键和写入逻辑保留，因为 {@link #setPreNoticeMinutes}
      * 仍在顺带维护它，删了会让老备份里这个键变成孤儿。
      */
@@ -684,7 +684,7 @@ public final class Prefs {
         ed.apply();
     }
 
-    // ================= 锁屏显示自测（v1.45.0）=================
+    // ================= 锁屏显示自测（v0.55.3）=================
 
     /** 自测结果：还没测过。 */
     public static final int LOCK_PROBE_NONE = 0;

@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * 应用内刷新信号（v1.46.7）。
+ * 应用内刷新信号（v0.56.6）。
  *
  * <p>用于「界面没在前台时被别处改了状态」的场景：通知栏的「明天请假」、桌面小组件的
  * 「今天 / 明天不上班」都在 Activity 之外改 Prefs，改完若不通知界面，用户切回 App

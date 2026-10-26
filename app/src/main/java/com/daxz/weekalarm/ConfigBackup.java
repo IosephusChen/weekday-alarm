@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 配置导出 / 导入（v1.20）。
+ * 配置导出 / 导入（v0.24.0）。
  *
  * 解决的问题：换手机、重装、刷机之后，排班基准、多个闹钟、请假/加班标记、
  * 音量铃声这些「攒出来的状态」全都要重新设一遍，非常劝退。
@@ -41,7 +41,7 @@ public final class ConfigBackup {
         public final boolean ok;
         public final String message;
         public final int alarmCount;
-        /** 请假 / 加班标记天数（v1.71.0）：导入完成对话框的信息行用。 */
+        /** 请假 / 加班标记天数（v0.76.5）：导入完成对话框的信息行用。 */
         public final int vacationDays;
         public final int overtimeDays;
 
@@ -59,7 +59,7 @@ public final class ConfigBackup {
     }
 
     /**
-     * 备份文件摘要（v1.71.0）：导入确认与导出完成对话框的信息行数据。
+     * 备份文件摘要（v0.76.5）：导入确认与导出完成对话框的信息行数据。
      *
      * <p>取代原来的 {@code describe}（返回一句拼好的文字）——对话框要把
      * 「导出时间 / 闹钟数 / 请假加班标记数」排成信息行，拼好的字符串还得再拆一遍，
@@ -301,7 +301,7 @@ public final class ConfigBackup {
 
     /** 导入完成后的统一收尾：按新配置重排 + 刷新小组件 + 睡前提醒。 */
     public static void applyAfterImport(Context ctx) {
-        // v1.63.0：重排是上百次 IPC，导入又在主线程，同步跑会卡住「导入成功」的反馈
+        // v0.74.2：重排是上百次 IPC，导入又在主线程，同步跑会卡住「导入成功」的反馈
         final Context app = ctx.getApplicationContext();
         Reschedule.run(ctx, () -> {
             BedtimeReminder.reschedule(app);

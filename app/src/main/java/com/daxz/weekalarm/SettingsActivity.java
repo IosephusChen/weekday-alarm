@@ -23,10 +23,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * 「设置与使用说明」页（v1.19.7）。
+ * 「设置与使用说明」页（v0.22.0）。
  *
  * 主界面只留「闹钟」「排班日历」两张卡片；设置与使用说明整体搬到这一页，
- * 并且设置项全部一级平铺——v1.18 的「更多设置」二级菜单已取消：
+ * 并且设置项全部一级平铺——v0.16.0 的「更多设置」二级菜单已取消：
  * 提醒范围、节假日数据、闹钟音量、铃声、响铃时长、铃声渐响、震动、
  * 稍后提醒、提前提醒、按键设置，全部在同一张设置卡片里，点一下就是对应对话框。
  *
@@ -38,24 +38,24 @@ public class SettingsActivity extends AppCompatActivity {
 
     private TextView tvKeys, tvSnooze, tvPreNotice, tvRingDuration, tvRingtone;
     private TextView tvHorizon, tvHolidayData, tvVolume, tvBedtime, tvWeekStart;
-    /** 周休制度三行（v1.46.3 从首页「排班」卡搬来）。 */
+    /** 周休制度三行（v0.56.2 从首页「排班」卡搬来）。 */
     private TextView tvWeekMode;
     /**
-     * 「提醒」组两行的右侧值（v1.72.1）。
+     * 「提醒」组两行的右侧值（v0.79.0）。
      *
      * <p>这两行原本右侧是开关，用户看不出点进去还能设置；现在值直接摆在右边，
      * 关掉时写「关闭」，与「周休制度」那行同一套「值 + 箭头」语言。
      */
     private TextView tvBedtimeValue, tvPreNoticeValue;
     private SwitchCompat swFadeIn, swVibrate;
-    /** 主页就地音量滑块（v1.49.0）：拖完松手才落盘。 */
+    /** 主页就地音量滑块（v0.60.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
 
     /** 开关同步保护：回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
 
     /**
-     * 导出配置（v1.20）：系统文件选择器（SAF），不需要存储权限。
+     * 导出配置（v0.24.0）：系统文件选择器（SAF），不需要存储权限。
      * 文件名由 ConfigBackup 按时间生成，用户可改位置与名字。
      */
     private final ActivityResultLauncher<String> exportLauncher =
@@ -67,7 +67,7 @@ public class SettingsActivity extends AppCompatActivity {
                             String json = ConfigBackup.exportJson(this);
                             os.write(json.getBytes("UTF-8"));
                             os.flush();
-                            // v1.71.0：Toast → 小结对话框（文件里有什么，当场说清）
+                            // v0.76.5：Toast → 小结对话框（文件里有什么，当场说清）
                             showExportDone(json);
                         } catch (Exception e) {
                             DialogKit.showMessage(this,
@@ -77,7 +77,7 @@ public class SettingsActivity extends AppCompatActivity {
                     });
 
     /**
-     * 导入配置（v1.20；v1.47.0 起流程搬去 {@link BackupImporter}，引导页共用同一份）。
+     * 导入配置（v0.24.0；v0.57.0 起流程搬去 {@link BackupImporter}，引导页共用同一份）。
      *
      * <p>这里只留「导入成功之后做什么」：刷新本页并告诉用户回主界面看结果。
      */
@@ -90,7 +90,7 @@ public class SettingsActivity extends AppCompatActivity {
             }, false);
 
     /**
-     * 本页布局（v1.49.0）。
+     * 本页布局（v0.60.0）。
      *
      * <p>二级页 {@link MoreSettingsActivity} 继承本类、只换布局，
      * 这样对话框、刷新、导出导入全部共用一份，不必复制。
@@ -123,10 +123,10 @@ public class SettingsActivity extends AppCompatActivity {
         swVibrate = findViewById(R.id.switch_vibrate);
         sbVolume = findViewById(R.id.seek_volume_embed);
 
-        // 周休制度（v1.46.3）：从首页「排班」卡搬来，放在「一周开始日」之前——
+        // 周休制度（v0.56.2）：从首页「排班」卡搬来，放在「一周开始日」之前——
         // 班制决定哪天上班，比日历从周一还是周日排更基础
         bind(R.id.row_week_mode, v -> showWeekModeDialog());
-        // v1.19.8：整行可点（标题左、值右），点哪一段都打开同一个对话框
+        // v0.22.1：整行可点（标题左、值右），点哪一段都打开同一个对话框
         bind(R.id.row_week_start, v -> showWeekStartDialog());
         bind(R.id.row_horizon, v -> showHorizonDialog());
         bind(R.id.row_holiday_data, v -> checkHolidayUpdate());
@@ -134,17 +134,17 @@ public class SettingsActivity extends AppCompatActivity {
         bind(R.id.row_ringtone, v -> openRingtonePicker());
         bind(R.id.row_ring_duration, v -> showRingDurationDialog());
         bind(R.id.row_snooze, v -> showSnoozeDialog());
-        // v1.72.1：整行进对话框——开关去掉了。原来整行点开关、只有副标题那一小块
+        // v0.79.0：整行进对话框——开关去掉了。原来整行点开关、只有副标题那一小块
         // 能改提前量（约 60dp 宽），几乎没人发现；现在跟睡前提醒一样，值摆右边。
         bind(R.id.row_pre_notice, v -> showPreNoticeDialog());
         bind(R.id.row_keys, v -> showKeysDialog());
-        // v1.20：睡前提醒（时刻 + 是否只在上班前提醒）
+        // v0.24.0：睡前提醒（时刻 + 是否只在上班前提醒）
         bind(R.id.row_bedtime, v -> showBedtimeDialog());
-        // v1.49.0：主页的两个入口
+        // v0.60.0：主页的两个入口
         bind(R.id.row_more_ring, v -> startActivity(new Intent(this, MoreSettingsActivity.class)
                 .putExtra(MoreSettingsActivity.EXTRA_SECTION, MoreSettingsActivity.SECTION_RING)));
         bind(R.id.row_more, v -> startActivity(new Intent(this, MoreSettingsActivity.class)));
-        // v1.49.0：音量就地拖。拖动中只改文字，松手才写 Prefs——
+        // v0.60.0：音量就地拖。拖动中只改文字，松手才写 Prefs——
         // 每移动一格都落盘会反复触发重排，而且没必要。
         if (sbVolume != null) {
             sbVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -165,22 +165,22 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
         }
-        // v1.60.0：农历节日 / 二十四节气 / 基督教节日三个开关合并成一行多选。
+        // v0.73.7：农历节日 / 二十四节气 / 基督教节日三个开关合并成一行多选。
         // 它们都是「日历里显不显示某类名字」，同一个决策拆成三个开关，
         // 设置页平白多两行。Prefs 三个键不动（备份格式不变），只换入口。
         bind(R.id.row_calendar_content, v -> showCalendarContentDialog());
-        // v1.20：配置导出 / 导入
+        // v0.24.0：配置导出 / 导入
         bind(R.id.row_export, v -> exportConfig());
         bind(R.id.row_import, v -> importConfig());
-        // v1.19.9：新手引导随时重看（首次安装仍会自动展示）
+        // v0.23.0：新手引导随时重看（首次安装仍会自动展示）
         bind(R.id.row_onboard, v -> startActivity(new Intent(this, GuideActivity.class)));
-        // v1.22.3：更新日志——每版改了什么都能翻，不联网
+        // v0.29.0：更新日志——每版改了什么都能翻，不联网
         bind(R.id.row_changelog, v -> startActivity(new Intent(this, ChangelogActivity.class)));
         bind(R.id.row_pin_widget, v -> showPinWidgetDialog());
-        // v1.59.0：「本月班表显示闹钟」开关已删——v1.52.0 起闹钟并进标题行不再挤
+        // v0.73.4：「本月班表显示闹钟」开关已删——v0.70.1 起闹钟并进标题行不再挤
         // 周次，开关的存在理由没了，用户反馈「没必要」。现在恒定显示，与 4×2 同口径。
 
-        // ===== v1.46.2：从首页搬来的三块 =====
+        // ===== v0.56.1：从首页搬来的三块 =====
         // 它们原来占首页最后 190dp，却都是低频操作。搬到设置页后首页从 2.25 屏降到 2 屏，
         // 日历少被推远 190dp。三块的语义没有变，只是换了地方。
         bind(R.id.row_help, v -> startActivity(new Intent(this, HelpActivity.class)));
@@ -204,7 +204,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 绑定点击：当前布局里没有这个控件就跳过（v1.49.0）。
+     * 绑定点击：当前布局里没有这个控件就跳过（v0.60.0）。
      *
      * <p>主页与二级页共用同一份绑定逻辑，靠这个办法避免「每个 findViewById 都写一遍判空」。
      */
@@ -220,7 +220,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void refreshAll() {
-        // v1.49.0：主页与二级页共用这份刷新，控件不在当前布局里就跳过
+        // v0.60.0：主页与二级页共用这份刷新，控件不在当前布局里就跳过
         if (tvHorizon != null) updateHorizonText();
         if (tvWeekMode != null) updateWeekModeUi();
         if (tvWeekStart != null) updateWeekStartText();
@@ -247,15 +247,15 @@ public class SettingsActivity extends AppCompatActivity {
         Reschedule.run(this, () -> {
             if (isFinishing() || isDestroyed()) return;
             refreshAll();
-            // v1.46.7：改完设置（尤其是「只在上班日提醒」）通知栏那条要跟着变 / 该撤就撤
+            // v0.56.6：改完设置（尤其是「只在上班日提醒」）通知栏那条要跟着变 / 该撤就撤
             BedtimeReminder.refreshIfShown(this);
         });
     }
 
-    // ================= 周休制度（v1.46.3 由主界面迁入）=================
+    // ================= 周休制度（v0.56.2 由主界面迁入）=================
 
     /**
-     * 刷新右侧文字（v1.49.2）。
+     * 刷新右侧文字（v0.61.0）。
      *
      * <p>单休的 label 本身带具体日子（「单休 · 周日休」），双休就是「双休」；
      * 大小周只写「大小周」——本周是大周还是小周由首页今日卡的徽标显示，
@@ -265,9 +265,9 @@ public class SettingsActivity extends AppCompatActivity {
         tvWeekMode.setText(Prefs.getWeekMode(this).label);
     }
     /**
-     * 周休制度（v1.49.2 改成「大类 + 条件细节」）。
+     * 周休制度（v0.61.0 改成「大类 + 条件细节」）。
      *
-     * <p>v1.49.0 之前这里是 4 个平铺选项（大小周 / 双休 / 单休·周日 / 单休·周六）。
+     * <p>v0.60.0 之前这里是 4 个平铺选项（大小周 / 双休 / 单休·周日 / 单休·周六）。
      * 用户反馈单休的具体日子不该和大类混在一起——现在上面选大类，
      * 下面按选中的大类显示细节：大小周显示「本周是大周还是小周」和「小周休哪天」，
      * 单休显示「休哪天」。
@@ -372,7 +372,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 一组里只选中一个（v1.49.5）。
+     * 一组里只选中一个（v0.61.3）。
      *
      * <p>卡片与胶囊不再是 RadioGroup，选中态改由 {@code setSelected} 驱动
      * {@code bg_guide_option} 的 selector。不能靠遍历子 View 改背景——
@@ -387,7 +387,7 @@ public class SettingsActivity extends AppCompatActivity {
 
 
 
-    // ================= 提醒范围（v1.19.7 由主界面迁入）=================
+    // ================= 提醒范围（v0.22.0 由主界面迁入）=================
 
     private void updateWeekStartText() {
         tvWeekStart.setText(Prefs.isSundayFirst(this) ? "周日" : "周一");
@@ -397,7 +397,7 @@ public class SettingsActivity extends AppCompatActivity {
      * 一周开始日：周一 / 周日。只影响日历与「本周班表」的列顺序，
      * 排班（大小周 / 双休 / 单休）与闹钟时间都不动，所以不需要重排。
      *
-     * <p>v1.61.0 换成 {@link DialogKit#showPick}：系统单选列表在 MIUI 主题下不渲染，
+     * <p>v0.74.0 换成 {@link DialogKit#showPick}：系统单选列表在 MIUI 主题下不渲染，
      * 且与 App 里其它对话框不是一套视觉。副标题把「选了之后班表怎么排」写在明处。
      */
     private void showWeekStartDialog() {
@@ -427,7 +427,7 @@ public class SettingsActivity extends AppCompatActivity {
      * 排班（双休 / 单休是固定算术，大小周是 14 天循环，都不受影响），国务院公布 2027 年安排后
      * App 会更新数据，届时无需改任何设置。
      *
-     * <p>v1.70.0 从自绘 RadioGroup（{@code dialog_horizon}）换成 {@link DialogKit#showPick}：
+     * <p>v0.76.4 从自绘 RadioGroup（{@code dialog_horizon}）换成 {@link DialogKit#showPick}：
      * 这个弹窗本来就是「点哪项存哪项、没有确定按钮」，与 showPick 的交互逐字一致，
      * 只是单选圈换成了卡片。自定义布局是当年为绕开 MIUI 系统列表渲染 bug 写的，
      * 卡片积木本身就不走系统列表，顺带把布局删掉。
@@ -449,12 +449,12 @@ public class SettingsActivity extends AppCompatActivity {
                 });
     }
 
-    // ================= 日历显示内容（v1.60.0 三开关合并）=================
+    // ================= 日历显示内容（v0.73.7 三开关合并）=================
 
     /**
-     * 「日历显示内容」多选对话框：农历节日 / 二十四节气 / 基督教节日（v1.60.0）。
+     * 「日历显示内容」多选对话框：农历节日 / 二十四节气 / 基督教节日（v0.73.7）。
      *
-     * <p>v1.60.0 前这是设置页上三个独立的开关行。它们都是「日历格子里显不显示
+     * <p>v0.73.7 前这是设置页上三个独立的开关行。它们都是「日历格子里显不显示
      * 某类名字」，同一个决策拆成三行，用户要逐行理解、逐行开关，设置页还平白
      * 多两行。合并成一行多选：点行进对话框，勾完「完成」一次落盘。
      *
@@ -462,16 +462,16 @@ public class SettingsActivity extends AppCompatActivity {
      * 备份格式不变，ConfigBackup 与 widget 渲染一行代码都不用动，只是换入口。
      *
      * <p>用自绘卡片而不是 {@code setMultiChoiceItems}：MIUI 主题下系统列表渲染
-     * 有问题，自绘三行复选框必然可见（v1.70.0 起设置页弹窗统一走 DialogKit，
+     * 有问题，自绘三行复选框必然可见（v0.76.4 起设置页弹窗统一走 DialogKit，
      * 这条理由只对还没搬完的睡前提醒等自绘布局有效）。
      *
      * <p>节气变化时要 {@link Widgets#updateAll}——三个整月组件都画节气；
      * 另两个只影响 App 内日历，不碰小部件。
      */
     /**
-     * 日历显示内容（v1.65.0 换成 DialogKit 多选卡片）。
+     * 日历显示内容（v0.75.0 换成 DialogKit 多选卡片）。
      *
-     * <p>v1.60.0 为绕开 MIUI 上 {@code setMultiChoiceItems} 的渲染 bug 自绘了三行
+     * <p>v0.73.7 为绕开 MIUI 上 {@code setMultiChoiceItems} 的渲染 bug 自绘了三行
      * 裸 {@code CheckBox}（{@code dialog_calendar_content.xml}）——功能没问题，但它是
      * 设置页里唯一还没进卡片语言的选择器。现在复用 {@link DialogKit#showMultiPick}：
      * 一张卡一项，点卡片切换，选中淡紫底 + 主色描边 + 右侧勾。语义不变：三项多选、
@@ -505,9 +505,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 行右侧的值：勾了什么就列什么，全没勾写「都不显示」（v1.60.0）。
+     * 行右侧的值：勾了什么就列什么，全没勾写「都不显示」（v0.73.7）。
      *
-     * <p>v1.60.0 第一版用全名（农历节日、二十四节气、基督教节日），16 个字把
+     * <p>v0.73.7 第一版用全名（农历节日、二十四节气、基督教节日），16 个字把
      * 标题挤成一团——用户截图反馈。行内值改用短名（农历 / 节气 / 基督教），
      * 全名留在对话框里，那里有地方展开。
      */
@@ -534,7 +534,7 @@ public class SettingsActivity extends AppCompatActivity {
         tv.setText(sb.length() == 0 ? "都不显示" : sb.toString());
     }
 
-    // ================= 节假日数据（v1.19.7 由主界面迁入）=================
+    // ================= 节假日数据（v0.22.0 由主界面迁入）=================
 
     /** 节假日数据行摘要：内置覆盖范围 / 远程版本。 */
     private void updateHolidayDataText() {
@@ -575,7 +575,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 在线检查失败（v1.19.8）：不再用一句 Toast 打发，而是说清原因、
+     * 在线检查失败（v0.22.1）：不再用一句 Toast 打发，而是说清原因、
      * 说明内置数据仍然完整可用，并给出「重试」——弱网下多试一次往往就通了。
      */
     private void showCheckFailedDialog() {
@@ -592,16 +592,16 @@ public class SettingsActivity extends AppCompatActivity {
                 "知道了", null);
     }
 
-    // ================= v1.46.2：从首页搬来的三块 =================
+    // ================= v0.56.1：从首页搬来的三块 =================
 
     /**
-     * 运行状态（原为首页底部默认收起的折叠卡，v1.46.2 改成设置页一行 + 对话框）。
+     * 运行状态（原为首页底部默认收起的折叠卡，v0.56.1 改成设置页一行 + 对话框）。
      *
      * <p>内容一个字没少：开关状态、未来 N 天的提醒总数、下一个已登记闹钟、
      * 大周基准、节假日数据来源。变的是位置——这些都是「核对用」信息，
      * 不该每天摆在首页最底部。
      *
-     * <p>v1.71.0 排版改版：五件事原来挤一段 {@code "\n"} 文字，读之前先要断句
+     * <p>v0.76.5 排版改版：五件事原来挤一段 {@code "\n"} 文字，读之前先要断句
      * 才知道哪句说的是哪件事。改成{@link RowKit#kv}「标签: 值」信息行——
      * 标签固定宽、值自动换行并对齐成一列，行间发丝线分隔，像一张规格表。
      * 「已登记」用 success 色徽章跟在下一个闹钟后面，扫一眼就知道系统里落没落。
@@ -648,7 +648,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 导出完成小结（v1.71.0）：原来是一句 Toast，用户看完只知道「成功了」，
+     * 导出完成小结（v0.76.5）：原来是一句 Toast，用户看完只知道「成功了」，
      * 不知道文件里装了什么。换成小结对话框 + 摘要信息行（导出时间 / 闹钟数 /
      * 请假加班标记数）——和导入确认框里显示的信息同一套版式、同一份数据，
      * 「导出时看到的」和「导入时看到的」对得上。
@@ -693,7 +693,7 @@ public class SettingsActivity extends AppCompatActivity {
         tv.setText("已开启 · " + n + " 个提醒");
     }
 
-    // ================= 闹钟音量（v1.19.7 由主界面迁入）=================
+    // ================= 闹钟音量（v0.22.0 由主界面迁入）=================
 
     /** 音量行文案：0 时要说清到底还震不震，见 {@link PrefDialogs#volumeText}。 */
     private void updateVolumeText() {
@@ -701,15 +701,15 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 「添加到桌面」（v1.49.9，v1.59.0 按澎湃实测重写，v1.71.2 改回先发请求）。
+     * 「添加到桌面」（v0.63.0，v0.73.4 按澎湃实测重写，v0.77.0 改回先发请求）。
      *
      * <p>澎湃把第三方小部件统一收进「安卓小部件」二级列表，用户要翻三层才找得到。
      * {@code requestPinAppWidget} 本意是让系统直接弹「是否添加到桌面」，点一下就放上去。
      *
-     * <p><b>v1.59.0</b>：真机实测（用户反馈）HyperOS 上 {@code isRequestPinAppWidgetSupported()}
+     * <p><b>v0.73.4</b>：真机实测（用户反馈）HyperOS 上 {@code isRequestPinAppWidgetSupported()}
      * 返回 true、请求也「发出去了」，但桌面不弹确认框。当时按「小米桌面就直接给手动路径」处理。
      *
-     * <p><b>v1.71.2</b>：用户反馈「还是没法直接添加」——新版 HyperOS 已经支持一键添加，
+     * <p><b>v0.77.0</b>：用户反馈「还是没法直接添加」——新版 HyperOS 已经支持一键添加，
      * 按桌面直接放弃等于把能用的路堵死。现在不认桌面，先发请求；返回 false 才给手动路径。
      * 弹没弹框 API 没有回调，所以确认对话框里同时留一个「手动添加」出口，不让用户卡住。
      */
@@ -743,7 +743,7 @@ public class SettingsActivity extends AppCompatActivity {
             return;
         }
         // 带上默认尺寸：部分启动器对 null options 直接丢弃请求。
-        // v1.50.0：高度按组件给——4×4 那两份写 110 会被系统按 4×2 摆，
+        // v0.67.0：高度按组件给——4×4 那两份写 110 会被系统按 4×2 摆，
         // 固定尺寸的组件一旦初始框给小了，内容当场就被裁。
         android.os.Bundle opts = new android.os.Bundle();
         opts.putInt(android.appwidget.AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 250);
@@ -762,13 +762,13 @@ public class SettingsActivity extends AppCompatActivity {
                 getString(R.string.pin_manual_button), (d, w) -> showPinManualGuide());
     }
 
-    /** 小米桌面的手动引导（v1.59.0）：说清为什么不能一键加。 */
+    /** 小米桌面的手动引导（v0.73.4）：说清为什么不能一键加。 */
     private void showPinManualGuide() {
         DialogKit.showMessage(this, getString(R.string.pin_manual_title),
                 getString(R.string.pin_manual_message));
     }
 
-    /** 请求发出不去的兜底说明（v1.49.10）。 */
+    /** 请求发出不去的兜底说明（v0.64.0）。 */
     private void showPinFallback() {
         DialogKit.showMessage(this, getString(R.string.pin_manual_title_plain),
                 getString(R.string.pin_manual_message_plain));
@@ -823,7 +823,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 按键设置行摘要：两个键的作用各占一行（v1.29.0）。
+     * 按键设置行摘要：两个键的作用各占一行（v0.45.0）。
      *
      * <p>原来挤在一行：「音量键：稍后提醒 · 电源键：关闭」13sp 约 200dp，
      * 右侧还有箭头，360dp 屏余量很小，字号一调大就折成「…电源 / 键：关闭」这种
@@ -846,9 +846,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 提前提醒行文案（v1.72.1）：副标题恒定说「这功能干什么」，值在右边说「现在是多少」。
+     * 提前提醒行文案（v0.79.0）：副标题恒定说「这功能干什么」，值在右边说「现在是多少」。
      *
-     * <p>v1.71.7 之前副标题会写成「响铃前 1 小时提醒」——一句话把「开没开」和
+     * <p>v0.78.0 之前副标题会写成「响铃前 1 小时提醒」——一句话把「开没开」和
      * 「提前多久」都塞进 11sp 灰字里，而整行点击又是开关，两件事拧在一起。
      * 现在拆开：值（{@code 提前 1 小时} / {@code 关闭}）走 {@code SettingsValue}，
      * 副标题只讲机制。
@@ -864,14 +864,14 @@ public class SettingsActivity extends AppCompatActivity {
         tvRingDuration.setText(mins == 0 ? "不限" : mins + " 分钟后停止");
     }
 
-    /** 铃声行文案：系统默认 / 自定义铃声名（v1.19.1）。 */
+    /** 铃声行文案：系统默认 / 自定义铃声名（v0.19.0）。 */
     private void updateRingtoneText() {
         Uri uri = Prefs.getRingtoneUri(this);
         tvRingtone.setText(uri == null ? "系统默认" : ringtoneName(uri));
     }
 
     /**
-     * 打开铃声选择（v1.61.0 起自绘，替掉系统铃声选择器）。
+     * 打开铃声选择（v0.74.0 起自绘，替掉系统铃声选择器）。
      *
      * <p>系统选择器弹出来的是系统自己的一套界面，各 ROM 两副面孔，列表还是「一行灰字」，
      * 跟 App 里其它对话框完全不搭。自绘版本保留它最关键的那个体验——点一下就试听——
@@ -888,7 +888,7 @@ public class SettingsActivity extends AppCompatActivity {
         });
     }
 
-    /** 取铃声显示名；取不到时回退到通用文案（v1.19.1）。 */
+    /** 取铃声显示名；取不到时回退到通用文案（v0.19.0）。 */
     private String ringtoneName(Uri uri) {
         try {
             android.media.Ringtone r = RingtoneManager.getRingtone(this, uri);
@@ -899,7 +899,7 @@ public class SettingsActivity extends AppCompatActivity {
         return "已选铃声";
     }
 
-    /** 响铃时长选项（v1.70.0 起与 Prefs 值的映射留在代码里，布局已删）。 */
+    /** 响铃时长选项（v0.76.4 起与 Prefs 值的映射留在代码里，布局已删）。 */
     private static final String[] RING_DURATION_ITEMS = {
             "不限（一直响到手动停止）", "1 分钟", "3 分钟", "5 分钟", "10 分钟"};
     private static final int[] RING_DURATION_VALUES = {0, 1, 3, 5, 10};
@@ -909,7 +909,7 @@ public class SettingsActivity extends AppCompatActivity {
     /**
      * 响铃时长对话框：不限 / 1 / 3 / 5 / 10 分钟。
      *
-     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 单选卡片：自绘 RadioGroup
+     * <p>v0.76.4 换成 {@link DialogKit#showGroupPick} 单选卡片：自绘 RadioGroup
      * （{@code dialog_ring_duration}）的单选圈是系统样式，和卡片语言不搭。
      * 确定才写 Prefs（和原来一样），映射逐字保留：{@code mins<=0→不限}、
      * 否则取第一个「不小于 mins」的档位，都比它大就落最后一档。
@@ -939,7 +939,7 @@ public class SettingsActivity extends AppCompatActivity {
                 });
     }
 
-    /** 按键选项（v1.70.0 起与 Prefs 值的映射留在代码里，布局已删）。 */
+    /** 按键选项（v0.76.4 起与 Prefs 值的映射留在代码里，布局已删）。 */
     static final String[] KEY_ITEMS_VOL = {
             "无（按系统默认调音量）", "稍后提醒", "关闭这次响铃"};
     static final String[] KEY_ITEMS_POWER = {
@@ -952,7 +952,7 @@ public class SettingsActivity extends AppCompatActivity {
     /**
      * 按键设置对话框：音量键 / 电源键在响铃时的作用（无 / 稍后提醒 / 关闭这次响铃）。
      *
-     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 两组单选卡片：自绘 RadioGroup
+     * <p>v0.76.4 换成 {@link DialogKit#showGroupPick} 两组单选卡片：自绘 RadioGroup
      * （{@code dialog_keys}）的单选圈是系统样式。「无」的括注两个键各说各的
      * （音量键调音量 / 电源键息屏），所以两组 items 不共用。
      */
@@ -991,13 +991,13 @@ public class SettingsActivity extends AppCompatActivity {
         PrefDialogs.showPreNotice(this, this::updatePreNoticeText);
     }
 
-    // ================= 睡前提醒（v1.20）=================
+    // ================= 睡前提醒（v0.24.0）=================
 
     /**
-     * 睡前提醒行文案（v1.72.1 拆成两段）。
+     * 睡前提醒行文案（v0.79.0 拆成两段）。
      *
      * <p>右边 {@code tvBedtimeValue} 只写时刻（或「关闭」），是这一行的「值」；
-     * 左边副标题写条件——v1.58.0 加「仅明天上班」是因为这个条件决定提醒发不发，
+     * 左边副标题写条件——v0.73.3 加「仅明天上班」是因为这个条件决定提醒发不发，
      * 不写用户会以为休息日也有通知。关掉时副标题退回功能说明，
      * 因为此时「条件」无从谈起。
      */
@@ -1020,12 +1020,12 @@ public class SettingsActivity extends AppCompatActivity {
     /**
      * 睡前提醒：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间（滚轮）。
      *
-     * <p>v1.71.7 卡片化：六个选项从系统单选圈换成 {@link DialogKit#optionView} 卡片，
+     * <p>v0.78.0 卡片化：六个选项从系统单选圈换成 {@link DialogKit#optionView} 卡片，
      * 裸 {@code CheckBox} 换成开关行卡片。点一项即保存并关窗（选择本身就是一步操作，
      * 再问一次是多余的），开关勾选即时生效、不关窗（它只影响「发不发」，
      * 用户可能还想接着改时刻）。
      *
-     * <p>v1.72.1 收了三处别扭：底部「取消」→「完成」（原来那张取消取消不了任何东西）；
+     * <p>v0.79.0 收了三处别扭：底部「取消」→「完成」（原来那张取消取消不了任何东西）；
      * 「其他时间」不再先关弹窗再弹滚轮（取消滚轮会连弹窗一起丢掉）；
      * 入口从设置页的开关改成「值 + 箭头」，用户才看得出这里能设置。
      *
@@ -1075,7 +1075,7 @@ public class SettingsActivity extends AppCompatActivity {
                 // 卡片点了就关窗，但 View 还在——快速双击会进来第二次，把刚存的值再写一遍
                 if (done[0]) return;
                 if (idx == titles.length - 1) {
-                    // v1.72.1：不再先关主弹窗。原来点「其他时间」会先把整个弹窗关掉再弹滚轮，
+                    // v0.79.0：不再先关主弹窗。原来点「其他时间」会先把整个弹窗关掉再弹滚轮，
                     // 滚轮上按返回就回到设置页，弹窗没了、什么都没改——像误触。
                     // 现在滚轮叠在上面，取消就退回原弹窗接着选。
                     pickCustomBedtime(cur, () -> {
@@ -1096,7 +1096,7 @@ public class SettingsActivity extends AppCompatActivity {
             list.addView(card, lp);
         }
 
-        // v1.60.0：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框——
+        // v0.73.7：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框——
         // 它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
         // 睡前提醒关着时压暗禁用：没有提醒可发，这个条件无从谈起，
         // 不禁用会让人以为改了它就会开始提醒。
@@ -1115,7 +1115,7 @@ public class SettingsActivity extends AppCompatActivity {
             updateBedtimeText();
         });
 
-        // v1.72.1：底部按钮从「取消」改成「完成」。
+        // v0.79.0：底部按钮从「取消」改成「完成」。
         // 原来那张「取消」在说谎——点任意一张卡都已经即时存下并关窗了，没有任何东西可取消。
         // 现在它只在「只切了开关、没点卡片」时用到：开关即时生效不关窗，用户需要一个出口，
         // 「完成」就是「我改完了，关掉吧」，名副其实。
@@ -1143,7 +1143,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     /**
-     * 落盘并重排。v1.71.9 起不再弹 Toast。
+     * 落盘并重排。v0.80.0 起不再弹 Toast。
      *
      * <p>设置页那一行右侧就写着时刻，点完卡片当场从「22:00」变成「22:30」——
      * 再飘一条「已设置 22:30 的睡前提醒」是把同一句话说了两遍（用户 2026-10-26 反馈
@@ -1153,7 +1153,7 @@ public class SettingsActivity extends AppCompatActivity {
         BedtimeReminder.reschedule(this);
         updateBedtimeText();
         int cur = Prefs.getBedtimeMinutes(this);
-        // v1.48.1：关掉就是关掉——已经挂在通知栏上的那条也要撤。
+        // v0.59.1：关掉就是关掉——已经挂在通知栏上的那条也要撤。
         // 以前只取消了下一天的调度，当前这条会一直留到 05:00 过期。
         if (cur == Prefs.BEDTIME_OFF) {
             BedtimeReminder.cancelNotice(this);
@@ -1163,7 +1163,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
-    // ================= 配置导出 / 导入（v1.20）=================
+    // ================= 配置导出 / 导入（v0.24.0）=================
 
     private void exportConfig() {
         try {

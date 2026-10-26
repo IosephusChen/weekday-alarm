@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">打工人闹钟</string>
-    <!-- 三个现存组件的描述（v1.53.0 删组件后清掉了两条残留：
+    <!-- 三个现存组件的描述（v0.71.0 删组件后清掉了两条残留：
          widget_week_schedule_desc / widget_month_compact_desc） -->
-    <!-- v1.69.2：跟着 v1.69.0 的改版更新——大字从「响铃时刻」换成「今天状态」 -->
+    <!-- v0.76.3：跟着 v0.76.1 的改版更新——大字从「响铃时刻」换成「今天状态」 -->
     <string name="widget_next_alarm_desc">今天状态 + 下次响铃 + 本周班表：上不上班、什么时候响、这周哪天上班，一张卡看完</string>
     <string name="widget_month_schedule_desc">本月班表 · 完整（4×4）：整月哪天上班、哪天休息，顶部带下一个闹钟</string>
     <string name="widget_month_minimal_desc">本月班表 · 极简（4×3）：整月班表，不要请假按钮、格子更宽松</string>
 
-    <!-- ===== 设置页文案（v1.60.0 从布局内联迁入）===== -->
+    <!-- ===== 设置页文案（v0.73.7 从布局内联迁入）===== -->
     <string name="settings_back">‹ 返回</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">闹钟</string>
@@ -71,14 +71,14 @@
     <string name="more_import_title">导入配置</string>
     <string name="more_import_summary">选择之前导出的文件恢复设置（会覆盖当前配置）</string>
 
-    <!-- ===== 设置页对话框与提示（v1.60.0 从 Java 字面量迁入）===== -->
+    <!-- ===== 设置页对话框与提示（v0.73.7 从 Java 字面量迁入）===== -->
     <string name="toast_no_file_manager_export">没有可用的文件管理器，无法导出</string>
     <string name="toast_no_file_manager_import">没有可用的文件管理器，无法导入</string>
     <string name="dialog_export_failed_title">导出失败</string>
     <string name="dialog_import_done_title">导入完成</string>
     <string name="import_done_tail">已按新配置重新排程，返回主界面即可看到结果。</string>
 
-    <!-- ===== 导入导出结构化版式（v1.71.0）=====
+    <!-- ===== 导入导出结构化版式（v0.76.5）=====
          导出完成从 Toast 升级成小结对话框，导入确认从一大段文字改成
          「一句说明 + 摘要信息行 + 警告」。文案都在这里，不在 Java 里。 -->
     <string name="dialog_export_done_title">已导出</string>
@@ -108,7 +108,7 @@
     <string name="pin_manual_title_plain">请手动添加</string>
     <string name="pin_manual_message_plain">长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。</string>
 
-    <!-- ===== 设置页对话框布局（v1.60.0 从内联迁入）===== -->
+    <!-- ===== 设置页对话框布局（v0.73.7 从内联迁入）===== -->
     <string name="dialog_horizon_title">提醒范围</string>
     <string name="dialog_horizon_message">节假日安排目前内置到 2026 年底。选择更长范围时，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖），2027 年安排公布后 App 更新数据即可自动生效，无需改设置。</string>
     <string name="dialog_horizon_90">90 天（默认）</string>
@@ -129,10 +129,10 @@
     <string name="dialog_bedtime_custom">其他时间…</string>
     <string name="dialog_bedtime_workday_only">仅在明天上班时提醒</string>
     <string name="dialog_bedtime_workday_hint">明天休息或已请假就不发通知</string>
-    <!-- v1.61.0：剩下几个 RadioGroup 对话框原来只有一个 13sp 的字段标签当标题，
+    <!-- v0.74.0：剩下几个 RadioGroup 对话框原来只有一个 13sp 的字段标签当标题，
          弹出来「不知道这是什么设置」。统一补上「17sp 粗体标题 + 12sp 说明」，
          与 dialog_bedtime / dialog_week_mode 同一套版式。
-         （原同族的 dialog_horizon 等五个单选圈布局已在 v1.70.0 换成 DialogKit
+         （原同族的 dialog_horizon 等五个单选圈布局已在 v0.76.4 换成 DialogKit
          卡片后删除，文案本身不变，仍由这几个 string 提供标题与说明。） -->
     <string name="dialog_volume_title">闹钟音量</string>
     <string name="dialog_volume_message">拖动调节，下次响铃即用新音量。调到 0 就是静音，届时只震动、不响铃。</string>

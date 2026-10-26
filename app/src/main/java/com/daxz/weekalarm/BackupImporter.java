@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 /**
- * 导入旧备份的完整流程（v1.47.0）：选文件 → 读文本 → 校验格式 → 二次确认 → 落盘 → 回调。
+ * 导入旧备份的完整流程（v0.57.0）：选文件 → 读文本 → 校验格式 → 二次确认 → 落盘 → 回调。
  *
  * <p>从 {@code SettingsActivity} 里抽出来，因为引导页也要用。原来这段（含 {@code readText}、
  * {@code doImport} 和三个对话框）写死在设置页里，复制一份到 612 行的引导页是最差的选项。
@@ -68,7 +68,7 @@ public final class BackupImporter {
     }
 
     /**
-     * 导入确认框的正文（v1.71.0 结构化）。
+     * 导入确认框的正文（v0.76.5 结构化）。
      *
      * <p>原来是一大段文字：覆盖范围、引导页附加句、文件摘要、警告全拼在一个字符串里，
      * 四五行走完用户还没找到「这个文件是什么时候导的」。改成三段：

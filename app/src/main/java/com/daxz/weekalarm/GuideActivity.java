@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 新手引导页（v1.19.9 初版；v1.25.0 改成「顺手把配置做完」）。
+ * 新手引导页（v0.23.0 初版；v0.35.0 改成「顺手把配置做完」）。
  *
  * <p>三页不再是纯讲解，而是每页做一件事：
  * <ol>
@@ -31,7 +31,7 @@ import java.util.List;
  *   <li>权限清单 —— 实时显示已开 / 未开，点一下直接跳到对应系统页</li>
  * </ol>
  *
- * <p>「看完」的定义也改了：v1.19.9 是拉起引导前就写标记，用户中途退出就再也看不到；
+ * <p>「看完」的定义也改了：v0.23.0 是拉起引导前就写标记，用户中途退出就再也看不到；
  * 现在只有点「开始使用」或「跳过」才写，半路退下次还会出现。
  *
  * <p>刻意不引 ViewPager2：三页静态内容用 ViewFlipper + 补间动画就够，
@@ -45,7 +45,7 @@ public class GuideActivity extends AppCompatActivity {
     private ViewFlipper flipper;
     private LinearLayout dots;
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime, tvTimeHint;
-    /** 导入旧备份（v1.47.0）：与设置页共用 {@link BackupImporter}。 */
+    /** 导入旧备份（v0.57.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSingleDay;
     private TextView optBig, optSmall, optRestSun, optRestSat;
@@ -133,7 +133,7 @@ public class GuideActivity extends AppCompatActivity {
     private void bindModeCards() {
         addModeCard(R.id.mode_bigsmall, WeekSchedule.Mode.BIG_SMALL);
         addModeCard(R.id.mode_double, WeekSchedule.Mode.DOUBLE_REST);
-        // v1.26.1：周六休 / 周日休合成一张卡，休哪天交给下面的子选项。
+        // v0.39.0：周六休 / 周日休合成一张卡，休哪天交给下面的子选项。
         // 卡本身用 SINGLE_REST_SUN 代表「单休这一组」，真正写哪个由 selectMode 决定。
         addModeCard(R.id.mode_single, WeekSchedule.Mode.SINGLE_REST_SUN);
 
@@ -226,7 +226,7 @@ public class GuideActivity extends AppCompatActivity {
     // ================= 第 2 页：第一个闹钟 =================
 
     private void bindTime() {
-        // v1.28：改用自绘「时 / 分」滚轮，与主界面、睡前提醒同一套。
+        // v0.43.0：改用自绘「时 / 分」滚轮，与主界面、睡前提醒同一套。
         // 原来这里还是框架的 TimePickerDialog——澎湃 OS 会无视主题把 spinner 渲染成表盘拨轮，
         // 于是同一个 App 里选时间出现两种完全不同的交互，引导页反而最花哨。
         View.OnClickListener pick = v -> TimeWheelDialog.show(this, "第一个闹钟", hour, minute,
@@ -293,7 +293,7 @@ public class GuideActivity extends AppCompatActivity {
             Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
             refreshRing();
         });
-        // v1.26.3：这两个对话框与设置页共用同一份（PrefDialogs），
+        // v0.40.0：这两个对话框与设置页共用同一份（PrefDialogs），
         // 免得两处各自维护「档位 ↔ 存值」的映射，哪天加一档就漏一处
         findViewById(R.id.row_snooze).setOnClickListener(
                 v -> PrefDialogs.showSnooze(this, this::refreshRing));
@@ -350,31 +350,31 @@ public class GuideActivity extends AppCompatActivity {
 
     private void bindPermissions() {
         findViewById(R.id.perm_notif).setOnClickListener(v -> openNotificationSettings());
-        // v1.47.2：真机验证发现「后台弹出界面」开启会连带开启全屏通知（反之不成立），
+        // v0.58.1：真机验证发现「后台弹出界面」开启会连带开启全屏通知（反之不成立），
         // 所以这一行改成指向「后台弹出界面」——一个入口覆盖两件事，不用再单独引导全屏。
-        // v1.59.1：真机 2×2 实测确认它管「后台能不能把界面拉起来」——关掉时锁屏、
+        // v0.73.5：真机 2×2 实测确认它管「后台能不能把界面拉起来」——关掉时锁屏、
         // 解锁都不弹，只剩通知栏。「锁屏显示」与它同在小米权限编辑页（下一行），
         // 两行共用一个跳转。
         findViewById(R.id.perm_fsi).setOnClickListener(v -> openPopupPerms());
-        // v1.47.1：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
+        // v0.58.0：自启动是国产 ROM 的后台白名单，不是 Android 权限——没有 API 能读状态，
         // 只能给跳转。它比电池优化更关键：没有它，App 被划掉后闹钟到点广播直接被丢弃。
         findViewById(R.id.perm_autostart).setOnClickListener(
                 v -> PermissionGuides.openAutoStart(this));
-        // v1.45.0：悬浮窗权限。解锁响铃时那张贴顶横幅就是靠它挂上去的，
+        // v0.55.3：悬浮窗权限。解锁响铃时那张贴顶横幅就是靠它挂上去的，
         // 没有它只能退回整屏——用户要的恰恰是「别整屏」
         findViewById(R.id.perm_overlay).setOnClickListener(v -> openOverlaySettings());
-        // v1.59.1：锁屏显示移到底部测试按钮，这一行只负责跳去同一个权限编辑页开它
+        // v0.73.5：锁屏显示移到底部测试按钮，这一行只负责跳去同一个权限编辑页开它
         findViewById(R.id.perm_lock).setOnClickListener(v -> openPopupPerms());
-        // v1.25.1：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
+        // v0.36.0：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
         // 让用户等到第二天早上才发现不响，比什么都不做还糟。
         findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
-        // v1.59.1：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
+        // v0.73.5：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
         // 真机 2×2 实测确认；探针只验「锁屏上能不能看到响铃页」，不碰业务。
         findViewById(R.id.btn_lock_try).setOnClickListener(v -> showLockScreenHint());
     }
 
     /**
-     * 跳小米「权限编辑页」（v1.59.1 从 perm_fsi 抽出，两行共用）。
+     * 跳小米「权限编辑页」（v0.73.5 从 perm_fsi 抽出，两行共用）。
      *
      * <p>「后台弹出界面」和「锁屏显示」都在这一页：前者管后台能不能拉起界面，
      * 后者管拉起的界面能不能盖在锁屏上——真机 2×2 实测证明缺任何一个，
@@ -409,16 +409,16 @@ public class GuideActivity extends AppCompatActivity {
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
         setPermState(stNotif, notif);
         // 通知不是「有更好」：关掉后通知栏没有「停止」按钮。但响铃页与首页兜底行
-        // 还能停，所以 v1.59.1 起不再叫「必需」，只说清后果
+        // 还能停，所以 v0.73.5 起不再叫「必需」，只说清后果
         if (!notif) {
             stNotif.setText("未开 · 响铃时得进 App 关");
             stNotif.setTextColor(ContextCompat.getColor(this, R.color.danger));
         }
         setPermState(stFsi, fsi);
-        // v1.47.4：真机上这个 intent 落在「应用信息 → 权限」页，后台弹出界面还藏在
+        // v0.58.3：真机上这个 intent 落在「应用信息 → 权限」页，后台弹出界面还藏在
         // 「其他权限」里，所以状态文案直接告诉用户下一层点哪
         stFsi.setText(fsi ? "已开启 · 锁屏也能弹" : "去开启 · 进去点「其他权限」");
-        // v1.47.3：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
+        // v0.58.2：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
         // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
         // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
         setPermState(stOverlay, Settings.canDrawOverlays(this));
@@ -426,7 +426,7 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「锁屏显示」那一行的状态（v1.45.0 引入，v1.59.1 改文案）。
+     * 「锁屏显示」那一行的状态（v0.55.3 引入，v0.73.5 改文案）。
      *
      * <p>四态而不是两态：这一项查不到，只能靠自测。没测过时按普通权限行显示
      * 「去开启 · 同上一页」（它和「后台弹出界面」同在小米权限编辑页）；
@@ -454,12 +454,12 @@ public class GuideActivity extends AppCompatActivity {
     private void setPermState(TextView tv, boolean ok) {
         if (tv == null) return;
         tv.setText(ok ? "已开启" : "去开启");
-        // v1.28：改读资源，深色模式下用更亮的绿（写死 #16A34A 在深卡片上只有 3:1）
+        // v0.43.0：改读资源，深色模式下用更亮的绿（写死 #16A34A 在深卡片上只有 3:1）
         tv.setTextColor(ContextCompat.getColor(this, ok ? R.color.success : R.color.indigo));
     }
 
 
-    /** 悬浮窗权限（v1.45.0）：有标准跳转页，直接送到本应用的开关上。 */
+    /** 悬浮窗权限（v0.55.3）：有标准跳转页，直接送到本应用的开关上。 */
     private void openOverlaySettings() {
         try {
             startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -470,13 +470,13 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「试一下锁屏响铃」的对话框（v1.45.0 引入，v1.59.1 精简，v1.59.2 再瘦身）。
+     * 「试一下锁屏响铃」的对话框（v0.55.3 引入，v0.73.5 精简，v0.73.6 再瘦身）。
      *
-     * <p>v1.59.1：路径入口整个去掉——「锁屏显示」已经和「后台弹出界面」并成
+     * <p>v0.73.5：路径入口整个去掉——「锁屏显示」已经和「后台弹出界面」并成
      * 权限清单里的两行，点行内「去开启 · 同上一页」直达同一个权限编辑页，
      * 这里只留测试本身。开启路径不再需要第二份说明。
      *
-     * <p>v1.59.2：正文与按钮下方小字、与开始后的 Toast 三者原来说的是同一件事，
+     * <p>v0.73.6：正文与按钮下方小字、与开始后的 Toast 三者原来说的是同一件事，
      * 用户反馈「说明有点多余」。现在小字只一句「当场试出来」，步骤交给 Toast
      * （点完开始测试它会当面说），失败指令交给探针状态行（「没测到 · 两个
      * 开关都要开」），对话框只保留测试本身：测什么、怎样算过。
@@ -567,7 +567,7 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 导入成功（v1.47.0）：先把导入的数据回填到前两页的显示上，然后直接去第 3 页开权限。
+     * 导入成功（v0.57.0）：先把导入的数据回填到前两页的显示上，然后直接去第 3 页开权限。
      *
      * <p>三件事一件都不能省：
      * <ol>
@@ -601,7 +601,7 @@ public class GuideActivity extends AppCompatActivity {
         final String tip = firstRun
                 ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";
-        // v1.64.0：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
+        // v0.74.3：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
         // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App
         // 前不会知道。这是一次性点击，阻塞几百毫秒无感；ANR 风险来自反复操作，
         // 不来自一次性完成——所以只有这里回同步，其余界面侧路径仍走 Reschedule。

@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * 假期倒计时（v1.68.0，方案见 {@code docs/方案-假期倒计时.md}）。
+ * 假期倒计时（v0.76.0，方案见 {@code docs/方案-假期倒计时.md}）。
  *
  * <p>首页今天状态卡里多一行：普通日子显示「距元旦还有 23 天」，假期里显示假期进度。
  * 用户 2026-10-25 拍板<b>只做这一句、不做全节日罗列</b>——罗列与日历已有的节日标记重复。

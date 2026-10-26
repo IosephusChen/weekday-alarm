@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 /**
- * 本周班表 · 4×4 整月版（v1.49.10）。
+ * 本周班表 · 4×4 整月版（v0.64.0）。
  *
  * <p>4×2 拉到 4×4 原来只是被拉伸：七格变宽、按钮变大，信息量一点没多。
  * 这一版按高度换布局——够高就铺开整月，回答「这个月哪天要上班」。
@@ -22,7 +22,7 @@ import java.time.YearMonth;
  * <p>格子里第二行优先写节日名（国庆 / 中秋 / 圣诞），没有节日才写班 / 休；
  * 上班还是休息由文字颜色表达，所以换成节日名不丢信息。
  *
- * <p>节气不写进格子（v1.55.0）：它会把「班 / 休」顶掉，让人看不出那天上不上班。
+ * <p>节气不写进格子（v0.73.0）：它会把「班 / 休」顶掉，让人看不出那天上不上班。
  * 节气在 App 内日历和首页显示。
  */
 final class MonthWidgetRender {
@@ -83,9 +83,9 @@ final class MonthWidgetRender {
     static final class Model {
         String title = "";
         String subtitle = "";
-        /** 本月统计（v1.71.9）：「22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
+        /** 本月统计（v0.80.0）：「22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
         String stats = "";
-        /** 下次响铃（v1.71.10）：「下次闹钟 明天 07:30」，与首页今天卡 / 4×2 部件同一句。 */
+        /** 下次响铃（v0.80.1）：「下次闹钟 明天 07:30」，与首页今天卡 / 4×2 部件同一句。 */
         String nextText = "";
         boolean nextVisible;
         final String[] nums = new String[CELLS];
@@ -140,10 +140,10 @@ final class MonthWidgetRender {
             boolean leave = Prefs.isVacation(ctx, d);
             boolean overtime = Prefs.isOvertime(ctx, d);
 
-            // v1.71.9 底部统计用：请了假就不算上班，休息日加了班就算上班
+            // v0.80.0 底部统计用：请了假就不算上班，休息日加了班就算上班
             if (work ? !leave : overtime) workDays++;
 
-            // 颜色始终表达上班 / 休息；文字在有节日时换成节日名（v1.49.11）。
+            // 颜色始终表达上班 / 休息；文字在有节日时换成节日名（v0.65.0）。
             // 与日历页同一套优先级：法定节假日 > 农历节日 > 基督教节日 > 班 / 休。
             // 补班日一律不覆盖——「补」比节日名要紧，用户得知道那天得上班。
             m.colors[i] = work ? C_WORK : C_REST;
@@ -162,7 +162,7 @@ final class MonthWidgetRender {
                         ? HolidayData.holidayName(d) : null;
                 String lunar = (Prefs.isLunarFestivals(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
                         ? LunarCalendar.festival(d) : null;
-                // 节气不进小部件格子（v1.55.0）。
+                // 节气不进小部件格子（v0.73.0）。
                 // 原来它排在农历节日之后、基督教之前，于是「霜降」会顶掉「班 / 休」——
                 // 格子上看不出那天上不上班，只能靠颜色猜。节气是知识性信息、一整天都不着急看，
                 // 上班与否是决策性信息，两者不该抢同一个位置。
@@ -179,7 +179,7 @@ final class MonthWidgetRender {
         }
 
         m.stats = workDays + " 天班 · " + (len - workDays) + " 天休";
-        // v1.71.10：倒计时换成「下次闹钟」——假期倒计时受 HolidayCountdown.SCAN_DAYS
+        // v0.80.1：倒计时换成「下次闹钟」——假期倒计时受 HolidayCountdown.SCAN_DAYS
         // 限制，2026 年 10 月查下一个假已经是 2027 元旦，超出窗口就整段消失，底部
         // 常年只剩统计。下次响铃天天都有，这一行才稳定是两段。
         m.nextVisible = next != null;
@@ -193,19 +193,19 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 两个变体共用这一个渲染入口（v1.51.1 三个，v1.53.0 定为两个）。
+     * 两个变体共用这一个渲染入口（v0.69.0 三个，v0.71.0 定为两个）。
      *
      * <p>变体只在「哪份布局 / 有没有底部信息行」上不同，42 格的算与画完全一样。
      * 分成三个类各写一遍渲染，等于把同一段代码复制三份——改一处颜色要改三处。
      *
-     * <p>v1.59.0：闹钟状态从「按设置开关显示」改为**恒定显示**。开关是 v1.51.1
-     * 为解决「闹钟占一整行把周次挤掉」加的，而 v1.52.0 起闹钟并进标题行、
+     * <p>v0.73.4：闹钟状态从「按设置开关显示」改为**恒定显示**。开关是 v0.69.0
+     * 为解决「闹钟占一整行把周次挤掉」加的，而 v0.70.1 起闹钟并进标题行、
      * 不再挤任何东西，开关的存在理由已经没了——用户反馈「这个开关没必要」。
      * 现在与 4×2 闹钟卡同一个口径：永远显示「闹钟已开启 / 未开启」。
      *
-     * <p>v1.71.9：{@code withActions} 换成 {@code withFooter}。4×4 底部两个请假按钮
+     * <p>v0.80.0：{@code withActions} 换成 {@code withFooter}。4×4 底部两个请假按钮
      * 被删掉（误触风险），位置改成「本月统计 + 下次闹钟」。4×3 只有 200dp 高，
-     * 42 格已经排到极限（v1.71.5 刚修完压字），不能再挤一行——所以 4×3 不显示。
+     * 42 格已经排到极限（v0.77.3 刚修完压字），不能再挤一行——所以 4×3 不显示。
      *
      * @param layout     4×4 用 {@code widget_week_schedule_month}，
      *                   4×3 用 {@code widget_month_compact}
@@ -250,9 +250,9 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 闹钟状态那一格（v1.52.0 收成一句话，v1.59.0 起恒定显示）。
+     * 闹钟状态那一格（v0.70.1 收成一句话，v0.73.4 起恒定显示）。
      *
-     * <p>v1.51.x 写的是「10月24日 周六 07:30」，4×4 还单独占一整行。用户反馈
+     * <p>v0.68.x 写的是「10月24日 周六 07:30」，4×4 还单独占一整行。用户反馈
      * 「多余的信息太多，像 4×2 那样显示个闹钟已开启就行」——整月日历本来就在看日期，
      * 再报一遍具体时刻是重复；要不要知道几点几分，4×2 的闹钟卡更合适。
      *

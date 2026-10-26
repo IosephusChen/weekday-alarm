@@ -15,7 +15,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * 添加 / 编辑闹钟的对话框（v1.36.0 从 {@code MainActivity} 拆出，纯搬运）。
+ * 添加 / 编辑闹钟的对话框（v0.52.2 从 {@code MainActivity} 拆出，纯搬运）。
  *
  * <p>这段代码原来混在主界面里：布局绑定、模式单选、时间滚轮、一次性日期选择、保存与删除。
  * 它只依赖「闹钟列表」和「保存后要重排」两件事，因此拆成一个静态入口：
@@ -27,12 +27,12 @@ import java.util.List;
 final class AlarmEditor {
 
     /**
-     * 四种重复规则（v1.71.2 卡片化，v1.71.3 去副标题）：主文案 + 对应的模式值。
+     * 四种重复规则（v0.77.0 卡片化，v0.77.1 去副标题）：主文案 + 对应的模式值。
      *
      * <p>顺序就是界面顺序，{@code MODE_VALUES} 与文案一一对应——
      * 保存时按下标取值，不再靠 RadioButton 的 id 分支。
      *
-     * <p>v1.71.3 删掉每张卡的副标题（用户反馈「没必要」）：四张卡本身就是
+     * <p>v0.77.1 删掉每张卡的副标题（用户反馈「没必要」）：四张卡本身就是
      * 自解释的，「仅上班日」不需要再跟一句「按周休制度」。
      */
     static final String[] MODE_TITLES = {
@@ -67,19 +67,19 @@ final class AlarmEditor {
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
 
-        // 一次性闹钟的那一天。v1.47.6 起默认「今天」——
-        // v1.27 当时给的是明天，理由是「此刻多半已过今天的起床时间」；但用户
+        // 一次性闹钟的那一天。v0.58.5 起默认「今天」——
+        // v0.41.0 当时给的是明天，理由是「此刻多半已过今天的起床时间」；但用户
         // 建一次性闹钟多半是为今天剩下的时间（下午的会、晚上的车），默认明天反而要先改。
         // 时间真过了也不会变成哑弹：保存时 onceDayAfter() 会顺延到明天并当面提示。
         final LocalDate[] once = {defaultOnceDay()};
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
-        // v1.71.2：重复规则从系统单选圈改成卡片。选中态只记一个下标，
+        // v0.77.0：重复规则从系统单选圈改成卡片。选中态只记一个下标，
         // 保存时按下标取 MODE_VALUES——不再靠 RadioButton 的 id 分支。
         final int[] modeSel = {target != null ? modeIndex(target.mode)
                 : modeIndex(Alarm.Mode.WORKDAY)};
-        // v1.61.0：编辑页的配色圆点取消——一条闹钟一个色，日常根本没人在用，
+        // v0.74.0：编辑页的配色圆点取消——一条闹钟一个色，日常根本没人在用，
         // 反而让列表五颜六色。color 字段仍留在数据层（老备份照常还原），
         // 只是不再有入口去改它
         if (target != null) {
@@ -205,7 +205,7 @@ final class AlarmEditor {
     }
 
     /**
-     * 把编辑结果写进一条已有的闹钟（v1.45.0 从对话框回调里抽出来）。
+     * 把编辑结果写进一条已有的闹钟（v0.55.3 从对话框回调里抽出来）。
      *
      * <p>抽出来是为了能单独测「改完自动开启」——那条逻辑藏在对话框的保存回调里，
      * 不抽的话只能靠真机点，回退了也没人知道。
@@ -213,15 +213,15 @@ final class AlarmEditor {
      * @return 需要当面提示的话；没什么可说就返回 null
      */
     /**
-     * 名称留空时统一叫「闹钟」（v1.47.5）。
+     * 名称留空时统一叫「闹钟」（v0.58.4）。
      *
-     * <p>v1.47.5 起新建闹钟不再预填「起床」——多数闹钟不是起床用的（午休、吃药、接娃），
+     * <p>v0.58.4 起新建闹钟不再预填「起床」——多数闹钟不是起床用的（午休、吃药、接娃），
      * 预填等于让用户先删两个字。留空也有兜底：列表、通知、睡前提醒都需要一个非空的称呼。
      *
      * <p>包级可见是为了单测：这个函数决定了「空名字」最终长什么样。
      */
     /**
-     * 新建一次性闹钟的默认日期（v1.47.6）：今天。
+     * 新建一次性闹钟的默认日期（v0.58.5）：今天。
      *
      * <p>为什么不是明天：用户建一次性闹钟，多数是今天剩下的事（下午的会、晚上的车），
      * 默认明天就得先点一下改回来。真过了点也不怕——保存时 {@link #onceDayAfter}
@@ -244,7 +244,7 @@ final class AlarmEditor {
         target.mode = mode;
         target.onceDate = onceStr;
 
-        // v1.45.0：改完就开。
+        // v0.55.3：改完就开。
         //
         // 用户点进编辑页改时间、改名字，意图是「这条闹钟要按新设置响」；
         // 改完还留着关闭状态，等于改了个空——想让它响还得回列表再拨一次开关。
@@ -281,7 +281,7 @@ final class AlarmEditor {
     /**
      * 一次性闹钟的日期行文案：「明天 · 10月23日」。
      *
-     * <p>v1.45.0：实现挪到 {@link Alarm#dayLabel}，和列表行共用一套规则。
+     * <p>v0.55.3：实现挪到 {@link Alarm#dayLabel}，和列表行共用一套规则。
      * 原来这里自己拼一遍，列表行另拼一遍，同一天在两处显示得不一样。
      */
     static String onceDateText(LocalDate d) {
@@ -289,11 +289,11 @@ final class AlarmEditor {
     }
 
     /**
-     * 选「哪一天」（v1.27）。不用框架 DatePickerDialog：同 TimePicker 一样，
+     * 选「哪一天」（v0.41.0）。不用框架 DatePickerDialog：同 TimePicker 一样，
      * 部分系统（澎湃实测）会无视主题强制换一套皮肤；而且这里要的只是
      * 「今天到一周内某天」，一个七项列表比日历更直接——临时闹钟本来就是近事。
      *
-     * <p>v1.61.0 换成 {@link DialogKit#showPick}：系统 {@code setItems} /
+     * <p>v0.74.0 换成 {@link DialogKit#showPick}：系统 {@code setItems} /
      * {@code setSingleChoiceItems} 在 MIUI 主题下渲染有问题，且与 App 风格不搭。
      * 主文案「今天」、副文案「10月23日 周三」，远近一眼看得出。
      *

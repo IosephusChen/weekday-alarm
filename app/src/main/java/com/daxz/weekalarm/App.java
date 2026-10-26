@@ -16,31 +16,31 @@ import java.util.Locale;
 public class App extends Application {
 
     // 注意：渠道一旦创建，名字、描述、重要性都无法通过代码升级，只能换 ID 重建。
-    // 想改名字就得改 ID，否则老用户看到的还是旧名——v1.45.0 踩过这个坑（见下）。
+    // 想改名字就得改 ID，否则老用户看到的还是旧名——v0.55.3 踩过这个坑（见下）。
     //
     // 换 ID 的代价是丢掉用户在这个渠道上做过的设置（静音、关通知）。
     // 现在这个 App 只有作者自己在用，丢得起；正式发布后不再随便换，
     // 要换必须先想清楚「值不值得让所有用户重设一遍」，并写进更新日志。
     public static final String CHANNEL_ALARM = "alarm_channel_v3";
     /**
-     * 提前提醒（v1.17；v1.23 起改为会弹窗的高优先级渠道；v1.46.0 换到 v3）。
+     * 提前提醒（v0.15.0；v0.31.0 起改为会弹窗的高优先级渠道；v0.55.4 换到 v3）。
      *
      * <p>渠道属性创建后无法升级，所以从 v1 换到 v2：v1 是 IMPORTANCE_LOW，只能躺在通知栏；
      * v2 用 IMPORTANCE_HIGH + 静音 + 不震动——只借高优先级的「横幅 / 全屏」能力，
      * 声音仍然留给真正的闹钟，不会在响铃前先吵一次。
      *
-     * <p>v1.46.0 又换到 v3，但这次换的是<em>名字</em>：v1.45.0 把设置页的「提前提醒」
+     * <p>v0.55.4 又换到 v3，但这次换的是<em>名字</em>：v0.55.3 把设置页的「提前提醒」
      * 改名「响铃前提醒」时只改了这里的字符串，已经建过 v2 的设备上什么也没变——
      * 名字在渠道创建那一刻就刻进系统数据库了。所以改名必须换 ID。
      */
     public static final String CHANNEL_PRE_NOTICE = "pre_notice_channel_v3";
     /**
-     * 测试响铃（v1.23.1）：手动点「测试响铃」时，界面本来就会被我们打开，
+     * 测试响铃（v0.31.1）：手动点「测试响铃」时，界面本来就会被我们打开，
      * 再弹一条横幅就是重复。用低优先级渠道，只占个前台服务名额，不抢屏不横幅。
      */
     public static final String CHANNEL_TEST = "test_channel_v1";
     /**
-     * 解锁响铃、且已经弹出悬浮横幅时用的渠道（v1.42.0）。
+     * 解锁响铃、且已经弹出悬浮横幅时用的渠道（v0.54.2）。
      *
      * <p>为什么另开一个：{@link #CHANNEL_ALARM} 是 IMPORTANCE_HIGH，屏幕亮着时一 post
      * 系统就会弹一张 heads-up——那是 SystemUI 自己的窗口，我们关不掉、也改不了它的按钮颜色。
@@ -51,10 +51,10 @@ public class App extends Application {
      * 锁屏 / 没给悬浮窗权限时仍走 {@link #CHANNEL_ALARM}——那时候需要高优先级 + 全屏意图。
      */
     public static final String CHANNEL_ALARM_BANNER = "alarm_banner_channel_v2";
-    /** 睡前提醒（v1.20）：晚上一条「明天要不要早起」，有声但很轻（默认提示音）。 */
+    /** 睡前提醒（v0.24.0）：晚上一条「明天要不要早起」，有声但很轻（默认提示音）。 */
     public static final String CHANNEL_BEDTIME = "bedtime_channel_v1";
     /**
-     * 稍后提醒期间挂在通知栏的那条（v1.46.0）。
+     * 稍后提醒期间挂在通知栏的那条（v0.55.4）。
      *
      * <p>以前借的是 {@link #CHANNEL_PRE_NOTICE}，但那个渠道叫「响铃前提醒」——
      * 用户想「别在响铃前打扰我」时把它关掉，顺带把「5 分钟后再响」的告知也关没了，
@@ -69,11 +69,11 @@ public class App extends Application {
      * 新换 ID 时把旧值追加进来，别覆盖。
      */
     private static final String[] CHANNELS_RETIRED = {
-            "alarm_channel",            // → v2（v1.25.0）
-            "alarm_channel_v2",         // → v3（v1.46.0，改名「闹钟响铃」）
-            "pre_notice_channel_v1",    // → v2（v1.23）
-            "pre_notice_channel_v2",    // → v3（v1.46.0，改名生效）
-            "alarm_banner_channel_v1",  // → v2（v1.46.0，名字改成说人话）
+            "alarm_channel",            // → v2（v0.35.0）
+            "alarm_channel_v2",         // → v3（v0.55.4，改名「闹钟响铃」）
+            "pre_notice_channel_v1",    // → v2（v0.31.0）
+            "pre_notice_channel_v2",    // → v3（v0.55.4，改名生效）
+            "alarm_banner_channel_v1",  // → v2（v0.55.4，名字改成说人话）
     };
 
     @Override
@@ -81,12 +81,12 @@ public class App extends Application {
         super.onCreate();
         installCrashLogger();
         ensureChannels(this);
-        // 睡前提醒（v1.20）：只注册下一条，触发后由 BedtimeReceiver 续订。
+        // 睡前提醒（v0.24.0）：只注册下一条，触发后由 BedtimeReceiver 续订。
         // 放在进程启动时兜底一次，避免「设了提醒但被系统清掉后一直不再注册」。
         BedtimeReminder.reschedule(this);
         // 节假日数据：先合入上次缓存的远程数据（离线也生效），再按 7 天节流静默检查更新
         HolidayUpdater.loadCached(this);
-        // v1.68.0：debug 构建跳过自动检查。auto-check 会真的连网，而后台线程落地时机
+        // v0.76.0：debug 构建跳过自动检查。auto-check 会真的连网，而后台线程落地时机
         // 不受控——它会整体替换 HolidayData 的远程层，把同一时刻正在跑的单元测试自己
         // 注入的数据冲掉（实测：隔离跑全绿、全套跑随机红，探针证实注入在 activity
         // setup 期间被冲掉）。release 包不受影响：用户装的就是 release，该拉的照拉。
@@ -101,7 +101,7 @@ public class App extends Application {
     }
 
     /**
-     * 创建 / 清理通知渠道（v1.25.0 从 onCreate 抽出来，方便直接单测）。
+     * 创建 / 清理通知渠道（v0.35.0 从 onCreate 抽出来，方便直接单测）。
      *
      * <p>抽出来的原因很实际：响铃能不能弹横幅，取决于渠道的这几个属性，
      * 而渠道一旦创建就无法用代码修改——只能换 ID 重建。属性写错了，
@@ -117,7 +117,7 @@ public class App extends Application {
         ch.enableVibration(false);             // 震动同样由 AlarmService 负责
         ch.setBypassDnd(true);                 // 允许在勿扰模式下提醒
         ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        // 提前提醒渠道（v1.23）：高优先级但静音——要高优先级才有横幅 / 全屏弹窗，
+        // 提前提醒渠道（v0.31.0）：高优先级但静音——要高优先级才有横幅 / 全屏弹窗，
         // 声音和震动仍然留给真正的闹钟，提前提醒只「露个脸」。
         NotificationChannel pre = new NotificationChannel(
                 CHANNEL_PRE_NOTICE, "响铃前提醒", NotificationManager.IMPORTANCE_HIGH);
@@ -125,7 +125,7 @@ public class App extends Application {
         pre.setSound(null, null);
         pre.enableVibration(false);
         pre.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        // 睡前提醒渠道（v1.20）：普通优先级、无铃声无震动——只是「提前说一声」，
+        // 睡前提醒渠道（v0.24.0）：普通优先级、无铃声无震动——只是「提前说一声」，
         // 真正叫醒用户的仍然是闹钟本身
         NotificationChannel test = new NotificationChannel(
                 CHANNEL_TEST, "测试响铃", NotificationManager.IMPORTANCE_LOW);
@@ -133,7 +133,7 @@ public class App extends Application {
         test.setSound(null, null);
         test.enableVibration(false);
 
-        // 解锁响铃（v1.42.0）：界面由悬浮横幅负责，这条只占个位置。
+        // 解锁响铃（v0.54.2）：界面由悬浮横幅负责，这条只占个位置。
         // 名字从「响铃（已弹横幅）」改成「屏幕亮着时」——「已弹横幅」是我们的实现，
         // 用户不知道什么叫横幅；他只知道「我屏幕亮着的时候它响过」。
         NotificationChannel banner = new NotificationChannel(
@@ -149,7 +149,7 @@ public class App extends Application {
         bedtime.setSound(null, null);
         bedtime.enableVibration(false);
 
-        // 稍后提醒（v1.46.0）：点完「稍后提醒」后挂着的那条，不响不震。
+        // 稍后提醒（v0.55.4）：点完「稍后提醒」后挂着的那条，不响不震。
         NotificationChannel snooze = new NotificationChannel(
                 CHANNEL_SNOOZE, "稍后提醒", NotificationManager.IMPORTANCE_LOW);
         snooze.setDescription("点「稍后提醒」后告诉你几点再响，不响不震");

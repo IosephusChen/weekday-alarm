@@ -10,7 +10,7 @@
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
-    <!-- v1.26.7：响铃页专用主题（AlarmActivity 单独挂上）。
+    <!-- v0.40.4：响铃页专用主题（AlarmActivity 单独挂上）。
 
          为什么不用主主题：主主题 statusBarColor 是浅色 @color/bg、windowBackground
          是 Material3 的白，而背景只画在内容区的 LinearLayout 上——于是状态栏和导航条
@@ -31,7 +31,7 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 
-    <!-- 锁屏显示自测页（v1.45.0）：固定深底，不跟随日夜。
+    <!-- 锁屏显示自测页（v0.55.3）：固定深底，不跟随日夜。
          它要盖在任何壁纸、任何锁屏上，跟着日间主题变成浅底就看不见了。
          windowShowWhenLocked / turnScreenOn 在代码里设，这里只管底色和去标题。 -->
     <style name="Theme.DaxiaoWeekAlarm.LockProbe" parent="Theme.DaxiaoWeekAlarm">
@@ -48,7 +48,7 @@
         <item name="android:textColorSecondary">@color/sub</item>
         <item name="android:textSize">22sp</item>
         <item name="colorControlActivated">@color/indigo</item>
-        <!-- v1.71.3：分隔线原来是深靛蓝（跟随 colorControlNormal），
+        <!-- v0.77.1：分隔线原来是深靛蓝（跟随 colorControlNormal），
              两列各画一条、在弹窗上横贯成两条长线；改成发丝线色后只剩「选中行」的暗示。 -->
         <item name="android:colorControlNormal">@color/line</item>
     </style>
@@ -64,7 +64,7 @@
     </style>
 
     <!-- 分区标题（「闹钟 / 排班与节假日 / 提醒 / 其他」）。
-         v1.58.0 之前与行标题（SettingsTitle）同为 15sp 粗体 ink 色——分组头混在行里
+         v0.73.3 之前与行标题（SettingsTitle）同为 15sp 粗体 ink 色——分组头混在行里
          认不出，设置页像一张没有结构的平铺列表。现在学 iOS 设置页的做法：
          分区头降到 13sp + 次级灰，行标题保持 15sp 深色，层级一眼可辨。 -->
     <style name="SectionTitle">
@@ -84,11 +84,11 @@
         <item name="android:textSize">12sp</item>
     </style>
 
-    <!-- ===== 使用说明页（v1.34.2）=====
+    <!-- ===== 使用说明页（v0.50.0）=====
          原来这 9 条是一整块 12sp 的灰字，读起来像免责声明。改成「小节标题 + 条目」：
          标题 15sp 加粗、条目 14sp 正文色，找「组件怎么加」能直接扫到那一节。
 
-         v1.71.0 两处排版收紧：
+         v0.76.5 两处排版收紧：
          ① 条目改「圆点列 + 正文列」两列（HelpItemRow + HelpDot）——以前「· 正文」
             是一个 TextView，换行后第二行顶到最左边和圆点齐平，一段话里出现两条
             左边界，扫读时眼睛来回找；现在圆点占位列、正文自动换行只对齐正文。
@@ -133,7 +133,7 @@
         <item name="android:lineSpacingMultiplier">1.35</item>
     </style>
 
-    <!-- ===== 设置列表（v1.19.8）=====
+    <!-- ===== 设置列表（v0.22.1）=====
          所有行统一「左标题 + 右值/开关」，行高与左右内边距一致，
          避免旧版「有的居中、有的左对齐」造成的视觉错位。 -->
     <style name="SettingsTitle">
@@ -164,14 +164,14 @@
         <item name="android:textSize">17sp</item>
     </style>
 
-    <!-- 响铃横幅的出入场动画（v1.41.0）：贴顶滑入 / 滑出。
+    <!-- 响铃横幅的出入场动画（v0.54.1）：贴顶滑入 / 滑出。
          挂在 WindowManager.LayoutParams.windowAnimations 上，见 FloatingAlarm。 -->
     <style name="FloatWindowAnim">
         <item name="android:windowEnterAnimation">@anim/float_in</item>
         <item name="android:windowExitAnimation">@anim/float_out</item>
     </style>
 
-    <!-- 稍后提醒的短提示（v1.44.0）：淡入淡出，不滑动 -->
+    <!-- 稍后提醒的短提示（v0.55.2）：淡入淡出，不滑动 -->
     <style name="FloatToastAnim">
         <item name="android:windowEnterAnimation">@anim/float_toast_in</item>
         <item name="android:windowExitAnimation">@anim/float_toast_out</item>

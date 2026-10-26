@@ -10,7 +10,7 @@ import android.view.WindowManager;
 import android.widget.TextView;
 
 /**
- * 锁屏显示自测页（v1.45.0）。
+ * 锁屏显示自测页（v0.55.3）。
  *
  * <p>由 {@link LockProbe} 用 {@link android.app.AlarmManager} 拉起，在用户按下电源键之后
  * 出现两三秒，自己关掉。它要证明的事情只有一件：<b>这个 App 的界面能不能盖在锁屏上</b>。

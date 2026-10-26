@@ -21,7 +21,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 /**
- * 响铃前的通知栏提醒（v1.17）。
+ * 响铃前的通知栏提醒（v0.15.0）。
  *
  * 在闹钟响铃前 N 分钟推送一条**安静**的通知（独立低优先级渠道，不响铃不震动），
  * 通知带一个「关闭这次响铃」操作：提前知道闹钟要响，也可以顺手把它关掉。
@@ -53,9 +53,9 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 提前提醒：通知栏 + 主动弹窗（v1.23）。
+     * 提前提醒：通知栏 + 主动弹窗（v0.31.0）。
      *
-     * <p>v1.17 起它只是一条静音通知，躺在通知栏里，用户不看就不知道；
+     * <p>v0.15.0 起它只是一条静音通知，躺在通知栏里，用户不看就不知道；
      * 现在同时挂一个全屏 intent，锁屏或正在用别的 App 时会直接弹出
      * {@link PreNoticeActivity}，点「知道了」或「关闭这次响铃」即可。
      * 通知本身仍然保留（静音、不震动），弹窗被系统拦下时还有兜底。
@@ -81,7 +81,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 发一条提前提醒（v1.23.2 抽出，供 {@link ScheduleManager#rescheduleAll} 补发复用）。
+     * 发一条提前提醒（v0.31.2 抽出，供 {@link ScheduleManager#rescheduleAll} 补发复用）。
      *
      * <p>补发的场景：闹钟是在「提前量窗口内」才设的——比如 14:31 设 15:31 的闹钟、提前 1 小时，
      * 算出来的提醒时刻 14:31 已经过去，注册时会被「pre 已过就别排了」跳过，
@@ -94,7 +94,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         if (timeText == null) timeText = "";
         // 主闹钟仍在登记才提醒：已手动关闭 / 已过期的不打扰
         if (!ScheduleManager.isAlarmRegistered(ctx, alarmId, d)) return;
-        // v1.40.0：用「日期 + HH:mm」现算真实剩余分钟。
+        // v0.54.0：用「日期 + HH:mm」现算真实剩余分钟。
         // 以前直接把排程时的提前量写进文案：4:23 补发一条、闹钟 4:24 就响，
         // 标题却写「还有 1 小时」——数字完全对不上。
         int real = actualMinutes(d, timeText, minutes);
@@ -111,7 +111,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         PendingIntent popupPi = PendingIntent.getActivity(ctx, 20 + alarmId, popup,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // v1.23.1：解锁使用中只发横幅通知，不弹整屏——用户正看着屏幕，横幅足够。
+        // v0.31.1：解锁使用中只发横幅通知，不弹整屏——用户正看着屏幕，横幅足够。
         // 息屏 / 锁屏才拉起弹窗，否则通知根本看不见。
         final boolean popupNow = ScreenLock.shouldPopup(ctx);
         if (popupNow) {
@@ -133,13 +133,13 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 preNoticeRequestCode(alarmId, d), cancel,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
-        // v1.37.0：正文改成绝对时间。
+        // v0.53.0：正文改成绝对时间。
         //
         // 原来写「1 小时后 · 14:10 响铃」——通知发出去之后不再刷新，这句「1 小时后」
         // 会一直停在原处：等到只剩 10 分钟，它还是「1 小时后」，比不写更误导。
         // 相对时间只在「发出那一刻」成立，而通知要在栏里躺满整个提前量，所以只能写绝对时间。
         //
-        // v1.45.0 起「还剩多久」也不再由卡片读秒承担（用户要求去掉），
+        // v0.55.3 起「还剩多久」也不再由卡片读秒承担（用户要求去掉），
         // 正文这句绝对时间就是全部信息。横幅上仍有一句相对时间（见下面的 headsUpText）——
         // 它只出现几秒，不存在躺久了失真的问题。
         String sub = whenText(d, timeText);
@@ -148,34 +148,34 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 .setContentTitle(label + " 即将响铃")
                 .setContentText(sub)
                 .setContentIntent(popupPi)
-                // v1.37.0：通知的强调色（头部应用名、系统着色）改用品牌紫，
+                // v0.53.0：通知的强调色（头部应用名、系统着色）改用品牌紫，
                 // 和下面自绘的紫底图标、紫底按钮连成一套。
                 .setColor(ContextCompat.getColor(ctx, R.color.indigo))
-                // v1.23.2：点进详情页后通知不消失，只有闹钟响过或被关掉才撤（对标系统闹钟）。
+                // v0.31.2：点进详情页后通知不消失，只有闹钟响过或被关掉才撤（对标系统闹钟）。
                 // ongoing 让它无法被划掉——这条通知就是这次响铃的「挂账」。
                 .setAutoCancel(false)
                 .setOngoing(true)
-                // v1.23.5：重排会重发同一条通知来刷新样式，静默更新即可，别再弹一次横幅
+                // v0.32.1：重排会重发同一条通知来刷新样式，静默更新即可，别再弹一次横幅
                 .setOnlyAlertOnce(true)
-                // v1.23.4：改成 CATEGORY_ALARM。它本质就是「闹钟要响了」的预告，
+                // v0.32.0：改成 CATEGORY_ALARM。它本质就是「闹钟要响了」的预告，
                 // 用 REMINDER 会被系统当普通提醒折叠；ALARM 类通知在勿扰下也能透出。
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setPriority(Notification.PRIORITY_HIGH)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
-                // v1.23.3：action 必须带真实图标。之前传 0，MIUI / HyperOS 认为这条操作
+                // v0.31.3：action 必须带真实图标。之前传 0，MIUI / HyperOS 认为这条操作
                 // 没有图标，干脆不渲染——通知栏里始终看不到「关闭闹钟」按钮。
                 .addAction(new Notification.Action.Builder(
                         Icon.createWithResource(ctx, R.drawable.ic_notif_close),
                         "这次不响", cancelPi).build());
-        // v1.45.0：这条通知**不再显示读秒倒计时**（用户要求）。
+        // v0.55.3：这条通知**不再显示读秒倒计时**（用户要求）。
         //
         // 卡片里的 Chronometer 每秒跳一次，眼睛会一直往那儿瞟，反而比「14:10 响铃」
         // 更吵；而且它只精确到秒，对「还有多久」这个判断没有增量信息。
         // 现在正文就是一句绝对时间（whenText），卡片里不留倒计时位。
         //
-        // 顺带说明历史：v1.37.0 用 setUsesChronometer 让系统画在通知头部，但设了
-        // customContentView 之后头部整行都不再由系统渲染，那几行从来没生效过（v1.38.0 发现）；
-        // v1.38.0 改由卡片里的 Chronometer 承担。现在两处都撤掉了。
+        // 顺带说明历史：v0.53.0 用 setUsesChronometer 让系统画在通知头部，但设了
+        // customContentView 之后头部整行都不再由系统渲染，那几行从来没生效过（v0.53.1 发现）；
+        // v0.53.1 改由卡片里的 Chronometer 承担。现在两处都撤掉了。
         //
         // 注意：「稍后再响」那条通知的倒计时**保留**——那里需要一个明确的「还剩多久」，
         // 而且它只活几分钟，不会长时间跳着烦人。
@@ -185,14 +185,14 @@ public class PreNoticeReceiver extends BroadcastReceiver {
             nb.setWhen(triggerAt).setShowWhen(true);
         }
 
-        // v1.23.6：把按钮画进**折叠态**布局。锁屏卡片和下拉后未展开的卡片渲染的都是折叠态，
+        // v0.33.0：把按钮画进**折叠态**布局。锁屏卡片和下拉后未展开的卡片渲染的都是折叠态，
         // 而折叠态由系统模板生成，只放小图标 + 标题 + 一行正文，addAction 的按钮要展开才出现——
         // 所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
         // 设了 customContentView，折叠态就是我们的布局，按钮直接躺在卡片上。
         nb.setCustomContentView(
                 NotifCard.build(ctx, label + " 即将响铃", sub, 0, popupPi,
                         NotifCard.Button.primary("这次不响", cancelPi)));
-        // v1.23.4：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
+        // v0.32.0：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
         // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，
         // 而「还有 10 分钟」比「14:10」更能让人马上起身。
         nb.setCustomHeadsUpContentView(
@@ -205,7 +205,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         Notification n = nb.build();
         try {
             NotificationManagerCompat.from(ctx).notify(NOTIF_ID_BASE + alarmId, n);
-            // v1.48.0：提前通知一出现，昨晚那条睡前提醒就该退场——
+            // v0.59.0：提前通知一出现，昨晚那条睡前提醒就该退场——
             // 它说的是「明早 05:00 起床」，而现在这条已经在说「还有 30 分钟」，
             // 两条并排挂在栏里，前者既过时又容易被误读成今天的安排。
             BedtimeReminder.cancelNotice(ctx);
@@ -216,7 +216,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     /**
      * 「还有多久」的统一写法：60 分钟写成「1 小时」，别让用户读「60 分钟后」。
      *
-     * <p>v1.40.0 补两档：不足 1 分钟写「不到 1 分钟」（原来会写「0 分钟」），
+     * <p>v0.54.0 补两档：不足 1 分钟写「不到 1 分钟」（原来会写「0 分钟」），
      * 90 分钟写「1 小时 30 分」（原来一律截成「1 小时」）。
      */
     static String minutesText(int minutes) {
@@ -228,7 +228,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 真正还剩多少分钟（v1.40.0）。
+     * 真正还剩多少分钟（v0.54.0）。
      *
      * <p>不能信排程时记下的「提前量」：闹钟如果是在提前量窗口内才设的，
      * {@link ScheduleManager#rescheduleAll} 会立刻补发一条，那时候提前量已经过时了。
@@ -249,7 +249,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 折叠卡片上的那行字（v1.37.0）：只有绝对时间，永远正确。
+     * 折叠卡片上的那行字（v0.53.0）：只有绝对时间，永远正确。
      *
      * <p>「今天」不写，「明天 / 后天」写出来，更远才补日期——一句话说清是哪一趟。
      * 和 {@link PreNoticeActivity} 的弹窗副标题共用同一份措辞。
@@ -299,7 +299,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 拼横幅（heads-up）的自绘布局（v1.23.4）。
+     * 拼横幅（heads-up）的自绘布局（v0.32.0）。
      *
      * <p>横幅和折叠卡片是两套独立视图，系统不会拿折叠布局去渲染横幅，所以各画一份。
      */
@@ -321,7 +321,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      * <p>RemoteViews 拿不到当前主题的文字色，只能自己读 uiMode：
      * 浅色卡片用近黑字，深色卡片用白字。
      *
-     * <p>v1.37.0 起图标底与按钮底固定为品牌紫渐变（见 {@code bg_notif_icon} /
+     * <p>v0.53.0 起图标底与按钮底固定为品牌紫渐变（见 {@code bg_notif_icon} /
      * {@code bg_notif_action}），所以这两个位置一律白字 / 白图标，不再按明暗切换背景。
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,

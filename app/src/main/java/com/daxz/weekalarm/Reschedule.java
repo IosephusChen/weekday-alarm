@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 把「重排闹钟」这类重活挪出主线程（v1.63.0）。
+ * 把「重排闹钟」这类重活挪出主线程（v0.74.2）。
  *
  * <p>为什么需要：{@link ScheduleManager#rescheduleAll} 会取消并重设上百个系统闹钟，
  * 每次都是跨进程 IPC。项目自述「累计可达数百毫秒到数秒」——同步跑在 UI 线程上，

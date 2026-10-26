@@ -9,7 +9,7 @@ import android.widget.TextView;
 import java.util.List;
 
 /**
- * 设置的二级页（v1.49.0）。
+ * 设置的二级页（v0.60.0）。
  *
  * <p>参考澎湃系统闹钟的分层：主页只留高频项（音量、铃声、两个提醒开关），
  * 其余按领域收进来。这一页没有自己的逻辑——它直接继承 {@link SettingsActivity}，
@@ -42,9 +42,9 @@ public class MoreSettingsActivity extends SettingsActivity {
         findViewById(R.id.sec_all).setVisibility(ring ? View.GONE : View.VISIBLE);
         ((TextView) findViewById(R.id.tv_title)).setText(ring ? "更多响铃设置" : "更多设置");
         if (!ring) {
-            // v1.59.0：更新日志行右侧显示当前版本。XML 里那个 v1.22.3 是从
-            // v1.22.3 加这行起就写死的占位——从没有任何代码刷新它，用户装机
-            // 后看到「更新日志 v1.22.3」以为日志停更了四年。
+            // v0.73.4：更新日志行右侧显示当前版本。XML 里那个 v0.29.0 是从
+            // v0.29.0 加这行起就写死的占位——从没有任何代码刷新它，用户装机
+            // 后看到「更新日志 v0.29.0」以为日志停更了四年。
             List<Changelog.Entry> entries = Changelog.all();
             if (!entries.isEmpty()) {
                 ((TextView) findViewById(R.id.tv_changelog_version))

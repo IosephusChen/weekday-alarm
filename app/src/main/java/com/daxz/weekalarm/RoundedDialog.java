@@ -6,7 +6,7 @@ import android.view.Window;
 import androidx.appcompat.app.AlertDialog;
 
 /**
- * 圆角对话框（v1.22.4）。
+ * 圆角对话框（v0.29.1）。
  *
  * <p>App 的卡片、按钮、日历格全是圆角矩形，只有 appcompat 的 AlertDialog 默认是
  * 直角白块，弹出来像另一个 App。Material3 的 alertDialogTheme 在部分 ROM 上

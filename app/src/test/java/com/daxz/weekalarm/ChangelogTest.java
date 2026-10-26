@@ -128,12 +128,12 @@ public class ChangelogTest {
 
     @Test
     public void byCode_hitsKnownAndMissesUnknown() {
-        // v1.23.3：改成跟安装包走，发版不用再来改这里
+        // v0.32.1：改成跟安装包走，发版不用再来改这里
         assertNotNull(Changelog.byCode(installedCode()));
         assertEquals(Changelog.all().get(0).version, Changelog.byCode(installedCode()).version);
-        assertEquals("1.23.1", Changelog.byCode(58).version);
-        assertEquals("1.23.0", Changelog.byCode(57).version);
-        assertEquals("1.22.5", Changelog.byCode(56).version);
+        assertEquals("0.31.1", Changelog.byCode(58).version);
+        assertEquals("0.31.0", Changelog.byCode(57).version);
+        assertEquals("0.30.0", Changelog.byCode(56).version);
         assertNotNull("上一版也要留在列表里", Changelog.byCode(54));
         assertNull(Changelog.byCode(9999));
     }

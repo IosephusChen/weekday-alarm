@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>优先级：补班 &gt; 放假 &gt; 大小周。远程层优先于内置层，但只对「它明确提到的日期」生效——
  * 远程没提到的日子仍按内置走，这样一份只含国庆的远程数据不会把春节弄丢。
  *
- * <p><b>为什么内置要 20 年</b>：v1.53.0 之前只内置当年（2026），次年 1 月就要靠远程续命，
+ * <p><b>为什么内置要 20 年</b>：v0.71.0 之前只内置当年（2026），次年 1 月就要靠远程续命，
  * 而远程挂在临时粘贴服务上。现在 20 年打包进 APK 约 4.5KB，断网也能算到 2026，
  * 远程只负责「新年份」这一件事。
  */
@@ -249,7 +249,7 @@ public final class HolidayData {
     }
 
     /**
-     * 合入旧版自定义格式（v1.53.0 及之前的数据源，单元测试仍用它）。
+     * 合入旧版自定义格式（v0.71.0 及之前的数据源，单元测试仍用它）。
      *
      * <p>语义是<b>全量替换</b>：这份 JSON 描述全部远程数据，合入后清掉之前所有年份。
      * 与 {@link #applyHolidayCnJson} 的增量语义不同——那是按年拉、互不影响。
@@ -269,7 +269,7 @@ public final class HolidayData {
             org.json.JSONObject root = new org.json.JSONObject(json);
             int version = root.optInt("version", 0);
             String published = root.optString("published", null);
-            // v1.19.9：没有版本号的一律视为无效数据。否则一个「结构合法但内容无关」的
+            // v0.23.0：没有版本号的一律视为无效数据。否则一个「结构合法但内容无关」的
             // JSON（如 {"error":"not found"}）会被当成空数据合入，把已缓存的远程安排清空。
             if (version <= 0) return false;
 

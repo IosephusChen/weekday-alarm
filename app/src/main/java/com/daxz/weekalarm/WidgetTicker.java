@@ -12,7 +12,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 /**
- * 桌面小组件的「跨日刷新」（v1.71.4）。
+ * 桌面小组件的「跨日刷新」（v0.77.2）。
  *
  * <p>三个组件的内容都跟「今天」走：4×2 的今天状态与七格高亮、两张整月卡的今天格子、
  * 「下次 明天 07:00」的措辞。系统给 {@code updatePeriodMillis} 的最小周期是 30 分钟，

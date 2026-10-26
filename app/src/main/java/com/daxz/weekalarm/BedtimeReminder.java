@@ -16,7 +16,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 /**
- * 睡前提醒（v1.20）：「明天要早起吗」。
+ * 睡前提醒（v0.24.0）：「明天要早起吗」。
  *
  * 在用户设定的时刻（默认关闭，可选 21:30 ~ 23:00 或自定义）发一条安静的通知，
  * 提前说明明早到底会不会响、几点响——避免两种常见的翻车：
@@ -46,7 +46,7 @@ public final class BedtimeReminder {
     public static final int MIDNIGHT_REQUEST_CODE = 999_002;
 
     /**
-     * 这条提醒在第二天几点之后彻底失效（v1.48.0）。
+     * 这条提醒在第二天几点之后彻底失效（v0.59.0）。
      *
      * <p>与通知自带的过期时间同一个时刻：05:00 是这一夜结束、起床闹钟开始响的时段。
      * 在此之前跨天要改口成「今天」，之后就该消失。
@@ -110,7 +110,7 @@ public final class BedtimeReminder {
 
         boolean notify = Prefs.isBedtimeWorkdayOnly(ctx) ? workday : true;
 
-        // v1.48.0：相对词不能写死。22:00 发的时候说「明天」是对的；跨过午夜之后
+        // v0.59.0：相对词不能写死。22:00 发的时候说「明天」是对的；跨过午夜之后
         // 同一条通知指的已经是「今天」，再写「明天 07:30」就错了一天。
         // 词由目标日期与今天的关系决定，所以凌晨重发一次就能自动改口。
         boolean isToday = tomorrow.equals(LocalDate.now());
@@ -147,7 +147,7 @@ public final class BedtimeReminder {
     }
 
     /**
-     * 通知还挂在通知栏时，按当前状态把它刷成最新内容（v1.46.7）。
+     * 通知还挂在通知栏时，按当前状态把它刷成最新内容（v0.56.6）。
      *
      * <p>问题场景：22:00 那条提醒写着「明天没有会响的闹钟」，用户随后在 App 里加了闹钟，
      * 通知仍停在通知栏上说着旧话。
@@ -161,7 +161,7 @@ public final class BedtimeReminder {
     }
 
     /**
-     * 刷新时按「现在是哪一天」决定该说什么（v1.48.0）。
+     * 刷新时按「现在是哪一天」决定该说什么（v0.59.0）。
      *
      * <p>三种情况：
      * <ul>
@@ -175,7 +175,7 @@ public final class BedtimeReminder {
      * <p>拆出 today/now 两个参数是为了单测能固定时刻，不必去改系统时钟。
      */
     static void refreshIfShownAt(Context ctx, LocalDate today, LocalTime now) {
-        // v1.48.1：功能已关闭时，刷新只能是「撤掉」。
+        // v0.59.1：功能已关闭时，刷新只能是「撤掉」。
         // 否则关掉开关之后，任何一次界面刷新都会按「明天要上班」把它重新发回来。
         if (Prefs.getBedtimeMinutes(ctx) == Prefs.BEDTIME_OFF) {
             cancelNotice(ctx);
@@ -215,7 +215,7 @@ public final class BedtimeReminder {
     }
 
     /**
-     * 撤掉通知栏上的睡前提醒（v1.47.9）。
+     * 撤掉通知栏上的睡前提醒（v0.58.8）。
      *
      * <p>三个调用点：跨天打开 App、状态变成不该提醒、起床闹钟开始响——
      * 最后那个最自然：响铃就是这一夜结束了，昨晚那条提醒的任务已经完成。
@@ -230,7 +230,7 @@ public final class BedtimeReminder {
     }
 
     /**
-     * 排一次午夜刷新（v1.48.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
+     * 排一次午夜刷新（v0.59.0）：跨过 00:00 时把文案里的「明天」改成「今天」。
      *
      * <p>为什么不靠用户打开 App：这段时间用户在睡觉，通知就挂在锁屏上。
      * 00:00 前后那句「明天 07:30」会突然变成错的——差一天，而它正对着用户的脸。

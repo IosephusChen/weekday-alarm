@@ -65,7 +65,7 @@ public final class ScheduleManager {
 
     /**
      * 旧版日期偏移（相对「今天」的天数）。
-     * 仅保留用于升级后清理历史残留闹钟——它本身是 v1.19.9 修复的那个 bug 的根源：
+     * 仅保留用于升级后清理历史残留闹钟——它本身是 v0.23.0 修复的那个 bug 的根源：
      * 偏移随「今天」滚动，跨天后再用同一算法算出的 requestCode 与注册时不一致，
      * 于是 cancel 打不中，旧实例一直留在系统里（会重复响、并挤占 ROM 闹钟名额）。
      */
@@ -88,7 +88,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 当天是否「实际要上班」：正常上班 / 调休补班，或个人标记加班的休息日（v1.15）。
+     * 当天是否「实际要上班」：正常上班 / 调休补班，或个人标记加班的休息日（v0.13.0）。
      * 请假日返回 false（请假日不办公，见下方各处 isVacation 跳过）。
      */
     public static boolean isEffectiveWorkday(Context ctx, LocalDate d) {
@@ -121,28 +121,28 @@ public final class ScheduleManager {
         cancelSegment(ctx, alarmId, d, SEG_MAIN);
     }
 
-    /** 取消「提前通知」闹钟（v1.17）。 */
+    /** 取消「提前通知」闹钟（v0.15.0）。 */
     public static void cancelPreNotice(Context ctx, int alarmId, LocalDate d) {
         cancelSegment(ctx, alarmId, d, SEG_PRE_NOTICE);
     }
 
     /**
      * 提前通知的 requestCode。注册（setPreNotice）与取消（cancelPreNotice）必须用同一套
-     * 编码，因此统一由这里产出，PreNoticeReceiver 只是转发——v1.19.9 之前它自己抄了一份
+     * 编码，因此统一由这里产出，PreNoticeReceiver 只是转发——v0.23.0 之前它自己抄了一份
      * 「相对今天偏移」的实现，两边一旦改动就会静默错位（取消不掉，通知照发）。
      */
     public static int preNoticeRequestCode(int alarmId, LocalDate d) {
         return requestCode(alarmId, d, SEG_PRE_NOTICE);
     }
 
-    /** 取消待触发的「稍后提醒」闹钟（v1.17）。 */
+    /** 取消待触发的「稍后提醒」闹钟（v0.15.0）。 */
     public static void cancelSnooze(Context ctx, int alarmId, LocalDate d) {
         cancelSegment(ctx, alarmId, d, SEG_SNOOZE);
     }
 
     /**
      * 是否还能再「稍后提醒」：次数不限（{@link Prefs#SNOOZE_UNLIMITED}）或当前已用次数 <
-     * 上限时返回 true。通知栏小睡按钮与 AlarmService 共用此判断，避免两处逻辑漂移（v1.18.2）。
+     * 上限时返回 true。通知栏小睡按钮与 AlarmService 共用此判断，避免两处逻辑漂移（v0.17.1）。
      */
     public static boolean canSnooze(Context ctx, int alarmId, LocalDate d) {
         int times = Prefs.getSnoozeTimes(ctx);
@@ -150,12 +150,12 @@ public final class ScheduleManager {
         return Prefs.getSnoozeCount(ctx, alarmId, d) < times;
     }
 
-    /** 检查「稍后提醒」闹钟是否仍在系统中登记（v1.17）。 */
+    /** 检查「稍后提醒」闹钟是否仍在系统中登记（v0.15.0）。 */
     public static boolean isSnoozeRegistered(Context ctx, int alarmId, LocalDate d) {
         return isSegmentRegistered(ctx, alarmId, d, SEG_SNOOZE);
     }
 
-    /** 检查「响铃自动停止」闹钟是否仍在系统中登记（v1.18）。 */
+    /** 检查「响铃自动停止」闹钟是否仍在系统中登记（v0.16.0）。 */
     public static boolean isAutoStopRegistered(Context ctx, int alarmId, LocalDate d) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return false;
@@ -170,7 +170,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 注册一条「响铃自动停止」闹钟（v1.18）：到点停掉正在响的闹钟。
+     * 注册一条「响铃自动停止」闹钟（v0.16.0）：到点停掉正在响的闹钟。
      * 用于「响 N 分钟后自动停止」——没人管的时候不会一直响、也不耗电。
      */
     public static void setAutoStop(Context ctx, LocalDateTime when, int alarmId) {
@@ -259,7 +259,7 @@ public final class ScheduleManager {
             PendingIntent pi = alarmPendingIntent(ctx, alarmId, when.toLocalDate(), label, segment);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             if (canScheduleExactAlarms(ctx)) {
-                // v1.19.9：showIntent 之前传 null，点状态栏的闹钟图标没反应；
+                // v0.23.0：showIntent 之前传 null，点状态栏的闹钟图标没反应；
                 // 现在指向主界面，用户点图标就能核对「这闹钟是哪来的」
                 am.setAlarmClock(new AlarmManager.AlarmClockInfo(millis, showIntent(ctx)), pi);
             } else {
@@ -302,7 +302,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 稍后提醒（v1.17：间隔与次数均可自定义）：当前时间 + 设定间隔，沿用原闹钟的
+     * 稍后提醒（v0.15.0：间隔与次数均可自定义）：当前时间 + 设定间隔，沿用原闹钟的
      * id 与名称。使用独立的 SNOOZE 段 requestCode——若沿用主闹钟段，任何一次
      * rescheduleAll（响铃后、重启后）的 cancelAll 都会把它连带取消，导致小睡失效。
      */
@@ -313,11 +313,11 @@ public final class ScheduleManager {
     }
 
     /**
-     * 注册一条「提前通知」闹钟（v1.17）：到点推送安静的通知栏提醒，带「关闭这次响铃」操作。
+     * 注册一条「提前通知」闹钟（v0.15.0）：到点推送安静的通知栏提醒，带「关闭这次响铃」操作。
      * 用 setExactAndAllowWhileIdle 而非 setAlarmClock——后者会在状态栏显示闹钟图标，
      * 提前 N 分钟就挂上图标反而打扰。
      *
-     * <p><b>编码一律按响铃日 {@code ringDate}，不是提醒时刻 {@code when}</b>（v1.58.0 修复）：
+     * <p><b>编码一律按响铃日 {@code ringDate}，不是提醒时刻 {@code when}</b>（v0.73.3 修复）：
      * 之前 URI / EXTRA_DATE / requestCode 全用 {@code when.toLocalDate()}，而主闹钟登记与
      * {@link #cancelAll} 取消都按响铃日。闹钟 00:30 + 提前 60 分钟时提醒落前一天 23:30，
      * 于是：触发时 {@code isAlarmRegistered} 拿前一天日期查不中、通知被静默丢弃；
@@ -347,7 +347,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 提前通知闹钟的 Intent（v1.58.0 抽出，供守门测试断言编码）。
+     * 提前通知闹钟的 Intent（v0.73.3 抽出，供守门测试断言编码）。
      *
      * <p>「身份」三件套——data URI、{@code EXTRA_DATE}、requestCode——一律按响铃日
      * {@code ringDate} 编码，与主闹钟登记、{@code cancelAll} 取消同一套日期。
@@ -390,7 +390,7 @@ public final class ScheduleManager {
                 int alarmId;
                 LocalDate d;
                 if (sep <= 0) {
-                    // v1.13 之前的旧记录格式是 "yyyy-MM-dd"（无 alarmId 前缀）。
+                    // v0.11.0 之前的旧记录格式是 "yyyy-MM-dd"（无 alarmId 前缀）。
                     // 旧版 requestCode 编码 = 0 * 100000 + 日偏移，与 alarmId=0 完全一致，
                     // 这里按 alarmId=0 取消，避免升级后旧闹钟残留在系统里重复触发。
                     alarmId = 0;
@@ -401,7 +401,7 @@ public final class ScheduleManager {
                 }
                 cancelAlarm(ctx, alarmId, d);
                 cancelPreNotice(ctx, alarmId, d);   // 提前通知一起清，避免残留
-                // v1.19.9：顺带按旧编码（相对今天的偏移）取消一次。旧版本注册的实例
+                // v0.23.0：顺带按旧编码（相对今天的偏移）取消一次。旧版本注册的实例
                 // 用的是旧 requestCode，升级后若不清，会与新版实例并存并重复响铃。
                 if (needLegacyClean) cancelLegacy(ctx, alarmId, d);
             } catch (Exception ignore) {
@@ -412,7 +412,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 「彻底停掉」的场景（v1.46.4 起：删到没有启用的闹钟）：在主实例之外，
+     * 「彻底停掉」的场景（v0.56.3 起：删到没有启用的闹钟）：在主实例之外，
      * 连稍后提醒与自动停止一起清掉。否则会出现「点了小睡 → 删掉闹钟 → 5 分钟后照样响」。
      */
     public static void cancelAllIncludingTransient(Context ctx) {
@@ -424,7 +424,7 @@ public final class ScheduleManager {
             cancelSnooze(ctx, a.id, today.plusDays(1));
             cancelAutoStop(ctx, a.id, today);
             cancelAutoStop(ctx, a.id, today.plusDays(1));
-            // 提前提醒是常驻通知（v1.23.2），彻底停掉后它说的「即将响铃」已经不成立，
+            // 提前提醒是常驻通知（v0.31.2），彻底停掉后它说的「即将响铃」已经不成立，
             // 一并撤掉，否则会一直挂在通知栏里
             try {
                 NotificationManagerCompat.from(ctx)
@@ -434,7 +434,7 @@ public final class ScheduleManager {
         }
     }
 
-    /** 按 v1.19.9 之前的旧编码再取消一次（升级清理用，打不中就静默跳过）。 */
+    /** 按 v0.23.0 之前的旧编码再取消一次（升级清理用，打不中就静默跳过）。 */
     private static void cancelLegacy(Context ctx, int alarmId, LocalDate d) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
@@ -482,7 +482,7 @@ public final class ScheduleManager {
     private static int rescheduleAllLocked(Context ctx) {
         cancelAll(ctx);
 
-        // v1.28.1：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
+        // v0.44.0：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
         // 排程表里虽然排不到它，但列表与统计口径会一直当它有效
         List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
         if (alarms.isEmpty()) return 0;
@@ -491,7 +491,7 @@ public final class ScheduleManager {
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
-        // v1.19.9 性能：请假 / 加班集合只读一次。旧版在「闹钟数 × 天数」的双层循环里
+        // v0.23.0 性能：请假 / 加班集合只读一次。旧版在「闹钟数 × 天数」的双层循环里
         // 逐日调用 Prefs.isVacation / isOvertime，每次都会把整个 StringSet 拷一份
         // （3 个闹钟 × 365 天 × 2 次 ≈ 2000 次拷贝），是改设置时卡顿的主因之一。
         Set<LocalDate> vacations = Prefs.getVacationDates(ctx);
@@ -507,7 +507,7 @@ public final class ScheduleManager {
                 // 个人请假：当天不响——但一次性闹钟豁免，它是「这天要叫我」，
                 // 不是「按作息排的班」（见 Alarm.ignoresVacation）
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
-                // 个人加班（v1.15）：休息日标记加班后「仅上班日」闹钟当天照响
+                // 个人加班（v0.13.0）：休息日标记加班后「仅上班日」闹钟当天照响
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 LocalDateTime when = LocalDateTime.of(d, alarmTime);
                 if (!when.isAfter(now)) continue;   // 今天已过点就跳过
@@ -532,16 +532,16 @@ public final class ScheduleManager {
                 LocalDateTime pre = when.minusMinutes(preNotice);
                 if (pre.isAfter(now2)) {   // 提前时刻已过就别排了，免得补一条过期通知
                     // ringDate 用响铃日：提前提醒的「身份」（requestCode / URI / EXTRA_DATE）
-                    // 必须与主闹钟登记、cancelAll 取消同一套日期，跨午夜才不会失效（v1.58.0）
+                    // 必须与主闹钟登记、cancelAll 取消同一套日期，跨午夜才不会失效（v0.73.3）
                     setPreNotice(ctx, pre, a.id, a.label, preNotice, when.toLocalDate());
                 }
             }
         }
-        // v1.23.2：在提前量窗口内才设的闹钟（如 14:31 设 15:31 的闹钟、提前 1 小时），
+        // v0.31.2：在提前量窗口内才设的闹钟（如 14:31 设 15:31 的闹钟、提前 1 小时），
         // 算出来的提醒时刻已经过去，上面「pre 已过就别排了」会直接跳过，
         // 这一次就永远收不到提前通知。这里补发。
         //
-        // v1.23.5：补发范围从「第一个候选」扩到「所有已进窗口的候选」，并且顺带做一次
+        // v0.32.1：补发范围从「第一个候选」扩到「所有已进窗口的候选」，并且顺带做一次
         // 通知栏对账——把「挂着但已经不该提醒」的撤掉。之前单个闹钟关掉后，
         // 通知栏里那条「即将响铃」会一直留着，点进去是个已停用的闹钟。
         // candidates 按响铃时刻升序，pre 也升序，所以 pre 一旦还在未来就可以停。
@@ -574,7 +574,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 清掉旧版本发出的提前提醒通知（v1.23.3）。
+     * 清掉旧版本发出的提前提醒通知（v0.31.3）。
      *
      * <p>旧版的 action 图标传了 0，MIUI / 澎湃不渲染按钮，那条通知永远长不出「关闭闹钟」。
      * 而重排时如果看到「已经挂着一条」就跳过补发，升级之后按钮依然不出现。
@@ -585,7 +585,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 只保留 {@code keep} 里列出的那些提前提醒，其余全部撤掉（v1.23.5）。
+     * 只保留 {@code keep} 里列出的那些提前提醒，其余全部撤掉（v0.32.1）。
      *
      * <p>重排时用它做一次「通知栏对账」：闹钟被关掉、已经响过、或者提前提醒整体关闭之后，
      * 通知栏里不该还留着「即将响铃」——之前只有响铃和彻底停掉会撤，单个闹钟关掉不撤。
@@ -627,7 +627,7 @@ public final class ScheduleManager {
     /**
      * 同上，但用调用方已经读好的列表。
      *
-     * <p>v1.28：首页一次刷新要算「下次响铃 / 实例总数 / 已登记闹钟」三样，
+     * <p>v0.43.0：首页一次刷新要算「下次响铃 / 实例总数 / 已登记闹钟」三样，
      * 旧写法每样都重新读一遍 Prefs。而 {@code Prefs.getAlarms} 现在会顺手
      * 关闭过期的一次性闹钟（可能写盘），三次读就是三次序列化 + 两次多余判断。
      * 传进来一次，三处共用。
@@ -683,7 +683,7 @@ public final class ScheduleManager {
         return isSegmentRegistered(ctx, alarmId, d, SEG_MAIN);
     }
 
-    /** 检查「提前通知」闹钟是否仍在系统中登记（v1.17）。 */
+    /** 检查「提前通知」闹钟是否仍在系统中登记（v0.15.0）。 */
     public static boolean isPreNoticeRegistered(Context ctx, int alarmId, LocalDate d) {
         return isSegmentRegistered(ctx, alarmId, d, SEG_PRE_NOTICE);
     }
@@ -698,7 +698,7 @@ public final class ScheduleManager {
     /**
      * 下一个仍被系统登记、且尚未到点的闹钟；没有则返回 null。
      *
-     * v1.19.9 性能：先按时间升序排出候选，再逐个查登记状态，**第一个命中即返回**。
+     * v0.23.0 性能：先按时间升序排出候选，再逐个查登记状态，**第一个命中即返回**。
      * 旧版对每个候选都做一次 PendingIntent 查询（每次都是跨进程 IPC），
      * 3 个闹钟 × 365 天 ≈ 1000 次 IPC，主界面每次刷新都要跑一遍，是明显的卡顿来源。
      */
@@ -706,7 +706,7 @@ public final class ScheduleManager {
         return nextRegisteredAlarm(ctx, Prefs.getAlarms(ctx));
     }
 
-    /** 同上，复用调用方已读好的列表（v1.28）。 */
+    /** 同上，复用调用方已读好的列表（v0.43.0）。 */
     public static NextAlarm nextRegisteredAlarm(Context ctx, List<Alarm> alarms) {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
@@ -740,7 +740,7 @@ public final class ScheduleManager {
     }
 
     /**
-     * 下一个「该响」的时刻（v1.22.5）：纯计算，不查系统登记状态。
+     * 下一个「该响」的时刻（v0.30.0）：纯计算，不查系统登记状态。
      *
      * <p>与 {@link #nextRegisteredAlarm} 的分工：那个是「系统里真的排上了没有」的自检，
      * 每次都要做 PendingIntent 探测；这个是「按规则本该什么时候响」，用来在首页显示

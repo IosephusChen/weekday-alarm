@@ -3,7 +3,7 @@ package com.daxz.weekalarm;
 import android.content.Context;
 
 /**
- * 「稍后提醒 / 提前提醒」两个设置对话框（v1.26.3 抽出来，设置页与引导页共用）。
+ * 「稍后提醒 / 提前提醒」两个设置对话框（v0.40.0 抽出来，设置页与引导页共用）。
  *
  * <p>抽的原因不是代码重复本身，而是这两项最容易被改坏：
  * 「界面显示的档位」和「写进 Prefs 的值」是两套映射（{@code *_ITEMS} 与 {@code *_VALUES}），
@@ -33,7 +33,7 @@ public final class PrefDialogs {
     /**
      * 纯时长（「1 小时」/「5 分钟」），不带「提前」二字。
      *
-     * <p>v1.45.0 拆出来的原因：副标题要读成「响铃前 1 小时提醒」，
+     * <p>v0.55.3 拆出来的原因：副标题要读成「响铃前 1 小时提醒」，
      * 直接把 {@link #leadText} 拼进去会变成「响铃前 提前 1 小时 提醒」，叠了两层。
      */
     private static String durationText(int mins) {
@@ -46,7 +46,7 @@ public final class PrefDialogs {
     }
 
     /**
-     * 稍后提醒间隔选项与 Prefs 值的映射（v1.70.0 起留在代码里，布局已删）。
+     * 稍后提醒间隔选项与 Prefs 值的映射（v0.76.4 起留在代码里，布局已删）。
      *
      * <p>两组数组必须等长、逐位对应：用户点第 {@code i} 项，
      * 写进 Prefs 的就是 {@code VALUES[i]}。加档位只改这里。
@@ -61,7 +61,7 @@ public final class PrefDialogs {
             "提示：次数用完后响铃界面只提供「滑动停止响铃」，需手动关闭；计数按「闹钟 × 日期」分别统计，次日自动重置。";
 
     /**
-     * 稍后提醒：间隔 + 最多次数（v1.70.0 换成{@link DialogKit#showGroupPick} 单选卡片）。
+     * 稍后提醒：间隔 + 最多次数（v0.76.4 换成{@link DialogKit#showGroupPick} 单选卡片）。
      *
      * <p>自绘 RadioGroup（{@code dialog_snooze}）的单选圈是系统样式，与卡片语言不搭。
      * 设置页与引导页共用这一个方法，两边同时换新视觉。确定才写 Prefs（同旧交互）。
@@ -103,7 +103,7 @@ public final class PrefDialogs {
         return fallback;
     }
 
-    /** 提前提醒选项与 Prefs 值的映射（v1.70.0 起留在代码里，布局已删）。 */
+    /** 提前提醒选项与 Prefs 值的映射（v0.76.4 起留在代码里，布局已删）。 */
     private static final String[] PRE_NOTICE_ITEMS = {
             "关闭", "提前 5 分钟", "提前 10 分钟", "提前 15 分钟", "提前 30 分钟", "提前 1 小时"};
     private static final int[] PRE_NOTICE_VALUES = {0, 5, 10, 15, 30, 60};
@@ -113,13 +113,13 @@ public final class PrefDialogs {
     /**
      * 提前提醒对话框：关闭 / 5 / 10 / 15 / 30 分钟 / 1 小时。
      *
-     * <p>v1.70.0 换成 {@link DialogKit#showGroupPick} 单选卡片（自绘 RadioGroup
+     * <p>v0.76.4 换成 {@link DialogKit#showGroupPick} 单选卡片（自绘 RadioGroup
      * {@code dialog_pre_notice} 删除）。
      *
-     * <p>v1.71.8 从「选完按确定」改成「点一项即生效并关窗」（{@link DialogKit#showPick}）：
+     * <p>v0.79.0 从「选完按确定」改成「点一项即生效并关窗」（{@link DialogKit#showPick}）：
      * 它只有一组选项，不需要二次确认；而同组的睡前提醒早就是「点即生效」，
      * 两个弹窗挨着打开却是两套规则，用户会觉得哪个都不顺手。
-     * 提前通知闹钟与主闹钟配对注册，改了提前量必须重排才生效（v1.18.2）。
+     * 提前通知闹钟与主闹钟配对注册，改了提前量必须重排才生效（v0.17.1）。
      */
     public static void showPreNotice(Context c, Runnable onChanged) {
         int cur = Prefs.getPreNoticeMinutes(c);
@@ -145,7 +145,7 @@ public final class PrefDialogs {
 
 
     /**
-     * 音量行的文案（v1.49.6）。
+     * 音量行的文案（v0.61.4）。
      *
      * <p>0 不能一律写「静音（仅震动）」——震动开关是独立的，关掉之后既没声也不震，
      * 还写「仅震动」就是在说假话。用户真机反馈：关了震动，设置页仍显示「静音（仅震动）」。

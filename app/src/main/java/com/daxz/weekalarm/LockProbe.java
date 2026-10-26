@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * 「锁屏显示」自测（v1.45.0）。
+ * 「锁屏显示」自测（v0.55.3）。
  *
  * <p>为什么要有这个东西：小米 / 荣耀 / OPPO 这些系统里有一个「锁屏显示」（有的叫「锁屏通知」
  * 「锁屏显示应用界面」），管的是「这个应用的界面能不能盖在锁屏上」。它<b>不在 AOSP 的权限体系里</b>，

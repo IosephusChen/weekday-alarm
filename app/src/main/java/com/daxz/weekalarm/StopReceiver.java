@@ -7,7 +7,7 @@ import android.content.Intent;
 import androidx.core.app.NotificationManagerCompat;
 
 /**
- * 响铃自动停止（v1.18）。
+ * 响铃自动停止（v0.16.0）。
  *
  * 由 {@link ScheduleManager#setAutoStop} 在闹钟开始响铃时注册一条定时广播，
  * 到点后停掉 AlarmService（铃声 / 震动 / 通知一并结束）。

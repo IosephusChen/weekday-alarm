@@ -11,12 +11,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.List;
 
 /**
- * 更新日志页（v1.22.3）：设置 → 其他 → 更新日志。
+ * 更新日志页（v0.29.0）：设置 → 其他 → 更新日志。
  *
  * <p>只做展示，数据来自 {@link Changelog}。当前安装的版本用主色标出，
  * 方便确认「我现在在哪一版」。内容离线可看，不联网。
  *
- * <p>v1.46.6：114 版一次性 inflate 约 570 个 View，进页面会卡。改成先画
+ * <p>v0.56.5：114 版一次性 inflate 约 570 个 View，进页面会卡。改成先画
  * {@link Changelog#PAGE_SIZE} 张，滚到距底部一屏内再追加一批——用户感知不到分页，
  * 但首帧只处理 15 张卡。
  */
@@ -34,7 +34,7 @@ public class ChangelogActivity extends AppCompatActivity {
 
         int current = Changelog.installedCode(this);
         TextView sub = findViewById(R.id.tv_changelog_sub);
-        // v1.23.5：这里原本还写了一遍「当前 v1.23.4（versionCode 61）」，
+        // v0.32.1：这里原本还写了一遍「当前 v0.32.0（versionCode 61）」，
         // 而下面第一条卡片本身就带「当前版本」标记，同一件事说了两遍。
         // 副标题只留「共几版 + 最近更新时间」，当前是哪版交给卡片上的标记。
         sub.setText("共 " + Changelog.all().size() + " 个版本 · 最近更新 "

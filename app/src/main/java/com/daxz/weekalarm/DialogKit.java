@@ -12,9 +12,9 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 
 /**
- * App 风格对话框的两块积木（v1.61.0）。
+ * App 风格对话框的两块积木（v0.74.0）。
  *
- * <p>v1.61.0 之前，弹一件事用 {@code setMessage}、弹一个选择用 {@code setItems} /
+ * <p>v0.74.0 之前，弹一件事用 {@code setMessage}、弹一个选择用 {@code setItems} /
  * {@code setSingleChoiceItems}。前者在 App 的卡片上是大号正文色，段落只能靠
  * {@code "\n\n"} 挤空行；后者是「一行灰字」的系统列表，跟 {@code dialog_week_mode}、
  * 引导页那一套卡片完全两个世界。用户截图反馈「太简陋」，这里把两件事各收一份。
@@ -66,7 +66,7 @@ public final class DialogKit {
     }
 
     /**
-     * 自定义正文的消息框（v1.71.0）：标题 + 调用方搭好的 body 视图。
+     * 自定义正文的消息框（v0.76.5）：标题 + 调用方搭好的 body 视图。
      *
      * <p>「五件事挤一段 {@code "\n"} 文字」那种对话框（运行状态、导入摘要）
      * 用文字排版排不出「哪句说的是哪件事」，需要 {@link RowKit} 的行级结构；
@@ -155,13 +155,13 @@ public final class DialogKit {
      * 带副标题的列表选择。副标题用于把「选它意味着什么」说在明处
      * （例如「周日」下面写「班表从周日开始排」），省得用户选完才发现不对。
      *
-     * <p><b>点一项即回调并关掉对话框</b>（v1.67.0 修）：v1.61.0 从系统 {@code setItems}
+     * <p><b>点一项即回调并关掉对话框</b>（v0.75.2 修）：v0.74.0 从系统 {@code setItems}
      * 换成这套自绘卡片时，{@code setItems} 自带的「点完即关」被丢掉了——弹窗留在屏幕上，
      * 上面的选项还是点之前的旧状态。日历的「标记为请假 / 取消请假」同一天因此能读出两种
      * 答案，再点一次还会把刚标的记录又取消掉，属于会吞数据的假象。
      *
      * <p>初始选中态和 {@link #showMultiPick} 一样由 {@code setSelected} + {@link #showCheck}
-     * 双驱动（v1.70.0 补）：只打勾不变色的话，当前值看上去和没选中的项没区别。
+     * 双驱动（v0.76.4 补）：只打勾不变色的话，当前值看上去和没选中的项没区别。
      *
      * @param subs 每项的副标题，可与 {@code items} 等长；{@code null} 或越界项按没有处理
      */
@@ -208,7 +208,7 @@ public final class DialogKit {
     }
 
     /**
-     * 多选列表（v1.65.0）：把 v1.60.0 为绕开 MIUI 渲染 bug 自绘的复选框也收进卡片语言。
+     * 多选列表（v0.75.0）：把 v0.73.7 为绕开 MIUI 渲染 bug 自绘的复选框也收进卡片语言。
      *
      * <p>点卡片任意处即切换——选中底与描边由 {@code bg_guide_option} 的
      * {@code setSelected} 驱动，右侧勾的显隐走 {@link #showCheck}，和单选
@@ -270,13 +270,13 @@ public final class DialogKit {
     }
 
     /**
-     * 分组单选 + 确定/取消（v1.70.0）。
+     * 分组单选 + 确定/取消（v0.76.4）。
      *
      * <p>点卡片只移动本组选中态，「确定」才回调——介于{@link #showPick}（点即生效）
      * 与{@link #showMultiPick}（多选）之间：选项是单选取舍（选了哪个直接决定存什么值），
      * 但一次要看两组（音量键 / 电源键、间隔 / 次数），显式确认比「点哪存哪」稳。
      *
-     * <p>v1.70.0 之前这些弹窗是自绘布局 + {@code RadioGroup}（响铃时长、按键设置、
+     * <p>v0.76.4 之前这些弹窗是自绘布局 + {@code RadioGroup}（响铃时长、按键设置、
      * 稍后提醒、提前提醒），单选圈是系统样式，和卡片语言不搭；提醒范围本就是
      * 「点即生效」改走{@link #showPick}。视觉全部收拢到 {@code bg_guide_option}
      * 一套，交互语义逐字保留。
@@ -414,7 +414,7 @@ public final class DialogKit {
     }
 
     /**
-     * 紧凑变体（v1.71.7）：上下内边距 13dp → 10dp，一张矮 6dp。
+     * 紧凑变体（v0.78.0）：上下内边距 13dp → 10dp，一张矮 6dp。
      *
      * <p>睡前提醒一屏要放六张卡，按标准高度会把弹窗撑到屏幕四分之三。别的弹窗
      * 三到五张卡、内容也不挤，保持标准高度更舒展——所以做成参数而不是全局改。

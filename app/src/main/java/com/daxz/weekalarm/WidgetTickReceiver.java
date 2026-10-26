@@ -5,7 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 
 /**
- * 每日零点后的组件刷新（v1.71.4）。
+ * 每日零点后的组件刷新（v0.77.2）。
  *
  * <p>由 {@link WidgetTicker} 每天挂一条；触发时把三个组件重画一遍
  * （{@link Widgets#updateAll} 末尾会顺带把下一天挂上，所以这里不用再管闹钟）。

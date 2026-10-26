@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 闹钟铃声选择（v1.61.0 自绘，替掉系统铃声选择器）。
+ * 闹钟铃声选择（v0.74.0 自绘，替掉系统铃声选择器）。
  *
  * <p>原来走 {@code RingtoneManager.ACTION_RINGTONE_PICKER}，弹出来的是系统自己的一套
  * 界面：不同 ROM 两副面孔，列表是「一行灰字」，和 App 里其它对话框完全不搭。

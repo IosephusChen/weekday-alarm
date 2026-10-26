@@ -15,8 +15,8 @@ import java.util.List;
  * - mode = WORKDAY：仅上班日响（默认，按周休制度自动排程，节假日/调休自动适配）
  * - mode = DAILY：每天响
  * - mode = WEEKEND：仅休息日响（随周休制度：双休=周六日，单休=那一个休息日）
- * - mode = ONCE：仅 {@link #onceDate} 那一天响（v1.27：临时闹钟；响过自动关闭，
- *   条目留在列表里，v1.27.2 起不再自动删除）
+ * - mode = ONCE：仅 {@link #onceDate} 那一天响（v0.41.0：临时闹钟；响过自动关闭，
+ *   条目留在列表里，v0.42.0 起不再自动删除）
  */
 public final class Alarm {
 
@@ -24,7 +24,7 @@ public final class Alarm {
         WORKDAY("仅上班日"),
         DAILY("每天"),
         WEEKEND("仅休息日"),
-        /** v1.27：一次性。只有 onceDate 那天响，与周休制度、节假日、请假都无关。 */
+        /** v0.41.0：一次性。只有 onceDate 那天响，与周休制度、节假日、请假都无关。 */
         ONCE("仅一次");
 
         private final String text;
@@ -40,7 +40,7 @@ public final class Alarm {
         /**
          * 由 JSON 里的 ordinal 还原。越界一律兜回 {@link #WORKDAY}。
          *
-         * <p>v1.27 之前是「钳到最近的一端」，那时最大值是 WEEKEND，钳过去只是
+         * <p>v0.41.0 之前是「钳到最近的一端」，那时最大值是 WEEKEND，钳过去只是
          * 变成「仅休息日」，无伤大雅。现在最大值是 ONCE——越界的脏数据若钳到它，
          * 会造出一个没有 onceDate、永远不会响的「仅一次」闹钟躺在列表里，
          * 比「仅上班日」糟糕得多。兜回默认值才是安全的那个方向。
@@ -59,7 +59,7 @@ public final class Alarm {
     public boolean enabled;
 
     /**
-     * 一次性闹钟的那一天（v1.27，{@link Mode#ONCE} 专用）。
+     * 一次性闹钟的那一天（v0.41.0，{@link Mode#ONCE} 专用）。
      *
      * <p>存字符串而不是 {@link LocalDate}：一是 {@code LocalDate} 不可序列化进 JSON，
      * 二是这个字段本来就只在 {@link #appliesTo} 里跟传入的 {@code d} 比一次，
@@ -71,7 +71,7 @@ public final class Alarm {
     public String onceDate;
 
     /**
-     * 用途配色（v1.30）：0 = 默认，1 橙 / 2 绿 / 3 紫。
+     * 用途配色（v0.46.0）：0 = 默认，1 橙 / 2 绿 / 3 紫。
      *
      * <p>只影响列表里时间大字的颜色，不影响响铃、排程与任何判定——换句话说，
      * 这个字段坏掉最多是「颜色不对」，绝不会让人漏响。因此越界值一律兜回 0，
@@ -122,7 +122,7 @@ public final class Alarm {
     }
 
     /**
-     * 日期文案的统一出口（v1.45.0）。
+     * 日期文案的统一出口（v0.55.3）。
      *
      * <p>以前列表行与编辑框各写一套：列表是「10月22日 周四」，编辑框是「明天 · 10月22日」，
      * 同一天在两处长得不一样。现在都从这里出。
@@ -173,7 +173,7 @@ public final class Alarm {
     }
 
     /**
-     * 请假是否该把这支闹钟一起静音（v1.27.1）。
+     * 请假是否该把这支闹钟一起静音（v0.41.1）。
      *
      * <p>「请假」的语义是「我今天不上班，按作息排的闹钟别吵我」——它针对的是
      * 跟着排班走的那几种模式。一次性闹钟是用户指着日历说「这天要叫我」，
@@ -188,11 +188,11 @@ public final class Alarm {
     }
 
     /**
-     * 一次性闹钟是否已经过期（v1.27.1 起按「时刻」而不只是「日期」判断）。
+     * 一次性闹钟是否已经过期（v0.41.1 起按「时刻」而不只是「日期」判断）。
      *
      * <p>只比日期的话，今天 6:30 响过之后它还会以「已开启」的样子躺到明天零点，
      * 用户会以为它还会再响一次。按时刻判断，响过那一刻起就算过期，
-     * 由 {@link Prefs#getAlarms} 自动关掉（v1.27.2：关掉而不是删除）。
+     * 由 {@link Prefs#getAlarms} 自动关掉（v0.42.0：关掉而不是删除）。
      */
     public boolean isExpiredAt(LocalDateTime now) {
         if (mode != Mode.ONCE) return false;
@@ -202,7 +202,7 @@ public final class Alarm {
     }
 
     /**
-     * 把已经过期的一次性闹钟顺延到下一个「该时刻」（v1.27.2）。
+     * 把已经过期的一次性闹钟顺延到下一个「该时刻」（v0.42.0）。
      *
      * <p>自动关闭之后，用户再打开这条闹钟，意思多半是「就照这个时间再来一次」。
      * 若只把开关打开、日期留在过去，它显示「已开启」却永远不会响——又回到
@@ -238,7 +238,7 @@ public final class Alarm {
     /**
      * 该闹钟在指定日期是否应该响。
      *
-     * @param overtime 该日是否被个人标记为加班（v1.15）：休息日标记加班后，
+     * @param overtime 该日是否被个人标记为加班（v0.13.0）：休息日标记加班后，
      *                 「仅上班日」闹钟当天照响——加班也是去上班，起床闹钟照常。
      *                 「每天」本来就响、「仅休息日」周末本来就响，均不受影响。
      */
@@ -247,7 +247,7 @@ public final class Alarm {
     }
 
     /**
-     * 该闹钟在指定日期是否应该响（v1.22：按周休制度判断）。
+     * 该闹钟在指定日期是否应该响（v0.27.0：按周休制度判断）。
      *
      * <p>「仅休息日」的含义随制度走——它取的是「这天在该制度下是不是休息日」，
      * 而不是死板的周六日：双休时是周六日；单休（周日休）时只有周日；
@@ -314,7 +314,7 @@ public final class Alarm {
             for (int i = 0; i < arr.length(); i++) {
                 try {
                     JSONObject o = arr.getJSONObject(i);
-                    // v1.58.0：hour / minute 必须夹到合法区间。配置文件是纯文本 JSON，
+                    // v0.73.3：hour / minute 必须夹到合法区间。配置文件是纯文本 JSON，
                     // 用户手改编坏（"hour": 99）是现实场景——optInt 原样收下的话，
                     // 之后任何一处 LocalTime.of(hour, minute)（排程 / 结算 / 统计）
                     // 都会抛 DateTimeException 把 App 带崩，而且是在主线程。

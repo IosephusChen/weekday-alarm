@@ -12,7 +12,7 @@ import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 
 /**
- * 行级排版积木（v1.71.0）：条目、信息行、分隔线、小徽章。
+ * 行级排版积木（v0.76.5）：条目、信息行、分隔线、小徽章。
  *
  * <p>为什么单独一份：这些行既出现在对话框里（运行状态、导入确认），
  * 也出现在整页里（使用说明、更新日志）。放在 {@link DialogKit} 里

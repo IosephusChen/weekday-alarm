@@ -20,11 +20,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 首页内嵌的排班日历（v1.34.0）。
+ * 首页内嵌的排班日历（v0.48.1）。
  *
- * <p>沿革：v1.28.1 为了给闹钟列表腾地方，把日历整张卡搬到独立页 {@code CalendarActivity}；
+ * <p>沿革：v0.44.0 为了给闹钟列表腾地方，把日历整张卡搬到独立页 {@code CalendarActivity}；
  * 用了一个月发现「收起来还得手动点一下」——核对班表和标请假本来就是顺手的事，
- * 多一次跳转就多一次放弃。v1.34 搬回首页、默认展开、不再折叠。
+ * 多一次跳转就多一次放弃。v0.48.1 搬回首页、默认展开、不再折叠。
  *
  * <p>做法是把 {@code CalendarActivity} 的渲染逻辑整体挪进这个类，宿主 Activity 只负责
  * 提供一个容器和「改完要我干什么」的回调。这样 {@code MainActivity} 不再涨到 1800 行，
@@ -35,7 +35,7 @@ import java.util.Set;
  */
 final class CalendarPanel {
 
-    /** 星期文案，与首页其他地方一致（v1.22.2 起统一成两字写法）。 */
+    /** 星期文案，与首页其他地方一致（v0.28.0 起统一成两字写法）。 */
 
     private static final int[] DOW_IDS = {
             R.id.cal_dow_0, R.id.cal_dow_1, R.id.cal_dow_2, R.id.cal_dow_3,
@@ -53,7 +53,7 @@ final class CalendarPanel {
     private int year, month;
 
     /**
-     * 格子里两行字的字号（v1.36.1 提为常量）。
+     * 格子里两行字的字号（v0.52.3 提为常量）。
      *
      * <p>提出来是因为踩过一次：{@link #cellHeightPx(float)} 按 9.5sp 量标签高度，
      * 但重建骨架时漏了 {@code setTextSize}，标签实际用默认 14sp 画——字比格子算出来的
@@ -64,7 +64,7 @@ final class CalendarPanel {
     private static final float LABEL_SP = 9.5f;
 
     /**
-     * 6×7 格子骨架（v1.36.0）：第一次渲染时建好，之后只改文字、颜色与背景。
+     * 6×7 格子骨架（v0.52.2）：第一次渲染时建好，之后只改文字、颜色与背景。
      *
      * <p>原来每次 {@link #refresh()} 都 removeAllViews 再新建 84 个 View——
      * 首页每次回到前台、改设置、跨天都会走一遍。内容确实要变，但 View 结构不变，
@@ -130,7 +130,7 @@ final class CalendarPanel {
         // 农历 / 基督教节日开关只读一次（42 个格子逐个读 SharedPreferences 是白花 42 次读）
         boolean lunar = Prefs.isLunarFestivals(host);
         boolean christian = Prefs.isChristianFestivals(host);
-        // v1.51.2：节气开关也只读一次，理由同上
+        // v0.70.0：节气开关也只读一次，理由同上
         boolean solarTerms = Prefs.isSolarTerms(host);
         LocalDate first = LocalDate.of(year, month, 1);
         // 一周开始日可设为周一或周日，网格首列与表头一起旋转；只影响显示，不影响班/休判定
@@ -154,7 +154,7 @@ final class CalendarPanel {
                 LocalDate d = start.plusDays(r * 7L + c);
                 boolean inMonth = d.getMonthValue() == month && d.getYear() == year;
                 WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-                // v1.35.0：不再按班休过滤。
+                // v0.51.0：不再按班休过滤。
                 // 原来「请假只标上班日、加班只标休息日」，于是工作日的加班记录存了也不显示，
                 // 用户想记「工作日晚上加班」时格子一片空白。现在两个集合各自独立判断，
                 // 同一天可以既有请假又有加班（白天请假、晚上补工），格子上写「假加」。
@@ -278,7 +278,7 @@ final class CalendarPanel {
     }
 
     /**
-     * 建一次 6×7 骨架（v1.36.0）。结构固定，之后 {@link #renderCalendar()} 只改内容。
+     * 建一次 6×7 骨架（v0.52.2）。结构固定，之后 {@link #renderCalendar()} 只改内容。
      *
      * <p>格子 = 「数字 + 标签」两个 TextView 竖排。一个 TextView 里塞「数字\n标签」+
      * AbsoluteSizeSpan 会让两行共用行高，13sp 数字的下缘和 9.5sp 标签的上缘几乎贴在一起，
@@ -334,7 +334,7 @@ final class CalendarPanel {
     }
 
     /**
-     * 格子高度（v1.28.1）：按实际字号算，不再钉死 46dp。
+     * 格子高度（v0.44.0）：按实际字号算，不再钉死 46dp。
      *
      * <p>46dp 是照默认字号量的。系统字体调到 2.0× 时，13sp 数字 + 9.5sp 标签的高度
      * 会超过 46dp，两行被挤得贴在一起甚至被裁掉。这里按 {@code Paint.FontMetrics}
@@ -393,7 +393,7 @@ final class CalendarPanel {
     // ================= 单日标记 =================
 
     /**
-     * 点日历某一天（v1.35.1 起过去也能标）。
+     * 点日历某一天（v0.52.0 起过去也能标）。
      *
      * <p>菜单只有一套：上班日给「请假 / 加班」，休息日只给「加班」（休息日本来就不上班，
      * 标请假没有意义）。过去的日子用同一套菜单——用户补记「上周三请了假」时，不该被一句

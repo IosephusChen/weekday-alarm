@@ -30,7 +30,7 @@ import java.time.LocalDateTime;
 public class AlarmService extends Service {
 
     public static final String EXTRA_DATE = "date";
-    /** 是否用全屏 intent 抢屏（v1.23.1）：由 AlarmReceiver 按锁屏状态决定，解锁时只发通知。 */
+    /** 是否用全屏 intent 抢屏（v0.31.1）：由 AlarmReceiver 按锁屏状态决定，解锁时只发通知。 */
     public static final String EXTRA_POPUP = "popup";
     public static final String EXTRA_ALARM_ID = AlarmReceiver.EXTRA_ALARM_ID;
     public static final String EXTRA_LABEL = AlarmReceiver.EXTRA_LABEL;
@@ -42,7 +42,7 @@ public class AlarmService extends Service {
     public static final int NOTIF_ID = 1001;
 
     /**
-     * 当前是否正在响铃（v1.47.1）。
+     * 当前是否正在响铃（v0.58.0）。
      *
      * <p>存在的理由：响铃时能停止的入口只有两个——整屏响铃页和通知栏的「停止」按钮，
      * 而这两个都可能被系统拦掉（后台拉起 Activity 受限 / 通知权限被关）。用户回到 App
@@ -56,10 +56,10 @@ public class AlarmService extends Service {
         return ringing;
     }
 
-    /** 通知不可用时，响铃的最长时长（分钟）：没有停止入口，必须自己停（v1.47.1）。 */
+    /** 通知不可用时，响铃的最长时长（分钟）：没有停止入口，必须自己停（v0.58.0）。 */
     static final int DEGRADED_MAX_MINUTES = 5;
 
-    /** 铃声渐响：从静音线性升至设定音量的总时长与步进（v1.16）。 */
+    /** 铃声渐响：从静音线性升至设定音量的总时长与步进（v0.14.0）。 */
     private static final long FADE_IN_MS = 30_000;
     private static final long FADE_STEP_MS = 250;
 
@@ -71,7 +71,7 @@ public class AlarmService extends Service {
     /** 「自动停止」闹钟实际注册在哪一天（跨零点时与 ringDate 不同，取消必须用这个）。 */
     private LocalDate autoStopDate;
 
-    // ===== 音量与渐响（v1.16）=====
+    // ===== 音量与渐响（v0.14.0）=====
     private final Handler fadeHandler = new Handler(Looper.getMainLooper());
     private long fadeStartUptime;
     private float fadeTargetVol = 1f;
@@ -101,7 +101,7 @@ public class AlarmService extends Service {
         if (ACTION_SNOOZE.equals(action)) {
             int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
             String label = intent.getStringExtra(EXTRA_LABEL);
-            // v1.18.2 修复：通知栏的小睡按钮此前不看剩余次数，界面禁用后
+            // v0.17.1 修复：通知栏的小睡按钮此前不看剩余次数，界面禁用后
             // 用户仍能从通知栏无限续睡。次数用尽时忽略操作并提示。
             LocalDate d = parseDate(intent.getStringExtra(EXTRA_DATE));
             if (!ScheduleManager.canSnooze(this, alarmId, d)) {
@@ -112,10 +112,10 @@ public class AlarmService extends Service {
             Prefs.incrementSnoozeCount(this, alarmId, d);
             int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
             ScheduleManager.snooze(this, alarmId, label != null ? label : "闹钟");
-            // v1.38.0：小睡排好之后立刻补一条通知。原来这里只 stopSelf，通知栏随响铃通知
+            // v0.53.1：小睡排好之后立刻补一条通知。原来这里只 stopSelf，通知栏随响铃通知
             // 一起清空，用户点完「5 分钟后再响」什么反馈都看不到，不知道它到底还响不响。
             SnoozeNotice.post(this, alarmId, label != null ? label : "闹钟", mins);
-            // v1.44.0：横幅点「稍后提醒」后立刻消失，通知栏那条要等一两秒才出现，
+            // v0.55.2：横幅点「稍后提醒」后立刻消失，通知栏那条要等一两秒才出现，
             // 中间屏幕上什么都没有，用户会以为没点上而再点一次（于是多排一次小睡）。
             // 这里补一句屏幕上的回执。
             FloatingAlarm.flash(this,
@@ -125,7 +125,7 @@ public class AlarmService extends Service {
             return START_NOT_STICKY;
         }
 
-        // v1.19.9：多个闹钟同时到点（如起床 7:30 与另一个 7:30）会连续进来两次 onStartCommand。
+        // v0.23.0：多个闹钟同时到点（如起床 7:30 与另一个 7:30）会连续进来两次 onStartCommand。
         // 旧版直接 new MediaPlayer 覆盖字段，前一个实例既没 stop 也没 release，
         // 结果两路铃声叠着响、且再也停不掉。这里先收尾上一次响铃。
         if (player != null || vibrator != null) {
@@ -135,10 +135,10 @@ public class AlarmService extends Service {
         String label = intent != null ? intent.getStringExtra(EXTRA_LABEL) : null;
         if (label == null) label = "闹钟";
         currentAlarmId = intent != null ? intent.getIntExtra(EXTRA_ALARM_ID, 0) : 0;
-        // v1.38.0：真的响了，那条「N 分钟后再次响铃」的预告就该撤——留着会变成
+        // v0.53.1：真的响了，那条「N 分钟后再次响铃」的预告就该撤——留着会变成
         // 两条同时在栏里，用户分不清哪条是现在响的
         SnoozeNotice.cancel(this, currentAlarmId);
-        // v1.47.9：响铃＝这一夜结束，昨晚那条「明天 07:30 起床」已经兑现，留着就是废话
+        // v0.58.8：响铃＝这一夜结束，昨晚那条「明天 07:30 起床」已经兑现，留着就是废话
         BedtimeReminder.cancelNotice(this);
         ringDate = parseDate(dateStr);
         boolean test = ACTION_TEST.equals(action);
@@ -169,13 +169,13 @@ public class AlarmService extends Service {
         }
         ringing = true;
         startRinging();
-        scheduleAutoStop();   // v1.18：设定了响铃时长时，到点自动停
-        // v1.40.0：解锁使用中不整屏，弹一个 300dp 的小悬浮窗；挂不上去（没给悬浮窗权限）
+        scheduleAutoStop();   // v0.16.0：设定了响铃时长时，到点自动停
+        // v0.54.0：解锁使用中不整屏，弹一个 300dp 的小悬浮窗；挂不上去（没给悬浮窗权限）
         // 才退回整屏。锁屏 / 息屏仍由 AlarmReceiver 直接拉整屏，这里不再重复。
         if (!popup && !test) {
             int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
             boolean canSnooze = ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
-            // v1.43.0：横幅上要显示大号响铃时刻。取闹钟自己的 HH:mm 而不是当前时间——
+            // v0.55.0：横幅上要显示大号响铃时刻。取闹钟自己的 HH:mm 而不是当前时间——
             // 迟到几十秒（系统排程有抖动）时，显示「07:30」才是用户认识的那个闹钟
             if (!FloatingAlarm.show(this, currentAlarmId, label, dateStr,
                     ringTimeText(currentAlarmId), mins, canSnooze)) {
@@ -218,12 +218,12 @@ public class AlarmService extends Service {
 
     /** 注册「响铃自动停止」闹钟：到点触发 StopReceiver，避免无人时一直响。 */
     /**
-     * 响铃时，App 之外是否还有能停的入口（v1.47.8）。
+     * 响铃时，App 之外是否还有能停的入口（v0.58.7）。
      *
      * <p>通知栏的「停止」按钮、悬浮窗横幅上的停止键，只要有一个在，主界面再挂一行
      * 「正在响铃 · 停止」就是重复——用户截图里三个停止按钮并列，看着像三件不同的事。
      *
-     * <p>两个都没有时才返回 false：那时主界面那一行是唯一能停的地方（v1.47.1 的初衷）。
+     * <p>两个都没有时才返回 false：那时主界面那一行是唯一能停的地方（v0.58.0 的初衷）。
      */
     static boolean hasStopEntryOutside(Context ctx) {
         if (ctx == null) return false;
@@ -239,7 +239,7 @@ public class AlarmService extends Service {
     /**
      * 本次响铃到底该响多久（分钟），0 = 不限。
      *
-     * <p>v1.47.1：通知被关掉时，「停止」按钮就没了——整屏响铃页也可能被系统拦（后台拉起
+     * <p>v0.58.0：通知被关掉时，「停止」按钮就没了——整屏响铃页也可能被系统拦（后台拉起
      * Activity 受限），没给悬浮窗就一条路都没有，用户只能强行停止 App。这种状态不能让铃声
      * 无限响下去，所以强制封顶 {@link #DEGRADED_MAX_MINUTES}；用户设了更短的按用户的来。
      *
@@ -258,7 +258,7 @@ public class AlarmService extends Service {
         int minutes = effectiveRingMinutes(this);
         if (minutes <= 0) return;
         LocalDateTime when = LocalDateTime.now().plusMinutes(minutes);
-        // v1.19.9：记录实际注册日期。23:58 响铃 + 5 分钟自动停止会落到次日，
+        // v0.23.0：记录实际注册日期。23:58 响铃 + 5 分钟自动停止会落到次日，
         // 旧版取消时用 ringDate（今天）算 requestCode，打不中，残留一条无用广播。
         autoStopDate = when.toLocalDate();
         ScheduleManager.setAutoStop(this, when, currentAlarmId);
@@ -275,7 +275,7 @@ public class AlarmService extends Service {
     }
 
     private void startRinging() {
-        // v1.16：音量可调（0 = 静音仅震动），可选铃声渐响
+        // v0.14.0：音量可调（0 = 静音仅震动），可选铃声渐响
         int volumePct = Prefs.getVolume(this);
         float targetVol = Math.max(0f, Math.min(1f, volumePct / 100f));
         boolean fadeIn = Prefs.isFadeIn(this) && volumePct > 0;
@@ -322,7 +322,7 @@ public class AlarmService extends Service {
             } else {
                 vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             }
-            // v1.18：振动可关——配合音量 0 可实现「静音仅震动」或完全安静
+            // v0.16.0：振动可关——配合音量 0 可实现「静音仅震动」或完全安静
             if (Prefs.isVibrate(this) && vibrator != null && vibrator.hasVibrator()) {
                 // 带 USAGE_ALARM 属性的强震动：勿扰/静音策略下也会震，且幅度拉满
                 AudioAttributes attrs = new AudioAttributes.Builder()
@@ -346,7 +346,7 @@ public class AlarmService extends Service {
         }
     }
 
-    /** 本次响铃使用的铃声：用户自定义优先，否则系统默认闹钟铃（v1.19.1）。 */
+    /** 本次响铃使用的铃声：用户自定义优先，否则系统默认闹钟铃（v0.19.0）。 */
     Uri resolveRingtoneUri() {
         Uri custom = Prefs.getRingtoneUri(this);
         if (custom != null) return custom;
@@ -354,7 +354,7 @@ public class AlarmService extends Service {
         return def != null ? def : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
     }
 
-    /** 按设定音量开始播放；开启渐响时从 0 线性爬升（v1.16）。 */
+    /** 按设定音量开始播放；开启渐响时从 0 线性爬升（v0.14.0）。 */
     private void applyVolumeAndStart(float targetVol, boolean fadeIn) {
         if (player == null) return;
         try {
@@ -381,12 +381,12 @@ public class AlarmService extends Service {
     }
 
     private void stopRinging() {
-        // v1.40.0：小悬浮窗是独立窗口，不随通知一起消失，必须自己撤
+        // v0.54.0：小悬浮窗是独立窗口，不随通知一起消失，必须自己撤
         FloatingAlarm.hide();
         fading = false;
         fadeHandler.removeCallbacks(fadeRunnable);
-        // 取消尚未触发的「自动停止」闹钟，避免它在停止之后又来一次（v1.18）。
-        // 用注册时记录的实际日期，跨零点也能打中（v1.19.9）
+        // 取消尚未触发的「自动停止」闹钟，避免它在停止之后又来一次（v0.16.0）。
+        // 用注册时记录的实际日期，跨零点也能打中（v0.23.0）
         LocalDate stopDate = autoStopDate != null ? autoStopDate
                 : (ringDate != null ? ringDate : LocalDate.now());
         ScheduleManager.cancelAutoStop(this, currentAlarmId, stopDate);
@@ -409,7 +409,7 @@ public class AlarmService extends Service {
     }
 
     /**
-     * 通知栏「稍后提醒」按钮的 PendingIntent（v1.58.0 抽出，供守门测试直接拿）。
+     * 通知栏「稍后提醒」按钮的 PendingIntent（v0.73.3 抽出，供守门测试直接拿）。
      *
      * <p>必须带 {@code FLAG_UPDATE_CURRENT}：requestCode 固定为 2，PendingIntent 匹配
      * 不看 extras，少了这个 flag 第一次创建后 extras 就冻住了——之后任何闹钟响铃，
@@ -438,9 +438,9 @@ public class AlarmService extends Service {
         PendingIntent stopPi = PendingIntent.getService(this, 1,
                 new Intent(this, AlarmService.class).setAction(ACTION_STOP),
                 PendingIntent.FLAG_IMMUTABLE);
-        // v1.19.9：补上 EXTRA_DATE。之前漏传，点通知栏小睡时日期回退成「今天」，
+        // v0.23.0：补上 EXTRA_DATE。之前漏传，点通知栏小睡时日期回退成「今天」，
         // 跨零点（23:58 响、00:02 点小睡）会把次数记到新的一天，原日期的计数不生效
-        // v1.58.0：补 FLAG_UPDATE_CURRENT。PendingIntent 的匹配只看 requestCode +
+        // v0.73.3：补 FLAG_UPDATE_CURRENT。PendingIntent 的匹配只看 requestCode +
         // 组件，**不看 extras**——requestCode 固定为 2，第一个闹钟响铃时创建的这个
         // PendingIntent 会把 extras 永久冻住，之后任何闹钟再响，点通知栏小睡小睡的
         // 都是第一次那个闹钟（计数也记到旧 id / 旧日期）。同函数的 fpi 一直带着
@@ -450,9 +450,9 @@ public class AlarmService extends Service {
                 ringDate != null ? ringDate.toString() : null);
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
-        // v1.40.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
+        // v0.54.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
         String text = test ? "这是测试，正式提醒一样响" : "点此停止，或稍后提醒";
-        // v1.42.0：渠道按「要不要自己弹界面」来选，这决定了系统会不会再叠一张 heads-up。
+        // v0.54.2：渠道按「要不要自己弹界面」来选，这决定了系统会不会再叠一张 heads-up。
         //
         // 用户报的「两个悬浮窗」是这么来的：CHANNEL_ALARM 是 IMPORTANCE_HIGH，屏幕亮着时
         // 一 post 系统就弹 heads-up；我们又挂了自己的横幅，两张卡就叠在同一块地方。
@@ -476,15 +476,15 @@ public class AlarmService extends Service {
         if (!test && (popup || !willFloat)) {
             nb.setFullScreenIntent(fpi, true);
         }
-        // 小睡按钮：次数用尽时不再提供，避免通知栏无限续睡（v1.18.2）。
-        // v1.23：测试模式也不给——测试闹钟没有排班实例，点了只会静默地「什么都不发生」，
+        // 小睡按钮：次数用尽时不再提供，避免通知栏无限续睡（v0.17.1）。
+        // v0.31.0：测试模式也不给——测试闹钟没有排班实例，点了只会静默地「什么都不发生」，
         // 用户会以为按钮坏了；现在测试通知里只留「结束测试」。
         boolean canSnooze = !test && ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
         int snoozeMins = Math.max(1, Prefs.getSnoozeMinutes(this));
-        // v1.42.0：能弹横幅时不再挂 addAction。自绘卡片上已经有两个药丸，
+        // v0.54.2：能弹横幅时不再挂 addAction。自绘卡片上已经有两个药丸，
         // 系统模板的 action 只在 heads-up / 展开态出现，重复且样式不一致。
         if (!willFloat) {
-            // v1.23.3：action 必须带图标，否则 MIUI / HyperOS 不渲染按钮
+            // v0.31.3：action 必须带图标，否则 MIUI / HyperOS 不渲染按钮
             nb.addAction(new Notification.Action.Builder(
                     Icon.createWithResource(this, R.drawable.ic_notif_close),
                     test ? "结束测试" : "停止", stopPi).build());
@@ -494,10 +494,10 @@ public class AlarmService extends Service {
                         snoozeMins + "分钟后再响", snoozePi).build());
             }
         }
-        // v1.38.0：折叠态换成自绘卡片。
+        // v0.53.1：折叠态换成自绘卡片。
         //
         // 用户看到的是「按钮是透明的」——那不是我们的样式，是系统模板给 addAction 的默认
-        // 灰色半透明药丸。和提前提醒那条（v1.23.6 起自绘）放在一起，一眼就不像同一款 App。
+        // 灰色半透明药丸。和提前提醒那条（v0.33.0 起自绘）放在一起，一眼就不像同一款 App。
         // 现在两条用同一套卡片：紫渐变图标、「停止」实色紫药丸、「N 分钟后再响」紫描边药丸。
         nb.setCustomContentView(NotifCard.build(this, title, text, 0, fpi,
                 NotifCard.Button.primary(test ? "结束测试" : "停止", stopPi),
@@ -506,7 +506,7 @@ public class AlarmService extends Service {
     }
 
     /**
-     * 前台服务起不来时的兜底通知（v1.63.0）。
+     * 前台服务起不来时的兜底通知（v0.74.2）。
      *
      * <p>精确闹钟权限被关掉后，{@code ScheduleManager} 会降级成 {@code setWindow}。
      * 那条闹钟触发时 App 不在「闹钟白名单」里，Android 12+ 的

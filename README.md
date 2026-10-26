@@ -68,7 +68,7 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（674 条，Robolectric + JUnit）
+# 单元测试（688 条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
@@ -77,6 +77,21 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 # 出包（release 已开 R8 + 资源压缩，约 2.7MB）
 ./gradlew assembleRelease
 ```
+
+> **国内网络**：依赖来自 `google()` / `mavenCentral()`，直连通常很慢。在 `~/.gradle/init.gradle`
+> 里把镜像加在所有仓库之前即可（不需要改本仓库的任何文件），例如：
+>
+> ```groovy
+> allprojects {
+>   buildscript {
+>     repositories {
+>       maven { url 'https://mirrors.tencent.com/nexus/repository/maven-public/' }
+>     }
+>   }
+> }
+> ```
+>
+> 仓库本身不写镜像：一是作者本机已有全局配置，二是写死镜像会让境外构建多一跳不必要的重试。
 
 release 包经过 R8 混淆：线上崩溃栈要用 `app/build/outputs/mapping/release/mapping.txt`
 反混淆（`retrace`）。规则只保四样兜底（源文件名与行号、自定义 View 构造器、枚举、

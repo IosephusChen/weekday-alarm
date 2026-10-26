@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(202, "0.87.2", "2026/10/27", "内部标识统一，用法不变",
+                    "旧标识 daxz 是建项目时随手起的，没人知道含义",
+                    "升级首启会自动清掉旧实例，不会重复响",
+                    "界面与用法完全不变"),
             new Entry(201, "0.87.1", "2026/10/27", "补「关于」页：免责声明与源码入口",
                     "设置 → 更多设置 → 关于：源码、许可、免责、隐私都在这",
                     "崩溃日志现在能导出了——原来写了也拿不到",

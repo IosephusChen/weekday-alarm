@@ -120,7 +120,7 @@ public class BugfixRegressionTest {
         Intent i = ScheduleManager.preNoticeIntent(ctx(), 7, "起床", ringDay, 60, "00:30");
 
         assertEquals("data URI 必须按响铃日编码",
-                "daxz://prenotice/7/" + ringDay, i.getData().toString());
+                "weekdayalarm://prenotice/7/" + ringDay, i.getData().toString());
         assertEquals("EXTRA_DATE 必须按响铃日编码（触发时靠它查登记）",
                 ringDay.toString(), i.getStringExtra(PreNoticeReceiver.EXTRA_DATE));
         assertFalse("不能按提醒时刻的日期编码", i.getData().toString().contains(pre.toLocalDate().toString()));
@@ -176,7 +176,7 @@ public class BugfixRegressionTest {
         // 标掉的必须是今天，不是明天
         Intent click = new Intent(ctx(), BedtimeReceiver.class)
                 .setAction(BedtimeReceiver.ACTION_SKIP_TOMORROW)
-                .setData(android.net.Uri.parse("daxz://bedtime/skip/" + today));
+                .setData(android.net.Uri.parse("weekdayalarm://bedtime/skip/" + today));
         new BedtimeReceiver().onReceive(ctx(), click);
         List<String> vacations = new ArrayList<>();
         for (LocalDate d : Prefs.getVacationDates(ctx())) vacations.add(d.toString());
@@ -206,7 +206,7 @@ public class BugfixRegressionTest {
         assertEquals("明天请假", n.actions[0].title.toString());
         Intent click = new Intent(ctx(), BedtimeReceiver.class)
                 .setAction(BedtimeReceiver.ACTION_SKIP_TOMORROW)
-                .setData(android.net.Uri.parse("daxz://bedtime/skip/" + tomorrow));
+                .setData(android.net.Uri.parse("weekdayalarm://bedtime/skip/" + tomorrow));
         new BedtimeReceiver().onReceive(ctx(), click);
         List<String> vacations = new ArrayList<>();
         for (LocalDate d : Prefs.getVacationDates(ctx())) vacations.add(d.toString());

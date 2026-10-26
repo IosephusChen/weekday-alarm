@@ -95,7 +95,7 @@ public class BedtimeReceiver extends BroadcastReceiver {
         if (canSkip) {
             Intent skip = new Intent(ctx, BedtimeReceiver.class)
                     .setAction(ACTION_SKIP_TOMORROW)
-                    .setData(android.net.Uri.parse("daxz://bedtime/skip/" + m.tomorrow));
+                    .setData(android.net.Uri.parse("weekdayalarm://bedtime/skip/" + m.tomorrow));
             skipPi = PendingIntent.getBroadcast(ctx, 12, skip,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             nb.addAction(new Notification.Action.Builder(

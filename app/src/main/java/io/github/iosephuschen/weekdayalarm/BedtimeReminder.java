@@ -317,7 +317,7 @@ public final class BedtimeReminder {
     private static PendingIntent pendingIntent(Context ctx, int flags) {
         Intent i = new Intent(ctx, BedtimeReceiver.class)
                 .setAction(BedtimeReceiver.ACTION_BEDTIME)
-                .setData(Uri.parse("daxz://bedtime"));
+                .setData(Uri.parse("weekdayalarm://bedtime"));
         return PendingIntent.getBroadcast(ctx, REQUEST_CODE, i,
                 flags | PendingIntent.FLAG_IMMUTABLE);
     }

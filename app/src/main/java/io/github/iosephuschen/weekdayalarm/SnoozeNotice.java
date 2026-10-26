@@ -63,7 +63,7 @@ final class SnoozeNotice {
 
         Intent cancel = new Intent(ctx, SnoozeReceiver.class)
                 .setAction(ACTION_CANCEL)
-                .setData(Uri.parse("daxz://snooze/cancel/" + alarmId + "/" + targetDate))
+                .setData(Uri.parse("weekdayalarm://snooze/cancel/" + alarmId + "/" + targetDate))
                 .putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
                 .putExtra(SnoozeReceiver.EXTRA_DATE, targetDate.toString())
                 .putExtra(AlarmReceiver.EXTRA_LABEL, name);

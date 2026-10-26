@@ -15,7 +15,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        // data URI 形如 daxz://alarm/{alarmId}/{date}；lastPathSegment 是日期
+        // data URI 形如 weekdayalarm://alarm/{alarmId}/{date}；lastPathSegment 是日期
         String dateStr = null;
         int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
         String label = intent.getStringExtra(EXTRA_LABEL);

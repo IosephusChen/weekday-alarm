@@ -48,6 +48,7 @@ public final class Prefs {
     public static final String KEY_GUIDE_SEEN = "guide_seen";             // 使用说明是否已自动展开过（v0.22.1）
     public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v0.23.0）
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
+    public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -472,6 +473,20 @@ public final class Prefs {
 
     public static void setLegacyAlarmsCleaned(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_LEGACY_ALARMS_CLEANED, v).apply();
+    }
+
+    /**
+     * 旧 URI scheme 残留是否已清理（v0.87.2）。
+     *
+     * <p>和 {@link #isLegacyAlarmsCleaned} 同一个套路：只在升级后清一次，之后每次重排
+     * 都拿旧 scheme 去查 400 个日期，纯属白花 IPC。
+     */
+    public static boolean isLegacySchemeCleaned(Context c) {
+        return sp(c).getBoolean(KEY_LEGACY_SCHEME_CLEANED, false);
+    }
+
+    public static void setLegacySchemeCleaned(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_LEGACY_SCHEME_CLEANED, v).apply();
     }
 
     /** 新手引导：首次启动自动展示一次，看过（或跳过）后置 true，不再自动弹出。 */

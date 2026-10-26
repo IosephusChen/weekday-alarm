@@ -49,6 +49,23 @@ public final class ScheduleManager {
 
     private static final int REQUEST_BASE = 100000;   // 每个闹钟占 10 万个 requestCode 位
 
+    /** 主闹钟广播的 action。单独提出来，因为升级清理时要按同一个字符串重建 PendingIntent。 */
+    static final String ACTION_ALARM = "io.github.iosephuschen.weekdayalarm.ALARM";
+
+    /**
+     * v0.87.2 之前的 URI scheme，**只用于升级首启时清理残留**，新代码一律用
+     * {@code weekdayalarm://}。
+     *
+     * <p>为什么不能直接删掉旧 scheme 就算完：AlarmManager 靠 PendingIntent 的
+     * component + action + data 三项匹配来取消，scheme 一变，{@code am.cancel()}
+     * 就打不中旧实例；而它们是一次性闹钟，会一直躺在系统里到各自到期——期间每天多触发
+     * 一次（服务幂等，不会双铃，但会「响了一下又从头开始」），还挤占 ROM 的 500 个名额。
+     *
+     * <p>这也是 v0.23.0 踩过的同一个坑（requestCode 编码变了没清干净），
+     * 所以这里照抄当时的解法：{@link #cancelLegacy}。
+     */
+    private static final String LEGACY_SCHEME = "daxz://";
+
     /**
      * requestCode 分段（相对 REQUEST_BASE）：主闹钟 0~364，提前通知 +50000，
      * 小睡 +70000。三段互不重叠（最大 70364 < 100000），因此：
@@ -159,8 +176,8 @@ public final class ScheduleManager {
     public static boolean isAutoStopRegistered(Context ctx, int alarmId, LocalDate d) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return false;
-        // 必须用 autoStopShell（StopReceiver + daxz://autostop/...），与 setAutoStop 完全一致；
-        // 不能直接套 isSegmentRegistered 的 pendingIntentShell（指向 AlarmReceiver + daxz://alarm/...），
+        // 必须用 autoStopShell（StopReceiver + weekdayalarm://autostop/...），与 setAutoStop 完全一致；
+        // 不能直接套 isSegmentRegistered 的 pendingIntentShell（指向 AlarmReceiver + weekdayalarm://alarm/...），
         // 否则 data URI / 目标 Receiver 不匹配，FLAG_NO_CREATE 探不到已注册的闹钟
         PendingIntent pi = PendingIntent.getBroadcast(ctx,
                 requestCode(alarmId, d, SEG_AUTOSTOP),
@@ -211,7 +228,7 @@ public final class ScheduleManager {
     private static Intent autoStopShell(Context ctx, int alarmId, LocalDate d) {
         return new Intent(ctx, StopReceiver.class)
                 .setAction(StopReceiver.ACTION_AUTO_STOP)
-                .setData(Uri.parse("daxz://autostop/" + alarmId + "/" + d));
+                .setData(Uri.parse("weekdayalarm://autostop/" + alarmId + "/" + d));
     }
 
     private static void cancelSegment(Context ctx, int alarmId, LocalDate d, int segment) {
@@ -240,8 +257,8 @@ public final class ScheduleManager {
         String scheme = segment == SEG_PRE_NOTICE ? "prenotice" : "alarm";
         Intent i = new Intent(ctx, segment == SEG_PRE_NOTICE ? PreNoticeReceiver.class : AlarmReceiver.class);
         i.setAction(segment == SEG_PRE_NOTICE
-                ? PreNoticeReceiver.ACTION_PRE_NOTICE : "io.github.iosephuschen.weekdayalarm.ALARM");
-        i.setData(Uri.parse("daxz://" + scheme + "/" + alarmId + "/" + d));
+                ? PreNoticeReceiver.ACTION_PRE_NOTICE : ACTION_ALARM);
+        i.setData(Uri.parse("weekdayalarm://" + scheme + "/" + alarmId + "/" + d));
         i.putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId);
         if (label != null) i.putExtra(AlarmReceiver.EXTRA_LABEL, label);
         return i;
@@ -357,7 +374,7 @@ public final class ScheduleManager {
                                   LocalDate ringDate, int minutes, String timeText) {
         return new Intent(ctx, PreNoticeReceiver.class)
                 .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
-                .setData(Uri.parse("daxz://prenotice/" + alarmId + "/" + ringDate))
+                .setData(Uri.parse("weekdayalarm://prenotice/" + alarmId + "/" + ringDate))
                 .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, alarmId)
                 .putExtra(PreNoticeReceiver.EXTRA_LABEL, label)
                 .putExtra(PreNoticeReceiver.EXTRA_DATE, ringDate.toString())
@@ -384,6 +401,9 @@ public final class ScheduleManager {
         // 旧编码清理只在升级后做一次：每次重排都对 400 个日期多查两轮 PendingIntent
         // 会白花 800 次 IPC，而旧实例一旦清完就不会再出现
         boolean needLegacyClean = !Prefs.isLegacyAlarmsCleaned(ctx);
+        // v0.87.2：URI scheme 从 daxz:// 改成 weekdayalarm://，旧实例要单独清一次
+        boolean needSchemeClean = !Prefs.isLegacySchemeCleaned(ctx);
+        if (needSchemeClean) cancelLegacyBedtime(ctx);
         for (String s : Prefs.getScheduledDates(ctx)) {
             try {
                 int sep = s.indexOf(':');
@@ -404,11 +424,13 @@ public final class ScheduleManager {
                 // v0.23.0：顺带按旧编码（相对今天的偏移）取消一次。旧版本注册的实例
                 // 用的是旧 requestCode，升级后若不清，会与新版实例并存并重复响铃。
                 if (needLegacyClean) cancelLegacy(ctx, alarmId, d);
+                if (needSchemeClean) cancelLegacyScheme(ctx, alarmId, d);
             } catch (Exception ignore) {
             }
         }
         Prefs.setScheduledDates(ctx, new HashSet<>());
         if (needLegacyClean) Prefs.setLegacyAlarmsCleaned(ctx, true);
+        if (needSchemeClean) Prefs.setLegacySchemeCleaned(ctx, true);
     }
 
     /**
@@ -458,6 +480,57 @@ public final class ScheduleManager {
                 pre.cancel();
             }
         } catch (Exception ignore) {
+        }
+    }
+
+    /**
+     * 按 v0.87.2 之前的旧 scheme 再取消一次（升级清理用，打不中就静默跳过）。
+     *
+     * <p>与 {@link #cancelLegacy} 同一个套路：{@code FLAG_NO_CREATE} 只查不建，
+     * 查不到直接跳过——所以「全新安装」时这几行是纯浪费的 3 次空查询，代价可忽略；
+     * 而「升级一次」就能把旧实例清干净。
+     */
+    private static void cancelLegacyScheme(Context ctx, int alarmId, LocalDate d) {
+        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        try {
+            cancelLegacyOne(ctx, am, requestCode(alarmId, d, SEG_MAIN),
+                    new Intent(ctx, AlarmReceiver.class)
+                            .setAction(ACTION_ALARM)
+                            .setData(Uri.parse(LEGACY_SCHEME + "alarm/" + alarmId + "/" + d)));
+            cancelLegacyOne(ctx, am, requestCode(alarmId, d, SEG_PRE_NOTICE),
+                    new Intent(ctx, PreNoticeReceiver.class)
+                            .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
+                            .setData(Uri.parse(LEGACY_SCHEME + "prenotice/" + alarmId + "/" + d)));
+            cancelLegacyOne(ctx, am, requestCode(alarmId, d, SEG_AUTOSTOP),
+                    new Intent(ctx, StopReceiver.class)
+                            .setAction(StopReceiver.ACTION_AUTO_STOP)
+                            .setData(Uri.parse(LEGACY_SCHEME + "autostop/" + alarmId + "/" + d)));
+        } catch (Exception ignore) {
+        }
+    }
+
+    /** 睡前提醒只有一个实例（没有日期维度），在日期循环之外单独清一次。 */
+    private static void cancelLegacyBedtime(Context ctx) {
+        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        try {
+            cancelLegacyOne(ctx, am, BedtimeReminder.REQUEST_CODE,
+                    new Intent(ctx, BedtimeReceiver.class)
+                            .setAction(BedtimeReceiver.ACTION_BEDTIME)
+                            .setData(Uri.parse(LEGACY_SCHEME + "bedtime")));
+        } catch (Exception ignore) {
+        }
+    }
+
+    /** 查到就取消，查不到什么也不做。 */
+    private static void cancelLegacyOne(Context ctx, AlarmManager am, int requestCode,
+                                        Intent intent) {
+        PendingIntent pi = PendingIntent.getBroadcast(ctx, requestCode, intent,
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+        if (pi != null) {
+            am.cancel(pi);
+            pi.cancel();
         }
     }
 

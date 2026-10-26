@@ -125,7 +125,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
 
         Intent cancel = new Intent(ctx, PreNoticeReceiver.class)
                 .setAction(ACTION_CANCEL_THIS)
-                .setData(Uri.parse("daxz://prenotice/" + alarmId + "/" + d))
+                .setData(Uri.parse("weekdayalarm://prenotice/" + alarmId + "/" + d))
                 .putExtra(EXTRA_ALARM_ID, alarmId)
                 .putExtra(EXTRA_LABEL, label)
                 .putExtra(EXTRA_DATE, d.toString());

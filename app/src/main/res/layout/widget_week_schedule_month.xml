@@ -1876,7 +1876,7 @@
          用户 2026-10-26 拍板去掉：「请假加班没必要做到小部件上，增加误触风险」。
 
          空出来的位置放两件日历格子答不了的事，用一句连起来：
-         「19 天班 · 12 天休」——这个月一共要上几天，不用自己数；
+         「本月 19 天班 · 12 天休」——这个月一共要上几天，不用自己数；
          「距元旦 67 天」——下一个假还有多远，与首页今天卡同一套口径（HolidayCountdown）。
 
          为什么写成一句话而不是左右分栏：倒计时依赖节假日数据，2027 年那段要等远程增量，
@@ -1890,7 +1890,7 @@
         android:ellipsize="end"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="19 天班 · 12 天休 · 下次闹钟 明天 07:30"
+        android:text="本月 19 天班 · 12 天休 · 下次闹钟 明天 07:30"
         android:textColor="#C9C4FF"
         android:textSize="10sp" />
 </LinearLayout>

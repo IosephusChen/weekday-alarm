@@ -81,8 +81,8 @@ public class WidgetRemoteViewsTest {
         TextView stats = root.findViewById(R.id.widget_month_stats);
         assertNotNull("应有底部信息行", stats);
         assertEquals(m.footerText(), stats.getText().toString());
-        assertTrue("应以「N 天班 · M 天休」开头，实际：" + stats.getText(),
-                stats.getText().toString().matches("\\d+ 天班 · \\d+ 天休.*"));
+        assertTrue("应以「本月 N 天班 · M 天休」开头，实际：" + stats.getText(),
+                stats.getText().toString().matches("本月 \\d+ 天班 · \\d+ 天休.*"));
 
         assertEquals("请假按钮已删", 0,
                 ctx().getResources().getIdentifier("widget_today_action", "id",

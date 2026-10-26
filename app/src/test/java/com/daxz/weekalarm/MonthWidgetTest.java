@@ -189,7 +189,7 @@ public class MonthWidgetTest {
             boolean overtime = Prefs.isOvertime(ctx(), d);
             if (baseWork ? !leave : overtime) work++;
         }
-        assertEquals(work + " 天班 · " + (len - work) + " 天休", m.stats);
+        assertEquals("本月 " + work + " 天班 · " + (len - work) + " 天休", m.stats);
     }
 
     /** 请了一天假，统计里的「班」要跟着少一天——它得和格子说同一件事。 */
@@ -200,8 +200,8 @@ public class MonthWidgetTest {
         String after = oct2026().stats;
         assertNotEquals("标了假统计该变", before, after);
 
-        int beforeWork = Integer.parseInt(before.substring(0, before.indexOf(" 天班")));
-        int afterWork = Integer.parseInt(after.substring(0, after.indexOf(" 天班")));
+        int beforeWork = workDays(before);
+        int afterWork = workDays(after);
         assertEquals("少上一天班", beforeWork - 1, afterWork);
     }
 
@@ -223,6 +223,14 @@ public class MonthWidgetTest {
         MonthWidgetRender.Model m = MonthWidgetRender.compute(ctx(), LocalDate.of(2026, 10, 22), null);
         assertEquals("没有启用的闹钟时只剩统计，不留半句空话",
                 m.stats, m.footerText());
+    }
+
+    /** 从「本月 20 天班 · 11 天休」里取出班的天数。前缀多两个字后不能再靠 indexOf 截串。 */
+    private static int workDays(String stats) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("本月 (\\d+) 天班").matcher(stats);
+        assertTrue("统计里应含「本月 N 天班」，实际：" + stats, m.find());
+        return Integer.parseInt(m.group(1));
     }
 
     /** 布局必须真的能 inflate——RemoteViews 的允许列表很窄，写错一个控件就整块加载失败。 */

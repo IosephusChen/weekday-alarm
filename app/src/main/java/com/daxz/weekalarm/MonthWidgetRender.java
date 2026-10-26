@@ -83,7 +83,7 @@ final class MonthWidgetRender {
     static final class Model {
         String title = "";
         String subtitle = "";
-        /** 本月统计（v0.80.0）：「22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
+        /** 本月统计（v0.80.0）：「本月 22 天班 · 9 天休」，与格子同一套口径（含请假 / 加班）。 */
         String stats = "";
         /** 下次响铃（v0.80.1）：「下次闹钟 明天 07:30」，与首页今天卡 / 4×2 部件同一句。 */
         String nextText = "";
@@ -178,7 +178,10 @@ final class MonthWidgetRender {
             m.today[i] = d.equals(today);
         }
 
-        m.stats = workDays + " 天班 · " + (len - workDays) + " 天休";
+        // v0.80.2：前面补「本月」——单独一句「20 天班 · 11 天休」没有主语，用户
+        // 2026-10-26 原话「不然有点不明所以」。标题行写着「2026 年 10 月」，但底部
+        // 隔着 42 个格子，读到时已经想不起这是哪个月了。
+        m.stats = "本月 " + workDays + " 天班 · " + (len - workDays) + " 天休";
         // v0.80.1：倒计时换成「下次闹钟」——假期倒计时受 HolidayCountdown.SCAN_DAYS
         // 限制，2026 年 10 月查下一个假已经是 2027 元旦，超出窗口就整段消失，底部
         // 常年只剩统计。下次响铃天天都有，这一行才稳定是两段。

@@ -1,16 +1,10 @@
 package com.daxz.weekalarm;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.view.View;
-import android.view.View.MeasureSpec;
-import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -23,18 +17,17 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
 /**
- * 重新导出三个桌面小组件的「添加小部件」预览图（v1.57.0）。
+ * 重新导出三个桌面小组件的「添加小部件」预览图（v0.73.2）。
  *
  * <p><b>为什么要这个工具</b>：{@code previewImage}（PNG）在 Android 12 以下的启动器里
  * 还是唯一显示的预览，而这三张图从 v1.51.x 起就是手绘的——4×4 那张还画着
- * 「10月24日 周六 07:30」那一行（v1.52.0 已改成「闹钟已开启」一句话），
- * 4×3 那张更离谱，顶部闹钟行属于 v1.51.1 已删掉的紧凑版。
+ * 「10月24日 周六 07:30」那一行（v0.70.1 已改成「闹钟已开启」一句话），
+ * 4×3 那张更离谱，顶部闹钟行属于 v0.69.0 已删掉的紧凑版。
  * 手绘图跟不上布局变化，这里改成用 Robolectric 把真实布局渲染出来导出，
  * 布局怎么改，重跑一次就对得上。
  *
@@ -100,35 +93,9 @@ public class WidgetPreviewExportTest {
                 "widget_month_minimal_preview.png", 200);
     }
 
-    /** apply → measure → layout → draw → 写 PNG。heightDp 是卡片高度（dp）。 */
+    /** 渲染并写到 res/drawable-xxhdpi；具体四步在 {@link PreviewRender} 里。 */
     private void export(RemoteViews rv, String fileName, int heightDp) throws IOException {
-        View v = rv.apply(ctx(), new FrameLayout(ctx()));
-        int hPx = Math.round(heightDp * ctx().getResources().getDisplayMetrics().density);
-        v.measure(MeasureSpec.makeMeasureSpec(W_PX, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(hPx, MeasureSpec.EXACTLY));
-        v.layout(0, 0, W_PX, hPx);
-
-        Bitmap bmp = Bitmap.createBitmap(W_PX, hPx, Bitmap.Config.ARGB_8888);
-        v.draw(new Canvas(bmp));
-
-        File out = new File(previewDir(), fileName);
-        try (FileOutputStream os = new FileOutputStream(out)) {
-            assertEquals("PNG 写出应成功", true, bmp.compress(Bitmap.CompressFormat.PNG, 100, os));
-        }
-        System.out.println("导出 " + out.getAbsolutePath() + "（" + W_PX + "×" + hPx + "）");
-    }
-
-    /**
-     * 定位 res/drawable-xxhdpi。测试 JVM 的工作目录不一定是项目根
-     * （gradle 跑在模块目录下），从 user.dir 逐级向上找带 settings.gradle 的那层。
-     */
-    private static File previewDir() {
-        File dir = new File(System.getProperty("user.dir")).getAbsoluteFile();
-        while (dir != null) {
-            File candidate = new File(dir, "app/src/main/res/drawable-xxhdpi");
-            if (candidate.isDirectory()) return candidate;
-            dir = dir.getParentFile();
-        }
-        throw new IllegalStateException("找不到 res/drawable-xxhdpi，user.dir=" + System.getProperty("user.dir"));
+        File out = PreviewRender.toRes(ctx(), rv, fileName, heightDp);
+        System.out.println("导出 " + out.getAbsolutePath() + "（" + PreviewRender.WIDTH_DP + "dp 宽）");
     }
 }

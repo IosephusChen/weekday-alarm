@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 通知操作图标：关闭 / 停止。单色 24dp，系统会按通知样式着色。
-     必须给 action 一个真实图标——icon 传 0 时 MIUI / HyperOS 会直接不渲染按钮（v1.23.3）。 -->
+     必须给 action 一个真实图标——icon 传 0 时 MIUI / HyperOS 会直接不渲染按钮（v0.31.3）。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

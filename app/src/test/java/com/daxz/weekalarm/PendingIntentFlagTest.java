@@ -9,14 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * PendingIntent flag 守门测试（v1.58.0）。
+ * PendingIntent flag 守门测试（v0.73.3）。
  *
  * <p><b>为什么需要它</b>：Android 12（API 31）起，{@code PendingIntent} 必须显式声明
  * {@code FLAG_IMMUTABLE} 或 {@code FLAG_MUTABLE}，否则构造时直接抛
  * {@code IllegalArgumentException}——而本项目 minSdk 26，编译期不报，只在
  * Android 12+ 真机上崩。这类问题单测碰不到（Robolectric 不强制），只能扫源码。
  *
- * <p>同源的另一个静默坑（v1.58.0 修过，扫不出来，靠人）：intent 带 extras 的
+ * <p>同源的另一个静默坑（v0.73.3 修过，扫不出来，靠人）：intent 带 extras 的
  * PendingIntent 还必须带 {@code FLAG_UPDATE_CURRENT}——PendingIntent 匹配
  * <b>不看 extras</b>，少了它第一次创建后 extras 永久冻结（通知栏小睡按钮连错闹钟）。
  * 这个要语义判断，写进了 {@code docs/流程规范.md} 第九节的检查清单。
@@ -41,7 +41,7 @@ public class PendingIntentFlagTest {
 
     /**
      * 定位项目里的目录。测试 JVM 的工作目录不一定是项目根（gradle 跑在模块目录下），
-     * 从 user.dir 逐级向上找——v1.57.0 预览图导出工具踩过这个坑。
+     * 从 user.dir 逐级向上找——v0.73.2 预览图导出工具踩过这个坑。
      */
     private static File projectRoot(String relative) {
         File dir = new File(System.getProperty("user.dir")).getAbsoluteFile();

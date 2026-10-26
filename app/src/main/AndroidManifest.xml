@@ -56,7 +56,7 @@
             android:showWhenLocked="true"
             android:taskAffinity="" />
 
-        <!-- 锁屏显示自测页（v1.45.0）：由 AlarmManager 在用户锁屏后拉起，
+        <!-- 锁屏显示自测页（v0.55.3）：由 AlarmManager 在用户锁屏后拉起，
              停留两秒多自己关掉。不响铃、不发通知、不碰排班。
              showWhenLocked + turnScreenOn 就是被测的那两件事本身——
              它们生效，这一页才盖得住锁屏、才点得亮屏幕。 -->
@@ -71,14 +71,14 @@
             android:theme="@style/Theme.DaxiaoWeekAlarm.LockProbe"
             android:turnScreenOn="true" />
 
-        <!-- 设置页（v1.19.8）：设置项一级平铺；使用说明已移回主界面底部折叠卡 -->
+        <!-- 设置页（v0.22.1）：设置项一级平铺；使用说明已移回主界面底部折叠卡 -->
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:label="设置"
             android:parentActivityName=".MainActivity" />
 
-        <!-- 设置的二级页（v1.49.0）：主页的「更多响铃设置」「更多设置」指向这里。
+        <!-- 设置的二级页（v0.60.0）：主页的「更多响铃设置」「更多设置」指向这里。
              一个 Activity 承载两段，靠 intent extra 决定显示哪段。
              parent 指回设置页，系统返回手势能顺着原路退。 -->
         <activity
@@ -87,7 +87,7 @@
             android:label="更多设置"
             android:parentActivityName=".SettingsActivity" />
 
-        <!-- 使用说明（v1.34.2）：首页底部一行入口指向这里。
+        <!-- 使用说明（v0.50.0）：首页底部一行入口指向这里。
              别再指到 GuideActivity——那是 3 页设置向导，不是随时能查的说明书。 -->
         <activity
             android:name=".HelpActivity"
@@ -95,7 +95,7 @@
             android:label="使用说明"
             android:parentActivityName=".MainActivity" />
 
-        <!-- 新手引导（v1.19.9）：首次启动展示 3 页图解；设置页可随时重看。
+        <!-- 新手引导（v0.23.0）：首次启动展示 3 页图解；设置页可随时重看。
              theme 里去掉启动时的窗口预览，避免引导页出现前先闪一下主界面。 -->
         <activity
             android:name=".GuideActivity"
@@ -103,7 +103,7 @@
             android:label="新手引导"
             android:parentActivityName=".MainActivity" />
 
-        <!-- 更新日志（v1.22.3）：设置页入口；升级后首次启动也会弹一次本次更新。
+        <!-- 更新日志（v0.29.0）：设置页入口；升级后首次启动也会弹一次本次更新。
              纯展示页，数据内置在 Changelog 里，不需要网络。 -->
         <activity
             android:name=".ChangelogActivity"
@@ -124,7 +124,7 @@
             android:name=".PreNoticeReceiver"
             android:exported="false" />
 
-        <!-- 每日零点后的组件刷新（v1.71.4）：由 WidgetTicker 挂的精确闹钟触发，
+        <!-- 每日零点后的组件刷新（v0.77.2）：由 WidgetTicker 挂的精确闹钟触发，
              只做「重画三个组件」一件事。显式 Intent 指定组件，不需要 intent-filter。 -->
         <receiver
             android:name=".WidgetTickReceiver"
@@ -146,7 +146,7 @@
             android:exported="false" />
 
         <!-- 桌面小组件（v1.19）：展示下一个闹钟；更新由主 App 主动推送，故 exported=false。
-             v1.51.0 起固定 4×2，内容 = 闹钟两行 + 本周七格（原 4×4 那份已删）。 -->
+             v0.68.0 起固定 4×2，内容 = 闹钟两行 + 本周七格（原 4×4 那份已删）。 -->
         <receiver
             android:name=".NextAlarmWidget"
             android:exported="false"
@@ -159,9 +159,9 @@
                 android:resource="@xml/next_alarm_widget_info" />
         </receiver>
 
-        <!-- 桌面小组件（v1.50.0，v1.51.1 起三个变体，v1.53.0 定稿为两个）：
+        <!-- 桌面小组件（v0.67.0，v0.69.0 起三个变体，v0.71.0 定稿为两个）：
              本月班表，整月 42 格。
-             v1.53.0 用户实际试用后定了：留 4×4 完整（带按钮）和 4×3 极简（无按钮），
+             v0.71.0 用户实际试用后定了：留 4×4 完整（带按钮）和 4×3 极简（无按钮），
              删掉 4×3 紧凑（和极简只差底部按钮，冗余）。 -->
         <receiver
             android:name=".MonthScheduleWidget"
@@ -193,7 +193,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <!-- v1.19.9：时区 / 系统时间变化后重排，否则已注册的闹钟会在错误的钟点响 -->
+                <!-- v0.23.0：时区 / 系统时间变化后重排，否则已注册的闹钟会在错误的钟点响 -->
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>

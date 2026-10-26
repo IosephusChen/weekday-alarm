@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config;
 import java.time.LocalDate;
 
 /**
- * 周休制度（v1.22）：双休 / 单休（周日）/ 单休（周六）/ 大小周。
+ * 周休制度（v0.27.0）：双休 / 单休（周日）/ 单休（周六）/ 大小周。
  *
  * 这里守住三件事：
  * ① 三种新制度下周六周日的班休判断正确；
@@ -178,7 +178,7 @@ public class WeekModeTest {
     /**
      * 「本周是」：点开对话框选小周，应写入状态并把基准推到上一周的周六。
      *
-     * <p>v1.46.3 起这一行从首页搬到了设置页，所以反射目标也跟着换成 SettingsActivity。
+     * <p>v0.56.2 起这一行从首页搬到了设置页，所以反射目标也跟着换成 SettingsActivity。
      * 断言没变——写状态、推 anchor 这两件事和界面放哪无关。
      */
     @Test
@@ -186,7 +186,7 @@ public class WeekModeTest {
         Context c = ApplicationProvider.getApplicationContext();
         c.getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE).edit().clear().commit();
 
-        // v1.49.2：「本周是」「小周休哪天」并进了周休制度对话框，不再有独立入口
+        // v0.61.0：「本周是」「小周休哪天」并进了周休制度对话框，不再有独立入口
         SettingsActivity a = org.robolectric.Robolectric
                 .buildActivity(SettingsActivity.class).setup().get();
         a.findViewById(R.id.row_week_mode).performClick();
@@ -238,7 +238,7 @@ public class WeekModeTest {
         assertFalse(WeekSchedule.Mode.SINGLE_REST_SAT.needsAnchor());
     }
 
-    // ================= 对话框分层（v1.49.2）=================
+    // ================= 对话框分层（v0.61.0）=================
 
     private static final String SP = "daxz_alarm";
 
@@ -258,7 +258,7 @@ public class WeekModeTest {
     /**
      * 大类只有三个：大小周 / 双休 / 单休。
      *
-     * <p>v1.49.2 之前是四个（单休拆成周日休、周六休两条），用户要求把具体日子
+     * <p>v0.61.0 之前是四个（单休拆成周日休、周六休两条），用户要求把具体日子
      * 收到下面条件区，大类不掺细节。
      */
     @Test
@@ -306,7 +306,7 @@ public class WeekModeTest {
     }
 
     /**
-     * 「单休休哪天」的选项只写哪天休，不写哪天上班（v1.49.4）。
+     * 「单休休哪天」的选项只写哪天休，不写哪天上班（v0.61.2）。
      *
      * <p>原来写「周日休（周六上班）」。休一天，另一天自然要上班，括号是把
      * 结论重复一遍；同一个对话框里「小周休哪天」也没写，两处还不一致。
@@ -324,7 +324,7 @@ public class WeekModeTest {
                 ((android.widget.TextView) d.findViewById(R.id.rb_single_sat)).getText().toString());
     }
 
-    // ================= 与引导页同一套卡片（v1.49.5）=================
+    // ================= 与引导页同一套卡片（v0.61.3）=================
 
     /**
      * 大类是三张卡，不是三个单选行。

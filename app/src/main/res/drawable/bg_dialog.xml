@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 对话框圆角底（v1.22.4）。
+<!-- 对话框圆角底（v0.29.1）。
      全局 UI 都是圆角矩形（卡片 18dp、按钮 14dp），而 appcompat 的 AlertDialog
      默认窗口背景是直角白块，弹出来像另一个 App。
      由 RoundedDialog.round() 在 create / show 之后设成窗口背景，所有对话框一起生效。

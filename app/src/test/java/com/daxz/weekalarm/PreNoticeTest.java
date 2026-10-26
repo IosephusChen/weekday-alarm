@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 提前提醒（v1.23）：1 小时档位 + 主动弹窗。
+ * 提前提醒（v0.31.0）：1 小时档位 + 主动弹窗。
  *
  * <p>这一版把提前提醒从「只躺在通知栏」改成「弹窗」，涉及三处容易各改各的：
  * 设置页的档位映射、通知里的文案、弹窗页的标题。这里把它们钉在一起测。
@@ -61,7 +61,7 @@ public class PreNoticeTest {
         assertEquals("2 小时", PreNoticeReceiver.minutesText(120));
     }
 
-    /** v1.40.0：不足 1 分钟不能写「0 分钟」，90 分钟不能截成「1 小时」。 */
+    /** v0.54.0：不足 1 分钟不能写「0 分钟」，90 分钟不能截成「1 小时」。 */
     @Test
     public void minutesText_handlesSubMinuteAndRemainder() {
         assertEquals("不到 1 分钟", PreNoticeReceiver.minutesText(0));
@@ -76,10 +76,10 @@ public class PreNoticeTest {
      */
     @Test
     public void actualMinutes_usesRealRemainingTime() {
-        // v1.71.3：日期跟着时刻一起取，不能只取 HH:mm。
+        // v0.77.1：日期跟着时刻一起取，不能只取 HH:mm。
         // 「现在 +5 分钟」在 23:55 之后会跨到明天，日期却还是今天，
         // 于是算出来是负的、返回 0——这条测试在午夜前五分钟必红
-        // （v1.71.3 的恢复演练正好撞上 23:58）。
+        // （v0.77.1 的恢复演练正好撞上 23:58）。
         LocalDateTime soon = LocalDateTime.now().plusMinutes(5);
         int m = PreNoticeReceiver.actualMinutes(soon.toLocalDate(),
                 soon.format(DateTimeFormatter.ofPattern("HH:mm")), 60);
@@ -97,9 +97,9 @@ public class PreNoticeTest {
     /**
      * 设置页的提前提醒对话框要有「提前 1 小时」，且存进去的是 60。
      *
-     * <p>v1.70.0：弹窗换成单选卡片（程序化建视图，没有布局可 inflate），
+     * <p>v0.76.4：弹窗换成单选卡片（程序化建视图，没有布局可 inflate），
      * 改成在卡片列表里按文案找卡。
-     * v1.71.8：从「选完按确定」改成「点一项即生效并关窗」——它只有一组选项，
+     * v0.79.0：从「选完按确定」改成「点一项即生效并关窗」——它只有一组选项，
      * 不需要二次确认，而同组的睡前提醒早就是点即生效。
      */
     @Test
@@ -108,7 +108,7 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 0);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        // v1.72.1：整行点开对话框（开关已去掉），不再要点副标题那一小块
+        // v0.79.0：整行点开对话框（开关已去掉），不再要点副标题那一小块
         ctl.get().findViewById(R.id.row_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
@@ -131,14 +131,14 @@ public class PreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 60);
         ActivityController<SettingsActivity> ctl =
                 Robolectric.buildActivity(SettingsActivity.class).setup();
-        // v1.72.1：整行点开对话框（开关已去掉），不再要点副标题那一小块
+        // v0.79.0：整行点开对话框（开关已去掉），不再要点副标题那一小块
         ctl.get().findViewById(R.id.row_pre_notice).performClick();
         ShadowLooper.idleMainLooper();
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
         View hour = findOptionCard(d, "提前 1 小时");
         assertNotNull(hour);
-        // v1.70.0：选中态由 setSelected 驱动（bg_guide_option 的描边与底色），
+        // v0.76.4：选中态由 setSelected 驱动（bg_guide_option 的描边与底色），
         // 只打勾不变色的话当前值看上去和没选中的项没区别
         assertTrue("存了 60 分钟就应选中「提前 1 小时」", hour.isSelected());
         assertFalse("没选的项不该是选中态",
@@ -167,7 +167,7 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.72.1：这一行右侧从开关换成「值 + 箭头」。
+     * v0.79.0：这一行右侧从开关换成「值 + 箭头」。
      *
      * <p>换掉开关的原因是可发现性——原来整行点击是开关、只有副标题那一小块
      * （约 60dp 宽）能改提前量，用户看不出这里还能设置。现在值直接摆在右边，
@@ -198,7 +198,7 @@ public class PreNoticeTest {
     /**
      * 弹窗页：标题写「还有 X」，副标题带名称与时刻。
      *
-     * <p>v1.40.0 起标题按「现在到响铃时刻」现算，所以这里的时间必须相对 now 生成；
+     * <p>v0.54.0 起标题按「现在到响铃时刻」现算，所以这里的时间必须相对 now 生成；
      * 写死 07:00 的话，凌晨跑测试会得到「还有 2 小时」——那是正确行为，测试错。
      *
      * <p>断言只能给一个范围：extras 里的时刻精确到分钟（HH:mm），「现在 + 60 分钟」
@@ -262,7 +262,7 @@ public class PreNoticeTest {
         assertEquals(60, Prefs.getPreNoticeMinutes(ctx()));
     }
 
-    // ================= 补发：在提前量窗口内才设的闹钟（v1.23.2）=================
+    // ================= 补发：在提前量窗口内才设的闹钟（v0.31.2）=================
 
     private void seedAlarm(int minutesFromNow) {
         LocalDateTime when = LocalDateTime.now().plusMinutes(minutesFromNow)
@@ -321,13 +321,13 @@ public class PreNoticeTest {
                 0, n.flags & Notification.FLAG_AUTO_CANCEL);
         assertNotNull("应有操作按钮", n.actions);
         assertEquals("这次不响", n.actions[0].title.toString());
-        // v1.23.3：icon 传 0 时 MIUI / 澎湃会整条 action 都不渲染，
+        // v0.31.3：icon 传 0 时 MIUI / 澎湃会整条 action 都不渲染，
         // 通知栏里只剩文字，按钮永远看不见
         assertNotNull("按钮必须带图标，否则 ROM 不显示这个按钮", n.actions[0].getIcon());
     }
 
     /**
-     * v1.23.6：折叠态必须换成自绘布局。
+     * v0.33.0：折叠态必须换成自绘布局。
      *
      * <p>锁屏卡片和「下拉但没展开」渲染的都是折叠态，系统模板里只放小图标 + 标题 + 一行正文，
      * 没有按钮的位置——addAction 的按钮要展开才出现。前几版锁屏上永远看不到「关闭闹钟」，
@@ -346,7 +346,7 @@ public class PreNoticeTest {
         assertEquals("折叠态应使用 notif_content 自绘布局",
                 R.layout.notif_content, n.contentView.getLayoutId());
 
-        // v1.38.0：文案不再写死在 XML 里（同一个布局被三条通知共用），
+        // v0.53.1：文案不再写死在 XML 里（同一个布局被三条通知共用），
         // 必须真的把 RemoteViews 应用出来看，才能验到运行时塞进去的字
         View card = n.contentView.apply(ctx(), new android.widget.FrameLayout(ctx()));
         TextView action = card.findViewById(R.id.nc_action);
@@ -356,10 +356,10 @@ public class PreNoticeTest {
     }
 
     /**
-     * 卡片里**不该**再有读秒倒计时（v1.45.0）。
+     * 卡片里**不该**再有读秒倒计时（v0.55.3）。
      *
-     * <p>演进：v1.37.0 用 {@code setUsesChronometer} 让系统画在通知头部（设了自绘布局后
-     * 从没生效过）→ v1.38.0 改由卡片里的 Chronometer 承担 → v1.45.0 用户说「读秒没必要」
+     * <p>演进：v0.53.0 用 {@code setUsesChronometer} 让系统画在通知头部（设了自绘布局后
+     * 从没生效过）→ v0.53.1 改由卡片里的 Chronometer 承担 → v0.55.3 用户说「读秒没必要」
      * 干脆去掉：它每秒跳一次，眼睛会一直往那儿瞟，比一句「14:10 响铃」更吵。
      *
      * <p>这条测试钉的是「去掉之后别再被加回来」。要恢复的话，先想清楚
@@ -380,7 +380,7 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.23.8：通知小图标必须是 App 自己的钟面。
+     * v0.34.1：通知小图标必须是 App 自己的钟面。
      *
      * <p>旧图标圆心偏在 (12, 6.5)、只有一根针，跟启动图标的钟面 logo 完全不像。
      * 这里把资源钉住，避免以后又被换成别的图形。
@@ -401,7 +401,7 @@ public class PreNoticeTest {
     /**
      * 重复重排不该堆出多条。
      *
-     * <p>v1.23.5 起重排会重发同一条（同 id 覆盖）来刷新样式，所以不再比较 when——
+     * <p>v0.32.1 起重排会重发同一条（同 id 覆盖）来刷新样式，所以不再比较 when——
      * 它每次都会变。真正要守住的是「通知栏里只有一条」。
      */
     @Test
@@ -418,7 +418,7 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.23.5：单个闹钟被关掉后，它那条「即将响铃」必须撤掉。
+     * v0.32.1：单个闹钟被关掉后，它那条「即将响铃」必须撤掉。
      *
      * <p>之前只有响铃和关总开关会撤通知，于是用户在列表里关掉闹钟，
      * 通知栏里还挂着一条，点进去是个已停用的闹钟。
@@ -449,7 +449,7 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.23.4：横幅要自绘。
+     * v0.32.0：横幅要自绘。
      *
      * <p>原生 heads-up 只渲染图标 / 标题 / 一行正文，不渲染 addAction——所以下拉通知栏
      * 能看到「关闭闹钟」，锁屏横幅上什么都没有。系统闹钟是 setCustomHeadsUpContentView
@@ -473,7 +473,7 @@ public class PreNoticeTest {
     }
 
     /**
-     * v1.23.3：升级后要把旧版发的提前提醒清掉。
+     * v0.31.3：升级后要把旧版发的提前提醒清掉。
      *
      * <p>旧通知的 action 没有图标，ROM 不渲染按钮；不去重的话重排会以为「已经发过」
      * 而跳过补发，用户升级完按钮照样看不见。
@@ -495,10 +495,10 @@ public class PreNoticeTest {
         assertNull("升级后旧通知应被清掉，重排才会重发带图标的", preNoticeNotification());
     }
 
-    // ================= v1.37.0：时间不能是死的 =================
+    // ================= v0.53.0：时间不能是死的 =================
 
     /**
-     * 通知栏那行字必须是绝对时间（v1.37.0）。
+     * 通知栏那行字必须是绝对时间（v0.53.0）。
      *
      * <p>原来写「1 小时后 · 14:10 响铃」，而通知发出去就不再刷新——躺到只剩 10 分钟时，
      * 它还在说「1 小时后」。相对时间只在发出那一刻成立，长期挂着只能写绝对时间。
@@ -520,9 +520,9 @@ public class PreNoticeTest {
     }
 
     /**
-     * 通知头部的系统倒计时也要关掉（v1.45.0）。
+     * 通知头部的系统倒计时也要关掉（v0.55.3）。
      *
-     * <p>v1.37.0 开过 {@code setUsesChronometer}，虽然设了自绘布局后它从没渲染出来，
+     * <p>v0.53.0 开过 {@code setUsesChronometer}，虽然设了自绘布局后它从没渲染出来，
      * 但只要留着，哪天有人换回系统模板它就又冒出来了。既然用户不要读秒，两处都清掉。
      *
      * <p>时间戳 {@code when} 保留：下拉展开后的系统头部会用它显示「14:10」，

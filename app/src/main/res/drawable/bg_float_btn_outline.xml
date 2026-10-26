@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 横幅上的「稍后提醒」圆钮（v1.41.0 起；v1.43.0 改成白描边）。
+<!-- 横幅上的「稍后提醒」圆钮（v0.54.1 起；v0.55.0 改成白描边）。
 
-     v1.43.0 的横幅底色从浅桃改成深色半透明，原来那条 @color/indigo 描边
+     v0.55.0 的横幅底色从浅桃改成深色半透明，原来那条 @color/indigo 描边
      压在深底上几乎看不见（indigo 日间值是 #4F46E5，亮度太低）。
      改成白色 70% 描边 + 8% 白底：深底上够清楚，也不抢「停止」那个实色钮的视线。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"

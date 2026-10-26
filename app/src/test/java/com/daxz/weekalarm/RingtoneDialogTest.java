@@ -25,7 +25,7 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 /**
- * 自绘铃声选择（v1.61.0）。
+ * 自绘铃声选择（v0.74.0）。
  *
  * <p>这是这一版唯一碰系统媒体库的新代码（{@code RingtoneManager.getCursor()}），
  * 而媒体库在不同 ROM 上的返回五花八门：可能为空、可能抛异常、可能有没有标题的条目。

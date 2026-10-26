@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 时间滚轮的软底容器（v1.71.3）。
+<!-- 时间滚轮的软底容器（v0.77.1）。
      两列滚轮原来直接浮在白色弹窗上，默认分隔线横贯整个弹窗宽度，
      看着像两个不相干的列表。给它们一块「井」，两列才像一个控件。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"

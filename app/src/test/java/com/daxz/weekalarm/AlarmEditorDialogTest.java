@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 编辑闹钟弹窗的卡片化（v1.71.2）。
+ * 编辑闹钟弹窗的卡片化（v0.77.0）。
  *
  * <p>重复规则原来是四个系统单选圈，和设置页的卡片语言不搭；现在是四张
  * {@code DialogKit.optionView} 卡片（标题 + 一句解释 + 右侧勾）。
@@ -82,7 +82,7 @@ public class AlarmEditorDialogTest {
     }
 
     /**
-     * 四张卡只有主文案，不显示副标题（v1.71.3 用户反馈「副标题没必要」）。
+     * 四张卡只有主文案，不显示副标题（v0.77.1 用户反馈「副标题没必要」）。
      *
      * <p>选项卡的副标题位仍然占位（GONE）——那是 DialogKit 的通用结构，
      * 这条断言钉的是「占位但不显示」。

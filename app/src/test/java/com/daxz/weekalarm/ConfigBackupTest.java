@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 配置导出 / 导入（v1.20）。
+ * 配置导出 / 导入（v0.24.0）。
  *
  * 重点不是「能导出」，而是「导回来还是原来那台机器的状态」以及
  * 「坏文件不能把 App 弄成半坏状态」——所以这里既测往返一致，也测各种拒绝与夹取。
@@ -94,7 +94,7 @@ public class ConfigBackupTest {
         assertTrue("应包含请假日期", json.contains("2026-10-21"));
         assertTrue("应包含睡前提醒设置", json.contains(Prefs.KEY_BEDTIME_MINUTES));
         assertTrue(ConfigBackup.suggestFileName().endsWith(".json"));
-        // v1.71.0：describe（拼好的字符串）换成 summarize（结构化），
+        // v0.76.5：describe（拼好的字符串）换成 summarize（结构化），
         // 摘要要给导入确认 / 导出小结对话框当信息行用，不能再让调用方拆字符串
         ConfigBackup.Summary sum = ConfigBackup.summarize(json);
         assertNotNull(sum);

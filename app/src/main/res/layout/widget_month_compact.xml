@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 本月班表 · 紧凑 4×3（v1.51.1）。
+<!-- 本月班表 · 紧凑 4×3（v0.69.0）。
 
      4×4 那份用户反馈「有些浪费」：日历行高 28dp、上下留白多，一个月的信息
      用不着四行格子那么高。4×3 把高度收到三行格子，行高自然压到 20~24dp。
@@ -34,9 +34,9 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- 周次和闹钟状态并排（v1.52.0）：原来叠在同一个 FrameLayout 里二选一，
+        <!-- 周次和闹钟状态并排（v0.70.1）：原来叠在同一个 FrameLayout 里二选一，
              显示闹钟时「本周 · 大周」就没了。现在两个都要，一句话占不了多宽。
-             v1.71.5 周次改 chip、闹钟状态降色，与 4×4 同一套层级。 -->
+             v0.77.3 周次改 chip、闹钟状态降色，与 4×4 同一套层级。 -->
         <TextView
             android:id="@+id/widget_month_sub"
             android:layout_width="wrap_content"
@@ -67,7 +67,7 @@
     </LinearLayout>
 
     <!-- 表头：文字由 MonthWidgetRender.build() 按「每周第一天」设置写，
-         不能在布局里写死。v1.50.0 之前这里硬编码「一 二 三 四 五 六 日」，
+         不能在布局里写死。v0.67.0 之前这里硬编码「一 二 三 四 五 六 日」，
          而格子按 Prefs.isSundayFirst 排——设成周日开头时整月日历错位一格。 -->
     <LinearLayout
         android:layout_width="match_parent"

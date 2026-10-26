@@ -15,7 +15,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 /**
- * 新建闹钟时的名称（v1.47.5）。
+ * 新建闹钟时的名称（v0.58.4）。
  *
  * <p>起因：新建框预填了「起床」，可多数闹钟不是起床用的——午休、吃药、接娃、开会。
  * 预填等于让用户先删两个字。现在留空，用提示语说明「可不填，默认叫闹钟」。

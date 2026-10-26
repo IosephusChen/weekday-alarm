@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 七格班表模型（v1.20 引入，v1.53.0 随 4×2 本周班表组件删除而改测共享渲染类）。
+ * 七格班表模型（v0.24.0 引入，v0.71.0 随 4×2 本周班表组件删除而改测共享渲染类）。
  *
  * <p>原来这个文件测的是 {@code WeekScheduleWidget}。那个组件删了，但 7 天的判定还在用
  * （4×2 闹钟卡的七格、4×4 与 4×3 的按钮），逻辑搬到了 {@link WeekWidgetRender}。
@@ -80,7 +80,7 @@ public class WeekWidgetTest {
     public void model_titleMatchesBigOrSmallWeek() {
         WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(ctx()));
-        // v1.22.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休2天」，格子窄，前缀留给制度
+        // v0.27.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休2天」，格子窄，前缀留给制度
         assertTrue(big ? m.title.startsWith("大周") : m.title.startsWith("小周"));
         assertTrue(m.title.contains("休"));
     }

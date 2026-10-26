@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 更新日志（v1.22.3）：数据自检 + 升级弹窗的三种情形。
+ * 更新日志（v0.29.0）：数据自检 + 升级弹窗的三种情形。
  *
  * <p>弹窗只在「上次运行过的版本号非 0 且与当前不同」时出现，
  * 所以这里分别模拟：老版本升级、全新安装、同一版本再打开。
@@ -205,16 +205,17 @@ public class ChangelogTest {
     }
 
     /**
-     * v1.22.5：v1.19.7 起的十几版其实是同一天赶出来的，日期统一成 2026/10/20；
+     * v0.30.0：v0.22.0 起的十几版其实是同一天赶出来的，日期统一成 2026/10/20；
      * 列表里第二张起的同日卡片只写「同日」，不把同一个日期印十几遍。
      */
     @Test
     public void sameDayEntries_collapseToTongRi() {
         for (Changelog.Entry e : Changelog.all()) {
-            // code >= 78（v1.26.1）为止都是 2026/10/20 那一天赶出来的；
-            // 之后的版本按实际日期写，这条断言不该把未来也钉死在那天
-            if (e.code >= 42 && e.code <= 78) {
-                assertEquals("v1.19.7 起都是同一天开发的：" + e.version,
+            // code 42~73（v0.22.0 ~ v0.39.0）都是 2026/10/20 那一天赶出来的；
+            // 之后的版本按实际日期写，这条断言不该把未来也钉死在那天。
+            // 2026-10-26 versionCode 重排后区间跟着变（旧号 42~78 → 新号 42~73）
+            if (e.code >= 42 && e.code <= 73) {
+                assertEquals("v0.22.0 起都是同一天开发的：" + e.version,
                         "2026/10/20", e.date);
             }
         }
@@ -222,7 +223,7 @@ public class ChangelogTest {
         Changelog.renderInto(ctx(), box, Changelog.all(), installedCode());
         assertEquals(Changelog.all().size(), box.getChildCount());
         // 按「与上一张卡是否同日」来判断，不写死具体日期，也不写死第几张——
-        // 同一天赶出来的版本会连着好几张（v1.26.2 / .3 / .4 都是 10/21），
+        // 同一天赶出来的版本会连着好几张（v0.39.1 / .3 / .4 都是 10/21），
         // 断言「第 N 张换日」这种写法，下次再加一版同日的就红了
         Changelog.Entry newest = Changelog.all().get(0);
         assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), newest.date));
@@ -230,7 +231,7 @@ public class ChangelogTest {
         for (int i = 1; i < Changelog.all().size(); i++) {
             Changelog.Entry e = Changelog.all().get(i);
             // meta 行按内容找（含 versionCode 的那个 TextView），不按下标——
-            // v1.71.0 起卡片头部是「版本徽章 + 标题」两列、条目是悬挂缩进行，
+            // v0.76.5 起卡片头部是「版本徽章 + 标题」两列、条目是悬挂缩进行，
             // 子视图不再全是 TextView，写死下标一改结构就红
             TextView meta = findText((View) box.getChildAt(i), "versionCode");
             assertNotNull("卡片里应有一行 meta（日期 · versionCode）：v" + e.version, meta);
@@ -249,7 +250,7 @@ public class ChangelogTest {
     }
 
     /**
-     * v1.46.6：更新日志页改成首帧只画一批。
+     * v0.56.5：更新日志页改成首帧只画一批。
      *
      * <p>背景：114 版一次性 inflate 约 570 个 View，进页面会卡一下。
      */
@@ -266,9 +267,9 @@ public class ChangelogTest {
     }
 
     /**
-     * v1.71.0：版本号做成徽章，当前版本卡带「当前版本」徽章。
+     * v0.76.5：版本号做成徽章，当前版本卡带「当前版本」徽章。
      *
-     * <p>原来「v1.70.0  标题」是一行整TextView，扫一页找「现在看到第几版」
+     * <p>原来「v0.76.4  标题」是一行整TextView，扫一页找「现在看到第几版」
      * 得逐行读前几个字符；「当前版本」也只是 meta 行里的一段文字，容易扫过去。
      * 徽章化之后这两件事都该在——逐卡钉，别只钉第一张。
      */
@@ -283,8 +284,8 @@ public class ChangelogTest {
             View card = box.getChildAt(i);
             Changelog.Entry e = all.get(i);
             // 按整段文案钉：要点里可能提到别的版本号或「当前版本」四个字
-            // （v1.71.1 的要点就写着「『当前版本』徽章都不画」），
-            // 子串匹配会把正文当成徽章，v1.71.2 发版时真红过一次
+            // （v0.76.6 的要点就写着「『当前版本』徽章都不画」），
+            // 子串匹配会把正文当成徽章，v0.77.0 发版时真红过一次
             List<String> leaves = textLeaves(card);
             assertTrue("每张卡都应有版本徽章：v" + e.version,
                     leaves.contains("v" + e.version));
@@ -294,9 +295,9 @@ public class ChangelogTest {
     }
 
     /**
-     * v1.71.1：紧凑模式（升级弹窗）不画版本徽章与「当前版本」徽章。
+     * v0.76.6：紧凑模式（升级弹窗）不画版本徽章与「当前版本」徽章。
      *
-     * <p>弹窗标题已经写着「更新到 v1.71.0」，卡片里再放版本徽章、再跟一个
+     * <p>弹窗标题已经写着「更新到 v0.76.5」，卡片里再放版本徽章、再跟一个
      * 「当前版本」徽章，等于同一件事说三遍（用户反馈「看着怪怪的」）。
      * 紧凑卡只留标题 + meta + 条目；列表页仍然要徽章（扫一页找「现在第几版」靠它），
      * 那条由 {@link #cards_carryVersionPill_andOnlyCurrentHasBadge()} 钉着。
@@ -317,8 +318,8 @@ public class ChangelogTest {
         List<String> leaves = textLeaves(card);
         assertTrue("标题应在", leaves.contains(e.title));
         assertTrue("meta 应留着 versionCode", containsText(card, "versionCode"));
-        // 徽章按整段文案钉：要点里可能出现「v1.71.1」「当前版本」这样的子串
-        // （v1.71.1 的要点就写着「『当前版本』徽章都不画」），只有徽章是整段相等
+        // 徽章按整段文案钉：要点里可能出现「v0.76.6」「当前版本」这样的子串
+        // （v0.76.6 的要点就写着「『当前版本』徽章都不画」），只有徽章是整段相等
         assertFalse("紧凑卡不该有版本徽章", leaves.contains("v" + e.version));
         assertFalse("紧凑卡不该有「当前版本」徽章", leaves.contains("当前版本"));
     }
@@ -347,7 +348,7 @@ public class ChangelogTest {
         assertEquals("分批画完的卡数应与一次性画一致",
                 full.getChildCount(), paged.getChildCount());
         for (int i = 0; i < full.getChildCount(); i++) {
-            // v1.71.0 起卡片里有 LinearLayout 子行（徽章 + 标题两列、悬挂缩进条目），
+            // v0.76.5 起卡片里有 LinearLayout 子行（徽章 + 标题两列、悬挂缩进条目），
             // 不再逐子 cast TextView，改成按「文本叶」顺序对比——结构怎么调都不红，
             // 但文案差一个字符就红
             assertEquals("第 " + i + " 张卡的文案应一致",

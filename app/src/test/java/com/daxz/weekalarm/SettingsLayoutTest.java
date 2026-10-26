@@ -30,7 +30,7 @@ import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowSeekBar;
 
 /**
- * 设置页按澎湃分层后的结构（v1.49.0）。
+ * 设置页按澎湃分层后的结构（v0.60.0）。
  *
  * <p>主页 8 项、两个二级页；主页不再折叠，低频项整体搬走。
  * 这一组只钉结构：哪几项在主页、入口通向哪、二级页显示哪一段。
@@ -60,9 +60,9 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 二级页必须在 manifest 里注册（v1.49.1）。
+     * 二级页必须在 manifest 里注册（v0.60.1）。
      *
-     * <p>这一条是补的：v1.49.0 把 Activity 写好了却忘了登记，
+     * <p>这一条是补的：v0.60.0 把 Activity 写好了却忘了登记，
      * 点「更多响铃设置」直接 ActivityNotFoundException——用户看到的是「弹回首页」。
      * Robolectric 的 startActivity 不检查 manifest，所以之前的测试全绿也发现不了。
      */
@@ -154,7 +154,7 @@ public class SettingsLayoutTest {
 
         assertEquals(View.GONE, a.findViewById(R.id.sec_ring).getVisibility());
         assertEquals(View.VISIBLE, a.findViewById(R.id.sec_all).getVisibility());
-        // v1.61.0：「测试响铃」已删——与引导页第 3 页的「试听一下响铃」是同一件事，
+        // v0.74.0：「测试响铃」已删——与引导页第 3 页的「试听一下响铃」是同一件事，
         // 留着两处入口是重复。想试的话走「新手引导与权限 → 重看」。
         assertNotNull("这一页应有导出", a.findViewById(R.id.row_export));
         assertNotNull("这一页应有运行状态", a.findViewById(R.id.row_run_status));
@@ -199,10 +199,10 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 睡前提醒行（v1.72.1）：右侧是「时刻 + 箭头」，不再是开关。
+     * 睡前提醒行（v0.79.0）：右侧是「时刻 + 箭头」，不再是开关。
      *
      * <p>原来右侧画着开关，用户以为这一行只能开或关，不知道点进去还能改时刻
-     * （v1.71.7 真机反馈）。现在关掉这件事交给对话框里第一张「关闭」卡，
+     * （v0.78.0 真机反馈）。现在关掉这件事交给对话框里第一张「关闭」卡，
      * 行上只报当前状态。
      */
     @Test
@@ -237,7 +237,7 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 二级页的分区名要能自解释（v1.49.3）。
+     * 二级页的分区名要能自解释（v0.61.1）。
      *
      * <p>原来那三段叫「排程 / 检查与工具 / 备份与恢复」：第一段里装着一周开始日、
      * 提醒范围、节日开关，「检查与工具」里装着使用说明和更新日志——名字和内容对不上。
@@ -255,7 +255,7 @@ public class SettingsLayoutTest {
         assertTrue("应有「检查与帮助」", all.contains("检查与帮助"));
         assertTrue("应有「备份与恢复」", all.contains("备份与恢复"));
         assertFalse("「排程」既指排班又指闹钟排程，已不用", all.contains("排程"));
-        // v1.60.0：「睡前提醒」段整段撤了——它唯一一行（仅在明天上班时提醒）
+        // v0.73.7：「睡前提醒」段整段撤了——它唯一一行（仅在明天上班时提醒）
         // 并进了主页睡前提醒行的对话框，这一页不再有该出现没出现的段落
         assertFalse("「仅在明天上班时提醒」已并入睡前提醒对话框，二级页不该再有",
                 all.contains("仅在明天上班时提醒"));
@@ -278,7 +278,7 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「添加到桌面」这一行（v1.49.9）。
+     * 「添加到桌面」这一行（v0.63.0）。
      *
      * <p>澎湃把第三方小部件收进「安卓小部件」二级列表，用户要翻三层。
      * 这行调 requestPinAppWidget 让系统直接弹确认框——点一下就能放上去。
@@ -302,9 +302,9 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「更新日志」那一行要显示当前版本号（v1.59.0）。
+     * 「更新日志」那一行要显示当前版本号（v0.73.4）。
      *
-     * <p>XML 里写死了一个「v1.22.3」，而没有任何代码去刷新它——用户装机后
+     * <p>XML 里写死了一个「v0.29.0」，而没有任何代码去刷新它——用户装机后
      * 看到更新日志停在四年前的版本，以为日志停更了。现在由 onCreate 动态刷。
      */
     @Test
@@ -322,9 +322,9 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「日历显示内容」一行：三个开关合并后行还在，值跟着 Prefs 走（v1.60.0）。
+     * 「日历显示内容」一行：三个开关合并后行还在，值跟着 Prefs 走（v0.73.7）。
      *
-     * <p>v1.60.0 前这里是农历节日 / 二十四节气 / 基督教节日三个开关行。
+     * <p>v0.73.7 前这里是农历节日 / 二十四节气 / 基督教节日三个开关行。
      * 合并后 Prefs 三个键不动，行右侧的值要实时反映勾选。
      */
     @Test
@@ -346,9 +346,9 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 「仅在明天上班时提醒」并入睡前提醒对话框（v1.60.0）。
+     * 「仅在明天上班时提醒」并入睡前提醒对话框（v0.73.7）。
      *
-     * <p>v1.60.0 前它是更多设置里「睡前提醒」段的独立开关行——和时刻分居两处，
+     * <p>v0.73.7 前它是更多设置里「睡前提醒」段的独立开关行——和时刻分居两处，
      * 同一个决策要理解两遍。现在并进对话框：回显当前值，勾选即时生效。
      */
     @Test
@@ -362,7 +362,7 @@ public class SettingsLayoutTest {
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
         assertNotNull("点睡前提醒行应弹出对话框", d);
-        // v1.71.7：裸 CheckBox 换成开关行卡片里的 SwitchCompat——它是个开关不是选项
+        // v0.78.0：裸 CheckBox 换成开关行卡片里的 SwitchCompat——它是个开关不是选项
         SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
         assertNotNull("对话框里应有「仅在明天上班时提醒」开关", sw);
         assertTrue("回显当前值（开着）", sw.isChecked());

@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  「关闭闹钟」药丸按钮底（v1.37.0）：品牌紫渐变 + 白字。
+  「关闭闹钟」药丸按钮底（v0.53.0）：品牌紫渐变 + 白字。
 
   原来是 12% 黑的灰药丸配黑字，和系统通知的操作按钮长得一样。改成实色紫渐变后，
   这条通知唯一的操作也带上了品牌色；白字在品牌紫上对比度约 5:1，够读。
 
   和图标底共用同一组颜色与角度，两个色块才像一套。
 
-  v1.69.1：渐变两端从 @color/indigo / @color/violet 改成 hero_start / hero_end
+  v0.76.2：渐变两端从 @color/indigo / @color/violet 改成 hero_start / hero_end
   （固定 token，无 values-night 版，日间值相同）。通知 RemoteViews 由 SystemUI
   按系统明暗配置渲染，夜里若继续引用 indigo / violet，这对紫会被提亮成浅紫粉，
-  白字对比度随之下降。桌面图标同类问题见 ic_launcher_bg（v1.69.0）。
+  白字对比度随之下降。桌面图标同类问题见 ic_launcher_bg（v0.76.1）。
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">

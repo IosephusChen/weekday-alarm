@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 三条通知的折叠卡片（v1.38.0）。
+ * 三条通知的折叠卡片（v0.53.1）。
  *
  * <p>用户提了三个看着不相干的问题，根因只有两个：
  * <ul>
@@ -46,7 +46,7 @@ import java.util.List;
  * </ul>
  *
  * <p>所以这一组测试统一验「把 RemoteViews 真的应用出来之后，卡片上有什么」，
- * 而不是只看 XML 里写了什么——v1.36.1 的教训就是 XML 与运行时可能不一致。
+ * 而不是只看 XML 里写了什么——v0.52.3 的教训就是 XML 与运行时可能不一致。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -122,7 +122,7 @@ public class NotifCardTest {
         assertEquals(View.GONE, root.findViewById(R.id.nc_chrono).getVisibility());
     }
 
-    // ================= 渠道选择（v1.42.0） =================
+    // ================= 渠道选择（v0.54.2） =================
     //
     // 用户报「两个悬浮窗」：高优先级渠道在屏幕亮着时必然弹一张系统 heads-up，
     // 我们的横幅又叠上去。这两条钉住「什么时候该安静、什么时候该抢屏」。
@@ -275,11 +275,11 @@ public class NotifCardTest {
         assertNull("响铃后预告应撤掉", shadowOf(nm()).getNotification(SnoozeNotice.id(1)));
     }
 
-    // ================= 折叠态尺寸（v1.39.0） =================
+    // ================= 折叠态尺寸（v0.53.2） =================
     //
     // 用户截图里「关闭闹钟」「取消」的字被上下各切掉一截。根因不是字号，是高度：
     // 折叠态有上限，内容超了不是整体缩小，而是**把最后一行压扁**——按钮那行首当其冲。
-    // v1.38.0 的卡片是「标题 / 正文 / 倒计时」三行字 + 一行按钮，正好超了。
+    // v0.53.1 的卡片是「标题 / 正文 / 倒计时」三行字 + 一行按钮，正好超了。
 
     private int dp(int v) {
         return Math.round(v * ctx().getResources().getDisplayMetrics().density);
@@ -320,9 +320,9 @@ public class NotifCardTest {
     }
 
     /**
-     * 整张卡是**一行**：图标、文字、药丸并排（v1.40.0 回到 v1.37.0 的紧凑样子）。
+     * 整张卡是**一行**：图标、文字、药丸并排（v0.54.0 回到 v0.53.0 的紧凑样子）。
      *
-     * <p>v1.38.0 为了塞下倒计时改成「图标 + 三行文字」再加一行按钮，用户直接说
+     * <p>v0.53.1 为了塞下倒计时改成「图标 + 三行文字」再加一行按钮，用户直接说
      * 「不如之前紧凑」，而且高度顶到折叠态上限、按钮被压扁。现在倒计时挤在正文右边，
      * 高度不变。
      */

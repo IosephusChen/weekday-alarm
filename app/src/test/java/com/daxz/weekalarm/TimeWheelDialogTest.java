@@ -23,7 +23,7 @@ import org.robolectric.shadows.ShadowLooper;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 「时 / 分」滚轮时间选择（v1.71.3 版式）。
+ * 「时 / 分」滚轮时间选择（v0.77.1 版式）。
  *
  * <p>弹窗是双列 NumberPicker，中间一个冒号——两列读起来是一个时刻，
  * 不是两个数字列表。这里钉三件事：初值回填、确定回传、冒号还在

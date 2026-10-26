@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * v1.22.2：一周开始日（周一 / 周日）+ 今日状态里的「下一个闹钟」。
+ * v0.28.0：一周开始日（周一 / 周日）+ 今日状态里的「下一个闹钟」。
  *
- * v1.22.5：首页改成「距下次响铃」倒计时，判断口径统一到 ScheduleManager.nextRing，
+ * v0.30.0：首页改成「距下次响铃」倒计时，判断口径统一到 ScheduleManager.nextRing，
  * 这里一并覆盖跨天、休息日的「每天」闹钟、请假与加班。
  *
  * 这两件事都在界面上，但真正的错法都在计算里：
@@ -112,7 +112,7 @@ public class WeekStartTest {
     @Test
     public void calendarHeader_followsSetting() {
         Prefs.setWeekStart(ctx(), Prefs.WEEK_START_SUNDAY);
-        Prefs.setOnboardDone(ctx(), true);   // v1.34：日历在首页，别让新手引导页插进来
+        Prefs.setOnboardDone(ctx(), true);   // v0.48.1：日历在首页，别让新手引导页插进来
         MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
         ShadowLooper.idleMainLooper();
         assertEquals("日", ((TextView) a.findViewById(R.id.cal_dow_0)).getText().toString());
@@ -136,7 +136,7 @@ public class WeekStartTest {
         assertTrue("今天应高亮在第 " + idx + " 列", m.days.get(idx).today);
     }
 
-    // ================= 下一次响铃（v1.22.5 起首页倒计时与「下次」共用）=================
+    // ================= 下一次响铃（v0.30.0 起首页倒计时与「下次」共用）=================
 
     private static List<Alarm> alarms() {
         return Arrays.asList(
@@ -154,7 +154,7 @@ public class WeekStartTest {
                 Collections.emptySet(), from, 30);
     }
 
-    /** 早上那趟响过之后，下午还有午休，下一次必须是 13:40（v1.22.2 修的老问题）。 */
+    /** 早上那趟响过之后，下午还有午休，下一次必须是 13:40（v0.28.0 修的老问题）。 */
     @Test
     public void nextRing_afterMorningAlarm_returnsAfternoonOne() {
         ScheduleManager.NextAlarm next = ring(alarms(), DOUBLE_REST,
@@ -196,7 +196,7 @@ public class WeekStartTest {
     }
 
     /**
-     * v1.22.5 修：周六是休息日，但「每天」闹钟照样响。
+     * v0.30.0 修：周六是休息日，但「每天」闹钟照样响。
      * 旧首页只算「今天算上班」的日子，于是这种日子会写「休息日，闹钟不响」。
      */
     @Test

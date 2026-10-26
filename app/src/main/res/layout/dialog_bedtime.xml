@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 睡前提醒（v1.20；v1.71.7 卡片化）。
+<!-- 睡前提醒（v1.20；v0.78.0 卡片化）。
 
      原来六个选项是自绘 RadioGroup（系统 setSingleChoiceItems 在 MIUI / 澎湃上
-     只显示标题不显示选项，已实测），配一个裸 CheckBox。v1.71.7 换成 DialogKit 的
+     只显示标题不显示选项，已实测），配一个裸 CheckBox。v0.78.0 换成 DialogKit 的
      选项卡积木：与「日历显示内容」「重复规则」「提醒范围」同一套语言，
      全 App 最后一个还在用系统单选圈的弹窗到此收尾。
 
@@ -10,7 +10,7 @@
      取值与下标一一对应，写死要维护六份重复的 id 与文案。
 
      「仅在明天上班时提醒」从裸 CheckBox 改成开关行卡片：它是个开关不是选项，
-     用 Switch 比用勾选框更贴语义。v1.72.1 起设置页那行的开关已去掉
+     用 Switch 比用勾选框更贴语义。v0.79.0 起设置页那行的开关已去掉
      （改成「时刻 + 箭头」），这个开关成了全 App 唯一控制它的地方。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"

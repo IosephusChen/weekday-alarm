@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * v1.17：稍后提醒自定义（间隔 / 次数，含按「闹钟 × 日期」计数与过期清理）
+ * v0.15.0：稍后提醒自定义（间隔 / 次数，含按「闹钟 × 日期」计数与过期清理）
  * 与提前通知栏提醒（与主闹钟配对注册 / 一起取消）。
  */
 @RunWith(RobolectricTestRunner.class)
@@ -73,9 +73,9 @@ public class SnoozePreNoticeTest {
     @Test
     public void snoozeAndPreNotice_defaults() {
         assertEquals("间隔默认 5 分钟", 5, Prefs.getSnoozeMinutes(ctx()));
-        assertEquals("次数默认 3 次（v1.26.2）", Prefs.SNOOZE_TIMES_DEFAULT,
+        assertEquals("次数默认 3 次（v0.39.1）", Prefs.SNOOZE_TIMES_DEFAULT,
                 Prefs.getSnoozeTimes(ctx()));
-        assertEquals("提前提醒默认 1 小时（v1.26.2）", Prefs.PRE_NOTICE_DEFAULT,
+        assertEquals("提前提醒默认 1 小时（v0.39.1）", Prefs.PRE_NOTICE_DEFAULT,
                 Prefs.getPreNoticeMinutes(ctx()));
     }
 
@@ -193,7 +193,7 @@ public class SnoozePreNoticeTest {
         Prefs.setSnoozeTimes(ctx(), 3);
 
         AlarmActivity activity = launch(1, today, false);
-        // v1.26.5：按钮本体是 LinearLayout（图标 + 文字），文字在 tv_snooze_label
+        // v0.40.2：按钮本体是 LinearLayout（图标 + 文字），文字在 tv_snooze_label
         TextView btnSnooze = activity.findViewById(R.id.tv_snooze_label);
         assertTrue("应显示间隔与剩余次数",
                 btnSnooze.getText().toString().contains("10分钟后再响")
@@ -224,11 +224,11 @@ public class SnoozePreNoticeTest {
         Prefs.setVolume(ctx(), 0);
         Prefs.setSnoozeMinutes(ctx(), 30);
         Prefs.setSnoozeTimes(ctx(), Prefs.SNOOZE_UNLIMITED);
-        // v1.19.9：首次启动会先拉起新手引导，这里模拟「已看过」，让断言聚焦设置入口
+        // v0.23.0：首次启动会先拉起新手引导，这里模拟「已看过」，让断言聚焦设置入口
         Prefs.setOnboardDone(ctx(), true);
 
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        // v1.19.7：设置卡片与使用说明整体搬到独立页，主界面只在标题栏留一个入口
+        // v0.22.0：设置卡片与使用说明整体搬到独立页，主界面只在标题栏留一个入口
         activity.findViewById(R.id.btn_settings_entry).performClick();
         Intent next = Shadows.shadowOf(activity).getNextStartedActivity();
         assertTrue("点「设置」应打开设置与使用说明页", next != null);
@@ -242,14 +242,14 @@ public class SnoozePreNoticeTest {
         Prefs.setPreNoticeMinutes(ctx(), 0);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        // v1.49.0：设置分成主页 + 二级页，这一条改成「两页各自该显示的值」
+        // v0.60.0：设置分成主页 + 二级页，这一条改成「两页各自该显示的值」
         SettingsActivity more = Robolectric.buildActivity(MoreSettingsActivity.class,
                 MoreSettingsActivity.intent(ctx(), false)).setup().get();
         assertEquals("未来 180 天",
                 ((TextView) more.findViewById(R.id.tv_horizon)).getText().toString());
         assertEquals("静音（仅震动）",
                 ((TextView) activity.findViewById(R.id.tv_volume)).getText().toString());
-        // v1.27 起这一行是开关下方的副标题：关着时说「开着会怎样」，
+        // v0.41.0 起这一行是开关下方的副标题：关着时说「开着会怎样」，
         // 不再只复述一个「关闭」——那等于把开关状态念一遍，看完还是不知道有什么用
         assertEquals("响铃前先在通知栏提醒一次",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
@@ -259,7 +259,7 @@ public class SnoozePreNoticeTest {
     }
 
     /**
-     * 首页底部三块已搬去设置页（v1.46.2）。
+     * 首页底部三块已搬去设置页（v0.56.1）。
      *
      * <p>「使用说明」「测试响铃」「运行状态」原来占首页最后 190dp，全是低频操作，
      * 而首页合计 2.25 屏，日历被它们挤到第二屏之后。现在三块都在设置页「其他」组，
@@ -296,18 +296,18 @@ public class SnoozePreNoticeTest {
         Prefs.setVolKeyAction(ctx(), Prefs.KEY_ACTION_STOP);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        // v1.49.0：稍后提醒与按键设置进了「更多响铃设置」，提前提醒留在主页
+        // v0.60.0：稍后提醒与按键设置进了「更多响铃设置」，提前提醒留在主页
         SettingsActivity ring = Robolectric.buildActivity(MoreSettingsActivity.class,
                 MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertEquals("10 分钟 × 2 次",
                 ((TextView) ring.findViewById(R.id.tv_snooze)).getText().toString());
-        // v1.72.1：副标题恒定讲机制，具体提前量搬到右边当「值」——
+        // v0.79.0：副标题恒定讲机制，具体提前量搬到右边当「值」——
         // 原来一句「响铃前 15 分钟提醒」把「开没开」和「提前多久」都塞进 11sp 灰字
         assertEquals("响铃前先在通知栏提醒一次",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice)).getText().toString());
         assertEquals("提前 15 分钟",
                 ((TextView) activity.findViewById(R.id.tv_pre_notice_value)).getText().toString());
-        // v1.29.0：两个键各占一行（原来挤在一行，窄屏 + 大字号会断在词中间）
+        // v0.45.0：两个键各占一行（原来挤在一行，窄屏 + 大字号会断在词中间）
         String keys = ((TextView) ring.findViewById(R.id.tv_keys)).getText().toString();
         assertTrue("按键行应摘要显示音量键的作用，实际：" + keys, keys.contains("音量键 · 关闭"));
         assertTrue("两个键应各占一行，实际：" + keys, keys.contains("\n电源键 · "));
@@ -352,7 +352,7 @@ public class SnoozePreNoticeTest {
                 ScheduleManager.isAutoStopRegistered(ctx(), alarmId, day));
     }
 
-    /** 通知栏小睡守卫（v1.18.2）：次数用尽后从服务入口也拒绝续睡，且不增加计数。 */
+    /** 通知栏小睡守卫（v0.17.1）：次数用尽后从服务入口也拒绝续睡，且不增加计数。 */
     @Test
     public void alarmService_snoozeGuard_blocksWhenExhausted() {
         enableSingleDailyAlarm(30);

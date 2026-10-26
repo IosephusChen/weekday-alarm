@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v1.26.5：参考澎湃系统自带闹钟重排版式。
+<!-- v0.40.2：参考澎湃系统自带闹钟重排版式。
 
      主视觉换成「现在几点」。半睡半醒时这是唯一真正要紧的信息——人要先知道
      「几点了」才能判断要不要再眯五分钟。原先的时钟图标 + 32sp 大标题在回答
@@ -59,7 +59,7 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- 滑动停止：保留 v1.26.0 的滑块而不改成澎湃那种「上滑关闭」的手势提示。
+    <!-- 滑动停止：保留 v0.38.0 的滑块而不改成澎湃那种「上滑关闭」的手势提示。
          滑块要求按住才能拖，误触概率低一个量级；手势式上滑虽然更省地方，
          但整片区域都变成可触发区，半睡半醒时反而更容易误停。 -->
     <com.daxz.weekalarm.SlideToStopView
@@ -67,7 +67,7 @@
         android:layout_width="match_parent"
         android:layout_height="64dp" />
 
-    <!-- v1.26.5 原先是一个 TextView + drawableStart 加图标。实测（真机与探针一致）
+    <!-- v0.40.2 原先是一个 TextView + drawableStart 加图标。实测（真机与探针一致）
          复合图标在这种条件下不参与居中定位：bounds 是 Rect(0,0-18,18)，left=0，
          图标被钉在胶囊最左边，而文字在中间，两者隔着一大段空白。
          改用 LinearLayout 显式排版，图标与文字由 gravity=center 统一居中。 -->

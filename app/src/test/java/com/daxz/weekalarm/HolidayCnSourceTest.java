@@ -12,7 +12,7 @@ import org.junit.Test;
 import java.time.LocalDate;
 
 /**
- * 节假日数据源改造（v1.54.0）：内置扩到 20 年、远程换成 holiday-cn 按年增量。
+ * 节假日数据源改造（v0.72.0）：内置扩到 20 年、远程换成 holiday-cn 按年增量。
  *
  * <p>要守住的三件事：
  * <ol>

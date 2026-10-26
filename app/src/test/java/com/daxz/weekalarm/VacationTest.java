@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 个人请假（v1.14）：存储、日历联动、闹钟跳过。
+ * 个人请假（v0.12.0）：存储、日历联动、闹钟跳过。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)

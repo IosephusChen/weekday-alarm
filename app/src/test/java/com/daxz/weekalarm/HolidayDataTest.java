@@ -137,7 +137,7 @@ public class HolidayDataTest {
     }
 
     /**
-     * v1.19.9：结构合法但没有 version 的 JSON（如 {"error":"not found"}）必须被拒绝，
+     * v0.23.0：结构合法但没有 version 的 JSON（如 {"error":"not found"}）必须被拒绝，
      * 不能当成「空数据」合入——否则会把已缓存的远程安排清空。
      */
     @Test

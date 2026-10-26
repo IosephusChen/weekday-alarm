@@ -18,7 +18,7 @@ import org.robolectric.shadows.ShadowLooper;
 import java.time.LocalDate;
 
 /**
- * 假期倒计时的 UI 守门（v1.68.0）：那一行的显隐与文案真的要落到首页今天状态卡里。
+ * 假期倒计时的 UI 守门（v0.76.0）：那一行的显隐与文案真的要落到首页今天状态卡里。
  *
  * <p>纯函数测过了不算完——布局里漏了 {@code findViewById}、{@code refreshStatus} 里忘了接线，
  * 纯函数测试都是绿的。这里渲染真实首页再断言。

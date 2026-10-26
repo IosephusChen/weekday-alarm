@@ -30,7 +30,7 @@ import org.robolectric.shadows.ShadowNotificationManager;
 import java.lang.reflect.Field;
 
 /**
- * 「闹钟响了却关不掉」的兜底（v1.47.1）。
+ * 「闹钟响了却关不掉」的兜底（v0.58.0）。
  *
  * <p>起因是用户真机测试：只开自启动、关掉通知，划掉 App 后闹钟照响，但整屏响铃页
  * 被系统拦住（后台拉起 Activity 受限）、通知栏没有按钮，回到 App 也没有任何入口，
@@ -85,8 +85,8 @@ public class RingStopTest {
     @Test
     public void ringingRow_appearsWhileRingingAndStopWorks() throws Exception {
         resetPrefs();
-        // v1.47.8：这一行现在只在「没有别的停止入口」时出现，所以先把通知关掉、
-        // 并确认没有浮窗——这正是 v1.47.1 要救的那个场景
+        // v0.58.7：这一行现在只在「没有别的停止入口」时出现，所以先把通知关掉、
+        // 并确认没有浮窗——这正是 v0.58.0 要救的那个场景
         notifications(false);
         FloatingAlarm.hide();
         ActivityController<MainActivity> ctl =
@@ -113,7 +113,7 @@ public class RingStopTest {
     }
 
     /**
-     * 通知开着时不该再出现首页那行（v1.47.8）。
+     * 通知开着时不该再出现首页那行（v0.58.7）。
      *
      * <p>用户真机截图：浮窗、通知栏、首页各有一个「停止」，看起来像三件不同的事。
      * 通知栏的按钮已经能停，这一行就是重复。
@@ -138,7 +138,7 @@ public class RingStopTest {
     }
 
     /**
-     * 悬浮窗挂着时同样不该出现（v1.47.8）：横幅上那个方块就是停止键。
+     * 悬浮窗挂着时同样不该出现（v0.58.7）：横幅上那个方块就是停止键。
      *
      * <p>注意这里刻意把通知关掉——只靠浮窗也要算「有入口」，否则用户关掉通知后
      * 会在浮窗和首页看到两个停止按钮。
@@ -222,12 +222,12 @@ public class RingStopTest {
         ActivityController<GuideActivity> ctl =
                 Robolectric.buildActivity(GuideActivity.class).setup();
         TextView st = ctl.get().findViewById(R.id.st_notif);
-        // v1.59.1：通知降为「建议」（进 App 也能停），但后果仍要说清
+        // v0.73.5：通知降为「建议」（进 App 也能停），但后果仍要说清
         assertEquals("未开 · 响铃时得进 App 关", st.getText().toString());
         ctl.pause().stop().destroy();
     }
 
-    // ---------- 4. 权限行的两处调整（真机结论，v1.47.2）----------
+    // ---------- 4. 权限行的两处调整（真机结论，v0.58.1）----------
 
     /**
      * 真机验证：开「后台弹出界面」会连带开启全屏通知，反之不成立。
@@ -247,7 +247,7 @@ public class RingStopTest {
     }
 
     /**
-     * 电池优化整行已删（v1.47.3）：实测自启动开着、电池优化受限时闹钟照响，
+     * 电池优化整行已删（v0.58.2）：实测自启动开着、电池优化受限时闹钟照响，
      * 这一项对本 App 没有作用。检查清单里留一个「你不需要管」的开关，
      * 只会让人以为还有事没做。
      *
@@ -265,11 +265,11 @@ public class RingStopTest {
         assertEquals("状态文案也一并删掉", 0, stId);
     }
 
-    // ---------- 5. 兜底通知的消除路径（v1.64.0）----------
+    // ---------- 5. 兜底通知的消除路径（v0.74.3）----------
 
     /**
      * 前台服务被系统拒时发的兜底通知（{@link AlarmService#postFallbackNotification}）是
-     * ongoing 的。它有两条消除路径，v1.63.0 只通了一条：
+     * ongoing 的。它有两条消除路径，v0.74.2 只通了一条：
      * <ul>
      *   <li>点通知里的「停止」→ 经 {@code PendingIntent.getService} 把服务拉起来再
      *       {@code stopSelf}，{@code onDestroy} 顺带取消——通；</li>

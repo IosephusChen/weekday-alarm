@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「下一个闹钟」4×2（v1.50.0 固定尺寸；v1.51.0 内容固化）。
+<!-- 「下一个闹钟」4×2（v0.67.0 固定尺寸；v0.68.0 内容固化）。
 
-     v1.51.0 把原来 4×3 档的「本周七格」并进这张卡：尺寸锁死之后没有第二档，
+     v0.68.0 把原来 4×3 档的「本周七格」并进这张卡：尺寸锁死之后没有第二档，
      165dp 的卡片放「闹钟 + 七格」正好，比空着半张卡有用。
 
      minHeight 从 110 提到 118：七格并进来之后 110dp 会把格子压成一条线。
      118dp 是实测「闹钟两行 + 七格」不裁字的下限，与「本周班表」对齐。
 
      resizeMode="none" 是固定尺寸的唯一开关（maxResizeHeight 管不了菜单项，
-     v1.49.13 已经试过，v1.50.0 真机确认有效）。 -->
+     v0.66.1 已经试过，v0.67.0 真机确认有效）。 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="118dp"

@@ -24,11 +24,11 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 一次性闹钟（v1.27）。
+ * 一次性闹钟（v0.41.0）。
  *
  * <p>它的价值全在「只响那一天」这一条上：临时早起、赶车、开会，不该为了这一次
  * 去改整套排班。所以这里钉三件事——只看日期不看制度、没有日期就绝不响、
- * 过期就自动关闭（v1.27.2 起不再从列表删除）。
+ * 过期就自动关闭（v0.42.0 起不再从列表删除）。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -103,7 +103,7 @@ public class OnceAlarmTest {
         Prefs.setAlarms(ctx(), all);
 
         List<Alarm> got = Prefs.getAlarmsSettled(ctx());
-        assertEquals("v1.27.2：过期的那条要留着，不再从列表里删掉", 3, got.size());
+        assertEquals("v0.42.0：过期的那条要留着，不再从列表里删掉", 3, got.size());
         Alarm yesterday = got.get(0);
         assertEquals("昨天那条应被自动关闭", false, yesterday.enabled);
         assertEquals("其余照常", true, got.get(1).enabled);
@@ -150,7 +150,7 @@ public class OnceAlarmTest {
     }
 
     /**
-     * 日期文案的统一规则（v1.45.0）：近处用相对词，远处用绝对日期。
+     * 日期文案的统一规则（v0.55.3）：近处用相对词，远处用绝对日期。
      *
      * <p>以前列表行写「10月22日 周四」、编辑框写「明天 · 10月22日」，同一天两处不一样。
      * 现在都走 {@link Alarm#dayLabel}。today 传参而不是内部取 now()，
@@ -257,7 +257,7 @@ public class OnceAlarmTest {
         assertFalse(daily.reviveOnce(now));
     }
 
-    // ================= 改完自动开启（v1.45.0）=================
+    // ================= 改完自动开启（v0.55.3）=================
 
     /**
      * 关掉的闹钟改完必须自己开起来。
@@ -320,9 +320,9 @@ public class OnceAlarmTest {
     }
 
     /**
-     * 新建一次性闹钟默认「今天」（v1.47.6）。
+     * 新建一次性闹钟默认「今天」（v0.58.5）。
      *
-     * <p>v1.27 起默认是明天，理由是「此刻多半已过今天的起床时间」。但一次性闹钟多数
+     * <p>v0.41.0 起默认是明天，理由是「此刻多半已过今天的起床时间」。但一次性闹钟多数
      * 是为今天剩下的事建的（下午的会、晚上的车），默认明天等于每次都要先改回来。
      * 这条测试守着「别又改回明天」。
      */
@@ -361,7 +361,7 @@ public class OnceAlarmTest {
     }
 
     /**
-     * 读就是读，不能顺手改数据（v1.28.1）。
+     * 读就是读，不能顺手改数据（v0.44.0）。
      *
      * <p>以前 {@code Prefs.getAlarms} 会在读的时候把过期的「仅一次」关掉并写盘。
      * 出发点（收在唯一入口、三条路径自动一致）没问题，代价是一个叫 {@code get}
@@ -386,7 +386,7 @@ public class OnceAlarmTest {
     }
 
     /**
-     * 三条消费路径仍然各自结算，不用调用方记得先手动调一次（v1.28.1）。
+     * 三条消费路径仍然各自结算，不用调用方记得先手动调一次（v0.44.0）。
      *
      * <p>拆开副作用最大的风险就是「某条路径忘了结算」，于是列表上又出现
      * 一条显示已开启、实际永远不会响的闹钟。这三条各钉一次。

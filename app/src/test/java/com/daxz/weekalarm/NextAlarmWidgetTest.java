@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * v1.19：桌面小组件「下一个闹钟」内容计算。
- * v1.69.0：改版对齐首页今天状态卡——大字段今天状态、角标周次、副信息下次响铃，
+ * v0.18.0：桌面小组件「下一个闹钟」内容计算。
+ * v0.76.1：改版对齐首页今天状态卡——大字段今天状态、角标周次、副信息下次响铃，
  * 文案全部走 TodayCard，与首页逐字一致（一致性由 TodayCardTest 钉死，
  * 这里只钉「部件拿到的是首页那套数」）。
  */
@@ -52,7 +52,7 @@ public class NextAlarmWidgetTest {
 
     @Test
     public void noAlarms_subExplainsWhy() {
-        // v1.69.0 起没有闹钟不再把「暂无提醒」顶上大字段——今天状态照样显示，
+        // v0.76.1 起没有闹钟不再把「暂无提醒」顶上大字段——今天状态照样显示，
         // 副信息说清「没有启用的闹钟」，与首页空态同一个口径。
         // 注意：直接清 Prefs 会落到内置默认闹钟（07:30 起床，未迁移时 getAlarms 的兜底），
         // 要模拟「用户删光了」必须显式写空列表 + 标记已迁移。
@@ -99,7 +99,7 @@ public class NextAlarmWidgetTest {
         LocalDateTime now = LocalDateTime.now();
         NextAlarmWidget.WidgetModel today = NextAlarmWidget.computeModel(ctx(),
                 new ScheduleManager.NextAlarm(now.withHour(23).withMinute(59), "测试", 1));
-        assertTrue("当天的闹钟不写「今天」二字，只写时分（v1.22.5 规则），实际：" + today.sub,
+        assertTrue("当天的闹钟不写「今天」二字，只写时分（v0.30.0 规则），实际：" + today.sub,
                 today.sub.contains("下次闹钟 23:59 测试"));
 
         NextAlarmWidget.WidgetModel tomorrow = NextAlarmWidget.computeModel(ctx(),

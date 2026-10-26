@@ -28,9 +28,9 @@ import org.robolectric.shadows.ShadowAppWidgetManager;
 import org.robolectric.shadows.ShadowLooper;
 
 /**
- * 「添加到桌面」的请求路径（v1.71.2）。
+ * 「添加到桌面」的请求路径（v0.77.0）。
  *
- * <p>v1.59.0 曾按桌面品牌直接放弃请求（小米桌面只给手动路径），v1.71.2 用户反馈
+ * <p>v0.73.4 曾按桌面品牌直接放弃请求（小米桌面只给手动路径），v0.77.0 用户反馈
  * 「还是没法直接添加」——新版 HyperOS 已支持一键添加，按品牌放弃等于把能用的路堵死。
  * 现在一律先发 {@code requestPinAppWidget}，只有接口不支持或请求失败才走手动路径；
  * 请求发出后对话框里必须同时留一个「手动添加」出口。

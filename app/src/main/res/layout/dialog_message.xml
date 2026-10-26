@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  纯消息对话框（v1.61.0）。
+  纯消息对话框（v0.74.0）。
 
   替掉 AlertDialog 的 setMessage：系统那条消息是 16sp 的正文色，在 App 的卡片上
   又大又重，多段之间只能靠 "\n\n" 挤出两个空行，段落在不同 ROM 上松紧还不一样。

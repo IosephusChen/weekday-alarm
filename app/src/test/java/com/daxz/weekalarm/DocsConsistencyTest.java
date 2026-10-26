@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 文档与代码的一致性（v1.47.7）。
+ * 文档与代码的一致性（v0.58.6）。
  *
  * <p>为什么要有这个测试：发版最容易漏的不是代码，是「同一个版本号写着四个地方」——
  * `build.gradle`、`Changelog.java`、`更新日志.md`、`使用说明.md` 头部，外加交接文档的现状表。

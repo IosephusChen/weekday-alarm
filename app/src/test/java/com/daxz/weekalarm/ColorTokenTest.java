@@ -16,14 +16,14 @@ import java.util.TreeSet;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 /**
- * 配色 token 的守门测试（v1.43.0）。
+ * 配色 token 的守门测试（v0.55.0）。
  *
  * <p><b>为什么需要它</b>：同一个 bug 已经犯过两次，两次都是「日间定义了、夜间漏了」，
  * 而资源系统对这种缺失<b>不报错、不警告</b>，只是静默回落到浅色值：
  *
  * <ul>
- *   <li>v1.39.0：{@code bg_guide_option} 写死 #EEF0FE，深色下白字压白底，选中项直接消失</li>
- *   <li>v1.41.0：{@code section_bg} 只有日间值，设置页两条分组标题变成发白横条</li>
+ *   <li>v0.53.2：{@code bg_guide_option} 写死 #EEF0FE，深色下白字压白底，选中项直接消失</li>
+ *   <li>v0.54.1：{@code section_bg} 只有日间值，设置页两条分组标题变成发白横条</li>
  * </ul>
  *
  * <p>两次都是靠用户截图才发现的。编译器管不到这件事，只能靠这条测试：
@@ -38,15 +38,15 @@ public class ColorTokenTest {
      * 明确不需要夜间版本的色。
      *
      * <p>只允许一种情况：这个色<b>永远画在一个不随明暗变化的底上</b>。
-     * v1.56.0 起有三组：
+     * v0.73.1 起有三组：
      * <ul>
      *   <li>{@code widget_*}：班表小组件的标签色，压在固定紫色渐变（{@code bg_hero}）上</li>
-     *   <li>{@code hero_start / hero_end / hero_text}：v1.56.0 紫色卡片事故后新立的固定 token。
+     *   <li>{@code hero_start / hero_end / hero_text}：v0.73.1 紫色卡片事故后新立的固定 token。
      *       渐变是这套 UI 的识别色、不是主题色，深浅模式下都该是同一个紫；
      *       在此之前它们引用 {@code indigo / violet / indigo_dark}，这三个色有夜间版，
      *       深色模式下三张卡（两个小部件根背景 + 首页「今日状态」卡）一起变成淡粉紫。
      *       详见 {@code values/colors.xml} 里同名字段的注释。</li>
-     *   <li>{@code ic_launcher_bg}：v1.69.0 桌面图标专用底色。启动器是系统 surface，
+     *   <li>{@code ic_launcher_bg}：v0.76.1 桌面图标专用底色。启动器是系统 surface，
      *       资源解析走**启动器的**配置——系统深色模式下 values-night 会作用到图标上。
      *       早先图标背景引用 {@code indigo}（有夜间版），深夜色壁纸上整个图标发白，
      *       用户反馈「夜间变得有些透明」。这个色必须日夜同值，故不设夜间版。</li>

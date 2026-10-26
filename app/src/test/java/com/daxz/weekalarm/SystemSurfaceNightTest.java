@@ -19,21 +19,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
- * 系统 surface 日夜一致性的守门（v1.69.0 建，v1.69.1 扩到通知）。
+ * 系统 surface 日夜一致性的守门（v0.76.1 建，v0.76.2 扩到通知）。
  *
- * <p><b>原则</b>（v1.56.0 立，v1.69.0 补全）：<b>界面 surface</b> 该随明暗切换
+ * <p><b>原则</b>（v0.73.1 立，v0.76.1 补全）：<b>界面 surface</b> 该随明暗切换
  * （深色底上 indigo 要提亮才有对比度），<b>系统 surface</b> 必须日夜同色——
  * 因为启动器 / SystemUI 这些进程渲染我们的资源时，用的是<b>系统</b>的明暗配置，
  * values-night 会作用到它们身上。
  *
  * <p><b>已出过三次同类事故</b>：
  * <ul>
- *   <li>v1.55.x：小部件标签色引用 indigo / violet，深色下被静默提亮（v1.56.0 修，改固定 token）；</li>
- *   <li>v1.69.0 前：桌面图标背景引用 @color/indigo，深夜色壁纸上发白，
- *       用户反馈「夜间变得有些透明」（v1.69.0 修，新增 ic_launcher_bg）；</li>
- *   <li>v1.69.0 审计发现：通知的品牌紫渐变（bg_notif_icon / bg_notif_action）
+ *   <li>v1.55.x：小部件标签色引用 indigo / violet，深色下被静默提亮（v0.73.1 修，改固定 token）；</li>
+ *   <li>v0.76.1 前：桌面图标背景引用 @color/indigo，深夜色壁纸上发白，
+ *       用户反馈「夜间变得有些透明」（v0.76.1 修，新增 ic_launcher_bg）；</li>
+ *   <li>v0.76.1 审计发现：通知的品牌紫渐变（bg_notif_icon / bg_notif_action）
  *       注释写着「不随明暗切换」，引用的却是有夜间版的 indigo / violet
- *       （v1.69.1 修，改 hero_start / hero_end）。</li>
+ *       （v0.76.2 修，改 hero_start / hero_end）。</li>
  * </ul>
  *
  * <p>这条测试钉三件事：① 夜间配置确实生效（indigo 会被提亮——否则测试是空跑）；

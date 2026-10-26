@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 引导页主按钮（v1.25.0）：主色实心圆角。 -->
+<!-- 引导页主按钮（v0.35.0）：主色实心圆角。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="@color/indigo" />

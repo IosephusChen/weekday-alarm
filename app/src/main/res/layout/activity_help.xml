@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「使用说明」页（v1.34.2）。
+<!-- 「使用说明」页（v0.50.0）。
      上一版把首页那一行「使用说明」指向了新手引导（3 页设置向导），这是错的：
      向导是「第一次装完带你设一遍」，走完就不再出现；说明是「随时查某一条怎么办」，要能反复翻。
      同一个入口不该同时承担这两件事——现在这一页只讲「怎么用」，底部再给一个去向导的次入口。
      版式：5 张卡按主题分节，小节标题带 circled number，条目是「圆点列 + 正文列」
-     的悬挂缩进行（v1.71.0）——换行只对齐正文，不对齐圆点。 -->
+     的悬挂缩进行（v0.76.5）——换行只对齐正文，不对齐圆点。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -171,7 +171,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：N 分钟后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v1.41.0 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
+                    android:text="响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：N 分钟后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v0.54.1 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -376,7 +376,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 本页不再放「看新手引导」的按钮（v1.41.0）。
+        <!-- 本页不再放「看新手引导」的按钮（v0.54.1）。
              一是文案错了：写「第一次用？」——第一次用的人启动就自动进引导，根本不会翻到这里；
              二是重复：设置页里已经有一个常驻入口，两个按钮通向同一页，用户点哪个都觉得自己走错了门。
              引导归设置页，本页只做「随时查某一条」的手册。 -->

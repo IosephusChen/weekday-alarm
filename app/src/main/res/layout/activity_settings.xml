@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「设置」主页（v1.49.0 重排）。
+<!-- 「设置」主页（v0.60.0 重排）。
      参考澎湃系统闹钟的分层：主页只放高频项，其余按领域进二级页。
      主页 8 项：
        闹钟    —— 音量（就地滑块）、铃声、更多响铃设置 ›
@@ -70,7 +70,7 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 音量：v1.49.0 从「点开对话框再拖」改成就地拖。
+            <!-- 音量：v0.60.0 从「点开对话框再拖」改成就地拖。
                  松手才写 Prefs——拖动过程中反复落盘会触发重排。 -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -102,7 +102,7 @@
                         android:text="@string/settings_volume_default" />
                 </LinearLayout>
 
-                <!-- v1.49.6：padding 不能再是 0——滑块滚到 0 时左半会被自身边界裁掉，
+                <!-- v0.61.4：padding 不能再是 0——滑块滚到 0 时左半会被自身边界裁掉，
                      截图上就是一个「半月形」。9dp = 滑块半径，正好够整个圆画出来。 -->
                 <SeekBar
                     android:id="@+id/seek_volume_embed"
@@ -154,7 +154,7 @@
 
                         <View style="@style/SettingsDivider" />
 
-            <!-- 更多响铃设置（v1.49.0）：时长、渐响、震动、稍后提醒、按键 -->
+            <!-- 更多响铃设置（v0.60.0）：时长、渐响、震动、稍后提醒、按键 -->
             <LinearLayout
                 android:id="@+id/row_more_ring"
                 android:layout_width="match_parent"
@@ -285,8 +285,8 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 睡前提醒（v1.72.1）：从「开关行」改成「导航行」。
-                 v1.71.7 真机反馈：右侧画着开关，用户就以为这一行只能开或关，
+            <!-- 睡前提醒（v0.79.0）：从「开关行」改成「导航行」。
+                 v0.78.0 真机反馈：右侧画着开关，用户就以为这一行只能开或关，
                  根本不知道点进去还能改时刻——它长得像「振动」「渐响」那种纯开关行，
                  行为却是「周休制度」那种导航行。现在右侧给「当前时刻 + ›」，
                  与「周休制度」「节假日数据」同一套语言：有配置的项，值在右、箭头收尾。
@@ -376,7 +376,7 @@
                                     android:text="@string/settings_pre_notice_summary" />
                             </LinearLayout>
 
-                            <!-- v1.72.1：与睡前提醒同一套——开关去掉，右侧给值 + 箭头。
+                            <!-- v0.79.0：与睡前提醒同一套——开关去掉，右侧给值 + 箭头。
                                  原来「提前量」藏在副标题那一小块可点区域里（约 60dp 宽），
                                  几乎没人发现点它能改；整行点击反而是开关，两件事拧着。 -->
                             <TextView
@@ -407,7 +407,7 @@
             android:clipToOutline="true"
             android:orientation="vertical">
 
-            <!-- 更多设置（v1.49.0）：排班与显示、响铃、睡前提醒条件、检查与帮助、桌面小组件、备份与恢复。
+            <!-- 更多设置（v0.60.0）：排班与显示、响铃、睡前提醒条件、检查与帮助、桌面小组件、备份与恢复。
                  项数随版本增减，别在注释里写死——写死的数字过期也没人记得改，
                  以页面实际为准。 -->
             <LinearLayout

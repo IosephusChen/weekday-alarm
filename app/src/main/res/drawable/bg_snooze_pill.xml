@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 响铃页「稍后提醒」胶囊（v1.26.5）：参考澎湃系统闹钟。
+<!-- 响铃页「稍后提醒」胶囊（v0.40.2）：参考澎湃系统闹钟。
      方角描边按钮在整屏留白的版式里显得硬，半透明玻璃胶囊更轻。 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="#40FFFFFF">

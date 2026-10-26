@@ -31,7 +31,7 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 /**
- * 睡前提醒弹窗（v1.71.7 卡片化）。
+ * 睡前提醒弹窗（v0.78.0 卡片化）。
  *
  * <p>这个弹窗是全 App 最后一个还在用系统单选圈的：六个 {@code RadioButton} + 一个裸
  * {@code CheckBox}。换成 DialogKit 卡片后，选项不再是带 id 的 View，而是按顺序生成——
@@ -173,7 +173,7 @@ public class BedtimeDialogTest {
     }
 
     /**
-     * 底部只有一个「完成」，没有「取消」（v1.72.1）。
+     * 底部只有一个「完成」，没有「取消」（v0.79.0）。
      *
      * <p>原来那张「取消」在说谎：点任意一张卡都已经即时存下并关窗了，
      * 没有任何东西可取消。现在它只在「只切了开关、没点卡片」时用到——
@@ -197,7 +197,7 @@ public class BedtimeDialogTest {
     }
 
     /**
-     * 点「其他时间…」不关主弹窗（v1.72.1）。
+     * 点「其他时间…」不关主弹窗（v0.79.0）。
      *
      * <p>原来先 dismiss 再弹滚轮：滚轮上按「取消」回到设置页，弹窗已经没了、
      * 什么都没改，像误触。现在滚轮叠在上面，主弹窗原样留着。

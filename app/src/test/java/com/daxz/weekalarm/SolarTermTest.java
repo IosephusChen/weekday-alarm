@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * 二十四节气（v1.51.2 引入，v1.52.0 改成公式计算）。
+ * 二十四节气（v0.70.0 引入，v0.70.1 改成公式计算）。
  *
  * <p>守三件事：
  * <ol>

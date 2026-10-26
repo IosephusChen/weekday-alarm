@@ -21,7 +21,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 /**
- * 行级排版积木（v1.71.0）。
+ * 行级排版积木（v0.76.5）。
  *
  * <p>这些行同时服务对话框（运行状态、导入确认、导出小结）和整页
  * （使用说明、更新日志）。版式漂移不会在哪一处单独露头，所以在积木本身钉住：

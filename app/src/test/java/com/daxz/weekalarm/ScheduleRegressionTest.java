@@ -22,7 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * v1.19.9 调度层回归：
+ * v0.23.0 调度层回归：
  * ① requestCode 必须与「今天是哪天」无关——旧版用「相对今天的天数」编码，
  *    跨天后再取消，算出的 requestCode 与注册时不同，cancel 打不中，旧闹钟一直留在系统里；
  * ② 彻底停掉（删到没有启用的闹钟）时必须连「稍后提醒」一起取消；

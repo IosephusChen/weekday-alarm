@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 新手引导页（v1.25.0 重做：从「看三页说明」改成「顺手把配置做完」；v1.26.1 单休收成一项）。
+<!-- 新手引导页（v0.35.0 重做：从「看三页说明」改成「顺手把配置做完」；v0.39.0 单休收成一项）。
      结构：顶部「上一步 / 跳过」→ 中间 ViewFlipper 三页 →
            ① 选周休制度（写入设置）② 设第一个闹钟（默认 7:30）③ 权限清单（实时状态、可点击跳转）
            底部圆点 + 主按钮。
@@ -33,7 +33,7 @@
             android:textSize="14sp"
             android:visibility="invisible" />
 
-        <!-- v1.47.0：右上角两个出口并排。「导入」只在第 1 页出现（见 updateChrome）——
+        <!-- v0.57.0：右上角两个出口并排。「导入」只在第 1 页出现（见 updateChrome）——
              换机的人看到「你的周休制度是哪一种？」那一刻，正是他犹豫要不要重填的时候；
              点完导入会直接跳到第 3 页开权限，而不是进主界面（新手机没权限 = 闹钟不响）。 -->
         <LinearLayout
@@ -193,7 +193,7 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- 单休（v1.26.1：周六休 / 周日休合成一项，休哪天在下面的子选项里选） -->
+                <!-- 单休（v0.39.0：周六休 / 周日休合成一项，休哪天在下面的子选项里选） -->
                 <LinearLayout
                     android:id="@+id/mode_single"
                     android:layout_width="match_parent"
@@ -276,7 +276,7 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <!-- 单休专属：休周日还是休周六（v1.26.1） -->
+                <!-- 单休专属：休周日还是休周六（v0.39.0） -->
                 <LinearLayout
                     android:id="@+id/row_singleday"
                     android:layout_width="match_parent"
@@ -417,7 +417,7 @@
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 
-                <!-- v1.25.2：音量 / 渐响搬进来。这两项最影响「能不能把人叫醒」，
+                <!-- v0.37.0：音量 / 渐响搬进来。这两项最影响「能不能把人叫醒」，
                      却藏在设置页第三段里，新用户基本不会去翻。 -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -492,7 +492,7 @@
                         android:layout_height="1dp"
                         android:background="@color/line" />
 
-                    <!-- v1.26.3：稍后提醒与提前提醒搬进来。
+                    <!-- v0.40.0：稍后提醒与提前提醒搬进来。
                          前者决定「响铃后还能再眯几次」，后者决定「响之前要不要先来一条通知」——
                          两者都是闹钟最核心的体验，却都藏在设置页第三段。 -->
                     <LinearLayout
@@ -617,7 +617,7 @@
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
-                <!-- 自启动（v1.59.1 提到第一位）：国产 ROM 的后台白名单，不是 Android 权限。
+                <!-- 自启动（v0.73.5 提到第一位）：国产 ROM 的后台白名单，不是 Android 权限。
                      没有它，App 被划掉后闹钟到点广播直接被丢弃——排着，但不响。
                      没有任何 API 能读到状态，所以这一行只写「去开启」，不给勾。 -->
                 <LinearLayout
@@ -729,7 +729,7 @@
                         android:textColor="@color/sub"
                         android:textSize="20sp" />
                 </LinearLayout>
-                <!-- 显示悬浮窗（v1.45.0）：解锁响铃时那张贴顶横幅要它才能挂上。
+                <!-- 显示悬浮窗（v0.55.3）：解锁响铃时那张贴顶横幅要它才能挂上。
                      这一项有标准 API（Settings.canDrawOverlays），能直接打勾。 -->
                 <LinearLayout
                     android:id="@+id/perm_overlay"
@@ -785,7 +785,7 @@
                         android:textColor="@color/sub"
                         android:textSize="20sp" />
                 </LinearLayout>
-                <!-- 后台弹出界面（v1.47.2 起指向小米权限编辑页）：真机 2×2 实测，它管「后台能不能
+                <!-- 后台弹出界面（v0.58.1 起指向小米权限编辑页）：真机 2×2 实测，它管「后台能不能
                      把界面拉起来」——关掉时锁屏、解锁都不弹，只剩通知栏。开它会连带开全屏通知。
                      「锁屏显示」与它在同一页，见下一行。 -->
                 <LinearLayout
@@ -842,7 +842,7 @@
                         android:textColor="@color/sub"
                         android:textSize="20sp" />
                 </LinearLayout>
-                <!-- 锁屏显示（v1.59.1）：真机 2×2 实测，它管「拉起来的界面能不能盖在锁屏上」——
+                <!-- 锁屏显示（v0.73.5）：真机 2×2 实测，它管「拉起来的界面能不能盖在锁屏上」——
                      关掉时锁屏看不到、解锁才出现。和「后台弹出界面」在同一页，路径共用。
                      没有 API 能读状态，探针结果写在状态行；没测过时不无端指责用户。 -->
                 <LinearLayout
@@ -918,7 +918,7 @@
                     android:textColor="@color/ink"
                     android:textSize="13sp" />
 
-                <!-- v1.25.1：开完权限当场试一次，别等第二天早上才发现不响 -->
+                <!-- v0.36.0：开完权限当场试一次，别等第二天早上才发现不响 -->
                 <TextView
                     android:id="@+id/btn_try"
                     android:layout_width="match_parent"
@@ -942,7 +942,7 @@
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 
-                <!-- v1.59.1：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
+                <!-- v0.73.5：锁屏响铃测试。两个开关（后台弹出界面 + 锁屏显示）缺一个锁屏都不弹，
                      真机 2×2 实测确认；这一项只验证「锁屏上能不能看到响铃页」，不碰业务。 -->
                 <TextView
                     android:id="@+id/btn_lock_try"

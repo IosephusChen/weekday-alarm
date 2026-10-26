@@ -31,9 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 闹钟行快捷操作（v1.29.0）：长按复制 / 删除。
+ * 闹钟行快捷操作（v0.45.0）：长按复制 / 删除。
  *
- * <p>「接下来三次响铃」那一组随功能一起在 v1.34.0 删掉了——倒计时不再可点，
+ * <p>「接下来三次响铃」那一组随功能一起在 v0.48.1 删掉了——倒计时不再可点，
  * 也就没有「点开看三次」这条链路可测。
  *
  * <p>这两条都是「少点几下」的改动，很容易在后续重构里被无声破坏——比如长按监听被
@@ -88,7 +88,7 @@ public class QuickActionsTest {
     /**
      * 复制一条已经响过的一次性闹钟，日期必须顺延。
      *
-     * <p>照抄原日期会得到一条「显示已开启、永远不会响」的哑弹——这正是 v1.27.1 修过的坑，
+     * <p>照抄原日期会得到一条「显示已开启、永远不会响」的哑弹——这正是 v0.41.1 修过的坑，
      * 复制是它最容易重新长出来的入口。
      */
     @Test
@@ -133,7 +133,7 @@ public class QuickActionsTest {
 
         AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
         assertNotNull("长按应弹菜单", d);
-        // v1.61.0 起长按菜单是 DialogKit 的自绘卡片列表（dlg_pick_list），
+        // v0.74.0 起长按菜单是 DialogKit 的自绘卡片列表（dlg_pick_list），
         // 不再是系统的 setItems 列表
         LinearLayout options = d.findViewById(R.id.dlg_pick_list);
         assertNotNull("自绘列表应有容器", options);
@@ -143,7 +143,7 @@ public class QuickActionsTest {
     }
 
     /**
-     * v1.71.1：长按菜单不显示副标题（用户反馈「副标题没必要」）。
+     * v0.76.6：长按菜单不显示副标题（用户反馈「副标题没必要」）。
      *
      * <p>副标题说的是「选它意味着什么」，可复制/删除都是点下去之后才发生的事：
      * 副本叫什么由复制结果的 Toast 自己说，不可撤销由删除的二次确认承担——

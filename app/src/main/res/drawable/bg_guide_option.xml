@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 引导页选项卡（v1.25.0）：未选中 = 卡片底 + 细边，选中 = 淡紫底 + 主色描边。
+<!-- 引导页选项卡（v0.35.0）：未选中 = 卡片底 + 细边，选中 = 淡紫底 + 主色描边。
      用 selector 而不是在代码里改背景，选中态切换只要 setSelected()。
 
-     v1.39.0：选中底从写死的 #EEF0FE 改成 @color/guide_option_selected。
+     v0.53.2：选中底从写死的 #EEF0FE 改成 @color/guide_option_selected。
      深色模式下这张卡的文字是 @color/ink（近白），压在同一块近白底上完全看不见——
      用户截图里「大小周」那一项就是一片空白。 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">

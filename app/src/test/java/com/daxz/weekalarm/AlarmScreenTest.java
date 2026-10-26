@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config;
 import java.time.LocalDate;
 
 /**
- * 响铃页版式（v1.26.5）：参考澎湃系统自带闹钟重排。
+ * 响铃页版式（v0.40.2）：参考澎湃系统自带闹钟重排。
  *
  * <p>核心是主视觉——整页最大的字必须是「现在几点」。半睡半醒时，人要先知道几点了
  * 才能判断要不要再眯五分钟；此前最大的字是「起床时间到了」，回答的是「这是什么闹钟」，
@@ -104,7 +104,7 @@ public class AlarmScreenTest {
         assertEquals("测试闹钟 · 不影响正式排班", text(a, R.id.tv_sub));
     }
 
-    // ===== v1.26.7：整屏铺满，系统栏不留白边 =====
+    // ===== v0.40.4：整屏铺满，系统栏不留白边 =====
 
     @Test
     public void statusBarAndNavBarAreTransparent() {

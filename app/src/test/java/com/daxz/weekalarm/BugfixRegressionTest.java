@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 七个 bug 修复的守门测试（v1.58.0）。
+ * 七个 bug 修复的守门测试（v0.73.3）。
  *
  * <p>每个用例都对着一个真实发生过的缺陷，注释里写清了触发场景。这些场景共同点是
  * 「主流程永远走不到，单测不覆盖就静默坏着」——所以修完必须钉在这里，防止回归。
@@ -145,7 +145,7 @@ public class BugfixRegressionTest {
     /**
      * 跨午夜后（00:00–05:00）通知改口成「今天早上」，请假按钮必须标**今天**。
      *
-     * <p>v1.48.0 让文案改口，但按钮硬编码「明天请假」、skipTomorrow 也写死 now+1——
+     * <p>v0.59.0 让文案改口，但按钮硬编码「明天请假」、skipTomorrow 也写死 now+1——
      * 凌晨点下去标的是明天，今早的闹钟照响。按钮文案、intent data、实际标记
      * 三处必须都是同一天。
      */
@@ -255,7 +255,7 @@ public class BugfixRegressionTest {
 
     /**
      * 闹钟全关时 4×2 卡必须显示「闹钟未开启」，不能写死「已开启」——
-     * 那会和「暂无提醒」自相矛盾（整月两张卡 v1.52.0 就接上了，4×2 漏接）。
+     * 那会和「暂无提醒」自相矛盾（整月两张卡 v0.70.1 就接上了，4×2 漏接）。
      */
     @Test
     public void nextAlarmWidget_statusFollowsAlarms() {

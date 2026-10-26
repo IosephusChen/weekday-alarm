@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 响铃页稍后提醒的时钟图标（v1.26.5）：沿用通知栏那个时钟，
+<!-- 响铃页稍后提醒的时钟图标（v0.40.2）：沿用通知栏那个时钟，
      缩到 18dp 配 15sp 文字——比通知栏的 24dp 更贴字重。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="18dp"

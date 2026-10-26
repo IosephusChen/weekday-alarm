@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 /**
- * 响铃设置（v1.16）：音量条音量、按键作用、铃声渐响的存取与按键拦截行为。
+ * 响铃设置（v0.14.0）：音量条音量、按键作用、铃声渐响的存取与按键拦截行为。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -88,7 +88,7 @@ public class RingerSettingsTest {
 
     @Test
     public void ringMinutes_defaultTen_andClamped() {
-        // v1.26.2：默认 10 分钟——没人管时不该一直响
+        // v0.39.1：默认 10 分钟——没人管时不该一直响
         assertEquals(Prefs.RING_MINUTES_DEFAULT, Prefs.getRingMinutes(ctx()));
         Prefs.setRingMinutes(ctx(), 5);
         assertEquals(5, Prefs.getRingMinutes(ctx()));
@@ -102,7 +102,7 @@ public class RingerSettingsTest {
     public void settingsActivity_showsVibrateAndRingDuration() {
         Prefs.setVibrate(ctx(), false);
         Prefs.setRingMinutes(ctx(), 5);
-        // v1.49.0：震动与响铃时长搬进了「更多响铃设置」
+        // v0.60.0：震动与响铃时长搬进了「更多响铃设置」
         SettingsActivity activity = Robolectric.buildActivity(MoreSettingsActivity.class,
                 MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertFalse("振动关闭时开关应为关",
@@ -181,12 +181,12 @@ public class RingerSettingsTest {
     }
 
     /**
-     * 按键选项说「关闭这次响铃」，不说「关闭闹钟」（v1.49.3）。
+     * 按键选项说「关闭这次响铃」，不说「关闭闹钟」（v0.61.1）。
      *
      * <p>按下键只是关掉这一轮响铃，闹钟本身照旧、明天还会响。写「关闭闹钟」
      * 会让人以为把那个闹钟停了——和通知栏按钮有同样的问题。
      *
-     * <p>v1.70.0：单选圈弹窗换成 {@link DialogKit} 卡片后选项不再来自布局，
+     * <p>v0.76.4：单选圈弹窗换成 {@link DialogKit} 卡片后选项不再来自布局，
      * 改成直接钉 {@code SettingsActivity} 里的选项常量——文案只有一个来源，
      * 钉常量比渲染出来再收集更贴保质目标的实质。
      */
@@ -212,7 +212,7 @@ public class RingerSettingsTest {
     }
 
     /**
-     * 音量 0 的文案要说清还震不震（v1.49.6）。
+     * 音量 0 的文案要说清还震不震（v0.61.4）。
      *
      * <p>用户真机反馈：关掉「响铃时震动」后，设置页仍写着「静音（仅震动）」——
      * 那时既没声也不震，文案在说假话。四个组合逐个钉。

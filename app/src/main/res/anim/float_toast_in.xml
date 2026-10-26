@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 短提示入场（v1.44.0）：淡入 + 轻微上浮 10dp。
+<!-- 短提示入场（v0.55.2）：淡入 + 轻微上浮 10dp。
 
      不做滑入：它是原地冒出来的一句话，滑入会让人以为又弹了一张卡。 -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"

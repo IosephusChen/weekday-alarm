@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  响铃横幅的卡片底（v1.43.0 改成深色半透明）。
+  响铃横幅的卡片底（v0.55.0 改成深色半透明）。
 
   为什么不再用桃色：用户要的是「透明感，和其他通知栏一样」。
   真正的系统模糊（FLAG_BLUR_BEHIND + setBlurBehindRadius）需要 Android 12+

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 横幅上的「停止」圆钮（v1.41.0 起；v1.43.0 改实色紫）。
+<!-- 横幅上的「停止」圆钮（v0.54.1 起；v0.55.0 改实色紫）。
 
-     v1.43.0：底色改成深色半透明之后，原来的 indigo→violet 渐变在深底上偏暗，
+     v0.55.0：底色改成深色半透明之后，原来的 indigo→violet 渐变在深底上偏暗，
      两个圆钮分不出主次。改成一整块实色紫（@color/float_stop_bg），
      白图标压上去对比度约 5.8:1，也是用户原话「按钮做成紫色」的落点。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"

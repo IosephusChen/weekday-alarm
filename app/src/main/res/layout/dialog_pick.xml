@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  列表选择对话框（v1.61.0）。
+  列表选择对话框（v0.74.0）。
 
   替掉 AlertDialog 的 setItems / setSingleChoiceItems，两个原因：
 

@@ -29,13 +29,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 三个固定尺寸小组件的配置契约（v1.50.0）。
+ * 三个固定尺寸小组件的配置契约（v0.67.0）。
  *
- * <p>v1.51.1 曾扩到五个（4×2 闹钟 / 4×2 本周 / 本月班表三个变体），
- * v1.53.0 用户试用后删到三个：4×2 闹钟 + 本月班表 4×4 完整 / 4×3 极简。
+ * <p>v0.69.0 曾扩到五个（4×2 闹钟 / 4×2 本周 / 本月班表三个变体），
+ * v0.71.0 用户试用后删到三个：4×2 闹钟 + 本月班表 4×4 完整 / 4×3 极简。
  *
- * <p>为什么要有这个测试：v1.49.13 用 {@code maxResizeHeight} 想锁尺寸，白试一版；
- * v1.49.14 改成 {@code resizeMode="none"} 之后，唯一的验证手段是「装到手机上长按看菜单」——
+ * <p>为什么要有这个测试：v0.66.1 用 {@code maxResizeHeight} 想锁尺寸，白试一版；
+ * v0.66.2 改成 {@code resizeMode="none"} 之后，唯一的验证手段是「装到手机上长按看菜单」——
  * 那是人肉验证，每次改动都可能悄悄回退，而且没人会记得重验。
  *
  * <p>这里能守住的是「我们这一侧」：APK 里编译出来的 resizeMode 必须是 0、
@@ -52,7 +52,7 @@ public class WidgetProviderConfigTest {
         return ApplicationProvider.getApplicationContext();
     }
 
-    /** 三个组件（v1.53.0 从五个删到三个）：provider XML、类名、label、目标格子数。 */
+    /** 三个组件（v0.71.0 从五个删到三个）：provider XML、类名、label、目标格子数。 */
     private static final Object[][] PROVIDERS = {
             {R.xml.next_alarm_widget_info, "NextAlarmWidget", "下一个闹钟", 4, 2},
             {R.xml.month_schedule_widget_info, "MonthScheduleWidget", "本月班表 · 完整 4×4", 4, 4},
@@ -104,7 +104,7 @@ public class WidgetProviderConfigTest {
      * 4×4 的最小高度必须够放下内容。
      *
      * <p>4×3（约 190dp）铺不下「闹钟 + 七格 + 两个按钮」，也铺不下整月六行，
-     * v1.49.12 已经踩过一次：强行塞会把日期和班/休压到重叠。
+     * v0.66.0 已经踩过一次：强行塞会把日期和班/休压到重叠。
      */
     @Test
     public void monthProvider_minHeightIsFourRows() throws Exception {
@@ -115,7 +115,7 @@ public class WidgetProviderConfigTest {
     /**
      * 4×3 极简的最小高度必须 ≥200dp。
      *
-     * <p>六行日历 + 表头 + 按钮在 190dp 以下会把日期和「班/休」压到重叠（v1.49.12 踩过）。
+     * <p>六行日历 + 表头 + 按钮在 190dp 以下会把日期和「班/休」压到重叠（v0.66.0 踩过）。
      * 200 是「4×3 标准 206dp」留 6dp 余量的结果。
      */
     @Test
@@ -127,7 +127,7 @@ public class WidgetProviderConfigTest {
     /**
      * 4×2 闹钟的 minHeight 不能低于 118dp。
      *
-     * <p>v1.51.0 把七格并进 4×2 之后，110dp 会让七格被压成一条线；
+     * <p>v0.68.0 把七格并进 4×2 之后，110dp 会让七格被压成一条线；
      * 118dp 是实测「闹钟两行 + 七格」不裁字的下限。
      */
     @Test
@@ -188,7 +188,7 @@ public class WidgetProviderConfigTest {
     /** 组件必须真的能 inflate，不能只是「编译通过」。 */
     @Test
     public void allProviders_buildViewsCanInflate() {
-        // 4×2 闹钟：v1.51.0 起带七格，但没有请假按钮（按钮只在整月那张卡上）
+        // 4×2 闹钟：v0.68.0 起带七格，但没有请假按钮（按钮只在整月那张卡上）
         View a = inflate(NextAlarmWidget.buildViews(ctx(),
                 new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天",
                         "休息日 · 下次 明天 07:00 起床")));
@@ -202,7 +202,7 @@ public class WidgetProviderConfigTest {
         assertNotNull(m.findViewById(R.id.widget_month_title));
         assertNotNull(m.findViewById(R.id.m_num_0));
         assertNotNull(m.findViewById(R.id.m_num_41));
-        // v1.71.9：底部两个请假按钮删了，换成「本月统计 + 假期倒计时」
+        // v0.80.0：底部两个请假按钮删了，换成「本月统计 + 假期倒计时」
         assertNotNull(m.findViewById(R.id.widget_month_stats));
 
         // 4×3 极简：和 4×4 同一份布局，只是不显示底部信息行（200dp 装不下）

@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * v1.13.1 修复验证：ROM 500 闹钟硬限导致的多闹钟闪退。
+ * v0.11.1 修复验证：ROM 500 闹钟硬限导致的多闹钟闪退。
  * 场景：升级用户 + horizon 365 + 「每天」响的午休开启 → 626 个候选闹钟。
  */
 @RunWith(RobolectricTestRunner.class)
@@ -41,7 +41,7 @@ public class AlarmLimitTest {
     private void setupUpgradeUserWithTwoAlarms() {
         SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
         sp.edit().clear().apply();
-        // 直接写迁移后的状态（等价于 v1.13.0 首次迁移结果）+ 用户开启了午休
+        // 直接写迁移后的状态（等价于 v0.11.0 首次迁移结果）+ 用户开启了午休
         java.util.List<Alarm> list = new java.util.ArrayList<>();
         list.add(new Alarm(1, 21, 11, "起床", Alarm.Mode.WORKDAY, true));
         list.add(new Alarm(2, 12, 30, "午休", Alarm.Mode.DAILY, true));
@@ -73,7 +73,7 @@ public class AlarmLimitTest {
 
     @Test
     public void rescheduleAll_singleAlarm365_notTruncated() {
-        // 单闹钟（v1.12.1 同款场景）不应被截断，行为与旧版一致
+        // 单闹钟（v0.10.1 同款场景）不应被截断，行为与旧版一致
         SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
         sp.edit().clear().apply();
         java.util.List<Alarm> list = new java.util.ArrayList<>();
@@ -97,9 +97,9 @@ public class AlarmLimitTest {
     }
 
     /**
-     * v1.26.2 起提前提醒默认开（1 小时），主闹钟的排程天数因此减半：
+     * v0.39.1 起提前提醒默认开（1 小时），主闹钟的排程天数因此减半：
      * 系统闹钟槽位是主闹钟和提前通知共用一份预算，不能因为多了一条提醒
-     * 就把总数顶到 ROM 硬限上——那正是 v1.13.1 修过的闪退。
+     * 就把总数顶到 ROM 硬限上——那正是 v0.11.1 修过的闪退。
      *
      * <p>排程天数变短的代价由滚动补排兜住：每天响铃后都会重排，窗口不断前移，
      * 所以「能排多少天」不等于「多少天后会漏响」。
@@ -107,7 +107,7 @@ public class AlarmLimitTest {
     @Test
     public void rescheduleAll_withPreNotice_halvesMainAlarms_butStaysUnderCap() {
         setupUpgradeUserWithTwoAlarms();
-        assertEquals("用例按 v1.26.2 的默认值写死，改默认值时这里要跟着改",
+        assertEquals("用例按 v0.39.1 的默认值写死，改默认值时这里要跟着改",
                 60, Prefs.getPreNoticeMinutes(ctx()));
         ShadowAlarmManager sam = org.robolectric.Shadows.shadowOf(
                 (android.app.AlarmManager) ctx().getSystemService(Context.ALARM_SERVICE));
@@ -128,7 +128,7 @@ public class AlarmLimitTest {
 
     @Test
     public void cancelAll_legacyRecords_cancelledWithoutCrash() {
-        // v1.13 之前的旧格式记录（无 alarmId 前缀的 "yyyy-MM-dd"）必须能被取消，
+        // v0.11.0 之前的旧格式记录（无 alarmId 前缀的 "yyyy-MM-dd"）必须能被取消，
         // 否则升级后旧闹钟残留在系统里重复触发
         SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
         sp.edit().clear().apply();
@@ -162,14 +162,14 @@ public class AlarmLimitTest {
 
     @Test
     public void upgradeAutoReschedule_clearsLegacyAlarms() throws Exception {
-        // 模拟「v1.13.0 用户升级到 v1.13.1」：last_run_version 落后 + 系统里有旧格式记录
+        // 模拟「v0.11.0 用户升级到 v0.11.1」：last_run_version 落后 + 系统里有旧格式记录
         setupUpgradeUserWithTwoAlarms();
         SharedPreferences sp = ctx().getSharedPreferences("daxz_alarm", Context.MODE_PRIVATE);
         Set<String> legacy = new HashSet<>();
         legacy.add("2026-10-21");   // 旧版无前缀记录（升级残留）
-        legacy.add("1:2026-10-21"); // v1.13.0 新格式记录
+        legacy.add("1:2026-10-21"); // v0.11.0 新格式记录
         sp.edit().putStringSet(Prefs.KEY_SCHEDULED, legacy)
-                .putInt(Prefs.KEY_LAST_RUN_VERSION, 23)   // 假装上次跑的是 v1.13.0
+                .putInt(Prefs.KEY_LAST_RUN_VERSION, 23)   // 假装上次跑的是 v0.11.0
                 .apply();
 
         // setup 会走 onResume → 检测到版本变化 → 自动 rescheduleAll
@@ -186,7 +186,7 @@ public class AlarmLimitTest {
     }
 
     /**
-     * 回归：v1.13.1 用户反馈「点闹钟右侧开关却弹编辑框、切不动」。
+     * 回归：v0.11.1 用户反馈「点闹钟右侧开关却弹编辑框、切不动」。
      * 根因是开关被设了 clickable=false，点击被整行的 OnClickListener 消费。
      * 修复后：开关可点击（自己消费事件），performClick 直接切换启停。
      */
@@ -209,7 +209,7 @@ public class AlarmLimitTest {
                 (androidx.appcompat.widget.SwitchCompat) row.getChildAt(2);
 
         // 关键断言：开关必须自己能消费点击（否则点击会被整行的编辑逻辑吃掉）
-        assertTrue("闹钟开关必须是可点击的（回归：v1.13.1 曾设为 false 导致点开关弹编辑框）",
+        assertTrue("闹钟开关必须是可点击的（回归：v0.11.1 曾设为 false 导致点开关弹编辑框）",
                 sw.isClickable());
 
         boolean before = Prefs.getAlarms(ctx()).get(0).enabled;

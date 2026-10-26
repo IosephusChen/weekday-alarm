@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 新手引导（v1.25.0：从「看三页说明」改成「顺手把配置做完」）。
+ * 新手引导（v0.35.0：从「看三页说明」改成「顺手把配置做完」）。
  *
  * <p>这页最容易悄悄坏掉，因为它只在全新安装时出现一次，谁也不会天天点。所以钉住四条主线：
  * <ol>
@@ -83,7 +83,7 @@ public class GuideTest {
         Prefs.setAlarms(ctx(), list);
     }
 
-    /** 列表里至少有一条开着、会响的闹钟（v1.46.4：总开关没了，看的就是这个）。 */
+    /** 列表里至少有一条开着、会响的闹钟（v0.56.3：总开关没了，看的就是这个）。 */
     private boolean anyEnabledAlarm() {
         for (Alarm a : Prefs.getAlarms(ctx())) {
             if (a.enabled) return true;
@@ -147,7 +147,7 @@ public class GuideTest {
         assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
         assertTrue(a.findViewById(R.id.opt_rest_sun).isSelected());
         assertFalse(a.findViewById(R.id.opt_rest_sat).isSelected());
-        // v1.49.5：副标题固定说这一句，不再随选择变——下面两个胶囊已经表明选的是哪天，
+        // v0.61.3：副标题固定说这一句，不再随选择变——下面两个胶囊已经表明选的是哪天，
         // 再来一句「周日休 · 周六上班」是把结论重复一遍
         assertEquals("副标题应固定", "每周固定休一天", text(a, R.id.tv_single_sub));
     }
@@ -354,7 +354,7 @@ public class GuideTest {
         shadowOf(nm).setNotificationsEnabled(false);
 
         GuideActivity a = fresh();
-        // v1.59.1：通知降为「建议」——响铃页与首页兜底行还能停，不再叫「必需」，
+        // v0.73.5：通知降为「建议」——响铃页与首页兜底行还能停，不再叫「必需」，
         // 但状态行仍要说清后果，不写温吞的「去开启」
         assertEquals("通知没开时要说清后果", "未开 · 响铃时得进 App 关", text(a, R.id.st_notif));
 
@@ -365,7 +365,7 @@ public class GuideTest {
     }
 
     /**
-     * 「闹钟和提醒」整行已删（v1.47.4）：我们声明了 {@code USE_EXACT_ALARM}，
+     * 「闹钟和提醒」整行已删（v0.58.3）：我们声明了 {@code USE_EXACT_ALARM}，
      * Android 13+ 安装即授予且用户在系统里关不掉（开关是灰的）。留一行只能点、
      * 进去还改不了的项，只会让用户以为哪里没设置好。
      */
@@ -389,7 +389,7 @@ public class GuideTest {
         }
     }
 
-    // ================= 第 3 页新增的两项（v1.45.0）=================
+    // ================= 第 3 页新增的两项（v0.55.3）=================
 
     /**
      * 悬浮窗权限跟系统状态走。
@@ -410,7 +410,7 @@ public class GuideTest {
     }
 
     /**
-     * 「锁屏显示」在没测过时不能显示成失败（v1.59.1 改默认文案）。
+     * 「锁屏显示」在没测过时不能显示成失败（v0.73.5 改默认文案）。
      *
      * <p>这一项查不到状态（不在标准权限里），只能靠自测。默认文案按普通权限行
      * 写「去开启 · 同上一页」——它和「后台弹出界面」同在小米权限编辑页。
@@ -477,7 +477,7 @@ public class GuideTest {
     }
 
     /**
-     * 点「锁屏显示」行跳的是权限编辑页，不是测试对话框（v1.59.1）。
+     * 点「锁屏显示」行跳的是权限编辑页，不是测试对话框（v0.73.5）。
      *
      * <p>真机 2×2 实测：它和「后台弹出界面」同在小米权限编辑页，所以这一行
      * 和「后台弹出界面」共用一个入口；测试挪到底部「试一下锁屏响铃」按钮。
@@ -495,7 +495,7 @@ public class GuideTest {
     }
 
     /**
-     * 点「试一下锁屏响铃」弹测试对话框（v1.59.1）。
+     * 点「试一下锁屏响铃」弹测试对话框（v0.73.5）。
      *
      * <p>路径入口整个去掉了：开启路径已经由权限清单里「后台弹出界面」和
      * 「锁屏显示」两行承担（同在权限编辑页），对话框只留测试本身。
@@ -508,7 +508,7 @@ public class GuideTest {
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
         assertNotNull("应弹出锁屏响铃测试对话框", d);
-        // v1.61.0 起正文走 DialogKit 的自绘布局（message_body 里按段放 TextView），
+        // v0.74.0 起正文走 DialogKit 的自绘布局（message_body 里按段放 TextView），
         // 不再是系统的 android.R.id.message
         LinearLayout body = d.findViewById(R.id.message_body);
         assertNotNull("对话框应有正文容器", body);
@@ -522,9 +522,9 @@ public class GuideTest {
         assertTrue("对话框要有「开始测试」",
                 d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).getText().toString()
                         .contains("开始测试"));
-        // v1.59.1 起不再需要「看怎么开」——路径已在权限清单两行里。
+        // v0.73.5 起不再需要「看怎么开」——路径已在权限清单两行里。
         // appcompat 的 neutral 按钮 View 一直在（默认 GONE），所以查可见性而不是查 null
-        assertEquals("v1.59.1 起不再需要「看怎么开」——路径已在权限清单两行里",
+        assertEquals("v0.73.5 起不再需要「看怎么开」——路径已在权限清单两行里",
                 View.GONE, d.getButton(android.content.DialogInterface.BUTTON_NEUTRAL).getVisibility());
     }
 
@@ -583,7 +583,7 @@ public class GuideTest {
     }
 
     /**
-     * 引导的唯一入口在设置页（v1.41.0）。
+     * 引导的唯一入口在设置页（v0.54.1）。
      *
      * <p>说明页底部那个「第一次用？」的按钮撤了——第一次用的人启动就被带进引导，
      * 走不到说明页；两个按钮通向同一页也让人迷惑。这条钉住设置页那个入口还在，
@@ -594,7 +594,7 @@ public class GuideTest {
         wipe();
         Prefs.setOnboardDone(ctx(), true);
 
-        // v1.49.0：引导入口搬进「更多设置」
+        // v0.60.0：引导入口搬进「更多设置」
         SettingsActivity s = Robolectric.buildActivity(MoreSettingsActivity.class,
                 MoreSettingsActivity.intent(ctx(), false)).setup().get();
         View row = s.findViewById(R.id.row_onboard);
@@ -621,7 +621,7 @@ public class GuideTest {
         assertFalse("半路退下次还要出现", Prefs.isOnboardDone(ctx()));
     }
 
-    // ================= 导入旧备份（v1.47.0）=================
+    // ================= 导入旧备份（v0.57.0）=================
 
     /**
      * 换机场景的入口只在第 1 页出现：那才是用户犹豫「要不要重填」的时刻。

@@ -20,7 +20,7 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLooper;
 
-/** 「滑动停止」滑块（v1.26.0）。 */
+/** 「滑动停止」滑块（v0.38.0）。 */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class SlideToStopTest {

@@ -25,7 +25,7 @@
 
 
 
-    <!-- 与设置主页那条同一套轨道与滑块（v1.49.6）；padding 留出滑块半径，否则贴到 0 就被裁 -->
+    <!-- 与设置主页那条同一套轨道与滑块（v0.61.4）；padding 留出滑块半径，否则贴到 0 就被裁 -->
     <SeekBar
         android:id="@+id/seek_volume"
         android:layout_width="match_parent"

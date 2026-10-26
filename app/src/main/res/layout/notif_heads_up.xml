@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  提前提醒的横幅（heads-up）自绘布局（v1.23.4）。
+  提前提醒的横幅（heads-up）自绘布局（v0.32.0）。
 
   为什么不用 addAction：Android 原生 SystemUI 的 heads-up 视图只渲染大图标、
   标题和一行正文，不渲染 action 按钮——所以通知栏里能看到「关闭闹钟」，

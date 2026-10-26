@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 更新日志页（v1.22.3）。
+<!-- 更新日志页（v0.29.0）。
      设置 → 其他 → 更新日志进入；每版一张白卡，从新到旧，当前版本用主色标出。
      卡片内容由 Changelog.renderInto 动态生成，这里只留骨架。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"

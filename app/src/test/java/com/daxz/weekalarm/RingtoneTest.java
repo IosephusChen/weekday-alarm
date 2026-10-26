@@ -19,7 +19,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 /**
- * v1.19.1：自定义铃声。
+ * v0.19.0：自定义铃声。
  * 验证 Prefs 的铃声 Uri 存取往返，以及 AlarmService 在「已选自定义 / 未选」两种情况下
  * 正确选出要播放的铃声（自定义优先，否则系统默认闹钟铃）。
  */

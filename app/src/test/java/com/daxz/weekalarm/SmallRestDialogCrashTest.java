@@ -28,13 +28,13 @@ import org.robolectric.shadows.ShadowAlarmManager;
 @Config(sdk = 34, application = Application.class)
 public class SmallRestDialogCrashTest {
 
-    /** 模拟用户装 v1.12.1 后的状态：旧单闹钟 + 已开启 + horizon 365。 */
+    /** 模拟用户装 v0.10.1 后的状态：旧单闹钟 + 已开启 + horizon 365。 */
     private MainActivity setupActivityLikeUser() {
         android.content.SharedPreferences sp =
                 ApplicationProvider.getApplicationContext()
                         .getSharedPreferences("daxz_alarm", android.content.Context.MODE_PRIVATE);
         sp.edit().clear().apply();
-        // 旧版单闹钟（v1.13 迁移前）
+        // 旧版单闹钟（v0.11.0 迁移前）
         sp.edit()
                 .putInt("alarm_hour", 21)
                 .putInt("alarm_min", 11)
@@ -46,7 +46,7 @@ public class SmallRestDialogCrashTest {
         return controller.get();
     }
 
-    /** 模拟用户装 v1.12.1 后的状态，但开的是设置页（v1.46.3 起班制在这里）。 */
+    /** 模拟用户装 v0.10.1 后的状态，但开的是设置页（v0.56.2 起班制在这里）。 */
     private SettingsActivity setupSettingsLikeUser() {
         android.content.SharedPreferences sp =
                 ApplicationProvider.getApplicationContext()
@@ -58,14 +58,14 @@ public class SmallRestDialogCrashTest {
                 .putBoolean("enabled", true)
                 .putInt("horizon_days", 365)
                 .apply();
-        // v1.49.2：周休制度（含「小周休哪天」）在设置主页的一个对话框里
+        // v0.61.0：周休制度（含「小周休哪天」）在设置主页的一个对话框里
         ActivityController<SettingsActivity> controller =
                 Robolectric.buildActivity(SettingsActivity.class);
         controller.setup();
         return controller.get();
     }
 
-    /** 打开周休制度对话框（v1.49.2 起「休哪天」并进这里）。 */
+    /** 打开周休制度对话框（v0.61.0 起「休哪天」并进这里）。 */
     private static androidx.appcompat.app.AlertDialog openWeekModeDialog(SettingsActivity activity) {
         activity.findViewById(R.id.row_week_mode).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();

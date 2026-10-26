@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 睡前提醒（v1.20）。
+ * 睡前提醒（v0.24.0）。
  *
  * 覆盖三件最容易出错的事：
  * ① 触发时刻的边界（过点 / 恰好等于 / 未到点）；

@@ -28,7 +28,7 @@ import org.robolectric.shadows.ShadowLooper;
 import java.util.Collections;
 
 /**
- * 运行状态对话框的信息行结构（v1.71.0）。
+ * 运行状态对话框的信息行结构（v0.76.5）。
  *
  * <p>这版把五件事（排程量 / 下一个闹钟 / 注册上限 / 大周基准 / 节假日来源）
  * 从一段 {@code "\n"} 文字改成「标签: 值」信息行。钉的是行本身：

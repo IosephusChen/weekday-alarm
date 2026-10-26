@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config;
 import java.time.LocalDate;
 
 /**
- * 稍后提醒按钮的对齐（v1.26.5 真机反馈后的修正）。
+ * 稍后提醒按钮的对齐（v0.40.2 真机反馈后的修正）。
  *
  * <p>第一版是「一个 TextView + drawableStart」。真机上一眼就看出图标歪了——探针量出来
  * 图标 bounds 是 Rect(0,0-18,18)，left=0：复合图标在 match_parent + gravity=center 下

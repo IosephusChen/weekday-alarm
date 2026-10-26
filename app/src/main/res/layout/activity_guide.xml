@@ -984,7 +984,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
+                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。和自启动在同一页。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 
@@ -993,7 +993,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="@dimen/space_2"
-                                    android:text="去开启 · 同上一页"
+                                    android:text="系统读不到 · 点开自查"
                                     android:textColor="@color/indigo"
                                     android:textSize="12sp" />
                             </LinearLayout>

@@ -192,23 +192,23 @@ public class RingerSettingsTest {
      */
     @Test
     public void keyDialog_optionsSayCloseThisRingOnly() {
-        assertEquals("音量键三个选项", 3, SettingsActivity.KEY_ITEMS_VOL.length);
-        assertEquals("电源键三个选项", 3, SettingsActivity.KEY_ITEMS_POWER.length);
-        assertEquals("选项与 Prefs 值一一对应", 3, SettingsActivity.KEY_ACTION_VALUES.length);
+        assertEquals("音量键三个选项", 3, SettingsReminderSection.KEY_ITEMS_VOL.length);
+        assertEquals("电源键三个选项", 3, SettingsReminderSection.KEY_ITEMS_POWER.length);
+        assertEquals("选项与 Prefs 值一一对应", 3, SettingsReminderSection.KEY_ACTION_VALUES.length);
 
         java.util.List<String> labels = new java.util.ArrayList<>();
-        Collections.addAll(labels, SettingsActivity.KEY_ITEMS_VOL);
-        Collections.addAll(labels, SettingsActivity.KEY_ITEMS_POWER);
+        Collections.addAll(labels, SettingsReminderSection.KEY_ITEMS_VOL);
+        Collections.addAll(labels, SettingsReminderSection.KEY_ITEMS_POWER);
         assertEquals("音量键和电源键各三个选项", 6, labels.size());
         assertTrue("应说「关闭这次响铃」", labels.contains("关闭这次响铃"));
         assertFalse("不该再说「关闭闹钟」", labels.contains("关闭闹钟"));
 
         assertEquals("「无」的括注两个键各说各的",
-                "无（按系统默认调音量）", SettingsActivity.KEY_ITEMS_VOL[0]);
-        assertEquals("无（按系统默认息屏）", SettingsActivity.KEY_ITEMS_POWER[0]);
-        assertEquals(Prefs.KEY_ACTION_NONE, SettingsActivity.KEY_ACTION_VALUES[0]);
-        assertEquals(Prefs.KEY_ACTION_SNOOZE, SettingsActivity.KEY_ACTION_VALUES[1]);
-        assertEquals(Prefs.KEY_ACTION_STOP, SettingsActivity.KEY_ACTION_VALUES[2]);
+                "无（按系统默认调音量）", SettingsReminderSection.KEY_ITEMS_VOL[0]);
+        assertEquals("无（按系统默认息屏）", SettingsReminderSection.KEY_ITEMS_POWER[0]);
+        assertEquals(Prefs.KEY_ACTION_NONE, SettingsReminderSection.KEY_ACTION_VALUES[0]);
+        assertEquals(Prefs.KEY_ACTION_SNOOZE, SettingsReminderSection.KEY_ACTION_VALUES[1]);
+        assertEquals(Prefs.KEY_ACTION_STOP, SettingsReminderSection.KEY_ACTION_VALUES[2]);
     }
 
     /**

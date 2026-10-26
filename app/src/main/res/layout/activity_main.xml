@@ -28,7 +28,7 @@
                 android:layout_width="42dp"
                 android:layout_height="42dp"
                 android:background="@drawable/bg_hero"
-                android:padding="8dp"
+                android:padding="@dimen/space_8"
                 android:contentDescription="@null"
                 android:src="@drawable/ic_clock_white" />
 
@@ -37,7 +37,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:layout_marginStart="10dp">
+                android:layout_marginStart="@dimen/space_10">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -61,7 +61,7 @@
                 android:id="@+id/btn_settings_entry"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="@dimen/space_8"
                 android:background="@drawable/bg_time_outline"
                 android:clickable="true"
                 android:focusable="true"
@@ -83,12 +83,12 @@
             android:id="@+id/row_ringing"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingEnd="12dp"
+            android:paddingStart="@dimen/space_16"
+            android:paddingEnd="@dimen/space_12"
             android:visibility="gone">
 
             <TextView
@@ -108,9 +108,9 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:paddingStart="18dp"
-                android:paddingTop="8dp"
+                android:paddingTop="@dimen/space_8"
                 android:paddingEnd="18dp"
-                android:paddingBottom="8dp"
+                android:paddingBottom="@dimen/space_8"
                 android:text="停止"
                 android:textColor="@color/ink"
                 android:textSize="14sp"
@@ -169,7 +169,7 @@
                 android:id="@+id/tv_today_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/space_8"
                 android:text="—"
                 android:textColor="@color/white"
                 android:textSize="28sp"
@@ -179,7 +179,7 @@
                 android:id="@+id/tv_today_sub"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="@dimen/space_2"
                 android:text="—"
                 android:textColor="#E6E4FF"
                 android:textSize="14sp"
@@ -193,7 +193,7 @@
                 android:id="@+id/tv_holiday_countdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="@dimen/space_2"
                 android:text=""
                 android:textColor="#C9CEFD"
                 android:textSize="12sp"
@@ -208,14 +208,14 @@
                 android:id="@+id/box_countdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/space_12"
                 android:background="@drawable/bg_hero_pill"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:paddingStart="@dimen/space_12"
+                android:paddingEnd="@dimen/space_12"
+                android:paddingTop="@dimen/space_8"
+                android:paddingBottom="@dimen/space_8">
 
                 <TextView
                     android:id="@+id/tv_countdown_label"
@@ -248,7 +248,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/space_10"
                 android:orientation="horizontal">
 
                 <TextView
@@ -261,8 +261,8 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="@dimen/space_10"
+                    android:paddingBottom="@dimen/space_10"
                     android:text="今天不上班"
                     android:textColor="@color/white"
                     android:textSize="13sp"
@@ -273,14 +273,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="@dimen/space_8"
                     android:background="@drawable/bg_hero_pill"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center"
                     android:maxLines="1"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:paddingTop="@dimen/space_10"
+                    android:paddingBottom="@dimen/space_10"
                     android:text="明天不上班"
                     android:textColor="@color/white"
                     android:textSize="13sp"
@@ -301,7 +301,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/space_8"
             android:text="闹钟" />
 
         <LinearLayout
@@ -316,17 +316,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="12dp" />
+                android:paddingStart="@dimen/space_16"
+                android:paddingEnd="@dimen/space_12" />
 
             <TextView
                 android:id="@+id/btn_add_alarm"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginStart="@dimen/space_16"
+                android:layout_marginEnd="@dimen/space_16"
+                android:layout_marginTop="@dimen/space_12"
+                android:layout_marginBottom="@dimen/space_16"
                 android:background="@drawable/bg_add_alarm"
                 android:clickable="true"
                 android:focusable="true"
@@ -348,7 +348,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="@dimen/space_8"
             android:text="排班日历" />
 
         <LinearLayout
@@ -395,14 +395,14 @@
                     android:id="@+id/btn_today"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="@dimen/space_8"
                     android:background="@drawable/bg_time_outline"
                     android:clickable="true"
                     android:focusable="true"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp"
+                    android:paddingStart="@dimen/space_10"
+                    android:paddingEnd="@dimen/space_10"
+                    android:paddingTop="@dimen/space_6"
+                    android:paddingBottom="@dimen/space_6"
                     android:text="回本月"
                     android:textColor="@color/indigo"
                     android:textSize="12sp"
@@ -427,7 +427,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/space_8"
                 android:orientation="horizontal">
 
                 <TextView
@@ -506,7 +506,7 @@
                 android:id="@+id/legend_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="@dimen/space_10"
                 android:orientation="vertical" />
         </LinearLayout>
 

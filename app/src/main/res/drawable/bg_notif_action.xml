@@ -18,5 +18,5 @@
         android:angle="135"
         android:startColor="@color/hero_start"
         android:endColor="@color/hero_end" />
-    <corners android:radius="100dp" />
+    <corners android:radius="@dimen/radius_pill" />
 </shape>

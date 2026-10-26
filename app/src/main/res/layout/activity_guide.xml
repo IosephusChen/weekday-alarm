@@ -15,9 +15,9 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="6dp">
+        android:paddingStart="@dimen/space_8"
+        android:paddingEnd="@dimen/space_8"
+        android:paddingTop="@dimen/space_6">
 
         <TextView
             android:id="@+id/btn_prev"
@@ -27,7 +27,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:padding="10dp"
+            android:padding="@dimen/space_10"
             android:text="上一步"
             android:textColor="@color/sub"
             android:textSize="14sp"
@@ -50,10 +50,10 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
-                android:paddingStart="10dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="10dp"
+                android:paddingStart="@dimen/space_10"
+                android:paddingTop="@dimen/space_10"
+                android:paddingEnd="@dimen/space_10"
+                android:paddingBottom="@dimen/space_10"
                 android:text="导入"
                 android:textColor="@color/indigo"
                 android:textSize="14sp"
@@ -66,7 +66,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
-                android:padding="10dp"
+                android:padding="@dimen/space_10"
                 android:text="跳过"
                 android:textColor="@color/sub"
                 android:textSize="14sp" />
@@ -90,15 +90,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="8dp">
+                android:paddingStart="@dimen/space_24"
+                android:paddingEnd="@dimen/space_24"
+                android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
                     android:layout_width="84dp"
                     android:layout_height="84dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
@@ -112,7 +112,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="@dimen/space_20"
                     android:gravity="center"
                     android:text="你的周休制度是哪一种？"
                     android:textColor="@color/ink"
@@ -122,7 +122,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="选一次就行。之后每周的班自动排，法定节假日和调休补班也会算进去。"
@@ -139,9 +139,9 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:orientation="vertical"
-                    android:paddingStart="16dp"
+                    android:paddingStart="@dimen/space_16"
                     android:paddingTop="13dp"
-                    android:paddingEnd="16dp"
+                    android:paddingEnd="@dimen/space_16"
                     android:paddingBottom="13dp">
 
                     <TextView
@@ -166,14 +166,14 @@
                     android:id="@+id/mode_double"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_option"
                     android:clickable="true"
                     android:focusable="true"
                     android:orientation="vertical"
-                    android:paddingStart="16dp"
+                    android:paddingStart="@dimen/space_16"
                     android:paddingTop="13dp"
-                    android:paddingEnd="16dp"
+                    android:paddingEnd="@dimen/space_16"
                     android:paddingBottom="13dp">
 
                     <TextView
@@ -198,14 +198,14 @@
                     android:id="@+id/mode_single"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_option"
                     android:clickable="true"
                     android:focusable="true"
                     android:orientation="vertical"
-                    android:paddingStart="16dp"
+                    android:paddingStart="@dimen/space_16"
                     android:paddingTop="13dp"
-                    android:paddingEnd="16dp"
+                    android:paddingEnd="@dimen/space_16"
                     android:paddingBottom="13dp">
 
                     <TextView
@@ -251,10 +251,10 @@
                         android:background="@drawable/bg_guide_option"
                         android:clickable="true"
                         android:focusable="true"
-                        android:paddingStart="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="8dp"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
                         android:text="大周"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
@@ -263,14 +263,14 @@
                         android:id="@+id/opt_small"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/space_8"
                         android:background="@drawable/bg_guide_option"
                         android:clickable="true"
                         android:focusable="true"
-                        android:paddingStart="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="8dp"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
                         android:text="小周"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
@@ -301,10 +301,10 @@
                         android:background="@drawable/bg_guide_option"
                         android:clickable="true"
                         android:focusable="true"
-                        android:paddingStart="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="8dp"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
                         android:text="周日休"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
@@ -313,14 +313,14 @@
                         android:id="@+id/opt_rest_sat"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/space_8"
                         android:background="@drawable/bg_guide_option"
                         android:clickable="true"
                         android:focusable="true"
-                        android:paddingStart="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="8dp"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
                         android:text="周六休"
                         android:textColor="@color/ink"
                         android:textSize="13sp" />
@@ -340,14 +340,14 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="8dp">
+                android:paddingStart="@dimen/space_24"
+                android:paddingEnd="@dimen/space_24"
+                android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
                     android:layout_width="84dp"
                     android:layout_height="84dp"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
@@ -361,7 +361,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="@dimen/space_20"
                     android:gravity="center"
                     android:text="先设一个起床闹钟"
                     android:textColor="@color/ink"
@@ -371,7 +371,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="只在上班日响，休息日和法定节假日自动跳过。点时间可以改。"
@@ -394,14 +394,14 @@
                     android:id="@+id/btn_pick_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/space_6"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
                     android:paddingStart="18dp"
-                    android:paddingTop="10dp"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="18dp"
-                    android:paddingBottom="10dp"
+                    android:paddingBottom="@dimen/space_10"
                     android:text="改时间"
                     android:textColor="@color/indigo"
                     android:textSize="14sp" />
@@ -425,8 +425,8 @@
                     android:layout_marginTop="18dp"
                     android:background="@drawable/bg_guide_perm"
                     android:orientation="vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp">
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingEnd="@dimen/space_16">
 
                     <LinearLayout
                         android:id="@+id/row_volume"
@@ -558,7 +558,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="渐响会从静音用 30 秒升到设定音量。响铃前提醒会在闹钟响之前先在通知栏露一面，嫌吵就关掉。"
@@ -578,15 +578,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:paddingBottom="8dp">
+                android:paddingStart="@dimen/space_24"
+                android:paddingEnd="@dimen/space_24"
+                android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
                     android:layout_width="84dp"
                     android:layout_height="84dp"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
@@ -600,7 +600,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="@dimen/space_20"
                     android:gravity="center"
                     android:text="最后，别让它哑掉"
                     android:textColor="@color/ink"
@@ -610,7 +610,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="下面五项建议全部开齐，不开的后果写在每项下面——「自启动」决定闹钟响不响，其余影响响的时候好不好关、好不好看。"
@@ -631,10 +631,10 @@
                     android:gravity="center_vertical"
                     android:minHeight="58dp"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
+                    android:paddingBottom="@dimen/space_10">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -661,7 +661,7 @@
                             android:id="@+id/st_autostart"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="@dimen/space_2"
                             android:text="去开启"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
@@ -679,17 +679,17 @@
                     android:id="@+id/perm_notif"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:minHeight="58dp"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
+                    android:paddingBottom="@dimen/space_10">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -716,7 +716,7 @@
                             android:id="@+id/st_notif"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="@dimen/space_2"
                             android:text="去开启"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
@@ -735,17 +735,17 @@
                     android:id="@+id/perm_overlay"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:minHeight="58dp"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
+                    android:paddingBottom="@dimen/space_10">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -772,7 +772,7 @@
                             android:id="@+id/st_overlay"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="@dimen/space_2"
                             android:text="去开启"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
@@ -792,17 +792,17 @@
                     android:id="@+id/perm_fsi"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:minHeight="58dp"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
+                    android:paddingBottom="@dimen/space_10">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -829,7 +829,7 @@
                             android:id="@+id/st_fsi"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="@dimen/space_2"
                             android:text="去开启 · 进去点「其他权限」"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
@@ -849,17 +849,17 @@
                     android:id="@+id/perm_lock"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:minHeight="58dp"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingTop="10dp"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_10"
                     android:paddingEnd="14dp"
-                    android:paddingBottom="10dp">
+                    android:paddingBottom="@dimen/space_10">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -886,7 +886,7 @@
                             android:id="@+id/st_lock"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginTop="@dimen/space_2"
                             android:text="去开启 · 同上一页"
                             android:textColor="@color/indigo"
                             android:textSize="12sp" />
@@ -923,7 +923,7 @@
                     android:id="@+id/btn_try"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="@dimen/space_16"
                     android:background="@drawable/bg_guide_try"
                     android:clickable="true"
                     android:focusable="true"
@@ -935,7 +935,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="会响一声并弹出响铃页，点「结束测试」就停，不影响正式排班。"
@@ -948,7 +948,7 @@
                     android:id="@+id/btn_lock_try"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="@dimen/space_12"
                     android:background="@drawable/bg_guide_try"
                     android:clickable="true"
                     android:focusable="true"
@@ -960,7 +960,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
                     android:text="锁屏时能不能看到响铃页，当场试出来。"
@@ -976,10 +976,10 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="24dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="20dp">
+        android:paddingStart="@dimen/space_24"
+        android:paddingTop="@dimen/space_10"
+        android:paddingEnd="@dimen/space_24"
+        android:paddingBottom="@dimen/space_20">
 
         <LinearLayout
             android:id="@+id/dots"
@@ -995,8 +995,8 @@
             android:layout_height="48dp"
             android:background="@drawable/bg_guide_btn"
             android:minWidth="128dp"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
+            android:paddingStart="@dimen/space_24"
+            android:paddingEnd="@dimen/space_24"
             android:stateListAnimator="@null"
             android:text="下一步"
             android:textAllCaps="false"

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  尺寸 token（v0.80.3）。
+
+  为什么现在才建：2026-10 之前的两个月里，圆角是「看着差不多就写一个数」——
+  32 个 shape 里出现了 2 / 8 / 10 / 11 / 12 / 14 / 18 / 22 / 24 / 26 / 100 / 999
+  十二种取值，其中 10 / 11 / 12 是同一个意思，22 / 24 / 26 也是。改一处颜色要
+  挨个文件翻，也说不清「卡片该多圆」。
+
+  现在收成七档，每档有明确用途。**新增形状从这里挑，别再写裸 dp**：
+  写 `@dimen/radius_card` 的人一眼知道它是卡片，写 `18dp` 的人三个月后也不知道
+  当时为什么是 18。
+
+  间距的规矩是「封闭集合」：九档之内必须写 token（`DesignTokenTest` 会查），
+  九档之外（1 / 3 / 7 / 9 / 11 / 13 / 14 / 18 / 30）是手调的视觉对齐值——
+  中文字形有下伸、图标有留白，硬套 4 的倍数反而看着不居中，那些允许裸写。
+-->
+<resources>
+
+    <!-- ── 圆角 ── -->
+    <!-- 发丝条 / 进度条：2dp，再大就不像「线」了 -->
+    <dimen name="radius_hairline">2dp</dimen>
+    <!-- 小方块：日历格子、小标签、周次 chip -->
+    <dimen name="radius_chip">10dp</dimen>
+    <!-- 行与次级按钮：设置页的行卡、引导页选项、描边按钮 -->
+    <dimen name="radius_row">14dp</dimen>
+    <!-- 卡片：首页与设置页的大块内容 -->
+    <dimen name="radius_card">18dp</dimen>
+    <!-- 横幅与 hero：响铃横幅、稍后提醒提示、首页紫色渐变 -->
+    <dimen name="radius_banner">22dp</dimen>
+    <!-- 对话框：整张弹窗的底 -->
+    <dimen name="radius_sheet">24dp</dimen>
+    <!-- 真胶囊：高度不到 40dp、两端半圆 -->
+    <dimen name="radius_pill">999dp</dimen>
+
+    <!-- ── 间距 ── -->
+    <dimen name="space_2">2dp</dimen>
+    <dimen name="space_4">4dp</dimen>
+    <dimen name="space_6">6dp</dimen>
+    <dimen name="space_8">8dp</dimen>
+    <dimen name="space_10">10dp</dimen>
+    <dimen name="space_12">12dp</dimen>
+    <dimen name="space_16">16dp</dimen>
+    <dimen name="space_20">20dp</dimen>
+    <dimen name="space_24">24dp</dimen>
+
+</resources>

@@ -32,7 +32,7 @@
                 android:background="@drawable/bg_time_outline"
                 android:clickable="true"
                 android:focusable="true"
-                android:paddingStart="12dp"
+                android:paddingStart="@dimen/space_12"
                 android:paddingEnd="14dp"
                 android:paddingTop="7dp"
                 android:paddingBottom="7dp"
@@ -59,7 +59,7 @@
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_16">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -73,11 +73,11 @@
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/space_6"
                     android:text="排班与日历" />
             </LinearLayout>
 
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="10dp">
+            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
                 <TextView style="@style/HelpDot" />
                 <TextView
                     style="@style/HelpItem"
@@ -112,11 +112,11 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_16">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -130,11 +130,11 @@
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/space_6"
                     android:text="闹钟" />
             </LinearLayout>
 
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="10dp">
+            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
                 <TextView style="@style/HelpDot" />
                 <TextView
                     style="@style/HelpItem"
@@ -189,11 +189,11 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_16">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -207,11 +207,11 @@
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/space_6"
                     android:text="临时请假 / 加班" />
             </LinearLayout>
 
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="10dp">
+            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
                 <TextView style="@style/HelpDot" />
                 <TextView
                     style="@style/HelpItem"
@@ -266,11 +266,11 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_16">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -284,11 +284,11 @@
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/space_6"
                     android:text="桌面小组件" />
             </LinearLayout>
 
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="10dp">
+            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
                 <TextView style="@style/HelpDot" />
                 <TextView
                     style="@style/HelpItem"
@@ -313,11 +313,11 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:clipToOutline="true"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/space_16">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -331,11 +331,11 @@
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="@dimen/space_6"
                     android:text="设置与备份" />
             </LinearLayout>
 
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="10dp">
+            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
                 <TextView style="@style/HelpDot" />
                 <TextView
                     style="@style/HelpItem"
@@ -385,7 +385,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
-            android:layout_marginBottom="6dp"
+            android:layout_marginBottom="@dimen/space_6"
             android:gravity="center"
             android:lineSpacingExtra="2dp"
             android:text="使用说明随版本更新，入口在设置 → 更多设置 → 使用说明\n想重看新手引导或检查权限：设置 → 更多设置 → 新手引导与权限" />

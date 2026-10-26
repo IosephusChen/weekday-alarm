@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 · 引导页与说明页重做（P4 / A12）</title>
+<style>
+  :root{
+    --bg:#f2f3f5; --ink:#16181d; --sub:#6b7280; --line:#e3e5ea;
+    --mark:#4f46e5; --markbg:#eef0ff; --warn:#e11d48;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:26px 24px 44px;background:var(--bg);color:var(--ink);
+       font:14px/1.55 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  h1{font-size:19px;margin:0 0 6px}
+  .lede{color:var(--sub);font-size:13px;max-width:1080px;margin:0 0 4px}
+  .meta{color:var(--sub);font-size:12px;margin:0 0 22px}
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:26px}
+  .col{width:301px}
+  .col h2{font-size:13.5px;margin:0 0 2px}
+  .col .hint{font-size:11.5px;color:var(--sub);height:36px;margin:0 0 8px}
+  .phone{position:relative;width:301px;height:700px;background:#f7f8fa;
+         border:1px solid #cfd2d9;border-radius:16px;overflow:hidden}
+  .status{height:22px;font-size:9px;color:#8a8f99;display:flex;justify-content:space-between;
+          padding:0 14px;align-items:center}
+  .head{padding:2px 14px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .ghost{font-size:11.5px;color:#9aa0aa}
+  .ghost.b{color:#5b6270;font-weight:600}
+  .dots{display:flex;gap:5px;align-items:center;padding:0 16px 10px}
+  .dots i{width:6px;height:6px;border-radius:3px;background:#d6d9df;display:block}
+  .dots i.on{width:18px;background:var(--mark)}
+  .body{padding:0 14px}
+  .q{font-size:17px;font-weight:700;line-height:1.35;margin:2px 0 6px}
+  .sub{font-size:11.5px;color:#7c8390;line-height:1.55;margin:0 0 12px}
+  .card{background:#fff;border-radius:12px;padding:11px 12px;margin-bottom:9px;
+        border:1px solid #eceef2}
+  .card.on{border-color:var(--mark);background:var(--markbg)}
+  .card .t{font-size:13px;font-weight:600}
+  .card .d{font-size:10.5px;color:#8a8f99;margin-top:2px}
+  .rowline{display:flex;justify-content:space-between;align-items:center;
+           background:#fff;border:1px solid #eceef2;border-radius:10px;
+           padding:8px 12px;margin-bottom:8px;font-size:12.5px}
+  .rowline .v{font-size:11.5px;color:#8a8f99}
+  .chip{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:6px;
+        background:#eef0f4;color:#6b7280;margin-right:4px}
+  .chip.on{background:#e7f7ee;color:#15803d}
+  .big{font-size:44px;font-weight:700;letter-spacing:1px;text-align:center;margin:8px 0 2px}
+  .center{text-align:center}
+  .link{font-size:11.5px;color:var(--mark)}
+  .seclabel{font-size:10.5px;color:#8a8f99;margin:12px 2px 6px}
+  .foot{position:absolute;left:0;right:0;bottom:0;padding:10px 16px 16px;
+        display:flex;align-items:center;gap:10px;background:#f7f8fa}
+  .btn-main{flex:1;height:44px;border-radius:12px;background:var(--mark);color:#fff;
+            font-size:14.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .btn-prev{font-size:12.5px;color:#6b7280;padding:0 4px;width:56px}
+  .cut{position:absolute;left:0;right:0;bottom:74px;color:var(--warn);font-size:10px;
+       text-align:center;padding:7px 12px;background:#fff;border-top:1px solid #f3c9d4}
+  .sum{margin-top:8px;background:#fff;border:1px solid #d9dce3;border-radius:12px;padding:16px 18px}
+  .sum h3{font-size:14px;margin:0 0 8px}
+  .sum table{border-collapse:collapse;font-size:12.5px;width:100%;max-width:1080px}
+  .sum td,.sum th{border-bottom:1px solid #eef0f4;padding:6px 8px;text-align:left;vertical-align:top}
+  .sum th{color:var(--sub);font-weight:600}
+  .flow{font-size:12.5px;color:#374151;margin:10px 0 0}
+  code{background:#eceef2;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+  .toc span{font-size:10.5px;padding:3px 8px;border-radius:20px;background:#fff;
+            border:1px solid #e2e5ec;color:#5b6270}
+  .hsec{background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:9px;border:1px solid #eceef2}
+  .hsec .n{display:inline-block;width:16px;height:16px;border-radius:8px;background:var(--markbg);
+           color:var(--mark);font-size:9.5px;text-align:center;line-height:16px;margin-right:5px}
+  .hsec .h{font-size:12.5px;font-weight:600}
+  .hsec ul{margin:6px 0 0;padding-left:15px}
+  .hsec li{font-size:10.5px;color:#5b6270;line-height:1.6;margin-bottom:3px}
+  .para{background:#fff;border-radius:12px;padding:11px 12px;margin-bottom:9px;border:1px solid #eceef2}
+  .para p{font-size:10px;color:#5b6270;line-height:1.75;margin:0 0 6px;text-align:justify}
+  .para .h{font-size:11.5px;font-weight:600;color:#16181d;margin-bottom:4px}
+  .path{display:flex;justify-content:space-between;align-items:center;background:#fff;
+        border:1px dashed #c9cdfb;border-radius:10px;padding:7px 10px;margin-top:8px;font-size:10.5px;color:#4b5563}
+  .path b{color:var(--mark);font-weight:600}
+</style>
+</head>
+<body>
+
+<h1>引导页 + 说明页重做 · 线框（P4 / A12）</h1>
+<p class="lede">两页性质不同，问题也不同：<b>引导是「带你做一遍」</b>，现在第 2、3 页各塞了
+5 个可改项，第一次打开的人还没听到闹钟响就先做九次决定；<b>说明是「随时查某一条」</b>，
+现在是 16 段共 1250 字一段到底，而且已经和界面脱节——比如它仍写着「稍后提醒在『更多响铃设置』」，
+v0.82.0 已经把这一项搬回主页「提醒」组。</p>
+<p class="meta">2026-10-26 · 基线 v0.82.1 · 引导 3 页（<code>GuideActivity</code> 622 行 / 布局 1006 行）· 说明 5 节（<code>activity_help.xml</code> 393 行）</p>
+
+<div class="row">
+
+  <div class="col">
+    <h2>① 现状 · 引导第 1 页</h2>
+    <p class="hint">顶栏同时挂着「上一步 / 导入 / 跳过」三个小字按钮，四类动作挤一行。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">上一步</span><span><span class="ghost">导入</span>　<span class="ghost">跳过</span></span></div>
+      <div class="body">
+        <div class="q">你的周休制度是哪一种？</div>
+        <p class="sub">选一次就行。之后每周的班自动排，法定节假日和调休补班也会算进去。</p>
+        <div class="card on"><div class="t">大小周</div><div class="d">一周双休、一周单休，两周循环</div></div>
+        <div class="card"><div class="t">双休</div><div class="d">每周六、周日都休</div></div>
+        <div class="card"><div class="t">单休</div><div class="d">每周固定休一天</div></div>
+        <div class="rowline"><span>本周是</span><span class="chip on">大周</span><span class="chip">小周</span></div>
+        <div class="rowline"><span>休哪天</span><span class="chip on">周日休</span><span class="chip">周六休</span></div>
+      </div>
+      <div class="foot"><div class="btn-prev"></div><div class="btn-main">下一步</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>② 现状 · 引导第 2 页</h2>
+    <p class="hint">一屏 5 个可改项：时间 + 音量 + 渐响 + 稍后提醒 + 响铃前提醒，后四个都属「响铃细节」。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">上一步</span><span class="ghost">跳过</span></div>
+      <div class="body">
+        <div class="q">先设一个起床闹钟</div>
+        <p class="sub">只在上班日响，休息日和法定节假日自动跳过。点时间可以改。</p>
+        <div class="big">07:30</div>
+        <div class="center"><span class="link">改时间</span></div>
+        <div class="rowline" style="margin-top:12px"><span>响铃音量</span><span class="v">80%</span></div>
+        <div class="rowline"><span>渐响</span><span class="v">关</span></div>
+        <div class="rowline"><span>稍后提醒</span><span class="v">5 分钟 × 3 次</span></div>
+        <div class="rowline"><span>响铃前提醒</span><span class="v">提前 1 小时</span></div>
+        <p class="sub" style="margin-top:6px">渐响会从静音用 30 秒升到设定音量。响铃前提醒会在闹钟响之前先在通知栏露一面，嫌吵就关掉。</p>
+      </div>
+      <div class="foot"><div class="btn-prev"></div><div class="btn-main">下一步</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>③ 现状 · 引导第 3 页</h2>
+    <p class="hint">5 项权限 + 2 个测试按钮 + 两段说明，最长的一页；「开始使用」在底部，测试按钮在正文里抢焦点。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">上一步</span><span class="ghost">跳过</span></div>
+      <div class="body">
+        <div class="q">最后，别让它哑掉</div>
+        <p class="sub">下面五项建议全部开齐，不开的后果写在每项下面。</p>
+        <div class="rowline"><span>自启动</span><span class="chip">去开启</span></div>
+        <div class="rowline"><span>通知权限</span><span class="chip on">已开</span></div>
+        <div class="rowline"><span>显示悬浮窗</span><span class="chip">去开启</span></div>
+        <div class="rowline"><span>后台弹出界面</span><span class="chip">去开启</span></div>
+        <div class="rowline"><span>锁屏显示</span><span class="chip">去开启</span></div>
+        <div class="card"><div class="t">试听一下响铃</div><div class="d">会响一声并弹出响铃页</div></div>
+        <div class="card"><div class="t">试一下锁屏响铃</div><div class="d">锁屏时能不能看到响铃页</div></div>
+      </div>
+      <div class="cut">↓ 下面还有一段脚注与「开始使用」，被截断</div>
+      <div class="foot"><div class="btn-prev"></div><div class="btn-main">开始使用</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+
+  <div class="col">
+    <h2>④ 方案 · 第 1 页</h2>
+    <p class="hint">顶栏只留「跳过」；「导入」降为正文末尾一行（它和「跳过」并列，容易被读成同一类出口）。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span></span><span class="ghost">跳过</span></div>
+      <div class="dots"><i class="on"></i><i></i><i></i></div>
+      <div class="body">
+        <div class="q">你的周休制度是哪一种？</div>
+        <p class="sub">选一次就行。之后每周的班自动排，法定节假日和调休补班也会算进去。</p>
+        <div class="card on"><div class="t">大小周</div><div class="d">一周双休、一周单休，两周循环</div></div>
+        <div class="card"><div class="t">双休</div><div class="d">每周六、周日都休</div></div>
+        <div class="card"><div class="t">单休</div><div class="d">每周固定休一天</div></div>
+        <div class="rowline"><span>本周是</span><span class="chip on">大周</span><span class="chip">小周</span></div>
+        <div class="rowline"><span>休哪天</span><span class="chip on">周日休</span><span class="chip">周六休</span></div>
+        <p class="sub" style="margin-top:14px">从旧手机搬过来？<span class="link">导入配置</span></p>
+      </div>
+      <div class="foot"><div class="btn-prev"></div><div class="btn-main">下一步</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>⑤ 方案 · 第 2 页</h2>
+    <p class="hint">只留「时间」一个决定；四个响铃细节压成一行只读摘要——想改的 1% 去设置，不该让 99% 先做选择。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span></span><span class="ghost">跳过</span></div>
+      <div class="dots"><i></i><i class="on"></i><i></i></div>
+      <div class="body">
+        <div class="q">先设一个起床闹钟</div>
+        <p class="sub">只在上班日响，休息日和法定节假日自动跳过。</p>
+        <div class="big" style="margin-top:26px">07:30</div>
+        <div class="center"><span class="link">改时间</span></div>
+        <div class="card" style="margin-top:26px">
+          <div class="t">响铃按默认来</div>
+          <div class="d">音量 80% · 渐响开 · 稍后 5 分钟 × 3 次 · 响前 1 小时提醒</div>
+        </div>
+        <p class="sub">这些在「设置」里随时能改，第一次用不必逐项过一遍。</p>
+      </div>
+      <div class="foot"><div class="btn-prev">上一步</div><div class="btn-main">下一步</div></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>⑥ 方案 · 第 3 页</h2>
+    <p class="hint">五项分两档：能自动检测的在上，系统读不到状态的在下并说明原因；两个测试降为次级链接。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span></span><span class="ghost">跳过</span></div>
+      <div class="dots"><i></i><i></i><i class="on"></i></div>
+      <div class="body">
+        <div class="q">最后，别让它哑掉</div>
+        <p class="sub">前三项不开闹钟会哑，系统能检测，开了这里会打勾。</p>
+        <div class="rowline"><span>通知权限</span><span class="chip on">已开</span></div>
+        <div class="rowline"><span>显示悬浮窗</span><span class="chip">去开启</span></div>
+        <div class="rowline"><span>后台弹出界面</span><span class="tag" style="float:none">去开启 · 进「其他权限」</span></div>
+        <div class="seclabel">这两项系统读不到状态，要自己确认</div>
+        <div class="rowline"><span>自启动</span><span class="chip">去开启</span></div>
+        <div class="rowline"><span>锁屏显示</span><span class="chip">去开启</span></div>
+        <div class="seclabel">当场验一下，别等明早才发现不响</div>
+        <div class="rowline"><span>试听响铃</span><span class="link">试一次</span></div>
+        <div class="rowline"><span>测锁屏响铃</span><span class="link">试一次</span></div>
+      </div>
+      <div class="cut">↓ 脚注一行（读不到状态的两项不会自动打勾）</div>
+      <div class="foot"><div class="btn-prev">上一步</div><div class="btn-main">开始使用</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+
+  <div class="col">
+    <h2>⑦ 现状 · 使用说明</h2>
+    <p class="hint">16 段、约 1250 字，一段到底；没有目录，找「组件怎么加」要靠滚。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">‹ 返回</span><span class="ghost b">使用说明</span></div>
+      <div class="body" style="padding-top:4px">
+        <div class="para"><div class="h">① 排班与日历</div>
+          <p>日历就在首页，默认展开。日期下方那个字是当天状态：班＝上班，休＝休息，假＝法定假，补＝调休补班；「请假」「加班」是你自己标的（底色不同），两个都标时写「假加」。</p>
+          <p>点灰字的上月 / 下月日期会翻到那个月；翻乱了点「回本月」一键跳回。</p>
+        </div>
+        <div class="para"><div class="h">② 闹钟</div>
+          <p>「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」。点已有闹钟可改时间、名称、规则，或删除。</p>
+          <p>每条闹钟右侧有自己的开关，拨一下就能单独停掉它。改任何设置都即时生效，不用再点保存。</p>
+        </div>
+        <div class="para"><div class="h">③ 临时请假 / 加班</div>
+          <p>今日卡底部有「今天」「明天」两个按钮。那天该上班，按钮写「不上班」，点一下当天闹钟全部跳过……</p>
+        </div>
+      </div>
+      <div class="cut">↓ 还有 ④ 桌面小组件、⑤ 设置与备份，共约 4 屏</div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>⑧ 方案 · 使用说明</h2>
+    <p class="hint">顶部五枚目录可直接跳到节；每节一张卡、每条一句话；路径做成可点的行，能直接跳去设置。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">‹ 返回</span><span class="ghost b">使用说明</span></div>
+      <div class="body" style="padding-top:2px">
+        <div class="toc"><span>排班与日历</span><span>闹钟</span><span>请假 / 加班</span><span>小组件</span><span>设置与备份</span></div>
+        <div class="hsec"><div class="h"><span class="n">1</span>排班与日历</div>
+          <ul>
+            <li>日历在首页，格子里四个字：<b>班</b>上班 · <b>休</b>休息 · <b>假</b>法定假 · <b>补</b>调休补班</li>
+            <li>「请假」「加班」是你自己标的，同一天都标写「假加」</li>
+            <li>点灰字日期翻月，翻乱了点「回本月」</li>
+          </ul>
+        </div>
+        <div class="hsec"><div class="h"><span class="n">2</span>闹钟</div>
+          <ul>
+            <li>每条闹钟单独选「仅上班日 / 每天 / 仅休息日」</li>
+            <li>行右侧开关只管这一条；改完即时生效，没有「保存」</li>
+            <li>锁屏看不到响铃界面 → 系统里「锁屏显示」没开</li>
+          </ul>
+        </div>
+        <div class="hsec"><div class="h"><span class="n">3</span>请假 / 加班</div>
+          <ul>
+            <li>今日卡底下「今天 / 明天」两个按钮，点一下就是请假或加班</li>
+            <li>别的日子：在日历里点那一天</li>
+            <li>标错了再点一次取消；没有批量清除（故意不做）</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cut">↓ ④ 小组件 · ⑤ 设置与备份（含两条可点路径）</div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>⑨ 方案 · 说明页末尾</h2>
+    <p class="hint">把「入口在哪」做成可点行：说明页第一次能反向跳到设置，不用记路径。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="ghost">‹ 返回</span><span class="ghost b">使用说明</span></div>
+      <div class="body" style="padding-top:2px">
+        <div class="hsec"><div class="h"><span class="n">4</span>桌面小组件</div>
+          <ul>
+            <li>长按桌面空白 →「小部件」→ 找「打工人闹钟」</li>
+            <li>本月班表底部也能点「今天 / 明天不上班」，不用先开 App</li>
+          </ul>
+        </div>
+        <div class="hsec"><div class="h"><span class="n">5</span>设置与备份</div>
+          <ul>
+            <li>换手机：「导出配置」存文件，新机「导入配置」</li>
+            <li>被系统杀后台漏响：开自启动、加电池白名单、最近任务里锁定</li>
+            <li>日历上想少点东西：日历显示内容里关掉农历 / 节气 / 基督教节日</li>
+          </ul>
+        </div>
+        <div class="path"><span>这些都在 <b>设置 → 更多设置</b> 里</span><span><b>打开设置 ›</b></span></div>
+        <div class="path"><span>想重看引导或查权限 <b>帮助与关于</b></span><span><b>去查看 ›</b></span></div>
+        <p class="sub" style="margin-top:12px">版本 v0.82.1 · 说明随版本更新</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sum">
+  <h3>引导页：每一项为什么留、为什么走</h3>
+  <table>
+    <tr><th>现元素</th><th>方案</th><th>理由</th></tr>
+    <tr><td>「上一步」在顶栏、「下一步」在底栏</td><td>两个方向键都收到页脚</td><td>同一件事的两个方向分居屏幕两角，翻页时眼睛要跑两趟；手指也够不到顶栏左角</td></tr>
+    <tr><td>「导入」与「跳过」并列在顶栏</td><td>「跳过」留顶栏，「导入配置」降到第 1 页正文末尾</td><td>一个是「我有旧配置」，一个是「我不想设」，并列成两个小字按钮，读起来像同一类出口</td></tr>
+    <tr><td>圆点在页脚，和主按钮抢位置</td><td>圆点移到页面上方</td><td>页脚只放两个动作；进度指示属于「你在第几步」，不是动作</td></tr>
+    <tr><td>第 2 页：时间 + 音量 + 渐响 + 稍后 + 前提醒（5 个决定）</td><td>只留时间，其余压成一行只读摘要</td><td>引导的目标是「能响、响得对」；四响铃项一次设好基本不动，1% 的人要改，不该让 99% 先做选择</td></tr>
+    <tr><td>第 3 页：5 项权限平铺</td><td>拆两档：能检测的 3 项 / 读不到状态的 2 项（带一句解释）</td><td>五项长得一样，但打完勾的结果不一样——上面三项会变绿，下面两项永远不会，平铺会让人以为「还有两项没成功」</td></tr>
+    <tr><td>两个测试是大卡片，紧挨「开始使用」</td><td>降为两行次级链接</td><td>测试是「验一下」，不是「下一步」；现在是两个大卡片和一个主按钮抢同一个视觉层级</td></tr>
+  </table>
+</div>
+
+<div class="sum">
+  <h3>说明页：从「一篇文章」改成「五张卡」</h3>
+  <table>
+    <tr><th>现状</th><th>方案</th><th>为什么</th></tr>
+    <tr><td>16 段、约 1250 字，无目录</td><td>顶部 5 枚目录胶囊 + 5 张分节卡，每节 3 条以内</td><td>用户是带着问题来的（「组件怎么加」），要么扫到，要么滚到底——现在是后者</td></tr>
+    <tr><td>段落 80–110 字，一句话里塞三件事</td><td>一条一句话，最多 25 字</td><td>手机上 110 字是一整屏灰字；拆成条才能一眼扫</td></tr>
+    <tr><td>「入口在设置 → 更多设置 → 使用说明」写成死文字</td><td>做成可点的行，直接跳对应页</td><td>说明页和设置页本来就该互通；路径文字改版就会过期（这版已经有一处过期，见下）</td></tr>
+    <tr><td>文案硬编码在 393 行布局里</td><td>每节一条 <code>string</code>，布局只搭壳</td><td>改一句话要动 XML、还要重排 <code>padding</code>；v0.82 改完组名，这页就漏改了一处</td></tr>
+  </table>
+  <p class="flow"><b>已经过期的例子</b>：说明页 ⑤ 里写着「响铃时长、渐响、震动、<b>稍后提醒</b>、按键在『更多响铃设置』」，
+  v0.82.0 已把稍后提醒搬回主页「提醒」组。这正是「文案写死 + 无守门测试」的结果。</p>
+</div>
+
+<div class="sum">
+  <h3>代价与风险（动手前说清）</h3>
+  <p class="flow"><b>① 这是两个主题，得拆两版还是合一版？</b>建议<b>合一版</b>（0.83.0）：两页都是「新手第一次看到的东西」，
+  同一次改完才能对着真机一起验收；拆两版反而要发两次包。</p>
+  <p class="flow"><b>② 引导页会动测试。</b><code>GuideTest</code> 按 <code>R.id.*</code> 断言页面内容和选中态，
+  删掉第 2 页那四行、把「导入」挪位置，都会让它红。预计改 6–8 条断言，不是重写。</p>
+  <p class="flow"><b>③ 说明页改成「文案进 strings」要多一步。</b><code>HelpActivityTest</code> 现在是按界面元素找文案，
+  改成读 <code>string</code> 后断言要跟着换口径；好处是以后改文案不用碰布局。</p>
+  <p class="flow"><b>④ 第 3 页可能还是长。</b>5 行权限 + 2 行测试 + 3 个标题，比我删掉的第 2 页还是多。
+  真机上如果仍要滚，可考虑把「试听 / 测锁屏」挪到「开始使用」之后的一次性提示里——但那要多一个弹窗，先不做。</p>
+  <p class="flow" style="color:#6b7280">我的建议：<b>按图上做，0.83.0 一版发完</b>。这两页是「新用户看到的第一屏」和「遇到问题的第一站」，
+  现在一个是九次决定、一个是 1250 字长文，都跟 App 现在的克制风格不搭。</p>
+</div>
+
+</body>
+</html>

@@ -77,26 +77,45 @@ public class HelpActivityTest {
     }
 
     /**
-     * 说明页不再放引导入口（v0.54.1）。
+     * 说明页不再有「看新手引导」的重复介绍（v0.54.1），但 v0.83.0 起有两条可点的路径。
      *
-     * <p>原来底部有个「第一次用？看 3 页新手引导」的按钮，两个问题：
-     * 文案错了——第一次用的人启动就被带进引导，根本翻不到这里；
-     * 位置也重复——设置页里本来就有一个常驻入口。
-     * 现在引导只归设置页，本页只在页脚用一句话指路。
+     * <p>v0.54.1 撤掉的是底部那个「第一次用？看 3 页新手引导」的按钮——文案错了
+     * （第一次用的人启动就被带进引导），位置也重复（设置页里本来就有入口）。
+     * v0.83.0 换了个做法：不介绍引导、只给一行「想重看新手引导或检查权限 → 去查看」，
+     * 路径本身可点。区别在于：这条是**通道**，不是**推销**。
      */
     @Test
-    public void helpPage_hasNoDuplicateGuideEntry() {
+    public void helpPage_noGuidePitch_butHasJumpRows() {
         HelpActivity a = launch();
         String all = allText(a);
 
         assertTrue("不该再出现「第一次用」这种会误导的文案", !all.contains("第一次用"));
-        // v0.61.1：引导在「更多设置」里，路径少写一层用户会找不到。
-        // 断言整条路径而不是「设置 → 新手引导与权限」——后者是前者的子串，
-        // 写成那样连旧文案也能通过。
-        assertTrue("应指路到设置页里的引导入口",
-                all.contains("设置 → 更多设置 → 新手引导与权限"));
-        // 点页面里任何地方都不该跳走：本页只有返回键一个动作
-        assertNull("说明页不该再有自己的跳转按钮",
+        assertNotNull("应有一条跳到设置的路径行", a.findViewById(R.id.help_jump_settings));
+        assertNotNull("应有一条跳到引导的路径行", a.findViewById(R.id.help_jump_guide));
+    }
+
+    /** 路径行点了要真跳（v0.83.0）：说明页第一次能反向回到设置页。 */
+    @Test
+    public void helpPage_jumpRowsOpenSettingsAndGuide() {
+        HelpActivity a = launch();
+        a.findViewById(R.id.help_jump_settings).performClick();
+        Intent toSettings = Shadows.shadowOf(a).getNextStartedActivity();
+        assertNotNull("点「打开设置」应启动一个页面", toSettings);
+        assertEquals(SettingsActivity.class.getName(), toSettings.getComponent().getClassName());
+
+        a.findViewById(R.id.help_jump_guide).performClick();
+        Intent toGuide = Shadows.shadowOf(a).getNextStartedActivity();
+        assertNotNull("点「去查看」应启动一个页面", toGuide);
+        assertEquals("重看引导应进引导页，别再指回说明页",
+                GuideActivity.class.getName(), toGuide.getComponent().getClassName());
+    }
+
+    /** 目录胶囊点了要滚到对应那节（不跳页，只滚）。 */
+    @Test
+    public void helpPage_tocScrollsWithinPage() {
+        HelpActivity a = launch();
+        a.findViewById(R.id.toc_s5).performClick();
+        assertNull("目录只在本页滚动，不该启动新页面",
                 Shadows.shadowOf(a).getNextStartedActivity());
     }
 
@@ -129,7 +148,8 @@ public class HelpActivityTest {
         assertTrue("应说明标记后变「已请假」", all.contains("已请假"));
         assertTrue("应说明日历就在首页", all.contains("日历就在首页"));
         assertTrue("应说明「回本月」", all.contains("回本月"));
-        assertTrue("应说明两个小组件", all.contains("本周班表") && all.contains("下一个闹钟"));
+        // v0.83.0：小组件在 v0.80.1 改叫「下次闹钟」，这里跟着对上，别留旧词
+        assertTrue("应说明三个小组件", all.contains("本周班表") && all.contains("下次闹钟"));
         assertTrue("应说明导出 / 导入", all.contains("导出配置") && all.contains("导入配置"));
         assertTrue("应说明后台保活", all.contains("电池"));
         // 旧说法：v0.48.1 起日历已内嵌首页，不该再让用户「点『排班日历』进去」

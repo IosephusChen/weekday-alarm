@@ -54,6 +54,9 @@ public class GuideActivity extends AppCompatActivity {
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade, tvSnooze, tvPreNotice;
+    /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
+    private LinearLayout ringDetail;
+    private TextView tvRingHint, tvRingArrow;
     private TextView stNotif, stFsi, stOverlay, stLock;
 
     private int index = 0;
@@ -85,6 +88,11 @@ public class GuideActivity extends AppCompatActivity {
         stFsi = findViewById(R.id.st_fsi);
         stOverlay = findViewById(R.id.st_overlay);
         stLock = findViewById(R.id.st_lock);
+
+        ringDetail = findViewById(R.id.ring_detail);
+        tvRingHint = findViewById(R.id.tv_ring_hint);
+        tvRingArrow = findViewById(R.id.tv_ring_arrow);
+        findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
 
         bindModeCards();
         bindTime();
@@ -564,6 +572,19 @@ public class GuideActivity extends AppCompatActivity {
         // 后面两页再放，等于承认第 1 页没讲清楚
         btnImport.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
         renderDots();
+    }
+
+    /**
+     * 展开 / 收起「响铃细节」（v0.83.0）。
+     *
+     * <p>四项一设好基本不动，摆在第一次打开的人面前等于先做四次选择——默认收起，
+     * 只留一行「按默认就好」。想调的人点开，不想调的人连看都不用看。
+     */
+    private void toggleRingDetail() {
+        boolean open = ringDetail.getVisibility() != View.VISIBLE;
+        ringDetail.setVisibility(open ? View.VISIBLE : View.GONE);
+        if (tvRingHint != null) tvRingHint.setVisibility(open ? View.VISIBLE : View.GONE);
+        if (tvRingArrow != null) tvRingArrow.setText(open ? "收起 ›" : "展开 ›");
     }
 
     /**

@@ -164,6 +164,68 @@
         <item name="android:textSize">17sp</item>
     </style>
 
+
+    <!-- ===== 使用说明页（v0.83.0）=====
+         只做版式，文案全在 strings.xml。改一句话不该再动布局。 -->
+    <style name="HelpToc">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">@dimen/space_6</item>
+        <item name="android:background">@drawable/bg_guide_option</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingTop">@dimen/space_6</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+        <item name="android:paddingBottom">@dimen/space_6</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textSize">11.5sp</item>
+    </style>
+
+    <style name="HelpCard">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginBottom">@dimen/space_8</item>
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="android:paddingStart">@dimen/space_16</item>
+        <item name="android:paddingTop">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_16</item>
+        <item name="android:paddingBottom">@dimen/space_12</item>
+    </style>
+
+
+
+
+
+    <style name="HelpJump">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_guide_perm</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+    </style>
+
+    <style name="HelpJumpText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">11.5sp</item>
+    </style>
+
+    <style name="HelpJumpAction">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/indigo</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
     <!-- 响铃横幅的出入场动画（v0.54.1）：贴顶滑入 / 滑出。
          挂在 WindowManager.LayoutParams.windowAnimations 上，见 FloatingAlarm。 -->
     <style name="FloatWindowAnim">

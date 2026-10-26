@@ -311,6 +311,7 @@ public class GuideTest {
     @Test
     public void fadeRow_togglesAndWrites() {
         GuideActivity a = fresh();
+        a.findViewById(R.id.ring_toggle).performClick();   // v0.83.0：响铃四项默认收起
         assertEquals("关", text(a, R.id.tv_fade));
         assertFalse(Prefs.isFadeIn(ctx()));
 
@@ -329,6 +330,29 @@ public class GuideTest {
     public void snoozeRow_showsCurrentSetting() {
         GuideActivity a = fresh();
         assertEquals("5 分钟 × 3 次", text(a, R.id.tv_snooze));
+    }
+
+    /**
+     * 响铃细节默认收起（v0.83.0）。
+     *
+     * <p>四项（音量 / 渐响 / 稍后 / 响前）一次设好基本不动，摆在第一次打开的人面前
+     * 等于还没听到闹钟响就先做四次选择。收起不是删掉——点标题照样能调。
+     */
+    @Test
+    public void ringDetails_collapsedByDefault_andToggles() {
+        GuideActivity a = fresh();
+        View detail = a.findViewById(R.id.ring_detail);
+        assertEquals("默认应收起", View.GONE, detail.getVisibility());
+        assertEquals("说清「想调再点开」", "展开 ›", text(a, R.id.tv_ring_arrow));
+
+        a.findViewById(R.id.ring_toggle).performClick();
+        assertEquals("点一下应展开", View.VISIBLE, detail.getVisibility());
+        assertEquals("收起 ›", text(a, R.id.tv_ring_arrow));
+
+        a.findViewById(R.id.ring_toggle).performClick();
+        assertEquals("再点一下收回", View.GONE, detail.getVisibility());
+        // 收起来时那四行仍在布局里，只是不可见——值照常刷新，不会丢
+        assertNotNull(a.findViewById(R.id.tv_snooze));
     }
 
     /**

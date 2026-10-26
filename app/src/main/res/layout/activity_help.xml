@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「使用说明」页（v0.50.0）。
-     上一版把首页那一行「使用说明」指向了新手引导（3 页设置向导），这是错的：
-     向导是「第一次装完带你设一遍」，走完就不再出现；说明是「随时查某一条怎么办」，要能反复翻。
-     同一个入口不该同时承担这两件事——现在这一页只讲「怎么用」，底部再给一个去向导的次入口。
-     版式：5 张卡按主题分节，小节标题带 circled number，条目是「圆点列 + 正文列」
-     的悬挂缩进行（v0.76.5）——换行只对齐正文，不对齐圆点。 -->
+<!-- 「使用说明」页（v0.50.0 建页；v0.83.0 重排为「目录 + 五张卡」）。
+     为什么要重排：原来是 16 段、约 1250 字的连续长文，没有目录，找「组件怎么加」只能一路滚；
+     而且文案全写死在这份布局里——v0.82.0 把「稍后提醒」搬回主页后，这一页就漏改了一处。
+     现在：顶部五枚目录直接跳到节 → 五张卡、每节 3–4 条短句 → 末尾两条可点的路径行，
+     点一下直接进设置 / 引导（说明页第一次能反向跳回去）。
+     文案全部在 strings.xml（help_*），这份只管搭壳——改字不再动布局。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/help_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -21,7 +22,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
+            android:layout_marginBottom="@dimen/space_12"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -33,8 +34,8 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:paddingStart="@dimen/space_12"
-                android:paddingEnd="14dp"
                 android:paddingTop="7dp"
+                android:paddingEnd="14dp"
                 android:paddingBottom="7dp"
                 android:text="‹ 返回"
                 android:textColor="@color/ink"
@@ -46,20 +47,57 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="end"
-                android:text="使用说明"
+                android:text="@string/help_title"
                 android:textColor="@color/ink"
                 android:textSize="17sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ===== ① 排班与日历 ===== -->
-        <LinearLayout
+        <!-- 目录：五枚胶囊，点一下滚到对应那节。窄屏可横滑 -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_card"
+            android:layout_marginBottom="@dimen/space_10"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/toc_s1"
+                    style="@style/HelpToc"
+                    android:text="@string/help_toc_schedule" />
+
+                <TextView
+                    android:id="@+id/toc_s2"
+                    style="@style/HelpToc"
+                    android:text="@string/help_toc_alarm" />
+
+                <TextView
+                    android:id="@+id/toc_s3"
+                    style="@style/HelpToc"
+                    android:text="@string/help_toc_leave" />
+
+                <TextView
+                    android:id="@+id/toc_s4"
+                    style="@style/HelpToc"
+                    android:text="@string/help_toc_widget" />
+
+                <TextView
+                    android:id="@+id/toc_s5"
+                    style="@style/HelpToc"
+                    android:text="@string/help_toc_settings" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- ===== 1. 排班与日历 ===== -->
+        <LinearLayout
+            android:id="@+id/sec_s1"
+            style="@style/HelpCard"
             android:clipToOutline="true"
-            android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:orientation="vertical">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -69,22 +107,13 @@
                     android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
                 <TextView
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_6"
-                    android:text="排班与日历" />
-            </LinearLayout>
-
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
-                <TextView style="@style/HelpDot" />
-                <TextView
-                    style="@style/HelpItem"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="周休制度在「设置 → 排班与节假日 → 周休制度」里改。点开先选大类：大小周、双休、单休；选完下面才展开细节——大小周可定本周是大周还是小周、小周休周六还是周日，单休可定休周六还是周日。" />
+                    android:text="@string/help_s1_title" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -94,7 +123,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="日历就在首页，默认展开。日期下方那个字是当天状态：班＝上班，休＝休息，假＝法定假，补＝调休补班；「请假」「加班」是你自己标的（底色不同），两个都标时写「假加」。" />
+                    android:text="@string/help_s1_b1" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -104,19 +133,26 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="点灰字的上月 / 下月日期会翻到那个月；翻乱了点「回本月」一键跳回。" />
+                    android:text="@string/help_s1_b2" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HelpItemRow">
+                <TextView style="@style/HelpDot" />
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/help_s1_b3" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== ② 闹钟 ===== -->
+        <!-- ===== 2. 闹钟 ===== -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12"
-            android:background="@drawable/bg_card"
+            android:id="@+id/sec_s2"
+            style="@style/HelpCard"
             android:clipToOutline="true"
-            android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:orientation="vertical">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -126,22 +162,13 @@
                     android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
                 <TextView
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_6"
-                    android:text="闹钟" />
-            </LinearLayout>
-
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
-                <TextView style="@style/HelpDot" />
-                <TextView
-                    style="@style/HelpItem"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」。点已有闹钟可改时间、名称、规则，或删除。" />
+                    android:text="@string/help_s2_title" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -151,7 +178,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="每条闹钟右侧有自己的开关，拨一下就能单独停掉它。改任何设置都即时生效，不用再点保存。" />
+                    android:text="@string/help_s2_b1" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -161,7 +188,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="首页那行「距下次响铃」是实时倒计时，按当前班表和已开启的闹钟自动算。" />
+                    android:text="@string/help_s2_b2" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -171,7 +198,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="响铃时，正在用手机就弹一条贴顶横幅（右侧两个圆钮：N 分钟后再响 / 停止），点横幅空白处才进整屏；锁屏或息屏直接整屏（v0.54.1 起）。横幅要「显示悬浮窗」权限，没开就退回整屏。" />
+                    android:text="@string/help_s2_b3" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -181,19 +208,16 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="锁屏响铃时只亮屏、解锁后才看到界面？那是系统里的「锁屏显示」没开：设置 → 应用 → 应用管理 → 打工人闹钟 → 权限 → 锁屏显示。" />
+                    android:text="@string/help_s2_b4" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== ③ 临时请假 / 加班 ===== -->
+        <!-- ===== 3. 临时请假 / 加班 ===== -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12"
-            android:background="@drawable/bg_card"
+            android:id="@+id/sec_s3"
+            style="@style/HelpCard"
             android:clipToOutline="true"
-            android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:orientation="vertical">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -203,22 +227,13 @@
                     android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
                 <TextView
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_6"
-                    android:text="临时请假 / 加班" />
-            </LinearLayout>
-
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
-                <TextView style="@style/HelpDot" />
-                <TextView
-                    style="@style/HelpItem"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="今日卡底部有「今天」「明天」两个按钮。那天该上班，按钮写「不上班」，点一下当天闹钟全部跳过；那天本就休息，按钮写「要加班」，点一下当天「仅上班日」闹钟照响。" />
+                    android:text="@string/help_s3_title" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -228,7 +243,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="点完按钮变成实白底、文案改成「已请假 / 已加班」，一眼看得出生效了；再点一次撤销。" />
+                    android:text="@string/help_s3_b1" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -238,7 +253,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="其他日子：在首页日历里点那一天，选「标记为请假 / 加班」。上班日也能标加班（白天上班、晚上补工），同一天两个都能标，格子上会印「假加」。" />
+                    android:text="@string/help_s3_b2" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -248,7 +263,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="过去的日子也能补记：翻到那一天点一下，选「标记为请假 / 加班」，格子上照样印「假」「加」。补记只作记录，不影响已经过完的那些天的闹钟。" />
+                    android:text="@string/help_s3_b3" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -258,19 +273,16 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="标错了就点那一天，选「取消请假 / 取消加班」。没有批量清除——一次删掉全部记录太容易误伤。" />
+                    android:text="@string/help_s3_b4" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== ④ 桌面小组件 ===== -->
+        <!-- ===== 4. 桌面小组件 ===== -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12"
-            android:background="@drawable/bg_card"
+            android:id="@+id/sec_s4"
+            style="@style/HelpCard"
             android:clipToOutline="true"
-            android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:orientation="vertical">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -280,22 +292,13 @@
                     android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
                 <TextView
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_6"
-                    android:text="桌面小组件" />
-            </LinearLayout>
-
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
-                <TextView style="@style/HelpDot" />
-                <TextView
-                    style="@style/HelpItem"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="添加路径：长按桌面空白处 →「小部件」→「全部应用」→ 拉到最底点「安卓小部件」→ 找「打工人闹钟」。「下一个闹钟」和「本周班表」都是 4×2，加完可以拉大。澎湃把第三方小部件统一收在这个二级列表里，所以不在「推荐」里。" />
+                    android:text="@string/help_s4_title" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -305,19 +308,36 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="「本周班表」底部也能点「今天 / 明天不上班」，不用先打开 App，点完闹钟立刻重排。" />
+                    android:text="@string/help_s4_b1" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HelpItemRow">
+                <TextView style="@style/HelpDot" />
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/help_s4_b2" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HelpItemRow">
+                <TextView style="@style/HelpDot" />
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/help_s4_b3" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== ⑤ 设置与备份 ===== -->
+        <!-- ===== 5. 设置与备份 ===== -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12"
-            android:background="@drawable/bg_card"
+            android:id="@+id/sec_s5"
+            style="@style/HelpCard"
             android:clipToOutline="true"
-            android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:orientation="vertical">
 
             <LinearLayout style="@style/HelpSectionRow">
                 <TextView
@@ -327,22 +347,13 @@
                     android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
+
                 <TextView
                     style="@style/HelpSection"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_6"
-                    android:text="设置与备份" />
-            </LinearLayout>
-
-            <LinearLayout style="@style/HelpItemRow" android:layout_marginTop="@dimen/space_10">
-                <TextView style="@style/HelpDot" />
-                <TextView
-                    style="@style/HelpItem"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="设置分三层：音量、铃声、周休制度、睡前提醒与响铃前提醒在设置主页；响铃时长、渐响、震动、稍后提醒、按键在「更多响铃设置」；一周开始日、提醒范围、节日开关、备份与恢复在「更多设置」。" />
+                    android:text="@string/help_s5_title" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -352,7 +363,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="农历节日、基督教节日可以单独开关，不需要就关掉，日历会更清爽。" />
+                    android:text="@string/help_s5_b1" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -362,7 +373,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="换手机用「导出配置 / 导入配置」，闹钟和排班一起搬过去。" />
+                    android:text="@string/help_s5_b2" />
             </LinearLayout>
 
             <LinearLayout style="@style/HelpItemRow">
@@ -372,22 +383,49 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="若被系统杀后台导致漏响：允许自启动、加入电池优化白名单，并在最近任务里锁定本应用。" />
+                    android:text="@string/help_s5_b3" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 本页不再放「看新手引导」的按钮（v0.54.1）。
-             一是文案错了：写「第一次用？」——第一次用的人启动就自动进引导，根本不会翻到这里；
-             二是重复：设置页里已经有一个常驻入口，两个按钮通向同一页，用户点哪个都觉得自己走错了门。
-             引导归设置页，本页只做「随时查某一条」的手册。 -->
+        <!-- 可点路径（v0.83.0）：说明页第一次能反向跳到设置 / 引导。
+             路径写成死文字迟早过期（v0.82.0 就过了一次），能点就不怕它过期。 -->
+        <LinearLayout
+            android:id="@+id/help_jump_settings"
+            style="@style/HelpJump"
+            android:layout_marginTop="@dimen/space_10">
+
+            <TextView
+                style="@style/HelpJumpText"
+                android:text="@string/help_jump_settings" />
+
+            <TextView
+                style="@style/HelpJumpAction"
+                android:text="@string/help_jump_settings_action" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/help_jump_guide"
+            style="@style/HelpJump"
+            android:layout_marginTop="@dimen/space_8">
+
+            <TextView
+                style="@style/HelpJumpText"
+                android:text="@string/help_jump_guide" />
+
+            <TextView
+                style="@style/HelpJumpAction"
+                android:text="@string/help_jump_guide_action" />
+        </LinearLayout>
+
         <TextView
-            style="@style/FieldHint"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="@dimen/space_12"
             android:layout_marginBottom="@dimen/space_6"
             android:gravity="center"
-            android:lineSpacingExtra="2dp"
-            android:text="使用说明随版本更新，入口在设置 → 更多设置 → 使用说明\n想重看新手引导或检查权限：设置 → 更多设置 → 新手引导与权限" />
+            android:lineSpacingExtra="3dp"
+            android:text="@string/help_footer"
+            android:textColor="@color/sub"
+            android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>

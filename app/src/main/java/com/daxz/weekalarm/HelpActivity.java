@@ -1,6 +1,9 @@
 package com.daxz.weekalarm;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ScrollView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,12 +25,38 @@ import androidx.appcompat.app.AppCompatActivity;
  */
 public class HelpActivity extends AppCompatActivity {
 
+    /** 目录胶囊 → 目标小节（顺序一一对应）。 */
+    private static final int[] TOC = {R.id.toc_s1, R.id.toc_s2, R.id.toc_s3,
+            R.id.toc_s4, R.id.toc_s5};
+    private static final int[] SECTIONS = {R.id.sec_s1, R.id.sec_s2, R.id.sec_s3,
+            R.id.sec_s4, R.id.sec_s5};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_help);
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
-        // 本页不提供引导入口：引导是「带你做一遍」，只在设置页里重看（v0.54.1）
+
+        for (int i = 0; i < TOC.length; i++) {
+            final int target = SECTIONS[i];
+            findViewById(TOC[i]).setOnClickListener(v -> scrollTo(target));
+        }
+
+        // v0.83.0：路径不再只是文字，点一下直接跳。说明页第一次能反向回到设置——
+        // 原来写「设置 → 更多设置 → 使用说明」，改版就过期（v0.82.0 已经过了一次）。
+        findViewById(R.id.help_jump_settings)
+                .setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        // 引导只在设置页里有常驻入口，这里给的是同一条路：重看 = 再走一遍那 3 页
+        findViewById(R.id.help_jump_guide)
+                .setOnClickListener(v -> startActivity(new Intent(this, GuideActivity.class)));
+    }
+
+    /** 滚到某一节。小节都是内容容器的直接子节点，getTop 就是滚动目标。 */
+    private void scrollTo(int sectionId) {
+        View target = findViewById(sectionId);
+        View scroll = findViewById(R.id.help_scroll);
+        if (target == null || !(scroll instanceof ScrollView)) return;
+        ((ScrollView) scroll).smoothScrollTo(0, target.getTop());
     }
 }

@@ -5,7 +5,13 @@
 双休、单休（周日休 / 周六休）、大小周都支持；法定节假日与调休补班自动算进去。
 不管哪种排班，都不用再手动改闹钟。
 
-> 截图放在 `docs/screenshots/`，四个界面：首页（带日历）、月历、响铃页、设置页。
+<p align="center">
+  <img src="docs/screenshots/1-home.jpg" width="235" alt="首页：今天上不上班、下次闹钟、本月班表">
+  <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃 / 排班与节假日 / 提醒 / 更多">
+  <img src="docs/screenshots/3-ringing.jpg" width="235" alt="响铃页：滑动停止、5 分钟后再响">
+</p>
+
+<p align="center"><sub>首页 · 设置 · 响铃（截图取自 v0.85.x，与 1.0.0 界面相同）</sub></p>
 
 ## 功能
 

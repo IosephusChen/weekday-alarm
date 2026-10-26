@@ -618,7 +618,10 @@ public class GuideActivity extends AppCompatActivity {
     private void updateChrome() {
         boolean last = index == PAGES - 1;
         btnNext.setText(last ? "开始使用" : "下一步");
-        btnSkip.setVisibility(last ? View.GONE : View.VISIBLE);
+        // v0.85.3：末页的「跳过」用 INVISIBLE 而不是 GONE——GONE 会让顶栏塌掉，
+        // 整页内容跟着上移约 44dp，看上去就是「最后一页比前三页高」。留占位不显示，
+        // 四页的图标、标题、卡片就都从同一条基线开始。
+        btnSkip.setVisibility(last ? View.INVISIBLE : View.VISIBLE);
         btnPrev.setVisibility(index == 0 ? View.INVISIBLE : View.VISIBLE);
         // 「导入」只在第 1 页：那里才是用户犹豫「要不要重填」的时刻；
         // 后面两页再放，等于承认第 1 页没讲清楚

@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(195, "0.85.3", "2026/10/27", "末页「跳过」留占位",
+                    "末页不显示「跳过」时顶栏塌了，整页内容比前三页高约 44dp",
+                    "改成留占位不显示，四页从同一条基线开始；上一版的居中已撤销"),
             new Entry(194, "0.85.2", "2026/10/27", "引导末页内容居中",
                     "第 4 页内容少，原来贴着顶部，下面空一大块，看着比前三页「高」",
                     "改成垂直居中，上下留白对半；前三页内容本来就满，不动"),

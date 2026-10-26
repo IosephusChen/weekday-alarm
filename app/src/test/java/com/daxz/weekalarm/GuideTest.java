@@ -682,7 +682,10 @@ public class GuideTest {
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
         assertEquals("末页（第 4 页）才写「开始使用」", "开始使用", text(a, R.id.btn_next));
-        assertEquals("末页不再有「跳过」", View.GONE, visibility(a, R.id.btn_skip));
+        // v0.85.3：末页的「跳过」是 INVISIBLE 不是 GONE——GONE 会让顶栏塌 44dp，
+        // 最后一页的图标/标题就比前三页高一截（用户实测看出来的）
+        assertEquals("末页不显示「跳过」，但要留占位", View.INVISIBLE,
+                visibility(a, R.id.btn_skip));
 
         tap(a, R.id.btn_prev);
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));

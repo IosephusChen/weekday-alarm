@@ -117,13 +117,19 @@ public class ChangelogTest {
      * 0.80.1 那版五条加起来 520 字，一屏放不下两版。用户原话：「更新日志里的文案太长了」。
      *
      * <p>为什么是 45：手机上一行放得下约 22 个汉字，45 字正好两行；超过就要三行，
-     * 一版四条加起来顶满一屏。为什么只守最近 20 版：老版本没人往回翻，
-     * 而且它们的详细取舍都在 {@code docs/更新日志.md} 里，压掉反而丢线索。
+     * 一版四条加起来顶满一屏。标题单独限 18 字——卡片标题是 15sp 粗体，可用宽约 296dp，
+     * 19 个字就开始折行，标题一折整张卡的高度就乱了。
+     *
+     * <p>为什么只守最近 20 版：老版本没人往回翻，而且它们的详细取舍都在
+     * {@code docs/更新日志.md} 里，压掉反而丢线索。
      */
     @Test
     public void latestEntries_stayShort() {
         List<Changelog.Entry> all = Changelog.all();
         for (Changelog.Entry e : all.subList(0, Math.min(20, all.size()))) {
+            assertTrue("标题不超过 18 字（一行放得下），v" + e.version + " 有 "
+                            + e.title.length() + " 字：" + e.title,
+                    e.title.length() <= 18);
             assertTrue("一版最多 4 条要点，v" + e.version + " 有 " + e.points.length + " 条",
                     e.points.length <= 4);
             for (String p : e.points) {

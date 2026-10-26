@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 · 设置页排布重排（T6）</title>
+<style>
+  :root{
+    --bg:#f2f3f5; --panel:#ffffff; --ink:#16181d; --sub:#6b7280;
+    --line:#e3e5ea; --mark:#4f46e5; --markbg:#eef0ff; --warn:#e11d48; --warnbg:#fff5f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:26px 24px 44px;background:var(--bg);color:var(--ink);
+       font:14px/1.55 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  h1{font-size:19px;margin:0 0 6px}
+  .lede{color:var(--sub);font-size:13px;max-width:1060px;margin:0 0 4px}
+  .meta{color:var(--sub);font-size:12px;margin:0 0 22px}
+  .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:26px}
+  .col{width:301px}
+  .col h2{font-size:13.5px;margin:0 0 2px}
+  .col .hint{font-size:11.5px;color:var(--sub);height:34px;margin:0 0 8px}
+  .phone{position:relative;width:301px;height:668px;background:#f7f8fa;
+         border:1px solid #cfd2d9;border-radius:16px;overflow:hidden}
+  .status{height:22px;font-size:9px;color:#8a8f99;display:flex;justify-content:space-between;
+          padding:0 14px;align-items:center}
+  .head{padding:2px 16px 10px;display:flex;align-items:center;gap:12px}
+  .back{font-size:17px;color:#3c4048}
+  .h1{font-size:24px;font-weight:700;letter-spacing:.5px}
+  .body{padding:0 12px}
+  .seclabel{font-size:10.5px;color:#8a8f99;margin:12px 6px 6px}
+  .seclabel.bad{color:var(--warn)}
+  .seclabel.good{color:var(--mark)}
+  .card{background:#fff;border-radius:14px;overflow:hidden}
+  .item{display:flex;align-items:center;justify-content:space-between;
+        min-height:58px;padding:0 14px;border-bottom:1px solid #f2f3f6;position:relative}
+  .item:last-child{border-bottom:none}
+  .item .t{font-size:13.5px;font-weight:500}
+  .item .r{display:flex;align-items:center;gap:5px}
+  .item .v{font-size:12px;color:#9aa0aa}
+  .item .chev{color:#c3c7cf;font-size:14px}
+  .item.tall{min-height:72px;align-items:flex-start;padding-top:14px;flex-direction:column;gap:2px}
+  .item.tall .r{position:absolute;right:14px;top:16px}
+  .item.tall .sub{font-size:10.5px;color:#9aa0aa;font-weight:400}
+  .item.moved{background:var(--markbg)}
+  .item.moved::after{content:"搬上来";position:absolute;right:10px;top:6px;font-size:9px;
+                     color:var(--mark);background:#fff;border:1px solid #c9cdfb;
+                     border-radius:3px;padding:0 4px}
+  .item.renamed .t::after{content:"（改名）";font-size:9px;color:var(--mark);font-weight:400}
+  .sw{width:38px;height:22px;border-radius:11px;background:#d6d9df;position:relative;flex:none}
+  .sw.on{background:var(--mark)}
+  .sw i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+        background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .sw.on i{left:18px}
+  .slider{height:6px;border-radius:3px;background:#e6e8ee;margin:10px 14px 0;position:relative}
+  .slider i{position:absolute;left:0;top:0;bottom:0;width:80%;background:var(--mark);border-radius:3px}
+  .slider b{position:absolute;left:80%;top:-5px;width:16px;height:16px;margin-left:-8px;
+            border-radius:50%;background:#fff;border:3px solid var(--mark)}
+  .cut{position:absolute;left:12px;right:12px;bottom:56px;border:1px dashed #e11d48;
+       border-radius:8px;color:#e11d48;font-size:10px;text-align:center;padding:5px;
+       background:repeating-linear-gradient(45deg,#fff5f7,#fff5f7 6px,#fff 6px,#fff 12px)}
+  .sum{margin-top:8px;background:#fff;border:1px solid #d9dce3;border-radius:12px;padding:16px 18px}
+  .sum h3{font-size:14px;margin:0 0 8px}
+  .sum table{border-collapse:collapse;font-size:12.5px;width:100%;max-width:1060px}
+  .sum td,.sum th{border-bottom:1px solid #eef0f4;padding:6px 8px;text-align:left;vertical-align:top}
+  .sum th{color:var(--sub);font-weight:600}
+  .flow{font-size:12.5px;color:#374151;margin:10px 0 0}
+  code{background:#eceef2;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .tag{display:inline-block;background:var(--markbg);color:var(--mark);border-radius:4px;
+       font-size:10px;padding:0 5px;margin-left:4px}
+</style>
+</head>
+<body>
+
+<h1>设置页排布重排 · 线框（T6）</h1>
+<p class="lede">要解决的是交接文档 6.1 里那三个毛病：<b>①「稍后提醒」和「响铃前提醒」隔着一个页面</b>；
+<b>② 二级页「更多」是个垃圾桶，十项不分家</b>；<b>③ 改「一周从周几开始」得先记住它藏在「更多设置」里</b>。
+三处都不是视觉问题，是<b>归属问题</b>——所以下面只动「哪一项放哪一组、组叫什么」，颜色间距一律沿用现状。</p>
+<p class="meta">2026-10-26 · 基线 v0.81.0（主页 4 组 8 行 / 二级页 5 组 15 行）· 高度是 dp 估算，真机再量</p>
+
+<div class="row">
+
+  <div class="col">
+    <h2>① 现状 · 设置（主页）</h2>
+    <p class="hint">8 行 4 组。毛病①在这里显形：<b>「提醒」组没有「稍后提醒」</b>，它在下一层的「响铃」组里。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1">设置</span></div>
+      <div class="body">
+        <div class="seclabel">闹钟</div>
+        <div class="card">
+          <div class="item tall"><span class="t">闹钟音量</span><span class="sub">80%</span>
+            <span class="r"><span class="chev">›</span></span></div>
+          <div class="slider"><i></i><b></b></div>
+          <div class="item"><span class="t">铃声</span>
+            <span class="r"><span class="v">系统默认</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">更多响铃设置</span><span class="r"><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel">排班与节假日</div>
+        <div class="card">
+          <div class="item"><span class="t">周休制度</span>
+            <span class="r"><span class="v">大小周</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">节假日数据</span>
+            <span class="sub">2007–2026 年 · 内置</span></div>
+        </div>
+
+        <div class="seclabel">提醒</div>
+        <div class="card">
+          <div class="item tall"><span class="t">睡前提醒</span>
+            <span class="sub">到点发一条安静的通知</span>
+            <span class="r"><span class="v">关闭</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">响铃前提醒</span>
+            <span class="sub">响铃前先在通知栏提醒一次</span></div>
+        </div>
+
+        <div class="seclabel">其他</div>
+        <div class="card">
+          <div class="item tall"><span class="t">更多设置</span>
+            <span class="sub">排班 · 小组件 · 检查 · 备份</span>
+            <span class="r"><span class="chev">›</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>② 现状 · 更多（二级页）</h2>
+    <p class="hint">15 行 5 组。毛病②③：整页标题只有一个「更多」，「响铃」之外的四组混在下面，入口还给不出路线。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1">更多</span></div>
+      <div class="body">
+        <div class="seclabel">响铃</div>
+        <div class="card">
+          <div class="item"><span class="t">响铃时长</span>
+            <span class="r"><span class="v">不限</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">铃声渐响</span>
+            <span class="sub">从静音逐渐变大，约 30 秒到设定音量</span></div>
+          <div class="item tall"><span class="t">响铃时震动</span>
+            <span class="sub">配合音量调到 0 可实现「静音仅震动」</span></div>
+          <div class="item"><span class="t">稍后提醒</span>
+            <span class="r"><span class="v">5 分钟 × 3 次</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">按键设置</span>
+            <span class="sub">音量键 · 无　电源键 · 无</span></div>
+        </div>
+
+        <div class="seclabel">排班与显示</div>
+        <div class="card">
+          <div class="item"><span class="t">一周开始日</span>
+            <span class="r"><span class="v">周一</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">闹钟排到多远</span>
+            <span class="r"><span class="v">未来 90 天</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">日历显示内容</span>
+            <span class="r"><span class="v">都不显示</span><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel">检查与帮助</div>
+        <div class="card">
+          <div class="item"><span class="t">运行状态</span>
+            <span class="r"><span class="v">已登记 12 个</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">新手引导与权限</span>
+            <span class="r"><span class="v">重看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">使用说明</span>
+            <span class="r"><span class="v">查看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">更新日志</span>
+            <span class="r"><span class="v">v0.81.0</span><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel">桌面小组件</div>
+        <div class="card">
+          <div class="item tall"><span class="t">添加到桌面</span>
+            <span class="sub">选一个放上桌面；部分桌面要手动加</span></div>
+        </div>
+        <div class="cut">↓ 下面还有「备份与恢复」两条，被截断</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>③ 方案 A · 主页（推荐）</h2>
+    <p class="hint">9 行 4 组。只动两件事：<b>把「稍后提醒」搬上来</b>，四组改成用户视角的说法。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1">设置</span></div>
+      <div class="body">
+        <div class="seclabel good">响铃</div>
+        <div class="card">
+          <div class="item tall"><span class="t">闹钟音量</span><span class="sub">80%</span>
+            <span class="r"><span class="chev">›</span></span></div>
+          <div class="slider"><i></i><b></b></div>
+          <div class="item"><span class="t">铃声</span>
+            <span class="r"><span class="v">系统默认</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">更多响铃设置</span><span class="r"><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel good">上班日怎么算</div>
+        <div class="card">
+          <div class="item"><span class="t">周休制度</span>
+            <span class="r"><span class="v">大小周</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">节假日数据</span>
+            <span class="sub">2027 年待发布 · 联网后自动更新</span></div>
+        </div>
+
+        <div class="seclabel good">什么时候提醒</div>
+        <div class="card">
+          <div class="item tall"><span class="t">睡前提醒</span>
+            <span class="sub">睡前发一条安静的通知</span>
+            <span class="r"><span class="v">关闭</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">响铃前提醒</span>
+            <span class="sub">响之前先在通知栏提醒一次</span></div>
+          <div class="item moved"><span class="t">稍后提醒</span>
+            <span class="r"><span class="v">5 分钟 × 3 次</span><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel good">更多</div>
+        <div class="card">
+          <div class="item tall"><span class="t">更多设置</span>
+            <span class="sub">排班 · 小组件 · 检查 · 备份</span>
+            <span class="r"><span class="chev">›</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+
+  <div class="col">
+    <h2>④ 方案 A · 更多设置（二级页）</h2>
+    <p class="hint">12 行 4 组，标题从「更多」改成「更多设置」（和入口同名）。「响铃」之外拆成三组，组名自己会说话。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1" style="font-size:20px">更多设置</span></div>
+      <div class="body">
+        <div class="seclabel">响铃</div>
+        <div class="card">
+          <div class="item"><span class="t">响铃时长</span>
+            <span class="r"><span class="v">不限</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">铃声渐响</span>
+            <span class="sub">从静音逐渐变大，约 30 秒到设定音量</span></div>
+          <div class="item tall"><span class="t">响铃时震动</span>
+            <span class="sub">配合音量调到 0 可实现「静音仅震动」</span></div>
+          <div class="item tall"><span class="t">按键设置</span>
+            <span class="sub">音量键 · 无　电源键 · 无</span></div>
+        </div>
+
+        <div class="seclabel good">排班与显示</div>
+        <div class="card">
+          <div class="item"><span class="t">一周开始日</span>
+            <span class="r"><span class="v">周一</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">闹钟排到多远</span>
+            <span class="r"><span class="v">未来 90 天</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">日历显示内容</span>
+            <span class="r"><span class="v">都不显示</span><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="seclabel good">帮助与关于</div>
+        <div class="card">
+          <div class="item"><span class="t">运行状态</span>
+            <span class="r"><span class="v">已登记 12 个</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">新手引导与权限</span>
+            <span class="r"><span class="v">重看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">使用说明</span>
+            <span class="r"><span class="v">查看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">更新日志</span>
+            <span class="r"><span class="v">v0.81.0</span><span class="chev">›</span></span></div>
+        </div>
+
+        <div class="cut">↓ 第四组「数据与桌面」被截断：添加到桌面 / 导出配置 / 导入配置</div>
+      </div>
+    </div>
+    <ul style="margin:10px 0 0;padding-left:16px;font-size:11.5px;color:#374151">
+      <li>组名直接回答「这堆是什么」：<b>排班与显示</b>（怎么算、怎么看）/ <b>帮助与关于</b>（查、看、读）/ <b>数据与桌面</b>（搬走、放桌面）</li>
+      <li>「稍后提醒」走了，响铃组从 5 行降到 4 行</li>
+    </ul>
+  </div>
+
+  <div class="col">
+    <h2>⑤ 方案 B · 主页（更彻底）</h2>
+    <p class="hint">12 行 4 组：把「一周开始日 / 排到多远 / 日历内容」也搬上来，<b>一次点击就到</b>。代价是主页约 1.3 屏。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1">设置</span></div>
+      <div class="body">
+        <div class="seclabel good">响铃</div>
+        <div class="card">
+          <div class="item"><span class="t">闹钟音量</span>
+            <span class="r"><span class="v">80%</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">铃声</span>
+            <span class="r"><span class="v">系统默认</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">响铃细节</span><span class="r"><span class="chev">›</span></span></div>
+        </div>
+        <div class="seclabel good">上班日怎么算</div>
+        <div class="card">
+          <div class="item"><span class="t">周休制度</span>
+            <span class="r"><span class="v">大小周</span><span class="chev">›</span></span></div>
+          <div class="item tall"><span class="t">节假日数据</span>
+            <span class="sub">2027 年待发布 · 联网后自动更新</span></div>
+          <div class="item"><span class="t">一周开始日</span>
+            <span class="r"><span class="v">周一</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">闹钟排到多远</span>
+            <span class="r"><span class="v">未来 90 天</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">日历显示内容</span>
+            <span class="r"><span class="v">都不显示</span><span class="chev">›</span></span></div>
+        </div>
+        <div class="seclabel good">什么时候提醒</div>
+        <div class="card">
+          <div class="item"><span class="t">睡前提醒</span>
+            <span class="r"><span class="v">关闭</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">响铃前提醒</span><span class="r"><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">稍后提醒</span>
+            <span class="r"><span class="v">5 分钟 × 3 次</span><span class="chev">›</span></span></div>
+        </div>
+        <div class="seclabel good">关于与数据</div>
+        <div class="card">
+          <div class="item"><span class="t">关于与数据</span>
+            <span class="sub" style="font-size:10.5px;color:#9aa0aa">状态 · 引导 · 说明 · 日志 · 桌面 · 备份</span>
+            <span class="r"><span class="chev">›</span></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <h2>⑥ 方案 B · 关于与数据（二级页）</h2>
+    <p class="hint">7 行 2 组。这一页只剩「查 / 搬 / 放」三类，不再藏任何<b>设置</b>。</p>
+    <div class="phone">
+      <div class="status"><span>7:36</span><span>5G · 76</span></div>
+      <div class="head"><span class="back">←</span><span class="h1" style="font-size:20px">关于与数据</span></div>
+      <div class="body">
+        <div class="seclabel">检查与帮助</div>
+        <div class="card">
+          <div class="item"><span class="t">运行状态</span>
+            <span class="r"><span class="v">已登记 12 个</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">新手引导与权限</span>
+            <span class="r"><span class="v">重看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">使用说明</span>
+            <span class="r"><span class="v">查看</span><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">更新日志</span>
+            <span class="r"><span class="v">v0.81.0</span><span class="chev">›</span></span></div>
+        </div>
+        <div class="seclabel">桌面与备份</div>
+        <div class="card">
+          <div class="item"><span class="t">添加到桌面</span><span class="r"><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">导出配置</span><span class="r"><span class="chev">›</span></span></div>
+          <div class="item"><span class="t">导入配置</span><span class="r"><span class="chev">›</span></span></div>
+        </div>
+        <div style="margin:14px 6px;font-size:10.5px;color:#8a8f99">这一页约 460dp，一屏够用。</div>
+      </div>
+    </div>
+    <ul style="margin:10px 0 0;padding-left:16px;font-size:11.5px;color:#374151">
+      <li>B 的卖点：<b>所有「能调的」都在主页</b>，二级页只放「看 / 搬」</li>
+      <li>B 的代价：主页 12 行 ≈ 1.3 屏；「日历显示内容」这种一年点一次的，也要跟着占位置</li>
+    </ul>
+  </div>
+</div>
+
+<div class="sum">
+  <h3>每一项去了哪（A 版）</h3>
+  <table>
+    <tr><th>现值</th><th>位置</th><th>变化</th><th>为什么</th></tr>
+    <tr><td>闹钟音量 / 铃声 / 更多响铃设置</td><td>主页 · 响铃</td><td>组名「闹钟」→「响铃」</td><td>这一组说的都是「响的时候什么样」，不是「闹钟长什么样」</td></tr>
+    <tr><td>周休制度 / 节假日数据</td><td>主页 · 上班日怎么算</td><td>组名「排班与节假日」→「上班日怎么算」</td><td>用户脑子里的问题是「今天上不上班」，不是「排班模块」</td></tr>
+    <tr><td><b>稍后提醒</b></td><td><b>主页 · 什么时候提醒</b></td><td><b>从二级页搬上来</b></td><td>毛病①：「响铃前提醒」在这儿，「响了没起怎么办」却在下一层，同一天里的一件事被拆成两页</td></tr>
+    <tr><td>睡前提醒 / 响铃前提醒</td><td>主页 · 什么时候提醒</td><td>组内按发生顺序排：睡前 → 响前 → 响后</td><td>三个提醒本来就是一条时间线，排在一起就不用解释</td></tr>
+    <tr><td>响铃时长 / 渐响 / 震动 / 按键</td><td>二级页 · 响铃</td><td>5 行 → 4 行</td><td>一次设好基本不动，留在二层</td></tr>
+    <tr><td>一周开始日 / 排到多远 / 日历内容</td><td>二级页 · 排班与显示</td><td>组名不变</td><td>组名本身已经回答了「这里有什么」</td></tr>
+    <tr><td>运行状态 / 引导 / 说明 / 日志</td><td>二级页 · 帮助与关于</td><td>「检查与帮助」→「帮助与关于」</td><td>「检查」这个词只对「运行状态」成立，另外三项是「查资料」</td></tr>
+    <tr><td>添加到桌面 / 导出 / 导入</td><td>二级页 · 数据与桌面</td><td>合并两组为「数据与桌面」</td><td>三件事共同点：把东西搬进搬出（桌面 / 文件）</td></tr>
+  </table>
+</div>
+
+<div class="sum">
+  <h3>组名三个候选（只挑一组，别混着用）</h3>
+  <table>
+    <tr><th>组</th><th>候选 1（推荐）</th><th>候选 2（更短）</th><th>候选 3（保守）</th></tr>
+    <tr><td>音量 / 铃声 / 更多响铃</td><td><b>响铃</b></td><td>声音</td><td>闹钟（现状）</td></tr>
+    <tr><td>周休 / 节假日</td><td><b>上班日怎么算</b></td><td>上班日</td><td>排班与节假日（现状）</td></tr>
+    <tr><td>三个提醒</td><td><b>什么时候提醒</b></td><td>提醒</td><td>提醒（现状）</td></tr>
+    <tr><td>二级页第三组</td><td><b>数据与桌面</b></td><td>数据</td><td>备份与恢复（现状）</td></tr>
+  </table>
+  <p class="flow">推荐列的理由：三条都是「用户会怎么问」的原话。<b>候选 2 更短但更含糊</b>——「声音」会被理解成系统音量，「上班日」像日历标签。
+  候选 3 的三个里，「排班与节假日」和「检查与帮助」是这轮要改掉的（前者是模块名，后者半对半错）。</p>
+</div>
+
+<div class="sum">
+  <h3>代价与风险（动手前说清）</h3>
+  <p class="flow"><b>① 主页多 64dp。</b>A 版 9 行，估算约 830dp（现 8 行约 766dp），比现在多滚一点点。
+  不会破坏「设置页一屏能看完高频项」这个前提——真正高频的音量、周休、三个提醒仍全在第一屏内。</p>
+  <p class="flow"><b>② 「稍后提醒」搬到主页要动两处代码。</b>布局里那行挪进 <code>activity_settings.xml</code> 的提醒组，
+  <code>SettingsActivity</code> 里它的点击与回显跟着搬；<code>SettingsLayoutTest</code> 里的行顺序断言要一起改
+  （它按 <code>R.id.row_*</code> 列表钉顺序，删 id / 换位置都会红）。</p>
+  <p class="flow"><b>③ 组名改了，字符串要一起改。</b><code>settings_section_*</code> 四个 key 改值即可，key 名不用动；
+  但 <code>SettingsLayoutTest</code> 与使用说明里提到组名的地方要同步，否则文案断言红。</p>
+  <p class="flow"><b>④ 这版按规则是次版本 +1</b>（改交互 / 界面重排），不是修订号——和「调布局」不是一回事：
+  点开路径变了，是交互。</p>
+  <p class="flow" style="color:#6b7280">我的建议：<b>走 A</b>。B 把「一年点一次」的三项也摊到主页，换来的只是少一次点击，
+  却让主页从 1.0 屏变成 1.3 屏——和之前否决「日历折叠」的理由一样，为了一点便利牺牲一屏可见性不划算。
+  但如果你觉得「再也不想记二级页里有什么」，B 也成立，只是要接受主页变长。</p>
+</div>
+
+</body>
+</html>

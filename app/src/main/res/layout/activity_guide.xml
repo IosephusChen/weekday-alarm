@@ -683,7 +683,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
-                    android:text="最后，别让它哑掉"
+                    android:text="别让它哑掉"
                     android:textColor="@color/ink"
                     android:textSize="22sp"
                     android:textStyle="bold" />

@@ -37,7 +37,7 @@ need() {  # need <文件> <必须包含的字串> <说明>
 }
 
 echo "-- 五处文档一致性 --"
-need app/src/main/java/com/daxz/weekalarm/Changelog.java \
+need app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java \
      "new Entry($CODE, \"$NAME\"" "Changelog 首条 code/version"
 need docs/更新日志.md "### v$NAME（versionCode $CODE）" "更新日志.md 首条标题"
 need docs/打工人闹钟-使用说明.md "当前版本：**v$NAME**" "使用说明版本头"

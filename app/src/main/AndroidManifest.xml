@@ -25,7 +25,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DaxiaoWeekAlarm">
+        android:theme="@style/Theme.WeekdayAlarm">
 
         <activity
             android:name=".MainActivity"
@@ -43,7 +43,7 @@
             android:launchMode="singleInstance"
             android:showWhenLocked="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.DaxiaoWeekAlarm.Ringing"
+            android:theme="@style/Theme.WeekdayAlarm.Ringing"
             android:turnScreenOn="true" />
 
         <!-- 提前提醒弹窗（v1.23）：由全屏 intent 拉起，只显示「还有多久」+ 关闭入口，
@@ -68,7 +68,7 @@
             android:noHistory="true"
             android:showWhenLocked="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.DaxiaoWeekAlarm.LockProbe"
+            android:theme="@style/Theme.WeekdayAlarm.LockProbe"
             android:turnScreenOn="true" />
 
         <!-- 设置页（v0.22.1）：设置项一级平铺；使用说明已移回主界面底部折叠卡 -->

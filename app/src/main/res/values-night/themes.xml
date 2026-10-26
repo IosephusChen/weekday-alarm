@@ -2,7 +2,7 @@
 <resources>
     <!-- 夜间主题：只需覆盖与日间不同的项（DayNight 基底在 values/themes.xml）。
          状态栏图标在深色底上必须改为浅色（windowLightStatusBar=false），否则深底深图标看不见。 -->
-    <style name="Theme.DaxiaoWeekAlarm" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.WeekdayAlarm" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/indigo</item>
         <item name="colorPrimaryVariant">@color/indigo_dark</item>
         <item name="colorOnPrimary">@color/white</item>

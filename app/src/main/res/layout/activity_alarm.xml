@@ -62,7 +62,7 @@
     <!-- 滑动停止：保留 v0.38.0 的滑块而不改成澎湃那种「上滑关闭」的手势提示。
          滑块要求按住才能拖，误触概率低一个量级；手势式上滑虽然更省地方，
          但整片区域都变成可触发区，半睡半醒时反而更容易误停。 -->
-    <com.daxz.weekalarm.SlideToStopView
+    <io.github.iosephuschen.weekdayalarm.SlideToStopView
         android:id="@+id/btn_stop"
         android:layout_width="match_parent"
         android:layout_height="64dp" />

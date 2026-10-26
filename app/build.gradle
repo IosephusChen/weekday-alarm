@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace 'com.daxz.weekalarm'
+    namespace 'io.github.iosephuschen.weekdayalarm'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.daxz.weekalarm"
+        applicationId "io.github.iosephuschen.weekdayalarm"
         minSdk 26
         targetSdk 34
-        versionCode 199
-        versionName "0.86.0"
+        versionCode 200
+        versionName "0.87.0"
     }
 
     // 签名配置（v1.0.0 起用正式 keystore；v1.63.0 的「条件式」思路保留）：

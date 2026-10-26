@@ -2,7 +2,7 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.DaxiaoWeekAlarm" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.WeekdayAlarm" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/indigo</item>
         <item name="colorPrimaryVariant">@color/indigo_dark</item>
         <item name="colorOnPrimary">@color/white</item>
@@ -22,7 +22,7 @@
          没有任何接缝。
 
          windowLightStatusBar 关掉：紫底上必须用浅色图标，继承主主题的 true 会是黑字。 -->
-    <style name="Theme.DaxiaoWeekAlarm.Ringing" parent="Theme.DaxiaoWeekAlarm">
+    <style name="Theme.WeekdayAlarm.Ringing" parent="Theme.WeekdayAlarm">
         <item name="android:windowBackground">@drawable/bg_hero_full</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
@@ -34,7 +34,7 @@
     <!-- 锁屏显示自测页（v0.55.3）：固定深底，不跟随日夜。
          它要盖在任何壁纸、任何锁屏上，跟着日间主题变成浅底就看不见了。
          windowShowWhenLocked / turnScreenOn 在代码里设，这里只管底色和去标题。 -->
-    <style name="Theme.DaxiaoWeekAlarm.LockProbe" parent="Theme.DaxiaoWeekAlarm">
+    <style name="Theme.WeekdayAlarm.LockProbe" parent="Theme.WeekdayAlarm">
         <item name="android:windowBackground">#1B1D2B</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

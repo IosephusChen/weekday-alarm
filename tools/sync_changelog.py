@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-JAVA = ROOT / 'app/src/main/java/com/daxz/weekalarm/Changelog.java'
+JAVA = ROOT / 'app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java'
 MD = ROOT / 'docs/更新日志.md'
 
 ENTRY = re.compile(r'new Entry\((\d+),\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)"')

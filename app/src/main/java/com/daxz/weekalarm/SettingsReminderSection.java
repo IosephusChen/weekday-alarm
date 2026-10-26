@@ -8,15 +8,17 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 
 /**
- * 设置页「提醒」组：响铃时长 / 按键 / 稍后提醒 / 响铃前提醒 / 睡前提醒（v0.80.3）。
+ * 设置页「提醒」相关的一组：响铃时长 / 按钮 / 稍后提醒 / 响铃前提醒 / 睡前提醒（v0.80.3）。
+ *
+ * <p>v0.82.0（T6）起「稍后提醒」搬回主页「什么时候提醒」组，与「响铃前提醒」相邻。
  *
  * <p>为什么单独成类：这五项的对话框、文案、取值映射加起来约 330 行，和「周休制度」
  * 「节假日数据」「导出导入」混在 {@link SettingsActivity} 里，那个类一度 1182 行——
  * 改睡前提醒要在 1100 行里找，翻到一半就忘了本来要找什么。它们的共同点很清楚：
  * 全都只读写「响铃怎么响、提醒什么时候来」这一组 Prefs，与班表、日历无关。
  *
- * <p>两个页面共用本类：{@code SettingsActivity}（主页，含睡前提醒两行）与
- * {@code MoreSettingsActivity}（二级页「响铃与提醒」，含时长 / 按键 / 稍后 / 前提醒）。
+ * <p>两个页面共用本类：{@code SettingsActivity}（主页，含睡前提醒 / 响铃前提醒 / 稍后提醒）
+ * 与 {@code MoreSettingsActivity}（二级页「更多响铃设置」，含时长 / 按键）。
  * 两边布局不同，所以每个 View 都可能找不到——所有取用都判空。
  *
  * <p>本类只负责「这一组」：写 Prefs 之后调 {@link #refresh()} 更新本组文案；

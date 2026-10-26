@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「设置」主页（v0.60.0 重排）。
-     参考澎湃系统闹钟的分层：主页只放高频项，其余按领域进二级页。
-     主页 8 项：
-       闹钟    —— 音量（就地滑块）、铃声、更多响铃设置 ›
-       排班    —— 周休制度、节假日数据
-       提醒    —— 睡前提醒、响铃前提醒（行尾值 + 箭头，点进去设置）
-       其他    —— 更多设置 ›
+<!-- 「设置」主页（v0.60.0 分层，v0.82.0 分组重排 = T6）。
+     主页 9 项，四组按「用户会怎么问」命名（v0.82.0 改的名，键名沿用旧值）：
+       响铃        —— 音量（就地滑块）、铃声、更多响铃设置 ›
+       上班日怎么算 —— 周休制度、节假日数据
+       什么时候提醒 —— 睡前提醒、响铃前提醒、稍后提醒（三个提醒按发生顺序排）
+       更多        —— 更多设置 ›
+     v0.82.0 把「稍后提醒」从二级页响铃组搬到这里：它和「响铃前提醒」是同一件事的
+     两头（响之前怎么办 / 响了没起怎么办），原来隔着一个页面。
      版式沿用原有语言（居中顶栏、行间 1dp 分隔线、左标题右值），
      大标题 / 去分割线等视觉改动留给 A11，不和结构改动混在一起。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -55,7 +56,7 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ===== 闹钟 ===== -->
+        <!-- ===== 响铃 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
@@ -179,7 +180,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== 排班与节假日 ===== -->
+        <!-- ===== 上班日怎么算 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
@@ -269,7 +270,7 @@
                         <View style="@style/SettingsDivider" />
         </LinearLayout>
 
-        <!-- ===== 提醒 ===== -->
+        <!-- ===== 什么时候提醒 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
@@ -389,9 +390,41 @@
                         </LinearLayout>
 
                         <View style="@style/SettingsDivider" />
+
+                        <!-- 稍后提醒（v0.82.0 从二级页搬回）：与「响铃前提醒」同一组的
+                             两个动作——响之前提个醒、响过之后没起再叫一次。 -->
+                        <LinearLayout
+                            android:id="@+id/row_snooze"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="54dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingEnd="14dp">
+
+                            <TextView
+                                style="@style/SettingsTitle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/settings_snooze_title" />
+
+                            <TextView
+                                android:id="@+id/tv_snooze"
+                                style="@style/SettingsValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/more_snooze_default" />
+
+                            <TextView style="@style/SettingsChevron" />
+                        </LinearLayout>
         </LinearLayout>
 
-        <!-- ===== 其他 ===== -->
+        <!-- ===== 更多 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"

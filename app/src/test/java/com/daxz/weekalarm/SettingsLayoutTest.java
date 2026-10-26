@@ -30,11 +30,14 @@ import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowSeekBar;
 
 /**
- * 设置页按澎湃分层后的结构（v0.60.0）。
+ * 设置页的结构：v0.60.0 分层，v0.82.0 分组重排（T6）。
  *
- * <p>主页 8 项、两个二级页；主页不再折叠，低频项整体搬走。
+ * <p>主页 9 项、两个二级页；主页不再折叠，低频项整体搬走。
  * 这一组只钉结构：哪几项在主页、入口通向哪、二级页显示哪一段。
  * 各项自己的行为仍由原来的测试覆盖（它们现在跑在二级页上）。
+ *
+ * <p>v0.82.0 的改动：稍后提醒从二级页响铃组搬回主页「什么时候提醒」组，
+ * 四个组名换成用户视角的说法。分组名本身不在这里断言——文案改动不该让结构测试红。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -75,25 +78,48 @@ public class SettingsLayoutTest {
                 MoreSettingsActivity.intent(ctx(), false), 0));
     }
 
-    /** 主页只留 8 项，搬走的行在这一页找不到。 */
+    /** 主页只留 9 项，搬走的行在这一页找不到。 */
     @Test
     public void homeKeepsOnlyHighFrequencyRows() {
         ActivityController<SettingsActivity> ctl = openHome();
         SettingsActivity a = ctl.get();
 
         int[] kept = {R.id.row_ringtone, R.id.row_more_ring, R.id.row_week_mode,
-                R.id.row_holiday_data, R.id.row_bedtime, R.id.row_pre_notice, R.id.row_more};
+                R.id.row_holiday_data, R.id.row_bedtime, R.id.row_pre_notice,
+                R.id.row_snooze, R.id.row_more};
         for (int id : kept) {
             assertNotNull("主页应保留这个入口", a.findViewById(id));
             assertEquals("主页的行应直接可见", View.VISIBLE, a.findViewById(id).getVisibility());
         }
         assertNotNull("音量滑块应在主页", a.findViewById(R.id.seek_volume_embed));
 
-        int[] moved = {R.id.row_snooze, R.id.row_keys, R.id.row_ring_duration,
+        int[] moved = {R.id.row_keys, R.id.row_ring_duration,
                 R.id.row_export, R.id.row_calendar_content};
         for (int id : moved) {
             assertNull("这一项已经搬去二级页", a.findViewById(id));
         }
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 「稍后提醒」与「响铃前提醒」必须在同一页（v0.82.0 修的是这条）。
+     *
+     * <p>两个动作是同一天的上下半场：响之前提个醒、响了没起再叫一次。
+     * v0.82.0 之前它们隔着一个页面——用户想改「响了之后多久再响」时，
+     * 得先意识到它不在「提醒」组里。
+     */
+    @Test
+    public void snoozeSitsNextToPreNotice() {
+        ActivityController<SettingsActivity> ctl = openHome();
+        SettingsActivity a = ctl.get();
+
+        View snooze = a.findViewById(R.id.row_snooze);
+        View preNotice = a.findViewById(R.id.row_pre_notice);
+        assertNotNull("稍后提醒应在主页", snooze);
+        assertNotNull("响铃前提醒应在主页", preNotice);
+        assertEquals("两行应在同一张卡里（同一个父容器）",
+                preNotice.getParent(), snooze.getParent());
 
         ctl.pause().stop().destroy();
     }
@@ -139,7 +165,8 @@ public class SettingsLayoutTest {
 
         assertEquals(View.VISIBLE, a.findViewById(R.id.sec_ring).getVisibility());
         assertEquals(View.GONE, a.findViewById(R.id.sec_all).getVisibility());
-        assertNotNull("响铃页应有「稍后提醒」", a.findViewById(R.id.row_snooze));
+        assertNotNull("响铃页应有「响铃时长」", a.findViewById(R.id.row_ring_duration));
+        assertNull("「稍后提醒」已搬回主页（v0.82.0）", a.findViewById(R.id.row_snooze));
 
         ctl.pause().stop().destroy();
     }
@@ -162,7 +189,7 @@ public class SettingsLayoutTest {
         ctl.pause().stop().destroy();
     }
 
-    /** 继承来的绑定确实生效：二级页点「稍后提醒」能弹出对话框。 */
+    /** 继承来的绑定确实生效：二级页点「响铃时长」能弹出对话框。 */
     @Test
     public void morePage_rowsStillBound() {
         Intent i = new Intent(ctx(), MoreSettingsActivity.class)
@@ -171,9 +198,21 @@ public class SettingsLayoutTest {
                 Robolectric.buildActivity(MoreSettingsActivity.class, i).setup();
         ShadowLooper.idleMainLooper();
 
-        ctl.get().findViewById(R.id.row_snooze).performClick();
+        ctl.get().findViewById(R.id.row_ring_duration).performClick();
         ShadowLooper.idleMainLooper();
         assertNotNull("点了应弹对话框", org.robolectric.shadows.ShadowAlertDialog.getLatestDialog());
+
+        ctl.pause().stop().destroy();
+    }
+
+    /** 搬到主页的那一行也得绑上：点「稍后提醒」应弹对话框（绑定在父类里，与页面无关）。 */
+    @Test
+    public void homeSnoozeRow_isBound() {
+        ActivityController<SettingsActivity> ctl = openHome();
+        ctl.get().findViewById(R.id.row_snooze).performClick();
+        ShadowLooper.idleMainLooper();
+        assertNotNull("主页点了「稍后提醒」应弹对话框",
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog());
 
         ctl.pause().stop().destroy();
     }
@@ -237,11 +276,12 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 二级页的分区名要能自解释（v0.61.1）。
+     * 二级页的分区名要能自解释（v0.61.1，v0.82.0 再收一轮）。
      *
-     * <p>原来那三段叫「排程 / 检查与工具 / 备份与恢复」：第一段里装着一周开始日、
-     * 提醒范围、节日开关，「检查与工具」里装着使用说明和更新日志——名字和内容对不上。
-     * 改名后顺手钉住，免得下次加功能又往回塞。
+     * <p>v0.61.1 把那三段从「排程 / 检查与工具 / 备份与恢复」改对了名字；
+     * v0.82.0 又动了两处：「检查与帮助」里的四项全是「查资料」，「检查」只对
+     * 运行状态成立，改成「帮助与关于」；「桌面小组件」+「备份与恢复」两组各一两条，
+     * 合成「数据与桌面」——共同点是「把东西搬进搬出」。
      */
     @Test
     public void morePage_sectionTitlesMatchContent() {
@@ -252,13 +292,35 @@ public class SettingsLayoutTest {
 
         String all = collectText(a.getWindow().getDecorView());
         assertTrue("应有「排班与显示」", all.contains("排班与显示"));
-        assertTrue("应有「检查与帮助」", all.contains("检查与帮助"));
-        assertTrue("应有「备份与恢复」", all.contains("备份与恢复"));
+        assertTrue("应有「帮助与关于」", all.contains("帮助与关于"));
+        assertTrue("应有「数据与桌面」", all.contains("数据与桌面"));
+        assertFalse("「检查与帮助」只剩两项对得上，v0.82.0 已改", all.contains("检查与帮助"));
+        assertFalse("「备份与恢复」已并入「数据与桌面」", all.contains("备份与恢复"));
         assertFalse("「排程」既指排班又指闹钟排程，已不用", all.contains("排程"));
         // v0.73.7：「睡前提醒」段整段撤了——它唯一一行（仅在明天上班时提醒）
         // 并进了主页睡前提醒行的对话框，这一页不再有该出现没出现的段落
         assertFalse("「仅在明天上班时提醒」已并入睡前提醒对话框，二级页不该再有",
                 all.contains("仅在明天上班时提醒"));
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 主页四个分组名用「用户会怎么问」的说法（v0.82.0 · T6）。
+     *
+     * <p>旧名是模块名：「排班与节假日」「其他」。用户脑子里的问题是「今天上不上班」，
+     * 而且「其他」里只有一项，等于没分类。这里连旧名一起否掉，防止下次改回来。
+     */
+    @Test
+    public void homeSectionTitlesSpeakUserLanguage() {
+        ActivityController<SettingsActivity> ctl = openHome();
+        String all = collectText(ctl.get().getWindow().getDecorView());
+
+        assertTrue("应有「响铃」", all.contains("响铃"));
+        assertTrue("应有「上班日怎么算」", all.contains("上班日怎么算"));
+        assertTrue("应有「什么时候提醒」", all.contains("什么时候提醒"));
+        assertFalse("模块名「排班与节假日」已换掉", all.contains("排班与节假日"));
+        assertFalse("「其他」等于没分类，已改成「更多」", all.contains("\n其他\n"));
 
         ctl.pause().stop().destroy();
     }

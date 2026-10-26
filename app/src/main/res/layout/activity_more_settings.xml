@@ -194,38 +194,6 @@
                             </LinearLayout>
 
                             <View style="@style/SettingsDivider" />
-
-                            <LinearLayout
-                                android:id="@+id/row_snooze"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:background="?attr/selectableItemBackground"
-                                android:clickable="true"
-                                android:focusable="true"
-                                android:gravity="center_vertical"
-                                android:minHeight="54dp"
-                                android:orientation="horizontal"
-                                android:paddingStart="@dimen/space_16"
-                                android:paddingEnd="14dp">
-
-                                <TextView
-                                    style="@style/SettingsTitle"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="@string/more_snooze_title" />
-
-                                <TextView
-                                    android:id="@+id/tv_snooze"
-                                    style="@style/SettingsValue"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/more_snooze_default" />
-
-                                <TextView style="@style/SettingsChevron" />
-                            </LinearLayout>
-
-                            <View style="@style/SettingsDivider" />
                             <LinearLayout
                                 android:id="@+id/row_keys"
                                 android:layout_width="match_parent"
@@ -539,9 +507,12 @@
                             </LinearLayout>
             </LinearLayout>
 
-            <!-- 桌面小组件（v0.63.0）：澎湃把第三方小部件收在「安卓小部件」二级列表，
+            <!-- 数据与桌面（v0.82.0 由「桌面小组件」+「备份与恢复」合并）：
+                 三件事的共同点是「把东西搬进搬出」——搬到桌面、导出成文件、从文件导入。
+                 原来分成两组各一张卡，两组都只有一两条，翻起来像两份清单。
+                 添加桌面（v0.63.0）：澎湃把第三方小部件收在「安卓小部件」二级列表，
                  要翻三层才找得到；这一行尽量一键加，小米桌面实测不支持，会给手动路径。
-                 v0.73.4：「本月班表显示闹钟」开关已删（恒定显示），本组只剩这一行。 -->
+                 v0.73.4：「本月班表显示闹钟」开关已删（恒定显示）。 -->
             <TextView
                 style="@style/SectionTitle"
                 android:layout_width="wrap_content"
@@ -594,22 +565,7 @@
 
                     <TextView style="@style/SettingsChevron" />
                 </LinearLayout>
-            </LinearLayout>
-
-            <TextView
-                style="@style/SectionTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="@dimen/space_8"
-                android:text="@string/more_section_backup" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card"
-                android:clipToOutline="true"
-                android:orientation="vertical">
+                <View style="@style/SettingsDivider" />
 
                             <LinearLayout
                                 android:id="@+id/row_export"

@@ -296,11 +296,12 @@ public class SnoozePreNoticeTest {
         Prefs.setVolKeyAction(ctx(), Prefs.KEY_ACTION_STOP);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        // v0.60.0：稍后提醒与按键设置进了「更多响铃设置」，提前提醒留在主页
+        // v0.60.0：按键设置进了「更多响铃设置」；v0.82.0 把稍后提醒搬回主页
+        //（它和「响铃前提醒」是同一件事的两头），所以两个值都在主页读
         SettingsActivity ring = Robolectric.buildActivity(MoreSettingsActivity.class,
                 MoreSettingsActivity.intent(ctx(), true)).setup().get();
         assertEquals("10 分钟 × 2 次",
-                ((TextView) ring.findViewById(R.id.tv_snooze)).getText().toString());
+                ((TextView) activity.findViewById(R.id.tv_snooze)).getText().toString());
         // v0.79.0：副标题恒定讲机制，具体提前量搬到右边当「值」——
         // 原来一句「响铃前 15 分钟提醒」把「开没开」和「提前多久」都塞进 11sp 灰字
         assertEquals("响铃前先在通知栏提醒一次",

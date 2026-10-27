@@ -1,7 +1,6 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.database.Cursor;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -31,6 +30,10 @@ import java.util.List;
  *
  * <p>枚举用 {@link RingtoneManager#getCursor()}：它已经把「默认」排在第一位，
  * 其余按系统铃声库的顺序。取不到标题的条目跳过，不显示一行空白。
+ *
+ * <p><b>v0.88.0 起多一个「跟随设置」项</b>：单个闹钟可以单独选铃声，也可以不选、
+ * 跟着设置里的默认。两种场合共用这个对话框，靠 {@code followLabel} 区分——
+ * 传 null 就是设置页那套（只有「系统默认」+ 铃声列表），传了文案就在最前面加一项。
  */
 public final class RingtoneDialog {
 
@@ -39,10 +42,53 @@ public final class RingtoneDialog {
         void onPicked(Uri uri);
     }
 
+    /**
+     * 带「跟随设置」的选定回调（v0.88.0）。
+     *
+     * <p>为什么不能只靠 {@code uri == null}：null 已经表示「系统默认铃声」了，
+     * 而「跟随设置」在设置里选的又不是系统默认时，两者必须分开——
+     * 否则用户给这条闹钟选了「系统默认」，结果却跟着设置走了。
+     */
+    public interface OnPickedWithFollow {
+        /**
+         * @param uri           选中的铃声；{@code null} = 系统默认
+         * @param followSetting true = 这条闹钟不单独设铃声，跟随设置
+         */
+        void onPicked(Uri uri, boolean followSetting);
+    }
+
+    /** 列表里的一项。{@code follow} 与 {@code uri == null} 不能合并，见上面接口注释。 */
+    private static final class Item {
+        final String name;
+        final Uri uri;          // 要保存的铃声；null = 系统默认
+        final Uri sound;        // 试听用的真实 Uri；null = 不试听
+        final boolean follow;
+
+        Item(String name, Uri uri, Uri sound, boolean follow) {
+            this.name = name;
+            this.uri = uri;
+            this.sound = sound;
+            this.follow = follow;
+        }
+    }
+
     private RingtoneDialog() {
     }
 
+    /** 设置页用：只有「系统默认」+ 铃声列表。 */
     public static void show(Activity activity, Uri current, OnPicked onPicked) {
+        show(activity, current, null, onPicked == null ? null
+                : (uri, follow) -> onPicked.onPicked(uri));
+    }
+
+    /**
+     * 单个闹钟用：{@code followLabel} 非空时，第一项是「跟随设置（xxx）」。
+     *
+     * @param current     这条闹钟当前单独设的铃声；null 表示跟随设置
+     * @param followLabel 第一项的文案；null 表示不提供「跟随」这一项
+     */
+    public static void show(Activity activity, Uri current, String followLabel,
+                            OnPickedWithFollow onPicked) {
         View view = LayoutInflater.from(activity).inflate(R.layout.dialog_pick, null);
         TextView tvTitle = view.findViewById(R.id.tv_pick_title);
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
@@ -51,11 +97,15 @@ public final class RingtoneDialog {
         tvSub.setText("点一下试听，选好按「确定」");
 
         // ---------- 枚举 ----------
-        final List<Uri> uris = new ArrayList<>();
-        final List<String> names = new ArrayList<>();
+        final List<Item> items = new ArrayList<>();
+        if (followLabel != null) {
+            // 跟随设置：没有具体铃声可试听，点它只是把这条闹钟交回设置管
+            items.add(new Item(followLabel, null, null, true));
+        }
         Uri def = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        uris.add(def);
-        names.add("系统默认");
+        final int defaultIndex = items.size();
+        items.add(new Item("系统默认", null, def, false));
+
         RingtoneManager rm = new RingtoneManager(activity);
         rm.setType(RingtoneManager.TYPE_ALARM);
         try (Cursor c = rm.getCursor()) {
@@ -65,28 +115,38 @@ public final class RingtoneDialog {
                 String t = c.getString(RingtoneManager.TITLE_COLUMN_INDEX);
                 if (t == null || t.isEmpty()) continue;
                 if (def != null && u.equals(def)) {
-                    // 库里那一条就是默认铃声：并到第一项，别重复列两遍
-                    names.set(0, "系统默认（" + t + "）");
+                    // 库里那一条就是默认铃声：并到「系统默认」项，别重复列两遍
+                    Item d = items.get(defaultIndex);
+                    items.set(defaultIndex,
+                            new Item("系统默认（" + t + "）", null, d.sound, false));
                     continue;
                 }
-                uris.add(u);
-                names.add(t);
+                items.add(new Item(t, u, u, false));
             }
         } catch (Exception ignore) {
             // 个别 ROM 的媒体库会抛异常：至少还有「系统默认」那一项可用
         }
 
-        final int n = uris.size();
+        final int n = items.size();
         int selected = -1;
-        if (current != null) {
+        if (current == null) {
+            // 没有单独设铃声：优先落在「跟随设置」，设置页则落在「系统默认」
             for (int i = 0; i < n; i++) {
-                if (current.equals(uris.get(i))) {
+                if (items.get(i).follow || items.get(i).uri == null) {
                     selected = i;
                     break;
                 }
             }
+        } else {
+            for (int i = 0; i < n; i++) {
+                Uri u = items.get(i).uri;
+                if (u != null && current.equals(u)) {
+                    selected = i;
+                    break;
+                }
+            }
+            // 找不到（换了设备 / 铃声被删）：一项都不选，让用户看到「当前铃声不在库里」
         }
-        if (selected < 0 && current == null) selected = 0;   // 「系统默认」就是当前值
         final int[] picked = {selected};
 
         // ---------- 列表 ----------
@@ -95,7 +155,7 @@ public final class RingtoneDialog {
         final int[] playingIdx = {-1};
         for (int i = 0; i < n; i++) {
             final int idx = i;
-            View row = DialogKit.optionView(activity, names.get(i), null);
+            View row = DialogKit.optionView(activity, items.get(i).name, null);
             row.setSelected(i == selected);
             DialogKit.showCheck(row, i == selected);
             row.setOnClickListener(v -> {
@@ -104,7 +164,7 @@ public final class RingtoneDialog {
                     DialogKit.showCheck(rows[k], k == idx);
                     rows[k].setSelected(k == idx);
                 }
-                preview(activity, uris.get(idx), playing, playingIdx, idx, rows, names);
+                preview(activity, items.get(idx).sound, playing, playingIdx, idx, rows);
             });
             rows[i] = row;
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -121,9 +181,10 @@ public final class RingtoneDialog {
             stop(playing[0]);
             playing[0] = null;
             if (onPicked == null) return;
-            // 第 0 项是「系统默认」：给 null 而不是默认铃声的 Uri——
-            // Prefs 里 null 就表示「跟随系统」，用户改系统默认铃声时我们跟着变
-            onPicked.onPicked(picked[0] <= 0 ? null : uris.get(picked[0]));
+            // 当前铃声不在库里、用户又没重新选：不改动，别把人家原来的设置洗掉
+            if (picked[0] < 0 || picked[0] >= n) return;
+            Item it = items.get(picked[0]);
+            onPicked.onPicked(it.uri, it.follow);
         });
         b.setNegativeButton("取消", (d, w) -> {
             stop(playing[0]);
@@ -140,13 +201,14 @@ public final class RingtoneDialog {
 
     /** 试听：先把上一个停掉，再播新的。 */
     private static void preview(Activity activity, Uri uri, Ringtone[] playing,
-                                int[] playingIdx, int idx, View[] rows, List<String> names) {
+                                int[] playingIdx, int idx, View[] rows) {
         stop(playing[0]);
         playing[0] = null;
         if (playingIdx[0] >= 0 && playingIdx[0] < rows.length) {
             // 把上一个的「试听中…」擦掉
             DialogKit.setOptionSub(rows[playingIdx[0]], null);
         }
+        if (uri == null) return;    // 「跟随设置」没有自己的声音可试听
         try {
             Ringtone r = RingtoneManager.getRingtone(activity, uri);
             if (r == null) return;

@@ -203,4 +203,55 @@ public class AlarmEditorDialogTest {
         assertEquals(Alarm.Mode.WEEKEND, list.get(0).mode);
         assertEquals("非一次性闹钟不该带日期", null, list.get(0).onceDate);
     }
+
+    // ================= 铃声行（v0.88.0） =================
+
+    /** 编辑器里要看得见「跟随设置」，不能是一行空白让用户猜。 */
+    @Test
+    public void editor_showsFollowSettingByDefault() {
+        MainActivity a = launch();
+        AlertDialog d = openEditor(a, null, new ArrayList<>());
+        TextView row = d.findViewById(R.id.tv_alarm_ringtone);
+        assertNotNull("铃声行应在", row);
+        assertTrue("默认应显示跟随设置，实际：" + row.getText(),
+                row.getText().toString().startsWith("跟随设置"));
+    }
+
+    /** 新建时不把当时的默认铃声抄成快照——否则以后改默认，这条不跟着变。 */
+    @Test
+    public void creatingAlarm_leavesRingtoneNull() {
+        MainActivity a = launch();
+        Prefs.setRingtoneUri(ctx(), android.net.Uri.parse(
+                "content://media/internal/audio/media/11"));
+        List<Alarm> list = new ArrayList<>();
+        AlertDialog d = openEditor(a, null, list);
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(1, list.size());
+        assertEquals("新建默认应跟随设置", null, list.get(0).ringtone);
+    }
+
+    /** 编辑时没碰铃声，保存不能把它洗掉。 */
+    @Test
+    public void savingWithoutTouchingKeepsRingtone() {
+        MainActivity a = launch();
+        Alarm alarm = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true);
+        alarm.ringtone = "content://media/internal/audio/media/22";
+        List<Alarm> list = new ArrayList<>();
+        list.add(alarm);
+        Prefs.setAlarms(ctx(), list);
+
+        AlertDialog d = openEditor(a, alarm, list);
+        TextView row = d.findViewById(R.id.tv_alarm_ringtone);
+        assertNotNull(row);
+        assertFalse("已有铃声不该显示成跟随设置：" + row.getText(),
+                row.getText().toString().startsWith("跟随设置"));
+
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("content://media/internal/audio/media/22",
+                Prefs.getAlarms(ctx()).get(0).ringtone);
+    }
 }

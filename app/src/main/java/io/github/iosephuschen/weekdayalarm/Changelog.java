@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(208, "0.88.0", "2026/10/28", "每条闹钟可以选自己的铃声",
+                    "新建或编辑闹钟时多一行「铃声」，点开可试听",
+                    "默认「跟随设置」，改默认铃声时它跟着变",
+                    "只列系统闹钟铃声，复制闹钟时铃声一起复制"),
             new Entry(207, "0.87.7", "2026/10/28", "深色锁屏上标题不再消失",
                     "通知配色改问系统深浅，不再跟 App 走",
                     "App 被单独设成浅色时，深色卡片上曾是黑字",

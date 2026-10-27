@@ -111,6 +111,30 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- v0.88.0：这条闹钟单独用的铃声。默认「跟随设置」，点开复用自绘铃声选择器。
+         放在「哪一天」之后、删除之前：规则讲究了，才轮到声音。 -->
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="铃声" />
+
+    <TextView
+        android:id="@+id/tv_alarm_ringtone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_time_outline"
+        android:clickable="true"
+        android:ellipsize="end"
+        android:focusable="true"
+        android:maxLines="2"
+        android:padding="11dp"
+        android:textColor="@color/ink"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
     <TextView
         android:id="@+id/btn_alarm_delete"
         android:layout_width="match_parent"

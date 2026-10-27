@@ -1,6 +1,9 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -66,6 +69,18 @@ final class AlarmEditor {
         TextView btnDelete = view.findViewById(R.id.btn_alarm_delete);
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
+        TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
+
+        // v0.88.0：这条闹钟单独用的铃声。null = 跟随「设置 → 铃声」，
+        // 新建时不把当时的默认铃声抄进来——否则以后改默认，这条不跟着变（见 Alarm.ringtone）
+        final Uri[] ring = {target != null ? parseRingtone(target.ringtone) : null};
+        final String followLabel = "跟随设置（" + settingRingtoneName(activity) + "）";
+        tvRingtone.setText(ringtoneRowText(activity, ring[0]));
+        tvRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], followLabel,
+                (uri, follow) -> {
+                    ring[0] = follow ? null : uri;
+                    tvRingtone.setText(ringtoneRowText(activity, ring[0]));
+                }));
 
         // 一次性闹钟的那一天。v0.58.5 起默认「今天」——
         // v0.41.0 当时给的是明天，理由是「此刻多半已过今天的起床时间」；但用户
@@ -176,8 +191,11 @@ final class AlarmEditor {
                         int id = Prefs.nextAlarmId(activity);
                         Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
                                 true, onceStr);
+                        created.ringtone = ringtoneString(ring[0]);
                         alarms.add(created);
                     } else {
+                        // 铃声不属于「改完就开」那套业务规则，直接写字段即可
+                        target.ringtone = ringtoneString(ring[0]);
                         String tip = applyEdit(activity, target, hour[0], minute[0],
                                 label, mode, onceStr);
                         if (tip != null) {
@@ -234,6 +252,60 @@ final class AlarmEditor {
     static String normalizeLabel(String raw) {
         String t = raw == null ? "" : raw.trim();
         return t.isEmpty() ? "闹钟" : t;
+    }
+
+    // ================= 单个闹钟的铃声（v0.88.0） =================
+
+    /** JSON 里的字符串 → Uri；空 / 非法一律 null（= 跟随设置）。 */
+    static Uri parseRingtone(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
+        try {
+            return Uri.parse(s.trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Uri → 落盘字符串；null 表示跟随设置，不写进 JSON。 */
+    static String ringtoneString(Uri uri) {
+        return uri == null ? null : uri.toString();
+    }
+
+    /** 设置页那套默认铃声的名字；没设就是「系统默认」。 */
+    static String settingRingtoneName(android.content.Context ctx) {
+        Uri u = Prefs.getRingtoneUri(ctx);
+        return u == null ? "系统默认" : ringtoneName(ctx, u);
+    }
+
+    /**
+     * 编辑器里「铃声」那一行显示什么。
+     *
+     * <p>三种情况：跟随设置 / 正常铃声 / 原铃声已不可用。第三种必须说出来——
+     * 换设备后 URI 对不上是最常见的，播放会回落默认，但用户如果只看到
+     * 「已选铃声」会以为自己的设置还生效着。
+     */
+    static String ringtoneRowText(android.content.Context ctx, Uri per) {
+        if (per == null) return "跟随设置（" + settingRingtoneName(ctx) + "）";
+        if (!ringtoneAvailable(ctx, per)) return "原铃声不可用，将用默认";
+        return ringtoneName(ctx, per);
+    }
+
+    static String ringtoneName(android.content.Context ctx, Uri uri) {
+        try {
+            Ringtone r = RingtoneManager.getRingtone(ctx, uri);
+            String t = r != null ? r.getTitle(ctx) : null;
+            if (t != null && !t.isEmpty()) return t;
+        } catch (Exception ignore) {
+        }
+        return "已选铃声";
+    }
+
+    static boolean ringtoneAvailable(android.content.Context ctx, Uri uri) {
+        try {
+            return RingtoneManager.getRingtone(ctx, uri) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,

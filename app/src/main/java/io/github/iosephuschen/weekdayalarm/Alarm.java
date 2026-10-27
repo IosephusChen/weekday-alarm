@@ -82,6 +82,19 @@ public final class Alarm {
     /** 可选配色的数量（含默认色）。 */
     public static final int COLOR_COUNT = 4;
 
+    /**
+     * 这条闹钟单独用的铃声（v0.88.0）。{@code null} / 空串 = 跟随「设置 → 铃声」。
+     *
+     * <p><b>为什么默认是 null 而不是新建时抄一份当时的铃声</b>：用户换默认铃声时，
+     * 没单独设过的闹钟应该跟着变。抄成快照就变成「我改了默认，老闹钟还是旧声音」，
+     * 而人不会想到还有第二个地方要改。
+     *
+     * <p>内容只是一串 {@code content://} URI，指向系统媒体库里的闹钟铃声——不存音频文件，
+     * 也不申请持久读权限。换设备后这条 URI 可能对不上号，播放侧有兜底
+     * （{@link AlarmService} 会退回默认铃声），不会因此不响。
+     */
+    public String ringtone;
+
     /** 把任意整数收敛到合法的配色下标。 */
     public static int clampColor(int c) {
         return c < 0 || c >= COLOR_COUNT ? 0 : c;
@@ -292,6 +305,8 @@ public final class Alarm {
                 // 默认色不落盘：老版本的 JSON 里没有这个键，读的时候也按 0 处理，
                 // 两边保持一致，备份文件才不会被一堆 "color":0 撑大
                 if (a.color != 0) o.put("color", a.color);
+                // 同 color：默认值（跟随设置）不落盘，老备份里没有这个键也照常读
+                if (a.ringtone != null && !a.ringtone.isEmpty()) o.put("ringtone", a.ringtone);
                 arr.put(o);
             } catch (Exception ignore) {
             }
@@ -329,6 +344,9 @@ public final class Alarm {
                             // ONCE 遇到 null 就视为不响（见字段注释）
                             o.optString("onceDate", null));
                     a.color = clampColor(o.optInt("color", 0));
+                    // 空串等同于没设：老版本 / 手改的备份里可能是 ""，别让它覆盖默认铃声
+                    String ring = o.optString("ringtone", null);
+                    a.ringtone = ring == null || ring.trim().isEmpty() ? null : ring.trim();
                     out.add(a);
                 } catch (Exception skip) {
                     // 单条坏数据跳过，别连带丢掉其余闹钟

@@ -437,6 +437,7 @@ public class MainActivity extends AppCompatActivity {
         Alarm copy = new Alarm(newId, src.hour, src.minute, src.label + " 副本",
                 src.mode, true, onceDate);
         copy.color = src.color;   // 复制出来的用途一样，颜色跟着走
+        copy.ringtone = src.ringtone;   // 铃声同理：复制的是同一条闹钟的完整内容
         return copy;
     }
 

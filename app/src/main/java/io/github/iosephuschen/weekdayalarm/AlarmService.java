@@ -346,12 +346,45 @@ public class AlarmService extends Service {
         }
     }
 
-    /** 本次响铃使用的铃声：用户自定义优先，否则系统默认闹钟铃（v0.19.0）。 */
+    /**
+     * 本次响铃使用的铃声（v0.88.0 起三级回落）：
+     * 闹钟单独设的 → 设置里的默认 → 系统默认闹钟铃。
+     *
+     * <p>中间那级不能省：绝大多数闹钟没单独设过铃声（{@code ringtone == null}），
+     * 它们必须跟着「设置 → 铃声」走，否则用户在设置里换铃声会觉得没生效。
+     */
     Uri resolveRingtoneUri() {
-        Uri custom = Prefs.getRingtoneUri(this);
+        return resolveRingtoneUri(this, currentAlarmId);
+    }
+
+    /** 拆出来便于单测：给定闹钟 id，算出该用哪条铃声。 */
+    static Uri resolveRingtoneUri(Context ctx, int alarmId) {
+        Uri per = alarmRingtone(ctx, alarmId);
+        if (per != null) return per;
+        Uri custom = Prefs.getRingtoneUri(ctx);
         if (custom != null) return custom;
-        Uri def = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM);
+        Uri def = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
         return def != null ? def : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+    }
+
+    /**
+     * 某条闹钟单独设的铃声；没设、或闹钟已经被删了，返回 null（交给下一级）。
+     *
+     * <p>「闹钟已被删」不是理论情况：响铃期间用户可以进 App 删除它，
+     * 这时按 id 查不到，回落默认铃声比崩溃或静音都好。
+     */
+    static Uri alarmRingtone(Context ctx, int alarmId) {
+        if (alarmId <= 0) return null;
+        for (Alarm a : Prefs.getAlarms(ctx)) {
+            if (a.id != alarmId) continue;
+            if (a.ringtone == null || a.ringtone.isEmpty()) return null;
+            try {
+                return Uri.parse(a.ringtone);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /** 按设定音量开始播放；开启渐响时从 0 线性爬升（v0.14.0）。 */

@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(207, "0.87.7", "2026/10/28", "深色锁屏上标题不再消失",
+                    "通知配色改问系统深浅，不再跟 App 走",
+                    "App 被单独设成浅色时，深色卡片上曾是黑字",
+                    "提前提醒、响铃、稍后再响、睡前提醒一起修好"),
             new Entry(206, "0.87.6", "2026/10/27", "跳过一次不再误伤新闹钟",
                     "删光重建或改时间后，当天会正常响",
                     "闹钟编号只增不减，不再重复使用",

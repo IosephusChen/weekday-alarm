@@ -66,8 +66,8 @@ final class NotifCard {
         rv.setTextViewText(R.id.nc_text, text);
 
         // RemoteViews 拿不到当前主题的文字色，只能按通知栏明暗自己挑（见 NotifTheme）
-        rv.setTextColor(R.id.nc_title, NotifTheme.title(ctx));
-        rv.setTextColor(R.id.nc_text, NotifTheme.text(ctx));
+        rv.setTextColor(R.id.nc_title, NotifTheme.title());
+        rv.setTextColor(R.id.nc_text, NotifTheme.text());
         // 紫底上只能放白图标
         rv.setInt(R.id.nc_icon, "setColorFilter", NotifTheme.ON_BRAND);
         if (contentPi != null) {

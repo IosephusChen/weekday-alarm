@@ -313,8 +313,8 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,
                               int textId, int actionId) {
-        rv.setTextColor(titleId, NotifTheme.title(ctx));
-        rv.setTextColor(textId, NotifTheme.text(ctx));
+        rv.setTextColor(titleId, NotifTheme.title());
+        rv.setTextColor(textId, NotifTheme.text());
         // 紫底上只能放白字、白图标
         rv.setTextColor(actionId, NotifTheme.ON_BRAND);
         rv.setInt(iconId, "setColorFilter", NotifTheme.ON_BRAND);

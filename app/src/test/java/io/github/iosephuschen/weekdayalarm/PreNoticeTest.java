@@ -578,15 +578,42 @@ public class PreNoticeTest {
     // ================= v0.87.5：「这次不响」不许被重排复活 =================
 
     /** 复现 2026-10-27 真机现场的种子：A 先响（午休），B 在 A 之后 14 分钟。 */
-    private void seedTwoAlarms(int minutesA, int minutesB) {
-        LocalDateTime a = LocalDateTime.now().plusMinutes(minutesA).withSecond(0).withNano(0);
-        LocalDateTime b = LocalDateTime.now().plusMinutes(minutesB).withSecond(0).withNano(0);
+    /**
+     * 建两条每天闹钟（A 在前、B 在后），返回它们实际落在哪一天。
+     *
+     * <p><b>断言必须用返回值，不要用 {@code LocalDate.now()}</b>：{@code Alarm} 只存时和分，
+     * 而这里的时刻是「现在 + N 分钟」推出来的。23:16 之后跑，{@code now + 44min} 已经跨到次日，
+     * 闹钟排的是明天，拿今天的日期去查必然落空——2026-10-28 00:00 前跑全量就因此红过两条。
+     *
+     * <p>跨天的编排在 {@link #planTwoAlarms}，那里能拿固定时刻直接验。
+     */
+    private LocalDate seedTwoAlarms(int minutesA, int minutesB) {
+        LocalDateTime[] t = planTwoAlarms(LocalDateTime.now(), minutesA, minutesB);
         ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
         List<Alarm> list = new java.util.ArrayList<>();
-        list.add(new Alarm(1, a.getHour(), a.getMinute(), "午休", Alarm.Mode.DAILY, true));
-        list.add(new Alarm(2, b.getHour(), b.getMinute(), "起床", Alarm.Mode.DAILY, true));
+        list.add(new Alarm(1, t[0].getHour(), t[0].getMinute(), "午休", Alarm.Mode.DAILY, true));
+        list.add(new Alarm(2, t[1].getHour(), t[1].getMinute(), "起床", Alarm.Mode.DAILY, true));
         Prefs.setAlarms(ctx(), list);
+        return t[0].toLocalDate();
+    }
+
+    /**
+     * 给定「现在」，算出 A、B 两条闹钟的时刻。
+     *
+     * <p>23:20~23:40 这段最难受：{@code now + minutesA} 还在今天、{@code now + minutesB}
+     * 已经到明天，两条分属两天，跳过标记的日期就无从下手。所以一旦 B 跨天，
+     * 就把基准整体挪到次日零点后——两条仍同属一天，先后顺序也不变。
+     *
+     * <p>抽成纯函数是为了能验：真实时钟一天里只有二十来分钟会走进这个分支。
+     */
+    static LocalDateTime[] planTwoAlarms(LocalDateTime now, int minutesA, int minutesB) {
+        if (now.plusMinutes(Math.max(minutesA, minutesB)).toLocalDate() != now.toLocalDate()) {
+            now = now.toLocalDate().plusDays(1).atStartOfDay();
+        }
+        return new LocalDateTime[]{
+                now.plusMinutes(minutesA).withSecond(0).withNano(0),
+                now.plusMinutes(minutesB).withSecond(0).withNano(0)};
     }
 
     private Notification notificationFor(int alarmId) {
@@ -605,9 +632,8 @@ public class PreNoticeTest {
     public void cancelThis_survivesNextReschedule() {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 60);
-        seedTwoAlarms(30, 44);
+        LocalDate today = seedTwoAlarms(30, 44);
         ScheduleManager.rescheduleAll(ctx());
-        LocalDate today = LocalDate.now();
         assertTrue("先确认 B 已注册", ScheduleManager.isAlarmRegistered(ctx(), 2, today));
 
         PreNoticeReceiver.cancelThis(ctx(), 2, today);
@@ -700,9 +726,8 @@ public class PreNoticeTest {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 0);
         LocalDateTime t2 = LocalDateTime.now().plusMinutes(40).withSecond(0).withNano(0);
-        seedTwoAlarms(20, 40);
+        LocalDate today = seedTwoAlarms(20, 40);
         ScheduleManager.rescheduleAll(ctx());
-        LocalDate today = LocalDate.now();
 
         PreNoticeReceiver.cancelThis(ctx(), 1, today);
         assertFalse("先确认已跳过", ScheduleManager.isAlarmRegistered(ctx(), 1, today));
@@ -736,5 +761,43 @@ public class PreNoticeTest {
         ScheduleManager.rescheduleAll(ctx());
 
         assertTrue("删光后过期标记应被清掉", Prefs.getSkipOnce(ctx()).isEmpty());
+    }
+
+    // ================= 跨午夜的编排（2026-10-28 深夜红过一次） =================
+
+    /**
+     * 23:18：A（+30 分）还落在今天 23:48，B（+44 分）已经到明天 00:02。
+     * 这是整个跨天判断里最窄也最要命的窗口——不挪基准的话，两条分属两天，
+     * 「跳过这一次」只能压住其中一条。
+     */
+    @Test
+    public void planTwoAlarms_crossMidnight_keepsBothOnSameDay() {
+        LocalDateTime[] t = planTwoAlarms(LocalDateTime.of(2026, 10, 27, 23, 18), 30, 44);
+        assertEquals("A 不能留在今天", 28, t[0].getDayOfMonth());
+        assertEquals("B 也应落在次日", 28, t[1].getDayOfMonth());
+        assertTrue("A 必须排在 B 之前", t[0].isBefore(t[1]));
+    }
+
+    /**
+     * 23:35：A 还在今天、B 已到明天——最容易出错的那二十分钟。
+     * 只挪 B 的日期不行，两条必须一起挪，否则标记只压得住其中一条。
+     */
+    @Test
+    public void planTwoAlarms_edgeOfDay_bothMoveTogether() {
+        LocalDateTime[] t = planTwoAlarms(LocalDateTime.of(2026, 10, 27, 23, 35), 20, 40);
+        assertEquals("A 不能留在今天", 28, t[0].getDayOfMonth());
+        assertEquals("B 也应落在次日", 28, t[1].getDayOfMonth());
+        assertTrue("先后顺序不能颠倒", t[0].isBefore(t[1]));
+    }
+
+    /** 白天照旧「现在 + N」，不该被无谓挪动。 */
+    @Test
+    public void planTwoAlarms_daytime_keepsToday() {
+        LocalDateTime[] t = planTwoAlarms(LocalDateTime.of(2026, 10, 27, 13, 0), 20, 40);
+        assertEquals(27, t[0].getDayOfMonth());
+        assertEquals(13, t[0].getHour());
+        assertEquals(20, t[0].getMinute());
+        assertEquals(13, t[1].getHour());
+        assertEquals(40, t[1].getMinute());
     }
 }

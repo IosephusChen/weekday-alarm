@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(203, "0.87.3", "2026/10/27", "换签名证书，这一版要卸载重装",
+                    "旧证书主体是改名前的老名字，与新项目名对不上",
+                    "先在旧版「导出配置」，卸载后装这版，再「导入配置」",
+                    "功能与界面完全不变，只是发布身份换了"),
             new Entry(202, "0.87.2", "2026/10/27", "内部标识统一，用法不变",
                     "旧标识 daxz 是建项目时随手起的，没人知道含义",
                     "升级首启会自动清掉旧实例，不会重复响",

@@ -28,7 +28,7 @@
 
 ## 下载
 
-**1.0.0 正在做最后的真机验证**（当前候选版 `v0.87.2`）。正式版发布后会在这里给出 Releases 链接。
+**1.0.0 正在做最后的真机验证**（当前候选版 `v0.87.3`）。正式版发布后会在这里给出 Releases 链接。
 
 - Gitee 镜像（待配置）
 
@@ -97,7 +97,7 @@ release 包经过 R8 混淆：线上崩溃栈要用 `app/build/outputs/mapping/r
 反混淆（`retrace`）。规则只保四样兜底（源文件名与行号、自定义 View 构造器、枚举、
 Parcelable CREATOR），见 `proguard-rules.pro`。
 
-**签名**：正式版用 RSA 4096 的自签证书（`daxz-release.jks`，有效期到 2054 年）。
+**签名**：正式版用 RSA 4096 的自签证书（`weekdayalarm-release.jks`，有效期到 2054 年）。
 密钥与口令都不在仓库里：
 
 - 仓库根有 `keystore.properties`（已 gitignore）→ 用里面的正式签名；

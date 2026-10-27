@@ -574,4 +574,80 @@ public class PreNoticeTest {
         assertEquals("非数字", 0, PreNoticeReceiver.triggerAt(d, "ab:cd"));
         assertEquals("null 日期", 0, PreNoticeReceiver.triggerAt(null, "14:10"));
     }
+
+    // ================= v0.87.5：「这次不响」不许被重排复活 =================
+
+    /** 复现 2026-10-27 真机现场的种子：A 先响（午休），B 在 A 之后 14 分钟。 */
+    private void seedTwoAlarms(int minutesA, int minutesB) {
+        LocalDateTime a = LocalDateTime.now().plusMinutes(minutesA).withSecond(0).withNano(0);
+        LocalDateTime b = LocalDateTime.now().plusMinutes(minutesB).withSecond(0).withNano(0);
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
+        List<Alarm> list = new java.util.ArrayList<>();
+        list.add(new Alarm(1, a.getHour(), a.getMinute(), "午休", Alarm.Mode.DAILY, true));
+        list.add(new Alarm(2, b.getHour(), b.getMinute(), "起床", Alarm.Mode.DAILY, true));
+        Prefs.setAlarms(ctx(), list);
+    }
+
+    private Notification notificationFor(int alarmId) {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        return org.robolectric.Shadows.shadowOf(nm)
+                .getNotification(PreNoticeReceiver.NOTIF_ID_BASE + alarmId);
+    }
+
+    /**
+     * 真机现场（2026-10-27）：13:13 对 13:54 点「这次不响」，13:40 午休闹钟一响、
+     * 重排一跑，13:54 连实例带预告全部复活——「这次不响」只活到下一次响铃为止。
+     * 修复后：cancelThis 记跳过标记（alarmId:日期），重排看见标记就跳过。
+     */
+    @Test
+    public void cancelThis_survivesNextReschedule() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedTwoAlarms(30, 44);
+        ScheduleManager.rescheduleAll(ctx());
+        LocalDate today = LocalDate.now();
+        assertTrue("先确认 B 已注册", ScheduleManager.isAlarmRegistered(ctx(), 2, today));
+
+        PreNoticeReceiver.cancelThis(ctx(), 2, today);
+        assertFalse("点完就不该再登记着", ScheduleManager.isAlarmRegistered(ctx(), 2, today));
+
+        // 下一个闹钟（A）响铃后的全量重排——bug 场景里正是这一步把 B 复活
+        ScheduleManager.rescheduleAll(ctx());
+
+        assertFalse("B 今天不许复活", ScheduleManager.isAlarmRegistered(ctx(), 2, today));
+        assertNull("B 的预告通知也不许回来", notificationFor(2));
+        // A 完全不受影响
+        assertTrue("A 照常", ScheduleManager.isAlarmRegistered(ctx(), 1, today));
+        // 跳过只管今天：B 是每天闹钟，明天照常
+        assertTrue("明天的 B 不受影响",
+                ScheduleManager.isAlarmRegistered(ctx(), 2, today.plusDays(1)));
+    }
+
+    /**
+     * 仅一次的闹钟没有「明天」：跳过这一次后它就是僵尸——永远不响却显示开启。
+     * 「这次不响」直接关掉它的开关；每天闹钟保持只跳过、不动开关。
+     */
+    @Test
+    public void cancelThis_disablesOnceAlarmButKeepsDaily() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 0);
+        LocalDateTime when = LocalDateTime.now().plusMinutes(30).withSecond(0).withNano(0);
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
+        List<Alarm> list = new java.util.ArrayList<>();
+        list.add(new Alarm(3, when.getHour(), when.getMinute(), "临时", Alarm.Mode.ONCE, true,
+                when.toLocalDate().toString()));
+        list.add(new Alarm(4, when.getHour(), when.getMinute(), "每天", Alarm.Mode.DAILY, true));
+        Prefs.setAlarms(ctx(), list);
+
+        PreNoticeReceiver.cancelThis(ctx(), 3, when.toLocalDate());
+        PreNoticeReceiver.cancelThis(ctx(), 4, when.toLocalDate());
+
+        for (Alarm a : Prefs.getAlarms(ctx())) {
+            if (a.id == 3) assertFalse("仅一次：跳过后开关应关掉", a.enabled);
+            if (a.id == 4) assertTrue("每天：开关不动，只跳今天", a.enabled);
+        }
+    }
 }

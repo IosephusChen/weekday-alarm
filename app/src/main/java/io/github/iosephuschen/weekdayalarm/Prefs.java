@@ -49,6 +49,10 @@ public final class Prefs {
     public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v0.23.0）
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
+    // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
+    // 不记这一笔的话，下一次响铃触发的全量重排会把刚取消的实例原样排回去——
+    // 真机实测：13:13 点「这次不响」，13:40 午休闹钟一响，13:54 复活。
+    public static final String KEY_SKIP_ONCE = "skip_once";
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -304,6 +308,48 @@ public final class Prefs {
 
     public static void setScheduledDates(Context c, Set<String> dates) {
         sp(c).edit().putStringSet(KEY_SCHEDULED, new HashSet<>(dates)).apply();
+    }
+
+    /** 被「这次不响」跳过的实例集合，元素 "alarmId:yyyy-MM-dd"（v0.87.5）。 */
+    public static Set<String> getSkipOnce(Context c) {
+        return new HashSet<>(sp(c).getStringSet(KEY_SKIP_ONCE, Collections.emptySet()));
+    }
+
+    /**
+     * 记一笔「这次不响」：这个闹钟在这一天不响，重排时不许复活（v0.87.5）。
+     *
+     * <p>标记按「闹钟 + 日期」记账，不碰列表开关——每天闹钟今天跳过、明天照常。
+     * 标记由 {@link #pruneSkipOnce} 在重排时顺手清过期项。
+     */
+    public static void addSkipOnce(Context c, int alarmId, LocalDate d) {
+        Set<String> s = getSkipOnce(c);
+        s.add(alarmId + ":" + d);
+        sp(c).edit().putStringSet(KEY_SKIP_ONCE, new HashSet<>(s)).apply();
+    }
+
+    /**
+     * 清掉今天之前的跳过标记（v0.87.5）。
+     *
+     * <p>标记只管「那一次」，日期一过就是死数据；顺手把解析不了的脏数据也丢掉。
+     * 在重排开头调用，调用频度与重排一致，不必单独挂定时。
+     */
+    public static void pruneSkipOnce(Context c, LocalDate today) {
+        Set<String> s = getSkipOnce(c);
+        if (s.isEmpty()) return;
+        Set<String> keep = new HashSet<>();
+        for (String e : s) {
+            int i = e.lastIndexOf(':');
+            if (i <= 0) continue;
+            try {
+                if (LocalDate.parse(e.substring(i + 1)).isBefore(today)) continue;
+            } catch (Exception ignore) {
+                continue;
+            }
+            keep.add(e);
+        }
+        if (keep.size() != s.size()) {
+            sp(c).edit().putStringSet(KEY_SKIP_ONCE, keep).apply();
+        }
     }
 
     /** 全屏意图权限引导：只弹一次，避免用户已授权后仍反复提示（MIUI 上该权限检测不可靠）。 */

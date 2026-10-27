@@ -564,6 +564,10 @@ public final class ScheduleManager {
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
+        // v0.87.5：先清过期的跳过标记，再让下面的候选循环认它们——
+        // 「这次不响」只撤实例、不记标记的话，这一次重排就会把取消原样撤销
+        Prefs.pruneSkipOnce(ctx, today);
+        Set<String> skipOnce = Prefs.getSkipOnce(ctx);
         // v0.23.0 性能：请假 / 加班集合只读一次。旧版在「闹钟数 × 天数」的双层循环里
         // 逐日调用 Prefs.isVacation / isOvertime，每次都会把整个 StringSet 拷一份
         // （3 个闹钟 × 365 天 × 2 次 ≈ 2000 次拷贝），是改设置时卡顿的主因之一。
@@ -577,6 +581,9 @@ public final class ScheduleManager {
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
             for (int i = 0; i < horizon; i++) {
                 LocalDate d = today.plusDays(i);
+                // v0.87.5：「这次不响」跳过的实例不许复活。重排只认列表开关，
+                // 没有这笔标记，点完到下一次响铃之间就白点了（真机实测）
+                if (skipOnce.contains(a.id + ":" + d)) continue;
                 // 个人请假：当天不响——但一次性闹钟豁免，它是「这天要叫我」，
                 // 不是「按作息排的班」（见 Alarm.ignoresVacation）
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;

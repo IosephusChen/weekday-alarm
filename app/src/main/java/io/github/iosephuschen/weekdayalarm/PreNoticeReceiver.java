@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 
 /**
  * 响铃前的通知栏提醒（v0.15.0）。
@@ -319,7 +320,14 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         rv.setInt(iconId, "setColorFilter", NotifTheme.ON_BRAND);
     }
 
-    /** 提前关闭这次响铃：取消主闹钟 + 提前通知闹钟 + 待触发的小睡。 */
+    /**
+     * 提前关闭这次响铃（v0.87.5 重做）：撤实例 + 记跳过标记 + 后台对齐状态。
+     *
+     * <p>v0.31.0～v0.87.4 只做第一步（撤实例），留下两个问题，真机都撞到了：
+     * ① 下一次响铃触发的重排会把取消原样撤销（13:13 点、13:40 复活）；
+     * ② 主页 / 列表 / 小组件看不出任何变化，用户不知道点没点成。
+     * 现在写跳过标记（重排会认），再后台重排一遍 + 刷小组件，状态立刻对齐。
+     */
     private void cancelThisAlarm(Context ctx, Intent intent) {
         int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
         String dateStr = intent.getStringExtra(EXTRA_DATE);
@@ -329,13 +337,46 @@ public class PreNoticeReceiver extends BroadcastReceiver {
             Toast.makeText(ctx, "已关闭这次响铃", Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
+        final PendingResult pending = goAsync();
+        final Context app = ctx.getApplicationContext();
+        new Thread(() -> {
+            try {
+                ScheduleManager.rescheduleAll(app);
+                Widgets.updateAll(app);
+            } catch (Throwable ignore) {
+                // 对齐失败不影响「这次不响」本身：实例与通知已撤、标记已记，
+                // 下一次重排仍会认标记
+            } finally {
+                pending.finish();
+            }
+        }, "prenotice-cancel-reschedule").start();
+    }
+
+    /**
+     * 仅一次的闹钟没有「明天」（v0.87.5）：跳过这一次后它就是僵尸——
+     * 永远不会再响，列表里却显示开启。直接把开关关掉，和直觉一致；
+     * 每天 / 仅上班日的闹钟不动开关，只跳过今天。
+     */
+    private static void disableOnceIfNeeded(Context ctx, int alarmId) {
+        List<Alarm> alarms = Prefs.getAlarms(ctx);
+        boolean changed = false;
+        for (Alarm a : alarms) {
+            if (a.id == alarmId && a.mode == Alarm.Mode.ONCE && a.enabled) {
+                a.enabled = false;
+                changed = true;
+            }
+        }
+        if (changed) Prefs.setAlarms(ctx, alarms);
     }
 
     /** 见 {@link #cancelThisAlarm}；通知按钮「这次不响」也走这里，逻辑只维护一份。 */
     static void cancelThis(Context ctx, int alarmId, LocalDate d) {
+        // v0.87.5：先记跳过标记，再撤实例——顺序反过来，中间若插进一次重排就会复活
+        Prefs.addSkipOnce(ctx, alarmId, d);
         ScheduleManager.cancelAlarm(ctx, alarmId, d);
         ScheduleManager.cancelPreNotice(ctx, alarmId, d);
         ScheduleManager.cancelSnooze(ctx, alarmId, d);
+        disableOnceIfNeeded(ctx, alarmId);
         try {
             NotificationManagerCompat.from(ctx).cancel(NOTIF_ID_BASE + alarmId);
         } catch (Exception ignore) {

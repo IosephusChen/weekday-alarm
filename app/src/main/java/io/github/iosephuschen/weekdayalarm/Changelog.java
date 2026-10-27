@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(205, "0.87.5", "2026/10/27", "「这次不响」不再被后续响铃撤销",
+                    "之前下一次闹钟一响，重排就把它悄悄复活",
+                    "现在按实例记跳过标记，明天自动失效",
+                    "仅一次的闹钟点完直接关闭，不留僵尸开关"),
             new Entry(204, "0.87.4", "2026/10/27", "响铃前提醒不再弹全屏",
                     "它只在通知栏待着，锁屏亮屏不会再被盖住",
                     "解锁时的横幅保留，只闪几秒不打断操作",

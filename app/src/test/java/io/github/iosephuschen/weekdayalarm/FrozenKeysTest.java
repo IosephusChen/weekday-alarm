@@ -61,6 +61,7 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_ONBOARD_DONE", "onboard_done");
         PREFS_KEYS.put("KEY_LEGACY_ALARMS_CLEANED", "legacy_alarms_cleaned");
         PREFS_KEYS.put("KEY_LEGACY_SCHEME_CLEANED", "legacy_scheme_cleaned");
+        PREFS_KEYS.put("KEY_SKIP_ONCE", "skip_once");
         PREFS_KEYS.put("KEY_BEDTIME_MINUTES", "bedtime_minutes");
         PREFS_KEYS.put("KEY_BEDTIME_WORKDAY_ONLY", "bedtime_workday_only");
         PREFS_KEYS.put("KEY_LUNAR_FESTIVALS", "lunar_festivals");

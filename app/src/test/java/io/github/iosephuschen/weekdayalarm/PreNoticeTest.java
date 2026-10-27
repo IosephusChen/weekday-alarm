@@ -33,10 +33,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 提前提醒（v0.31.0）：1 小时档位 + 主动弹窗。
+ * 提前提醒（v0.31.0 起）：档位映射、通知文案、常驻卡片。
  *
- * <p>这一版把提前提醒从「只躺在通知栏」改成「弹窗」，涉及三处容易各改各的：
- * 设置页的档位映射、通知里的文案、弹窗页的标题。这里把它们钉在一起测。
+ * <p>v0.87.4 定稿：提前提醒**只在通知栏待着**——v0.31.0 加过的全屏弹窗已删
+ * （用户定论「提前通知只需要在通知栏待着就行，不需要全屏弹窗」）。
+ * 这里钉住三块容易各改各的：设置页的档位映射、通知里的文案、
+ * 以及「不再挂全屏 intent」这条定论不被加回来。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -193,65 +195,6 @@ public class PreNoticeTest {
         assertEquals("关掉后副标题仍是同一句机制说明",
                 "响铃前先在通知栏提醒一次",
                 ((TextView) off.findViewById(R.id.tv_pre_notice)).getText().toString());
-    }
-
-    /**
-     * 弹窗页：标题写「还有 X」，副标题带名称与时刻。
-     *
-     * <p>v0.54.0 起标题按「现在到响铃时刻」现算，所以这里的时间必须相对 now 生成；
-     * 写死 07:00 的话，凌晨跑测试会得到「还有 2 小时」——那是正确行为，测试错。
-     *
-     * <p>断言只能给一个范围：extras 里的时刻精确到分钟（HH:mm），「现在 + 60 分钟」
-     * 截断到分钟之后，真实剩余落在 59:00～60:00 之间，向上取整就是 59 或 60。
-     * 两个都算对——这条测的是「按真实时间算、且说人话」，不是测取整函数
-     * （取整由 {@code actualMinutes_usesRealRemainingTime} 单独钉）。
-     */
-    @Test
-    public void popup_showsRemainingTimeAndAlarm() {
-        reset();
-        java.time.LocalDateTime target = java.time.LocalDateTime.now()
-                .plusMinutes(60).withSecond(0).withNano(0);
-        Intent i = new Intent(ctx(), PreNoticeActivity.class)
-                .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1)
-                .putExtra(PreNoticeReceiver.EXTRA_LABEL, "起床")
-                .putExtra(PreNoticeReceiver.EXTRA_MINUTES, 60)
-                .putExtra(PreNoticeReceiver.EXTRA_DATE, target.toLocalDate().toString())
-                .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT,
-                        target.format(DateTimeFormatter.ofPattern("HH:mm")));
-        ActivityController<PreNoticeActivity> ctl =
-                Robolectric.buildActivity(PreNoticeActivity.class, i).setup();
-        ShadowLooper.idleMainLooper();
-
-        TextView title = ctl.get().findViewById(R.id.tv_pre_title);
-        TextView sub = ctl.get().findViewById(R.id.tv_pre_sub);
-        String titleText = title.getText().toString();
-        assertTrue("标题应是「还有 X」的形式，实际：" + titleText,
-                titleText.equals("还有 1 小时") || titleText.equals("还有 59 分钟"));
-        assertTrue("副标题应带名称与时刻，实际：" + sub.getText(),
-                sub.getText().toString().startsWith("起床 · ")
-                        && sub.getText().toString().endsWith(" 响铃"));
-
-        ctl.get().findViewById(R.id.btn_pre_ok).performClick();
-        assertTrue("点「知道了」应关闭弹窗", ctl.get().isFinishing());
-        ctl.pause().stop().destroy();
-    }
-
-    /** 「关闭这次响铃」= 取消主闹钟 + 提前通知 + 小睡，并关掉弹窗。 */
-    @Test
-    public void popup_cancelClosesThisRing() {
-        reset();
-        Intent i = new Intent(ctx(), PreNoticeActivity.class)
-                .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1)
-                .putExtra(PreNoticeReceiver.EXTRA_LABEL, "起床")
-                .putExtra(PreNoticeReceiver.EXTRA_DATE, "2026-10-21")
-                .putExtra(PreNoticeReceiver.EXTRA_MINUTES, 30);
-        ActivityController<PreNoticeActivity> ctl =
-                Robolectric.buildActivity(PreNoticeActivity.class, i).setup();
-        ShadowLooper.idleMainLooper();
-
-        ctl.get().findViewById(R.id.btn_pre_cancel).performClick();
-        assertTrue("点「关闭这次响铃」应关闭弹窗", ctl.get().isFinishing());
-        ctl.pause().stop().destroy();
     }
 
     /** 存储层兜底：超过 60 的值一律夹到 60，避免脏数据排出「提前 999 分钟」。 */
@@ -555,7 +498,48 @@ public class PreNoticeTest {
         assertEquals("强调色应为品牌紫", ctx().getColor(R.color.indigo), n.color);
     }
 
-    /** 「今天」不写日期，「明天 / 后天」写出来，更远补月日——和弹窗副标题同一套措辞。 */
+    /**
+     * v0.87.4：提前提醒**不许挂全屏 intent，也不许 startActivity**——它只在通知栏待着。
+     *
+     * <p>这条钉的是用户的定论，不是实现细节。v0.31.0 加全屏弹窗的理由是
+     * 「锁屏时通知根本看不见」；实际用了两周，用户在锁屏上按电源键亮屏，
+     * 被「还有 1 小时」盖一脸——预告这种事不值得这个打扰等级。
+     * 要恢复弹窗，先想清楚：锁屏卡片（CATEGORY_ALARM + PUBLIC 可见性）已经
+     * 把「亮屏即见」覆盖了，弹窗提供的增量只剩「打断」本身。
+     */
+    @Test
+    public void preNotice_neverUsesFullScreenIntent() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 60);
+        seedAlarm(30);
+        ScheduleManager.rescheduleAll(ctx());
+
+        Notification n = preNoticeNotification();
+        assertNotNull(n);
+        assertNull("不许挂全屏 intent——提前提醒只在通知栏待着", n.fullScreenIntent);
+
+        Application app = (Application) ctx();
+        org.robolectric.Shadows.shadowOf(app).clearNextStartedActivities();
+        LocalDateTime when = LocalDateTime.now().plusMinutes(30)
+                .withSecond(0).withNano(0);
+        new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(when));
+        assertNull("触发时也不许 startActivity 拉起任何界面",
+                org.robolectric.Shadows.shadowOf(app).getNextStartedActivity());
+    }
+
+    /** 组装一条触发提前提醒的广播（测「不拉界面」用，ScreenLockTest 同款）。 */
+    private Intent preNoticeIntent(LocalDateTime when) {
+        return new Intent(ctx(), PreNoticeReceiver.class)
+                .setAction(PreNoticeReceiver.ACTION_PRE_NOTICE)
+                .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1)
+                .putExtra(PreNoticeReceiver.EXTRA_LABEL, "起床")
+                .putExtra(PreNoticeReceiver.EXTRA_MINUTES, 30)
+                .putExtra(PreNoticeReceiver.EXTRA_DATE, when.toLocalDate().toString())
+                .putExtra(PreNoticeReceiver.EXTRA_TIME_TEXT,
+                        when.format(DateTimeFormatter.ofPattern("HH:mm")));
+    }
+
+    /** 「今天」不写日期，「明天 / 后天」写出来，更远补月日——一句话说清是哪一趟。 */
     @Test
     public void whenText_readsLikeHuman() {
         LocalDate today = LocalDate.now();

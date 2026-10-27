@@ -46,16 +46,6 @@
             android:theme="@style/Theme.WeekdayAlarm.Ringing"
             android:turnScreenOn="true" />
 
-        <!-- 提前提醒弹窗（v1.23）：由全屏 intent 拉起，只显示「还有多久」+ 关闭入口，
-             45 秒自动收起；不响铃、不点亮屏幕，与真正的响铃页（AlarmActivity）分开 -->
-        <activity
-            android:name=".PreNoticeActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:showWhenLocked="true"
-            android:taskAffinity="" />
-
         <!-- 锁屏显示自测页（v0.55.3）：由 AlarmManager 在用户锁屏后拉起，
              停留两秒多自己关掉。不响铃、不发通知、不碰排班。
              showWhenLocked + turnScreenOn 就是被测的那两件事本身——

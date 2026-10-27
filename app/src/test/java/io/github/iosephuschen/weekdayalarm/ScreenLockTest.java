@@ -111,36 +111,30 @@ public class ScreenLockTest {
                         && started.getComponent().getClassName().endsWith("AlarmActivity"));
     }
 
-    /** 提前提醒：解锁时不弹窗，但通知照发。 */
+    /**
+     * 提前提醒：任何屏幕状态都不许拉起界面（v0.87.4）。
+     *
+     * <p>v0.31.0～v0.87.3 的行为是「解锁不弹、锁屏弹」；用户锁屏亮屏被
+     * 「还有 1 小时」盖一脸之后定论：提前通知只在通知栏待着，不要全屏弹窗。
+     * 弹窗页已删，这里把「解锁、锁屏两种状态都不 startActivity」钉住。
+     */
     @Test
-    public void preNotice_unlocked_doesNotOpenPopup() {
+    public void preNotice_neverOpensAnyActivity() {
         reset();
+        LocalDateTime when = inAnHour();
+
         setScreen(true, false);
-        LocalDateTime when = inAnHour();
         ScheduleManager.setAlarm(ctx(), when, 1, "起床");
         Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
-
         new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(when));
-        assertNull("解锁时不该弹整屏提醒", shadowOf(app).getNextStartedActivity());
-    }
+        assertNull("解锁时也不该弹整屏提醒", shadowOf(app).getNextStartedActivity());
 
-    /** 提前提醒：锁屏时才弹。 */
-    @Test
-    public void preNotice_locked_opensPopup() {
-        reset();
         setScreen(true, true);
-        LocalDateTime when = inAnHour();
-        ScheduleManager.setAlarm(ctx(), when, 1, "起床");
-        Application app = (Application) ctx();
         shadowOf(app).clearNextStartedActivities();
-
         new PreNoticeReceiver().onReceive(ctx(), preNoticeIntent(when));
-        Intent started = shadowOf(app).getNextStartedActivity();
-        assertNotNull("锁屏时应弹出提前提醒", started);
-        assertTrue("拉起的应是 PreNoticeActivity，实际：" + started.getComponent(),
-                started.getComponent() != null
-                        && started.getComponent().getClassName().endsWith("PreNoticeActivity"));
+        assertNull("锁屏时更不该弹整屏提醒——它只在通知栏待着",
+                shadowOf(app).getNextStartedActivity());
     }
 
     private Intent alarmIntent() {

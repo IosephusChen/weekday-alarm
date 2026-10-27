@@ -26,6 +26,10 @@ import java.time.ZoneId;
  * 在闹钟响铃前 N 分钟推送一条**安静**的通知（独立低优先级渠道，不响铃不震动），
  * 通知带一个「关闭这次响铃」操作：提前知道闹钟要响，也可以顺手把它关掉。
  *
+ * <p>v0.87.4 起它**只在通知栏待着**：v0.31.0 曾加过全屏弹窗（锁屏/息屏时直接盖住
+ * 锁屏），用户定论「提前通知只需要在通知栏待着就行，不需要全屏弹窗」，弹窗页删除。
+ * 解锁时有横幅扫一眼，锁屏上是锁屏卡片，都不打断操作、都不点亮屏幕。
+ *
  * 触发来源：{@link ScheduleManager#rescheduleAll} 为每个已登记的主实例配对注册一条
  * 提前通知闹钟（独立的 PRE_NOTICE requestCode 段，见该类注释）。
  */
@@ -53,12 +57,12 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 提前提醒：通知栏 + 主动弹窗（v0.31.0）。
+     * 提前提醒：只在通知栏待着（v0.87.4 定稿）。
      *
-     * <p>v0.15.0 起它只是一条静音通知，躺在通知栏里，用户不看就不知道；
-     * 现在同时挂一个全屏 intent，锁屏或正在用别的 App 时会直接弹出
-     * {@link PreNoticeActivity}，点「知道了」或「关闭这次响铃」即可。
-     * 通知本身仍然保留（静音、不震动），弹窗被系统拦下时还有兜底。
+     * <p>v0.15.0 起它是一条静音通知，躺在通知栏里；v0.31.0 曾加过全屏弹窗
+     * （锁屏或正在用别的 App 时直接盖在最上层），v0.87.4 用户定论「提前通知只需要
+     * 在通知栏待着就行，不需要全屏弹窗」，弹窗页 {@code PreNoticeActivity} 整个删除。
+     * 通知本身一直保留（静音、不震动、常驻到响铃或被关掉）。
      */
     private void showPreNotice(Context ctx, Intent intent) {
         int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
@@ -101,27 +105,12 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         if (real <= 0) return;   // 已经到点：交给响铃那条通知，别再补一条过期的预告
         minutes = real;
 
-        Intent popup = new Intent(ctx, PreNoticeActivity.class)
-                .putExtra(EXTRA_ALARM_ID, alarmId)
-                .putExtra(EXTRA_LABEL, label)
-                .putExtra(EXTRA_DATE, d.toString())
-                .putExtra(EXTRA_MINUTES, minutes)
-                .putExtra(EXTRA_TIME_TEXT, timeText)
+        // v0.87.4：点通知本体改开主界面。弹窗页删掉后，详情入口就是 App 本身——
+        // 通知里的信息（几点响、还有多久）已经说全了，没有第二个页面可看。
+        Intent content = new Intent(ctx, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent popupPi = PendingIntent.getActivity(ctx, 20 + alarmId, popup,
+        PendingIntent contentPi = PendingIntent.getActivity(ctx, 20 + alarmId, content,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        // v0.31.1：解锁使用中只发横幅通知，不弹整屏——用户正看着屏幕，横幅足够。
-        // 息屏 / 锁屏才拉起弹窗，否则通知根本看不见。
-        final boolean popupNow = ScreenLock.shouldPopup(ctx);
-        if (popupNow) {
-            // MIUI / 澎湃 OS 授予「后台弹出界面」时才能成功；被拦下就静默失败，
-            // 交给下面的全屏 intent（锁屏）与横幅通知兜底。与 AlarmReceiver 同一套策略。
-            try {
-                ctx.startActivity(popup);
-            } catch (Exception ignore) {
-            }
-        }
 
         Intent cancel = new Intent(ctx, PreNoticeReceiver.class)
                 .setAction(ACTION_CANCEL_THIS)
@@ -147,7 +136,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(label + " 即将响铃")
                 .setContentText(sub)
-                .setContentIntent(popupPi)
+                .setContentIntent(contentPi)
                 // v0.53.0：通知的强调色（头部应用名、系统着色）改用品牌紫，
                 // 和下面自绘的紫底图标、紫底按钮连成一套。
                 .setColor(ContextCompat.getColor(ctx, R.color.indigo))
@@ -190,18 +179,16 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         // 所以前几版不管怎么补 action、怎么画 heads-up，锁屏上永远看不到「关闭闹钟」。
         // 设了 customContentView，折叠态就是我们的布局，按钮直接躺在卡片上。
         nb.setCustomContentView(
-                NotifCard.build(ctx, label + " 即将响铃", sub, 0, popupPi,
+                NotifCard.build(ctx, label + " 即将响铃", sub, 0, contentPi,
                         NotifCard.Button.primary("这次不响", cancelPi)));
         // v0.32.0：横幅（heads-up）也自绘。横幅是另一套视图，不会复用上面的折叠布局。
         // 横幅上的文案可以写相对时间：它只出现几秒，不存在「躺久了失真」的问题，
         // 而「还有 10 分钟」比「14:10」更能让人马上起身。
+        // v0.87.4：横幅是提前提醒最「主动」的形态了——只从顶部滑下几秒，不盖全屏，
+        // 不点亮屏幕；用户已确认这个程度刚好。
         nb.setCustomHeadsUpContentView(
                 buildHeadsUp(ctx, label + " 即将响铃", headsUpText(minutes, timeText),
-                        cancelPi, popupPi));
-        // 只有息屏 / 锁屏才挂全屏 intent；解锁时让系统只弹横幅，避免两套界面同时出现
-        if (popupNow) {
-            nb.setFullScreenIntent(popupPi, true);
-        }
+                        cancelPi, contentPi));
         Notification n = nb.build();
         try {
             NotificationManagerCompat.from(ctx).notify(NOTIF_ID_BASE + alarmId, n);
@@ -252,7 +239,6 @@ public class PreNoticeReceiver extends BroadcastReceiver {
      * 折叠卡片上的那行字（v0.53.0）：只有绝对时间，永远正确。
      *
      * <p>「今天」不写，「明天 / 后天」写出来，更远才补日期——一句话说清是哪一趟。
-     * 和 {@link PreNoticeActivity} 的弹窗副标题共用同一份措辞。
      */
     static String whenText(LocalDate d, String timeText) {
         if (timeText == null || timeText.isEmpty()) return "即将响铃";
@@ -345,7 +331,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
         }
     }
 
-    /** 见 {@link #cancelThisAlarm}；弹窗里的「关闭这次响铃」也走这里，逻辑只维护一份。 */
+    /** 见 {@link #cancelThisAlarm}；通知按钮「这次不响」也走这里，逻辑只维护一份。 */
     static void cancelThis(Context ctx, int alarmId, LocalDate d) {
         ScheduleManager.cancelAlarm(ctx, alarmId, d);
         ScheduleManager.cancelPreNotice(ctx, alarmId, d);

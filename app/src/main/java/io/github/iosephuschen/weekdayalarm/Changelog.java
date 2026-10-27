@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(204, "0.87.4", "2026/10/27", "响铃前提醒不再弹全屏",
+                    "它只在通知栏待着，锁屏亮屏不会再被盖住",
+                    "解锁时的横幅保留，只闪几秒不打断操作",
+                    "「这次不响」按钮还在通知卡片上"),
             new Entry(203, "0.87.3", "2026/10/27", "换签名证书，这一版要卸载重装",
                     "旧证书主体是改名前的老名字，与新项目名对不上",
                     "先在旧版「导出配置」，卸载后装这版，再「导入配置」",

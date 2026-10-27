@@ -137,4 +137,50 @@ public class DocsConsistencyTest {
                 doc.contains("**v" + gradleVersionName() + " / versionCode "
                         + gradleVersionCode() + "**"));
     }
+
+    private static List<File> mdFiles(File dir) {
+        List<File> out = new ArrayList<>();
+        File[] fs = dir.listFiles();
+        if (fs == null) return out;
+        for (File f : fs) {
+            if (f.isDirectory()) out.addAll(mdFiles(f));
+            else if (f.getName().endsWith(".md")) out.add(f);
+        }
+        return out;
+    }
+
+    /**
+     * 文档里不许再把「备份与恢复」当设置页路径（v0.87.7）。
+     *
+     * <p>那一组 v0.82.0 就并入「数据与桌面」了。{@code SettingsLayoutTest} 用
+     * {@code assertFalse(all.contains("备份与恢复"))} 守着 App 界面，但它守不到 md——
+     * v0.87.3 的换证说明就写成了「设置 → 备份与恢复 → 导出配置」，还恰好落在
+     * 「换签名必须卸载重装」那一次流程里：照做的人找不着入口，可能直接卸载，设置全丢。
+     *
+     * <p>只认两种「指引」写法：箭头指向它，或与「导出配置 / 导入配置」同行。
+     * 历史叙述（如「v0.24.0 新增备份与恢复」）不含这两种形状，不会被误伤。
+     */
+    @Test
+    public void docs_doNotUseRetiredMenuPath() throws Exception {
+        List<File> files = mdFiles(docs());
+        assertTrue("一个 md 都没扫到，路径判断可能出错（不能因此静默通过）", files.size() > 10);
+
+        List<String> bad = new ArrayList<>();
+        Pattern arrow = Pattern.compile("(→|->)\\s*备份与恢复");
+        for (File f : files) {
+            String[] lines = read(f).split("\n", -1);
+            for (int i = 0; i < lines.length; i++) {
+                String line = lines[i];
+                boolean pointsHere = arrow.matcher(line).find();
+                boolean usedAsAction = line.contains("备份与恢复")
+                        && (line.contains("导出配置") || line.contains("导入配置"));
+                if (pointsHere || usedAsAction) {
+                    bad.add("  " + f.getName() + ":" + (i + 1) + "  " + line.trim());
+                }
+            }
+        }
+        assertTrue("文档仍把「备份与恢复」当设置页路径，实际分组名是「数据与桌面」：\n"
+                        + String.join("\n", bad),
+                bad.isEmpty());
+    }
 }

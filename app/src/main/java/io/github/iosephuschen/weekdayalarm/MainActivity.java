@@ -499,6 +499,9 @@ public class MainActivity extends AppCompatActivity {
         for (Alarm x : alarms) {
             if (x.id == a.id) {
                 x.enabled = checked;
+                // v0.87.6：关掉再打开 = 重新启用，今天的「这次不响」一并作废。
+                // 和 applyEdit 的「改完就开」同一套语义：显式操作就是要它响。
+                if (checked) Prefs.clearSkipOnce(this, x.id);
                 // v0.42.0：一次性闹钟响过会自动关闭，日期留在过去。用户再打开它，
                 // 意思是「照这个时间再来一次」，不是想打开一条永远不会响的闹钟——
                 // 顺手把日期顺延到下一个该时刻，并当面说清

@@ -650,4 +650,91 @@ public class PreNoticeTest {
             if (a.id == 4) assertTrue("每天：开关不动，只跳今天", a.enabled);
         }
     }
+    // ================= v0.87.6：跳过标记不许误伤同一天的新闹钟 =================
+
+    /**
+     * 删光重建：id 只增不减，新闹钟不会撞上旧标记。
+     *
+     * <p>v0.87.5 的 id 取「现有最大 + 1」，删光必然回到 1；而跳过标记按
+     * {@code alarmId:日期} 记账，新建的 id=1 会撞上残留的 "1:今天"，
+     * 当天不响、主页不显示下次闹钟——用户完全无从理解。
+     */
+    @Test
+    public void nextAlarmId_neverReusesAfterAllDeleted() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 0);
+        seedTwoAlarms(20, 40);
+        int before = Prefs.nextAlarmId(ctx());
+
+        Prefs.setAlarms(ctx(), new java.util.ArrayList<>());
+        int after = Prefs.nextAlarmId(ctx());
+
+        assertTrue("删光后新 id 必须大于删光前的下一个（" + before + " -> " + after + "）",
+                after > before);
+    }
+
+    /** 清标记按 id 精确匹配：清 id=1 不能把 id=12 一起清掉。 */
+    @Test
+    public void clearSkipOnce_onlyRemovesThatAlarm() {
+        reset();
+        LocalDate today = LocalDate.now();
+        Prefs.addSkipOnce(ctx(), 1, today);
+        Prefs.addSkipOnce(ctx(), 12, today);
+
+        Prefs.clearSkipOnce(ctx(), 1);
+
+        java.util.Set<String> s = Prefs.getSkipOnce(ctx());
+        assertFalse("id=1 的标记应清掉", s.contains("1:" + today));
+        assertTrue("id=12 不该被连坐", s.contains("12:" + today));
+    }
+
+    /**
+     * 「这次不响」之后改时间：今天的实例要回来。
+     *
+     * <p>{@code AlarmEditor.applyEdit} 写死了 {@code enabled = true}（「改完就开」），
+     * 而跳过标记按 id 记账、改时间不改 id——不清标记的话，开关开着、时间是对的、
+     * 今天就是不响，这是最没法自解释的状态。
+     */
+    @Test
+    public void cancelThis_editingTimeLiftsSkip() {
+        reset();
+        Prefs.setPreNoticeMinutes(ctx(), 0);
+        LocalDateTime t2 = LocalDateTime.now().plusMinutes(40).withSecond(0).withNano(0);
+        seedTwoAlarms(20, 40);
+        ScheduleManager.rescheduleAll(ctx());
+        LocalDate today = LocalDate.now();
+
+        PreNoticeReceiver.cancelThis(ctx(), 1, today);
+        assertFalse("先确认已跳过", ScheduleManager.isAlarmRegistered(ctx(), 1, today));
+
+        Alarm target = null;
+        for (Alarm x : Prefs.getAlarms(ctx())) {
+            if (x.id == 1) target = x;
+        }
+        assertNotNull(target);
+        AlarmEditor.applyEdit(ctx(), target, t2.getHour(), t2.getMinute(),
+                "午休", Alarm.Mode.DAILY, null);
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(target));
+        ScheduleManager.rescheduleAll(ctx());
+
+        assertTrue("改到新时间后今天应该会响",
+                ScheduleManager.isAlarmRegistered(ctx(), 1, today));
+    }
+
+    /**
+     * prune 要排在「列表为空就返回」之前。
+     *
+     * <p>删光闹钟那一刻正是最该清标记的时候，而那条路径会直接 return，
+     * 标记就永远留着——不只是脏数据，还会被后来复用的 id 撞上。
+     */
+    @Test
+    public void pruneSkipOnce_runsEvenWhenAlarmListIsEmpty() {
+        reset();
+        Prefs.addSkipOnce(ctx(), 1, LocalDate.now().minusDays(1));
+
+        Prefs.setAlarms(ctx(), new java.util.ArrayList<>());
+        ScheduleManager.rescheduleAll(ctx());
+
+        assertTrue("删光后过期标记应被清掉", Prefs.getSkipOnce(ctx()).isEmpty());
+    }
 }

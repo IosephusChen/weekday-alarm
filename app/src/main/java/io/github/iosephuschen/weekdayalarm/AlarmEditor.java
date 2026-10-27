@@ -244,6 +244,11 @@ final class AlarmEditor {
         target.mode = mode;
         target.onceDate = onceStr;
 
+        // v0.87.6：编辑保存 = 重新表达意图，今天该响。
+        // 不清跳过标记的话，「这次不响」之后改时间会让这条闹钟当天彻底哑掉，
+        // 而下面写死了 enabled = true——开关开着却不响，是最没法自解释的状态。
+        Prefs.clearSkipOnce(activity, target.id);
+
         // v0.55.3：改完就开。
         //
         // 用户点进编辑页改时间、改名字，意图是「这条闹钟要按新设置响」；

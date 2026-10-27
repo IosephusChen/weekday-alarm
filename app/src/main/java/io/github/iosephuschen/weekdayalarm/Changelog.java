@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(206, "0.87.6", "2026/10/27", "跳过一次不再误伤新闹钟",
+                    "删光重建或改时间后，当天会正常响",
+                    "闹钟编号只增不减，不再重复使用",
+                    "冻结表补上漏登记的一个 key"),
             new Entry(205, "0.87.5", "2026/10/27", "「这次不响」不再被后续响铃撤销",
                     "之前下一次闹钟一响，重排就把它悄悄复活",
                     "现在按实例记跳过标记，明天自动失效",

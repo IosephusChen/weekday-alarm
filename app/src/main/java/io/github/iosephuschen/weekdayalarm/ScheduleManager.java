@@ -555,6 +555,13 @@ public final class ScheduleManager {
     private static int rescheduleAllLocked(Context ctx) {
         cancelAll(ctx);
 
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+        // v0.87.6：prune 必须排在下面「列表为空就返回」之前——用户删光闹钟那一刻
+        // 正是最该清标记的时候，而那条路径会直接 return，标记就永远留着。
+        // 留着不只是脏数据：id 会复用（v0.87.6 前的 max+1），新闹钟撞上就当天不响。
+        Prefs.pruneSkipOnce(ctx, today);
+
         // v0.44.0：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
         // 排程表里虽然排不到它，但列表与统计口径会一直当它有效
         List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
@@ -562,11 +569,8 @@ public final class ScheduleManager {
 
         int horizon = Prefs.getHorizonDays(ctx);
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-        // v0.87.5：先清过期的跳过标记，再让下面的候选循环认它们——
+        // v0.87.5：让下面的候选循环认得跳过标记——
         // 「这次不响」只撤实例、不记标记的话，这一次重排就会把取消原样撤销
-        Prefs.pruneSkipOnce(ctx, today);
         Set<String> skipOnce = Prefs.getSkipOnce(ctx);
         // v0.23.0 性能：请假 / 加班集合只读一次。旧版在「闹钟数 × 天数」的双层循环里
         // 逐日调用 Prefs.isVacation / isOvertime，每次都会把整个 StringSet 拷一份

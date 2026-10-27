@@ -53,6 +53,10 @@ public final class Prefs {
     // 不记这一笔的话，下一次响铃触发的全量重排会把刚取消的实例原样排回去——
     // 真机实测：13:13 点「这次不响」，13:40 午休闹钟一响，13:54 复活。
     public static final String KEY_SKIP_ONCE = "skip_once";
+    // v0.87.6：闹钟 id 的持久计数器。以前 nextAlarmId 取「现有最大值 + 1」，
+    // 删光闹钟后必然回到 1，新闹钟会撞上 skip_once 里残留的 "1:某天"，
+    // 当天莫名其妙不响。改成只增不减，id 永不复用。
+    public static final String KEY_ALARM_ID_SEQ = "alarm_id_seq";
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -276,13 +280,25 @@ public final class Prefs {
                 .commit();
     }
 
-    /** 生成不会碰撞的新闹钟 id（现有最大 id + 1）。 */
+    /**
+     * 生成不会碰撞的新闹钟 id（v0.87.6：只增不减，永不复用）。
+     *
+     * <p>原实现是「现有最大 id + 1」，看起来不会碰撞，但删光闹钟后必然回到 1。
+     * v0.87.5 的跳过标记按 {@code alarmId:日期} 记账，于是新建的 id=1 会撞上
+     * 残留的 "1:今天"，当天不响、主页不显示下次闹钟——用户完全无从理解。
+     *
+     * <p>现在用一个持久计数器，并且取「计数器与现有最大值中的较大者」：
+     * 从旧版本升级上来时，计数器还不存在（默认 0），靠现有最大值兜住；
+     * 老数据里若有手工改大的 id，也不会被计数器反超。
+     */
     public static int nextAlarmId(Context c) {
         int max = 0;
         for (Alarm a : getAlarms(c)) {
             if (a.id > max) max = a.id;
         }
-        return max + 1;
+        int next = Math.max(max, sp(c).getInt(KEY_ALARM_ID_SEQ, 0)) + 1;
+        sp(c).edit().putInt(KEY_ALARM_ID_SEQ, next).apply();
+        return next;
     }
 
     public static boolean isSmallRestSat(Context c) {
@@ -346,6 +362,31 @@ public final class Prefs {
                 continue;
             }
             keep.add(e);
+        }
+        if (keep.size() != s.size()) {
+            sp(c).edit().putStringSet(KEY_SKIP_ONCE, keep).apply();
+        }
+    }
+
+    /**
+     * 作废某条闹钟的跳过标记（v0.87.6）。
+     *
+     * <p>两种情形要调它，共同点是「用户重新表达了意图，今天该响」：
+     * <ul>
+     *   <li>编辑保存：{@code AlarmEditor.applyEdit} 里写着「改完就开」，
+     *       改了时间却还压着跳过标记，等于改了个空；</li>
+     *   <li>列表里关掉再打开：等同重新启用，和 {@code toggleAlarm} 的语义一致。</li>
+     * </ul>
+     *
+     * <p>按前缀匹配，注意后缀带冒号：清 id=1 不会误伤 id=12。
+     */
+    public static void clearSkipOnce(Context c, int alarmId) {
+        Set<String> s = getSkipOnce(c);
+        if (s.isEmpty()) return;
+        String prefix = alarmId + ":";
+        Set<String> keep = new HashSet<>();
+        for (String e : s) {
+            if (!e.startsWith(prefix)) keep.add(e);
         }
         if (keep.size() != s.size()) {
             sp(c).edit().putStringSet(KEY_SKIP_ONCE, keep).apply();

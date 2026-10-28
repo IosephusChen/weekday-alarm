@@ -158,7 +158,10 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 > }
 > ```
 >
-> 仓库本身不写镜像：一是作者本机已有全局配置，二是写死镜像会让境外构建多一跳不必要的重试。
+> 仓库的 `build.gradle` 不写任何 Maven 镜像：一是作者本机已有全局配置，二是写死镜像会让境外构建
+> 多一跳不必要的重试。但 `gradle/wrapper/gradle-wrapper.properties` 里的 `distributionUrl` 指向
+> 腾讯镜像——那是首构建要下的 130MB 分发包，国内等不起。境外环境换回
+> `https://services.gradle.org/distributions/` 即可，本仓库的 CI 就是每次这么做。
 
 release 包经过 R8 混淆：线上崩溃栈要用 `app/build/outputs/mapping/release/mapping.txt`
 反混淆（`retrace`）。规则只保四样兜底（源文件名与行号、自定义 View 构造器、枚举、

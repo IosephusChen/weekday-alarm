@@ -23,7 +23,7 @@ import java.util.Locale;
  * 未认证时按 IP 限流 60 次/小时，出口 IP 被邻居打满就全部 403；国内连通性也时好时坏。
  * 所以改成仓库根目录一个静态 {@code version.json}，走 jsDelivr（国内有节点）+
  * raw.githubusercontent 双源——和 {@link HolidayUpdater} 同一套通路，已经验证可用。
- * 静态文件没有限流，几百字节，弱网也就一两秒。<b>代价是 CDN 会缓存 {@code @master}
+ * 静态文件没有限流，几百字节，弱网也就一两秒。<b>代价是 CDN 会缓存 {@code @main}
  * 约 12 小时</b>：刚发版那半天自己可能查到旧值，这是 CDN 的固有行为，不修。
  *
  * <p><b>比 versionCode 不比字符串</b>：主流写法拿 {@code tag_name} 做字符串比较，
@@ -43,11 +43,11 @@ public final class UpdateChecker {
 
     /** 主源：jsDelivr 的 GitHub 镜像，国内可直连。 */
     static final String URL_CDN =
-            "https://cdn.jsdelivr.net/gh/" + REPO + "@master/version.json";
+            "https://cdn.jsdelivr.net/gh/" + REPO + "@main/version.json";
 
     /** 备源：GitHub raw。CDN 缓存过期或不可达时兜底。 */
     static final String URL_RAW =
-            "https://raw.githubusercontent.com/" + REPO + "/master/version.json";
+            "https://raw.githubusercontent.com/" + REPO + "/main/version.json";
 
     static final String[] SOURCES = {URL_CDN, URL_RAW};
 

@@ -21,3 +21,7 @@ Thumbs.db
 # JVM 崩溃转储（测试 JVM 偶发 JIT 段错误时生成，别误提交）
 hs_err_pid*.log
 replay_pid*.log
+
+# 进程崩溃转储（core dump 动辄上百 MB，一旦误提交会写进历史）
+core.*
+core

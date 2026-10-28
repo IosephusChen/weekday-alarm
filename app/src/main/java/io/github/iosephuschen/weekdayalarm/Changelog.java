@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(209, "0.89.0", "2026/10/28", "关于页可以检查更新",
+                    "启动时 7 天静默查一次，查到也不弹窗",
+                    "有新版时「关于」页那行会显示版本号",
+                    "点「下载」交给浏览器，覆盖安装即可"),
             new Entry(208, "0.88.0", "2026/10/28", "每条闹钟可以选自己的铃声",
                     "新建或编辑闹钟时多一行「铃声」，点开可试听",
                     "默认「跟随设置」，改默认铃声时它跟着变",

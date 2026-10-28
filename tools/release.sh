@@ -51,6 +51,38 @@ if [ $fail -ne 0 ]; then
     exit 1
 fi
 
+echo "-- version.json --"
+# 版本清单（v0.89.0）：仓库根目录的 version.json 是「检查更新」唯一的数据源。
+# 手写它必然会在某次发版时忘改——忘了的后果是「提示有新版本，下载到旧包」，
+# 或者干脆永远不提示。所以这里从 Changelog 首条自动生成：版本号、日期、要点全在一处。
+python3 - "$NAME" "$CODE" <<'PY'
+import json, pathlib, re, sys
+name, code = sys.argv[1], int(sys.argv[2])
+repo = "IosephusChen/weekday-alarm"
+src = pathlib.Path("app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java") \
+    .read_text(encoding="utf-8")
+start = src.index("new Entry(%d," % code)
+end = src.find("new Entry(", start + 10)
+if end < 0:
+    end = len(src)
+args = re.findall(r'"([^"]*)"', src[start:end])
+if len(args) < 4:
+    sys.exit("Changelog 首条解析失败（只取到 %d 个字符串）" % len(args))
+data = {
+    "versionCode": code,
+    "versionName": name,
+    "published": args[1].replace("/", "-"),
+    "title": args[2],
+    "notes": args[3:],
+    "apk": "https://github.com/%s/releases/download/v%s/weekday-alarm-%s.apk"
+           % (repo, name, name),
+    "page": "https://github.com/%s/releases/tag/v%s" % (repo, name),
+}
+pathlib.Path("version.json").write_text(
+    json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print("  version.json → v%s / %d，%d 条更新说明" % (name, code, len(data["notes"])))
+PY
+
 echo "-- 全量测试 --"
 ./gradlew testDebugUnitTest --console=plain -q
 python3 - "$NAME" <<'PY'

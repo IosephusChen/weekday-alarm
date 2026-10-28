@@ -98,6 +98,13 @@ public class App extends Application {
                 }
             });
         }
+        // 检查更新（v0.89.0）：同样只在 release 包里跑、同样节流（成功 7 天 / 失败隔天）。
+        // 查到新版不弹任何东西，只写进 Prefs——用户下次打开「关于」页时那一行自己会变成
+        // 「v0.89.0 可更新」。启动路径上不该有弹窗，这是闹钟类应用的底线。
+        if (!BuildConfig.DEBUG && UpdateChecker.shouldAutoCheck(this)) {
+            UpdateChecker.check(this, result -> {
+            });
+        }
     }
 
     /**

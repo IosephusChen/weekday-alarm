@@ -102,11 +102,44 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 源代码 / 许可 -->
+        <!-- 检查更新 / 源代码 / 许可 -->
         <LinearLayout
             style="@style/HelpCard"
             android:clipToOutline="true"
             android:orientation="vertical">
+
+            <!-- v0.89.0：放在最上面。这一行的值会被静默检查的结果改写（见 AboutActivity） -->
+            <LinearLayout
+                android:id="@+id/row_check_update"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/about_check_update" />
+
+                <TextView
+                    android:id="@+id/tv_check_update_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/about_check_update_value"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/line" />
 
             <LinearLayout
                 android:id="@+id/row_source"

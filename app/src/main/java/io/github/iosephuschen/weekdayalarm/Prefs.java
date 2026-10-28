@@ -57,6 +57,13 @@ public final class Prefs {
     // 删光闹钟后必然回到 1，新闹钟会撞上 skip_once 里残留的 "1:某天"，
     // 当天莫名其妙不响。改成只增不减，id 永不复用。
     public static final String KEY_ALARM_ID_SEQ = "alarm_id_seq";
+    // v0.89.0：检查更新的节律与「已知有新版本」缓存。
+    // 已知版本要落盘：静默检查查到新版时不弹任何东西，只把结果记下来，
+    // 等用户下次打开「关于」页再由那一行自己说不出来——否则静默检查等于白跑。
+    public static final String KEY_UPDATE_CHECKED_AT = "update_checked_at";
+    public static final String KEY_UPDATE_LAST_FAILED = "update_last_failed";
+    public static final String KEY_UPDATE_KNOWN_CODE = "update_known_code";
+    public static final String KEY_UPDATE_KNOWN_NAME = "update_known_name";
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -808,6 +815,56 @@ public final class Prefs {
         sp(c).edit()
                 .putInt(KEY_LOCK_PROBE_RESULT, result)
                 .putLong(KEY_LOCK_PROBE_AT, at)
+                .apply();
+    }
+
+    // ================= 检查更新（v0.89.0）=================
+
+    /** 上次检查的时刻（毫秒），0 = 从未检查过。 */
+    public static long updateCheckedAt(Context c) {
+        return sp(c).getLong(KEY_UPDATE_CHECKED_AT, 0L);
+    }
+
+    /** 上次检查是否失败。失败后隔天再试，成功后回到 7 天一次。 */
+    public static boolean updateLastFailed(Context c) {
+        return sp(c).getBoolean(KEY_UPDATE_LAST_FAILED, false);
+    }
+
+    /** 记一次检查结果：时刻 + 成败，一次写入，避免两次 apply 之间被杀进程留下矛盾状态。 */
+    public static void setUpdateChecked(Context c, long at, boolean failed) {
+        sp(c).edit()
+                .putLong(KEY_UPDATE_CHECKED_AT, at)
+                .putBoolean(KEY_UPDATE_LAST_FAILED, failed)
+                .apply();
+    }
+
+    /**
+     * 记下「已知有更新的版本」。
+     *
+     * <p>为什么不在每次打开「关于」页时现查：那会把一次网络往返挂在页面打开路径上，
+     * 弱网时那一行的值会先空着再跳变。静默检查查到的结果存在这里，界面直接读。
+     */
+    public static void setKnownUpdate(Context c, int code, String name) {
+        sp(c).edit()
+                .putInt(KEY_UPDATE_KNOWN_CODE, code)
+                .putString(KEY_UPDATE_KNOWN_NAME, name == null ? "" : name)
+                .apply();
+    }
+
+    public static int knownUpdateCode(Context c) {
+        return sp(c).getInt(KEY_UPDATE_KNOWN_CODE, 0);
+    }
+
+    public static String knownUpdateName(Context c) {
+        String s = sp(c).getString(KEY_UPDATE_KNOWN_NAME, "");
+        return s == null ? "" : s;
+    }
+
+    /** 已经是最新时清掉旧记录，否则那一行会一直挂着「有新版本」。 */
+    public static void clearKnownUpdate(Context c) {
+        sp(c).edit()
+                .remove(KEY_UPDATE_KNOWN_CODE)
+                .remove(KEY_UPDATE_KNOWN_NAME)
                 .apply();
     }
 }

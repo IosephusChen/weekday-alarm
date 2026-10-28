@@ -54,6 +54,7 @@ public class AboutActivity extends AppCompatActivity {
 
         bindVersion();
         bindRows();
+        refreshUpdateLabel();
 
         // 必须在 STARTED 之前注册，这是 ActivityResult API 的硬性要求（onCreate 里即可）
         crashExport = registerForActivityResult(
@@ -77,6 +78,7 @@ public class AboutActivity extends AppCompatActivity {
     }
 
     private void bindRows() {
+        findViewById(R.id.row_check_update).setOnClickListener(v -> checkUpdate());
         findViewById(R.id.row_source).setOnClickListener(v -> openSource());
         findViewById(R.id.row_license).setOnClickListener(v ->
                 DialogKit.showMessage(this, getString(R.string.about_license),
@@ -90,12 +92,127 @@ public class AboutActivity extends AppCompatActivity {
         findViewById(R.id.row_export_crash).setOnClickListener(v -> exportCrash());
     }
 
+    // ================= 检查更新（v0.89.0）=================
+
+    /**
+     * 「检查更新」那行的值。
+     *
+     * <p>打开页面时<b>不现查</b>：网络往返挂在页面打开路径上，弱网时这一行会先空着再跳变。
+     * 静默检查的结果已经落在 Prefs 里，这里只读。
+     */
+    private void refreshUpdateLabel() {
+        TextView v = findViewById(R.id.tv_check_update_value);
+        String known = UpdateChecker.knownUpdateToShow(this);
+        if (!known.isEmpty()) {
+            v.setText(getString(R.string.about_check_update_available, known));
+            v.setTextColor(getColor(R.color.indigo));
+        } else {
+            v.setText(R.string.about_check_update_value);
+            v.setTextColor(getColor(R.color.sub));
+        }
+    }
+
+    private void checkUpdate() {
+        TextView value = findViewById(R.id.tv_check_update_value);
+        android.view.View row = findViewById(R.id.row_check_update);
+        // 关掉点击再查：连续点会起多个线程，最后一个回来的结果覆盖前一个，显示会跳
+        row.setEnabled(false);
+        value.setText(R.string.about_check_update_checking);
+        value.setTextColor(getColor(R.color.sub));
+
+        UpdateChecker.check(this, result -> {
+            row.setEnabled(true);
+            if (result == UpdateChecker.Result.AVAILABLE) {
+                showUpdateDialog();
+                return;
+            }
+            refreshUpdateLabel();
+            if (result == UpdateChecker.Result.UP_TO_DATE) {
+                Toast.makeText(this,
+                        getString(R.string.about_check_update_latest_toast, versionNameOnly()),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                showUpdateFailed();
+            }
+        });
+    }
+
+    /**
+     * 发现新版本。
+     *
+     * <p>两个按钮随「有没有可信直链」变形：有直链时「下载」是主按钮，「发布页」是兜底——
+     * 直链 404（Release 被删、asset 改名）时用户还有个地方可去；没有直链时反过来，
+     * 「去发布页」当主按钮，「稍后」退场。按钮永远是两个，不多不少。
+     */
+    private void showUpdateDialog() {
+        UpdateChecker.Info info = UpdateChecker.lastInfo();
+        if (info == null) {
+            // AVAILABLE 必然带 info，这里只是兜底：宁可不动，也不要空指针闪退
+            refreshUpdateLabel();
+            return;
+        }
+
+        StringBuilder body = new StringBuilder();
+        if (!info.published.isEmpty()) {
+            body.append(info.published).append(" 发布\n");
+        }
+        body.append(getString(R.string.about_update_current, versionNameOnly()));
+        if (!info.notes.isEmpty()) {
+            body.append("\n\n").append(info.notes);
+        }
+        body.append("\n\n").append(getString(R.string.about_update_tail));
+
+        String title = getString(R.string.about_update_title, info.versionName);
+        if (info.hasDirectApk()) {
+            DialogKit.showMessage(this, title, body.toString(),
+                    getString(R.string.about_update_download), (d, w) -> openUrl(info.apkUrl),
+                    getString(R.string.about_update_page), (d, w) -> openUrl(info.pageUrl));
+        } else {
+            DialogKit.showMessage(this, title, body.toString(),
+                    getString(R.string.about_update_page), (d, w) -> openUrl(info.pageUrl),
+                    getString(R.string.about_update_later), null);
+        }
+    }
+
+    /**
+     * 检查失败。
+     *
+     * <p>和节假日数据那套一样：说清原因、说明闹钟照常工作、给个「重试」。
+     * 更新检查失败是最不影响使用的一种失败，不该只甩一句「网络错误」。
+     */
+    private void showUpdateFailed() {
+        String reason = UpdateChecker.lastFailureReason();
+        if (reason == null || reason.isEmpty()) reason = "网络请求未成功";
+        DialogKit.showMessage(this,
+                getString(R.string.about_update_failed_title),
+                getString(R.string.about_update_failed_body, reason),
+                getString(R.string.about_update_retry), (d, w) -> checkUpdate(),
+                getString(R.string.about_update_ok), null);
+    }
+
+    /** 打开网页；没有浏览器时把地址本身给出去，别静默失败。 */
+    private void openUrl(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception e) {
+            Toast.makeText(this, getString(R.string.about_update_no_browser, url),
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private String versionNameOnly() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "—";
+        }
+    }
+
     /**
      * 打开源码页。
      *
      * <p>没有浏览器时不能静默失败——Toast 里给出地址本身，至少能让用户手动抄走。
-     */
-    private void openSource() {
+     */    private void openSource() {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL)));
         } catch (ActivityNotFoundException e) {

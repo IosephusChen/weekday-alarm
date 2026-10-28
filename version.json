@@ -1,0 +1,13 @@
+{
+  "versionCode": 209,
+  "versionName": "0.89.0",
+  "published": "2026-10-28",
+  "title": "关于页可以检查更新",
+  "notes": [
+    "启动时 7 天静默查一次，查到也不弹窗",
+    "有新版时「关于」页那行会显示版本号",
+    "点「下载」交给浏览器，覆盖安装即可"
+  ],
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.0/weekday-alarm-0.89.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.0"
+}

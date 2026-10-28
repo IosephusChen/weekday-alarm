@@ -63,6 +63,12 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_LEGACY_SCHEME_CLEANED", "legacy_scheme_cleaned");
         PREFS_KEYS.put("KEY_SKIP_ONCE", "skip_once");
         PREFS_KEYS.put("KEY_ALARM_ID_SEQ", "alarm_id_seq");
+        // v0.89.0 检查更新：这四项都只影响「能不能看到新版本」，不进备份、不跨设备，
+        // 但既然落了盘就必须起个稳定名字——改名的代价是已装的用户重查一次。
+        PREFS_KEYS.put("KEY_UPDATE_CHECKED_AT", "update_checked_at");
+        PREFS_KEYS.put("KEY_UPDATE_LAST_FAILED", "update_last_failed");
+        PREFS_KEYS.put("KEY_UPDATE_KNOWN_CODE", "update_known_code");
+        PREFS_KEYS.put("KEY_UPDATE_KNOWN_NAME", "update_known_name");
         PREFS_KEYS.put("KEY_BEDTIME_MINUTES", "bedtime_minutes");
         PREFS_KEYS.put("KEY_BEDTIME_WORKDAY_ONLY", "bedtime_workday_only");
         PREFS_KEYS.put("KEY_LUNAR_FESTIVALS", "lunar_festivals");

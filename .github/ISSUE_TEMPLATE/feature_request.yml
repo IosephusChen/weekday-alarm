@@ -1,0 +1,31 @@
+name: 功能建议
+description: 想要一个现在没有的功能，或者觉得哪里不好用
+title: "[建议] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先看一眼 [使用说明](https://github.com/IosephusChen/weekday-alarm/blob/main/docs/%E6%89%93%E5%B7%A5%E4%BA%BA%E9%97%B9%E9%92%9F-%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E.md)，
+        有些功能可能已经有了，只是不在显眼的位置。
+
+        这个 App 的定位是「只解决排班族的闹钟问题」，所以我会优先考虑能减少出错的功能，
+        而不是增加维度。云同步、账号、国际化、上架应用商店这四类不做，不用提。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的是什么问题
+      description: 请写情形，不要只写想要的功能。知道你在什么场景下卡住，比知道你想要什么按钮有用
+      placeholder: |
+        例：我上大小周，午休时间也跟着变——大周休一小时，小周只有四十分钟。
+        现在只能给午休闹钟设一个固定时间，每周都要手动改一次。
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望它怎么解决（可选）
+      validations:
+        required: false

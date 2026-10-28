@@ -162,6 +162,19 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 ./gradlew testDebugUnitTest    # 729 unit tests
 ```
 
+## 为什么做这个
+
+手机自带的闹钟只能按「星期几」重复。可对排班的人来说，休息日不跟着星期走——大小周、
+单休，加上每年国务院临时发的调休补班，一个都不能漏。
+
+漏一次，不是迟到，就是休息日被闹钟吵醒。而手动改闹钟这件事，改的时候记得，过两个月
+就忘了当初为什么这么设。
+
+所以我做了这个：把排班规则设一次，之后的每一天它自己算。节假日和补班自动跟上，
+请假、加班标一下，那天就不响。
+
+它不收费、没有广告、没有账号，断网也照响——我只是需要一个不会算错的闹钟。
+
 ## 关于
 
 作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）

@@ -1,13 +1,14 @@
 {
-  "versionCode": 209,
-  "versionName": "0.89.0",
-  "published": "2026-10-28",
-  "title": "关于页可以检查更新",
+  "versionCode": 210,
+  "versionName": "0.89.1",
+  "published": "2026-10-29",
+  "title": "通知卡片自己带底色",
   "notes": [
-    "启动时 7 天静默查一次，查到也不弹窗",
-    "有新版时「关于」页那行会显示版本号",
-    "点「下载」交给浏览器，覆盖安装即可"
+    "标题正文固定白字，不再猜系统深浅",
+    "之前深色模式下标题压在紫底上看不清",
+    "系统也不会再给卡片叠一层紫",
+    "四条通知和横幅统一改过"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.0/weekday-alarm-0.89.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.1/weekday-alarm-0.89.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.1"
 }

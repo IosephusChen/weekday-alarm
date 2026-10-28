@@ -21,8 +21,11 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp">
+    android:background="@drawable/bg_notif_card"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <ImageView
         android:id="@+id/nc_icon"
@@ -88,7 +91,7 @@
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:layout_marginStart="8dp"
-        android:background="@drawable/bg_notif_action_outline"
+        android:background="@drawable/bg_notif_action_outline_on_brand"
         android:gravity="center"
         android:includeFontPadding="false"
         android:maxLines="1"

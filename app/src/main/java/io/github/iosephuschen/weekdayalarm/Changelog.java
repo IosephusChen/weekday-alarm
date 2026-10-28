@@ -57,6 +57,11 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(210, "0.89.1", "2026/10/29", "通知卡片自己带底色",
+                    "标题正文固定白字，不再猜系统深浅",
+                    "之前深色模式下标题压在紫底上看不清",
+                    "系统也不会再给卡片叠一层紫",
+                    "四条通知和横幅统一改过"),
             new Entry(209, "0.89.0", "2026/10/28", "关于页可以检查更新",
                     "启动时 7 天静默查一次，查到也不弹窗",
                     "有新版时「关于」页那行会显示版本号",

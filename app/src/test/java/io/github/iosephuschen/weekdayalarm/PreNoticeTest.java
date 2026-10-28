@@ -485,9 +485,18 @@ public class PreNoticeTest {
                 n.when > System.currentTimeMillis());
     }
 
-    /** 品牌紫：通知强调色要跟着 App 主色，不能是系统默认灰。 */
+    /**
+     * 品牌紫：通知要能一眼认出是本应用。
+     *
+     * <p>v0.89.1 之前这条查的是 {@code n.color == indigo}（系统强调色）。真机截图推翻了
+     * 那条路：设了 color 之后，部分 ROM 会把整张卡片按这个色染色，而卡片里的文字色
+     * 由我们自己按 uiMode 挑——两边一旦不一致，标题就压在紫底上糊掉。
+     *
+     * <p>现在品牌色不靠系统染色，改由卡片底自己画（{@code bg_notif_card}，hero 渐变）。
+     * 所以这里改成断言「用的是那张自带紫底的布局」——染色可以不做，品牌感不能丢。
+     */
     @Test
-    public void preNotice_usesBrandColor() {
+    public void preNotice_usesBrandCard() {
         reset();
         Prefs.setPreNoticeMinutes(ctx(), 60);
         seedAlarm(30);
@@ -495,7 +504,9 @@ public class PreNoticeTest {
 
         Notification n = preNoticeNotification();
         assertNotNull(n);
-        assertEquals("强调色应为品牌紫", ctx().getColor(R.color.indigo), n.color);
+        assertNotNull("必须有自绘卡片，系统模板上没有「这次不响」按钮", n.contentView);
+        assertEquals("品牌色改由卡片底承担，布局必须是 notif_content（见 bg_notif_card）",
+                R.layout.notif_content, n.contentView.getLayoutId());
     }
 
     /**

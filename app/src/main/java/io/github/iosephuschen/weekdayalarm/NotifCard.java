@@ -65,7 +65,7 @@ final class NotifCard {
         rv.setTextViewText(R.id.nc_title, title);
         rv.setTextViewText(R.id.nc_text, text);
 
-        // RemoteViews 拿不到当前主题的文字色，只能按通知栏明暗自己挑（见 NotifTheme）
+        // 卡片自带品牌紫底（v0.89.1），文字色随之定死，不再问系统明暗——见 NotifTheme
         rv.setTextColor(R.id.nc_title, NotifTheme.title());
         rv.setTextColor(R.id.nc_text, NotifTheme.text());
         // 紫底上只能放白图标
@@ -82,7 +82,7 @@ final class NotifCard {
             rv.setViewVisibility(R.id.nc_chrono, View.VISIBLE);
             rv.setChronometer(R.id.nc_chrono, base, null, true);
             rv.setChronometerCountDown(R.id.nc_chrono, true);
-            rv.setTextColor(R.id.nc_chrono, NotifTheme.accent(ctx));
+            rv.setTextColor(R.id.nc_chrono, NotifTheme.accent());
         } else {
             rv.setViewVisibility(R.id.nc_chrono, View.GONE);
         }
@@ -107,7 +107,7 @@ final class NotifCard {
         }
         if (secondary != null) {
             rv.setTextViewText(R.id.nc_action2, secondary.text);
-            rv.setTextColor(R.id.nc_action2, NotifTheme.accent(ctx));
+            rv.setTextColor(R.id.nc_action2, NotifTheme.accent());
             rv.setViewVisibility(R.id.nc_action2, View.VISIBLE);
             rv.setOnClickPendingIntent(R.id.nc_action2, secondary.pi);
         } else {

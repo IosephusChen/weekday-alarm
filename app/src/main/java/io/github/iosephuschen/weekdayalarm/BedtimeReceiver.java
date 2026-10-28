@@ -77,8 +77,9 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setContentTitle(m.title)
                 .setContentText(m.text)
                 .setContentIntent(contentPi)
-                // v0.53.0：强调色统一成品牌紫，和「即将响铃」那条看起来是一家的
-                .setColor(ctx.getColor(R.color.indigo))
+                // v0.89.1：不再 setColor。卡片自带品牌紫底（bg_notif_card），
+                // 再让系统按这个色做 colorized 染色就会叠成两层紫——外层浅紫、
+                // 内层深紫，文字区反而更难读。品牌色由布局自己保证。
                 .setAutoCancel(true)
                 // quiet=true 时只更新内容：同 id 重发不会再次弹横幅 / 响铃
                 .setOnlyAlertOnce(quiet)

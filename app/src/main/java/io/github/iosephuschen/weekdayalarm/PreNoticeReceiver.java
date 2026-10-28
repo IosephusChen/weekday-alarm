@@ -12,7 +12,6 @@ import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
-import androidx.core.content.ContextCompat;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -138,9 +137,9 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 .setContentTitle(label + " 即将响铃")
                 .setContentText(sub)
                 .setContentIntent(contentPi)
-                // v0.53.0：通知的强调色（头部应用名、系统着色）改用品牌紫，
-                // 和下面自绘的紫底图标、紫底按钮连成一套。
-                .setColor(ContextCompat.getColor(ctx, R.color.indigo))
+                // v0.89.1：不再 setColor（v0.53.0 起曾设过品牌紫）。自绘卡片现在
+                // 自带紫底，系统再按色染色就成了「紫上叠紫」，且染色的深浅与
+                // 卡片内的文字色互不相干，容易又糊一次。
                 // v0.31.2：点进详情页后通知不消失，只有闹钟响过或被关掉才撤（对标系统闹钟）。
                 // ongoing 让它无法被划掉——这条通知就是这次响铃的「挂账」。
                 .setAutoCancel(false)
@@ -303,13 +302,11 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     }
 
     /**
-     * 按明暗模式给自绘卡片上色（两套布局共用）。
+     * 给自绘卡片上色（两套布局共用）。
      *
-     * <p>RemoteViews 拿不到当前主题的文字色，只能自己读 uiMode：
-     * 浅色卡片用近黑字，深色卡片用白字。
-     *
-     * <p>v0.53.0 起图标底与按钮底固定为品牌紫渐变（见 {@code bg_notif_icon} /
-     * {@code bg_notif_action}），所以这两个位置一律白字 / 白图标，不再按明暗切换背景。
+     * <p>v0.89.1 起不再按明暗挑色：卡片底由 {@code bg_notif_card} 自己画（品牌紫），
+     * 文字一律白。原来按 {@code uiMode} 判断的那套在真机上行不通——系统染色的深浅
+     * 与 uiMode 不是一回事，详见 {@link NotifTheme}。
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,
                               int textId, int actionId) {

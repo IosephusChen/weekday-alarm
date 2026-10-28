@@ -28,7 +28,7 @@
 
 ## 下载
 
-**1.0.0 正在做最后的真机验证**（当前候选版 `v0.87.6`）。正式版发布后会在这里给出 Releases 链接。
+**1.0.0 正在做最后的真机验证**（当前候选版 `v0.89.0`）。正式版发布后会在这里给出 Releases 链接。
 
 - Gitee 镜像（待配置）
 
@@ -68,7 +68,7 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（688 条，Robolectric + JUnit）
+# 单元测试（729 条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
@@ -159,8 +159,20 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ```bash
 ./gradlew assembleRelease      # JDK 17, Android SDK 34
-./gradlew testDebugUnitTest    # 688 unit tests
+./gradlew testDebugUnitTest    # 729 unit tests
 ```
+
+## 关于
+
+作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）
+
+我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助、一行行试出来的：236 次提交、
+1.6 万行 Java、729 条自动化测试，每一版都先在真机上验过才发。
+
+它开源，所以上面的每个数字你都能自己核：代码可以读，测试可以跑，网络请求只有两处
+（节假日数据、版本号），都在源码里写着。
+
+我不承诺它没有 bug，我承诺每个 bug 都会修——因为我自己每天用它起床。
 
 ##  License
 

@@ -132,7 +132,7 @@
     <string name="about_privacy">隐私说明</string>
     <string name="about_export_crash">导出崩溃日志</string>
     <string name="about_export_crash_value">发给开发者 ›</string>
-    <string name="about_footer">用 Java 写的，没有第三方依赖\nMIT License · 无账号 · 无统计 · 无广告</string>
+    <string name="about_footer">追寻的风 · © 2026\n用 Java 写的，没有第三方依赖\nMIT License · 无账号 · 无统计 · 无广告</string>
 
     <!-- 检查更新（v0.89.0） -->
     <string name="about_check_update">检查更新</string>

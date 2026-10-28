@@ -25,8 +25,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # 不能省掉 packages：这个 action 的默认值是 "tools platform-tools"，
+      # 而 Google 在 cmdline-tools 16.0 里删掉了 tools 这个包，
+      # 于是 sdkmanager --install tools 直接失败（2026-10 首次 CI 就是这么红的）。
+      # 只留 platform-tools，平台的下载交给 Gradle 按 compileSdk 自动完成。
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --console=plain --stacktrace

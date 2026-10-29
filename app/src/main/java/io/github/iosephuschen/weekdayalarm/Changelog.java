@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(216, "0.89.7", "2026/10/29", "浅色模式下通知也看得清了",
+                    "文字颜色跟着系统明暗走，白字只在深色下用",
+                    "上一版定死白字，浅色卡片上直接糊"),
             new Entry(215, "0.89.6", "2026/10/29", "通知卡片又是整片紫的了",
                     "上一版把底色画进布局，外面多出一圈白边",
                     "现在把底色交回系统，整张卡片染色"),

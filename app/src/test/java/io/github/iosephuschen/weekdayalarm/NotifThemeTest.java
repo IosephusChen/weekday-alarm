@@ -17,93 +17,87 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
- * 通知卡片配色（v0.87.7 建立，v0.89.1 重写）。
+ * 通知卡片的文字配色（v0.87.7 建立，v0.89.7 第三版）。
  *
- * <p><b>两次用户截图</b>：
- * <ul>
- *   <li>2026-10 第一次——深色锁屏上，睡前提醒的标题是近黑色，和卡片底同色。当时
- *       判断是「读错了 App 的 uiMode」，改成 {@code Resources.getSystem()}。</li>
- *   <li>2026-10-28 第二次——系统明明是深色模式，标题仍是近黑（{@code 0xFF1E2235}），
- *       压在系统染出的紫底上几乎看不见。</li>
- * </ul>
+ * <p><b>这条路走了三遍</b>：
+ * <ol>
+ *   <li>v0.87.7：按 {@code Resources.getSystem()} 挑白/黑字。修好了「深色下标题变黑」。</li>
+ *   <li>v0.89.1：认定卡片底色不可控，改成自绘紫底 + 定死白字。真机上自绘底只铺满
+ *       内容区，外围露出系统卡片色，成了「紫方块套白框」（0.89.5 截图）。</li>
+ *   <li>v0.89.6：撤掉自绘底、底色交回系统，文字仍定死白色。这次暴露了另一半——
+ *       卡片在通知栏里根本不紫，它跟随明暗：浅色偏白、深色偏深。浅色下白字糊掉
+ *       （0.89.6 截图：「深色能看清了，浅色却看不清了」）。</li>
+ * </ol>
  *
- * <p>第二次说明「按 uiMode 挑色」这条路本身不成立：通知一旦 {@code setColor}，
- * 卡片底会被系统按那个色染色，<b>与明暗模式无关</b>；而进程里读到的 uiMode 还可能
- * 被「单应用深色」影响。所以 v0.89.1 干脆不判断——文字定死白色。
+ * <p>结论：<b>卡片跟着明暗走，文字就必须跟着明暗走</b>。这是「通知卡片是半透明的、
+ * 透出壁纸」决定的，调色绕不过去。
  *
- * <p><b>v0.89.6 的更正</b>：v0.89.1 连底色也收回自己画（{@code bg_notif_card}），
- * 想彻底不依赖系统染色。真机上自绘底只铺满内容区，系统卡片外围还有一圈按壁纸取色的
- * 内边距，于是变成「紫方块套在白/深灰框里」——2026-10-29 用户截图说「比之前丑」。
- * 现在底色交回系统，布局不挂背景。
- *
- * <p>这里验五件事：两种模式下都是白字、对比度够、源码里没有残留的 uiMode 判断、
- * 四条通知都设了品牌色、两个通知布局都不自绘底色。<b>后两条是一对</b>——白字必须
- * 压在系统的紫上；谁把 setColor 删了、或又给布局加一层深色背景，白字就会贴浅底。
+ * <p>这里验五件事：两种模式的颜色都对、两种模式下都够对比度、信号必须取自系统资源
+ * 而不是 App 自己的配置、两个布局都不自绘底色、四条通知仍带品牌色。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
 public class NotifThemeTest {
 
-    /** hero 渐变的两端（{@code @color/hero_start} / {@code @color/hero_end}）。 */
-    private static final int HERO_START = 0xFF4F46E5;
-    private static final int HERO_END = 0xFF7C3AED;
+    /** 浅色卡片按 92% 白算，深色卡片按 18% 黑算（Material You 通知卡的近似值）。 */
+    private static final int CARD_DAY = 0xFFF5F5F7;
+    private static final int CARD_NIGHT = 0xFF1C1B20;
 
     @Test
     @Config(qualifiers = "night")
-    public void night_titleIsWhite() {
-        assertEquals("深色模式下标题必须是白的", 0xFFFFFFFF, NotifTheme.title());
-        assertEquals("深色模式下正文用 90% 白", 0xE6FFFFFF, NotifTheme.text());
+    public void night_whiteText() {
+        assertTrue("深色 qualifiers 下应判定为深色", NotifTheme.isNight());
+        assertEquals("深色模式标题必须是白的", 0xFFFFFFFF, NotifTheme.title());
+        assertEquals("深色模式正文用 70% 白", 0xB3FFFFFF, NotifTheme.text());
+        assertEquals("深色模式强调色用 violet-300", 0xFFC4B5FD, NotifTheme.accent());
     }
 
-    /**
-     * 浅色模式下也必须是白字。
-     *
-     * <p>这条看着反直觉，但它就是 2026-10-28 那个 bug 的正面：浅色模式下系统照样可能
-     * 把卡片染成品牌紫，深字压紫底一样看不见。文字色从此与明暗无关。
-     */
     @Test
     @Config(qualifiers = "notnight")
-    public void day_alsoWhite() {
-        assertEquals("浅色模式下标题同样是白的（卡片底是自己画的紫）",
-                0xFFFFFFFF, NotifTheme.title());
-        assertEquals("浅色模式下正文同样是 90% 白", 0xE6FFFFFF, NotifTheme.text());
+    public void day_darkText() {
+        assertFalse("浅色 qualifiers 下不该判定为深色", NotifTheme.isNight());
+        assertEquals("浅色模式标题必须换成近黑，白字会糊在白卡上",
+                0xFF1E2235, NotifTheme.title());
+        assertEquals("浅色模式正文用蓝灰（原 #6B7189 只有 4.44:1，压深一档）", 0xFF5C6377, NotifTheme.text());
+        assertEquals("浅色模式强调色必须换 indigo：violet-300 压在浅卡上只有 1.9:1",
+                0xFF4F46E5, NotifTheme.accent());
     }
 
-    /** 渐变两端都要够 4.5:1——底色是渐变的，只验一端等于没验。 */
+    /** 两套配色各自压在对应的卡片上都要够 4.5:1。 */
     @Test
-    public void contrastOnBothGradientEnds() {
-        assertContrast("标题", NotifTheme.title(), HERO_START);
-        assertContrast("标题", NotifTheme.title(), HERO_END);
-        assertContrast("正文", NotifTheme.text(), HERO_START);
-        assertContrast("正文", NotifTheme.text(), HERO_END);
-        assertContrast("倒计时", NotifTheme.ACCENT, HERO_START);
-        assertContrast("倒计时", NotifTheme.ACCENT, HERO_END);
+    public void contrastOnBothModes() {
+        assertContrast("浅色·标题", NotifTheme.TITLE_DAY, CARD_DAY);
+        assertContrast("浅色·正文", NotifTheme.TEXT_DAY, CARD_DAY);
+        assertContrast("浅色·强调", NotifTheme.ACCENT_DAY, CARD_DAY);
+        assertContrast("深色·标题", NotifTheme.TITLE_NIGHT, CARD_NIGHT);
+        assertContrast("深色·正文", NotifTheme.TEXT_NIGHT, CARD_NIGHT);
+        assertContrast("深色·强调", NotifTheme.ACCENT_NIGHT, CARD_NIGHT);
     }
 
     /**
-     * 源码钉子：不许再出现 uiMode 判断。
+     * 源码钉子：明暗信号必须来自系统资源。
      *
-     * <p>行为测试抓不住回退——Robolectric 里明暗 qualifiers 是测试自己给的，
-     * 而真机的染色行为根本不在模拟范围。只能看源码：一旦有人把
-     * {@code Configuration.UI_MODE_NIGHT_*} 或者 {@code Resources.getSystem()} 加回来，
-     * 说明他又打算「猜底色」了，这条就会红。
+     * <p>行为测试抓不住这条——Robolectric 里 {@code Resources.getSystem()} 和
+     * {@code context.getResources()} 拿到的是同一份配置，测不出差别。但真机上不是：
+     * 用户给本应用单独开了「深色」时，App 的配置是深色、系统是浅色，通知栏按系统画，
+     * 于是文字色与卡片底色相反——v0.87.7 之前那个 bug 就是这么来的。
      */
     @Test
-    public void source_doesNotGuessByUiMode() throws Exception {
+    public void source_readsSystemResources() throws Exception {
         String code = codeOf("src/main/java/io/github/iosephuschen/weekdayalarm/NotifTheme.java");
-        assertFalse("不该再按 uiMode 挑色——卡片底的染色与明暗无关（见类注释）",
-                code.contains("uiMode"));
-        assertFalse("不该再读 Configuration", code.contains("getConfiguration"));
-        assertFalse("不该再有 isNight 之类的判断", code.contains("isNight"));
-        assertTrue("标题必须是纯白常量", code.contains("0xFFFFFFFF"));
+        assertTrue("必须从 Resources.getSystem() 取配置，否则会被「单应用深色」带偏",
+                code.contains("Resources.getSystem()"));
+        assertFalse("不能读 App 自己的 Resources——它的 uiMode 可能和通知栏不一致",
+                code.contains(".getResources()"));
+        assertTrue("判定要按 UI_MODE_NIGHT_MASK 位运算", code.contains("UI_MODE_NIGHT_MASK"));
     }
 
     /**
-     * 布局钉子：两个通知布局都<b>不许</b>自绘底色（v0.89.6 反转）。
+     * 布局钉子：两个通知布局都<b>不许</b>自绘底色。
      *
      * <p>v0.89.1 这里是相反的断言（必须挂 {@code bg_notif_card}）。真机证明那条路
      * 走不通：自绘底只能铺满内容区，系统卡片还有一圈按壁纸取色的内边距，浅色壁纸下
-     * 就是「紫方块套白框」。底色只能由系统整卡染，布局必须保持透明。
+     * 就是「紫方块套白框」。底色归系统，布局必须保持透明。
      */
     @Test
     public void layouts_doNotPaintTheirOwnBackground() throws Exception {
@@ -117,21 +111,17 @@ public class NotifThemeTest {
     }
 
     /**
-     * 四条通知都必须设品牌色（v0.89.6）。
+     * 四条通知都还带着品牌色（v0.89.6 起）。
      *
-     * <p>这是白字能读的前提：{@code NotifTheme} 把文字定死白色，只有卡片确实被系统
-     * 染成紫的，白字才看得见。谁删掉某一处的 {@code setColor}，那条通知就会变成
-     * 白字压白卡——本地上根本看不出来，只能靠这条源码钉子。
-     *
-     * <p>响铃那条（{@code AlarmService}）以前从没设过，是四条里唯一走系统模板的；
-     * 0.89.1 靠自绘底「顺带」统一了，现在自绘底撤了，必须显式补上。
+     * <p>它不再是「文字能否读」的前提——文字色自己保证对比度了；但品牌色还决定系统
+     * 展开态的强调色与小图标配色，删掉会让四条通知展开后认不出是同一家。
      */
     @Test
     public void everyNotificationIsBrandColored() throws Exception {
         for (String name : new String[]{"BedtimeReceiver.java", "PreNoticeReceiver.java",
                 "SnoozeNotice.java", "AlarmService.java"}) {
             String code = codeOf("src/main/java/io/github/iosephuschen/weekdayalarm/" + name);
-            assertTrue(name + " 少了 setColor(indigo)：白字会压在白卡片上",
+            assertTrue(name + " 少了 setColor(indigo)，展开后的强调色会退回系统灰",
                     code.contains(".setColor(") && code.contains("R.color.indigo"));
         }
     }
@@ -153,7 +143,7 @@ public class NotifThemeTest {
 
     private static void assertContrast(String what, int fg, int bg) {
         double ratio = ColorUtils.calculateContrast(fg, bg);
-        assertTrue(what + "在紫底 " + String.format("#%08X", bg) + " 上读不清（对比度 "
+        assertTrue(what + " 在卡片 " + String.format("#%08X", bg) + " 上读不清（对比度 "
                 + String.format("%.2f", ratio) + "，要求 >= 4.5）", ratio >= 4.5);
     }
 }

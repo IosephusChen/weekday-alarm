@@ -65,10 +65,11 @@ final class NotifCard {
         rv.setTextViewText(R.id.nc_title, title);
         rv.setTextViewText(R.id.nc_text, text);
 
-        // 卡片自带品牌紫底（v0.89.1），文字色随之定死，不再问系统明暗——见 NotifTheme
+        // 文字色跟系统明暗走（v0.89.7）：卡片本身是系统画的半透明底，浅色偏白、
+        // 深色偏深，定死任何一种颜色都会在一半场景糊掉——见 NotifTheme 的类注释
         rv.setTextColor(R.id.nc_title, NotifTheme.title());
         rv.setTextColor(R.id.nc_text, NotifTheme.text());
-        // 紫底上只能放白图标
+        // 图标底是品牌紫渐变，压在上面的图标一律白
         rv.setInt(R.id.nc_icon, "setColorFilter", NotifTheme.ON_BRAND);
         if (contentPi != null) {
             rv.setOnClickPendingIntent(R.id.nc_icon, contentPi);
@@ -108,6 +109,13 @@ final class NotifCard {
         if (secondary != null) {
             rv.setTextViewText(R.id.nc_action2, secondary.text);
             rv.setTextColor(R.id.nc_action2, NotifTheme.accent());
+            // 描边得跟着卡片深浅换：深卡用 60% 白（紫描边会融进背景），
+            // 浅卡用 violet（白描边在浅卡上只剩一个空药丸）。v0.89.7 之前
+            // 只有白色那一版，是「卡片恒为紫」时的假设，卡片改成跟明暗后失效
+            rv.setInt(R.id.nc_action2, "setBackgroundResource",
+                    NotifTheme.isNight()
+                            ? R.drawable.bg_notif_action_outline_on_brand
+                            : R.drawable.bg_notif_action_outline);
             rv.setViewVisibility(R.id.nc_action2, View.VISIBLE);
             rv.setOnClickPendingIntent(R.id.nc_action2, secondary.pi);
         } else {

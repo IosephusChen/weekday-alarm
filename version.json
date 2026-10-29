@@ -1,12 +1,12 @@
 {
-  "versionCode": 215,
-  "versionName": "0.89.6",
+  "versionCode": 216,
+  "versionName": "0.89.7",
   "published": "2026-10-29",
-  "title": "通知卡片又是整片紫的了",
+  "title": "浅色模式下通知也看得清了",
   "notes": [
-    "上一版把底色画进布局，外面多出一圈白边",
-    "现在把底色交回系统，整张卡片染色"
+    "文字颜色跟着系统明暗走，白字只在深色下用",
+    "上一版定死白字，浅色卡片上直接糊"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.6/weekday-alarm-0.89.6.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.6"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.7/weekday-alarm-0.89.7.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.7"
 }

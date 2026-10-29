@@ -1,13 +1,13 @@
 {
-  "versionCode": 223,
-  "versionName": "0.90.3",
+  "versionCode": 224,
+  "versionName": "0.90.4",
   "published": "2026-10-29",
-  "title": "设置页不再重复写版本号",
+  "title": "返回时不再偶尔掉回首页",
   "notes": [
-    "底部那行删了，「更多设置 → 关于」里本来就是同一串",
-    "删掉之后这一页回到一屏，音量条的刻度不会再把它顶出去",
-    "查版本走「更多设置 → 关于」，版本名和 versionCode 都在"
+    "开过铃声、再进二级页、再返回，有概率直接崩回首页",
+    "因为铃声列表的游标挂在了设置页名下，返回时系统重查已关闭的它",
+    "改成用应用级上下文查，关闭前先摘掉登记"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.3/weekday-alarm-0.90.3.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.3"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.4/weekday-alarm-0.90.4.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.4"
 }

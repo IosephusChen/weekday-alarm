@@ -123,9 +123,28 @@ public final class RingtoneDialog {
         final int defaultIndex = items.size();
         items.add(new Item("系统默认", null, def, Kind.RINGTONE));
 
-        RingtoneManager rm = new RingtoneManager(activity);
+        // v0.90.4：查媒体库不再挂在本页 Activity 名下。
+        //
+        // 起因（2026-10-29 崩溃日志，19 份同一个栈）：设置页开过铃声列表、再进二级页、
+        // 再返回时，主线程抛 StaleDataException：
+        //     BulkCursorToCursorAdaptor.requery ← CursorWrapper.requery
+        //     ← Activity.performRestart ← ActivityThread.performRestartActivity
+        // 系统在 Activity「停止后重新启动」时，会把登记在该 Activity 名下的游标逐个
+        // requery 一遍；而这里用完就 close 了，requery 一个已关闭的游标直接崩。
+        // 媒体库返回的是 BulkCursorToCursorAdaptor，与栈里那一行对得上。
+        //
+        // 两条一起用，缺一条都可能复发：
+        //   1. 用 application context 查——游标不再跟着这个 Activity 走；
+        //   2. close 之前先 stopManagingCursor——万一某个 ROM 已经登记过，把它摘掉。
+        // 顺序不能反：先 close 再摘，系统那一轮 requery 已经撞上了。
+        //
+        // 播放和试听不受影响：试听走 RingtoneManager.getRingtone(activity, uri)，
+        // 那边要 Activity 只是拿主题和音量上下文，不建游标。
+        RingtoneManager rm = new RingtoneManager(activity.getApplicationContext());
         rm.setType(RingtoneManager.TYPE_ALARM);
-        try (Cursor c = rm.getCursor()) {
+        Cursor c = null;
+        try {
+            c = rm.getCursor();
             while (c.moveToNext()) {
                 Uri u = rm.getRingtoneUri(c.getPosition());
                 if (u == null) continue;
@@ -142,6 +161,15 @@ public final class RingtoneDialog {
             }
         } catch (Exception ignore) {
             // 个别 ROM 的媒体库会抛异常：至少还有「系统默认」那一项可用
+        } finally {
+            if (c != null) {
+                // 先摘登记再关闭；stopManagingCursor 对没登记过的游标是空操作
+                stopManaging(activity, c);
+                try {
+                    c.close();
+                } catch (Exception ignore) {
+                }
+            }
         }
 
         final int n = items.size();
@@ -253,6 +281,23 @@ public final class RingtoneDialog {
             DialogKit.setOptionSub(rows[idx], "试听中…");
         } catch (Exception ignore) {
             // 媒体库里的条目可能已经没了：试听失败不该让对话框崩掉
+        }
+    }
+
+    /**
+     * 把游标从 Activity 的托管列表里摘掉（v0.90.4）。
+     *
+     * <p>{@code Activity.stopManagingCursor} 从 API 28 起标了 @Deprecated，但它是唯一
+     * 能把游标从 {@code mManagedCursors} 里摘出去的公开方法。我们没有调过
+     * {@code startManagingCursor}，按 AOSP 的实现这里是空操作；留着是为了兜住那些
+     * 会自行登记的 ROM——它们的 {@code performRestart} 会去 requery，
+     * 撞上一个已关闭的游标就是一次崩溃（见上面那段注释里的栈）。
+     */
+    @SuppressWarnings("deprecation")
+    private static void stopManaging(Activity activity, Cursor c) {
+        try {
+            activity.stopManagingCursor(c);
+        } catch (Exception ignore) {
         }
     }
 

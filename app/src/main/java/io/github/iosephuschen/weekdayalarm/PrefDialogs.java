@@ -142,16 +142,15 @@ public final class PrefDialogs {
     }
 
     /**
-
-
-    /**
-     * 音量行的文案（v0.61.4）。
+     * 音量行的文案。
      *
-     * <p>0 不能一律写「静音（仅震动）」——震动开关是独立的，关掉之后既没声也不震，
-     * 还写「仅震动」就是在说假话。用户真机反馈：关了震动，设置页仍显示「静音（仅震动）」。
+     * <p>v0.61.4 这里曾经分出「静音（仅震动）/ 静音（不震动）」两支：0 档必须说清还震不震，
+     * 因为震动是独立开关，关掉之后既不响也不震，还写「仅震动」就是在说假话。
+     *
+     * <p>v0.90.0 把 0 档整个取消了（见 {@link Prefs#MIN_VOLUME}），两支一起消失——
+     * 不再需要为「静音」找说法，因为全局音量调不到静音了。要某条不响，用那条闹钟的静音开关。
      */
-    public static String volumeText(int v, boolean vibrate) {
-        if (v > 0) return v + "%";
-        return vibrate ? "静音（仅震动）" : "静音（不震动）";
+    public static String volumeText(int v) {
+        return v + "%";
     }
 }

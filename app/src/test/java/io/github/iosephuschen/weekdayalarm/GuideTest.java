@@ -305,13 +305,13 @@ public class GuideTest {
         assertEquals(15, alarms.get(0).minute);
     }
 
-    /** 音量按当前设置显示，0 要读成「静音（仅震动）」而不是「0%」。 */
+    /** 音量按当前设置显示百分比；0 会被抬到下限，不再有「静音」这个读法（v0.90.0）。 */
     @Test
     public void volumeRow_showsCurrentSetting() {
         wipe();
         Prefs.setVolume(ctx(), 0);
         GuideActivity a = launch();
-        assertEquals("静音（仅震动）", text(a, R.id.tv_volume));
+        assertEquals(Prefs.MIN_VOLUME + "%", text(a, R.id.tv_volume));
     }
 
     /** 渐响行点一下切换，立刻写进设置并回显——不做「改完还得回设置页确认」的蠢事。 */
@@ -342,8 +342,8 @@ public class GuideTest {
     /**
      * 震动开关（v0.84.0）：搬进「响铃细节」，默认开，点一下切换并落盘。
      *
-     * <p>它和音量是同一件事的两半——音量调到 0 时，文案会跟着变成「静音（仅震动）」
-     * 或「静音（不震动）」，所以两行必须放在一起看。
+     * <p>v0.90.0 起它和音量不再耦合：音量最低 10%、调不到静音，要不要完全不响
+     * 由每条闹钟自己的静音决定（{@code Alarm.silent}）。
      */
     @Test
     public void vibrateRow_togglesAndWrites() {

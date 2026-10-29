@@ -128,7 +128,7 @@ public class AlarmRingtoneTest {
     @Test
     public void rowText_followShowsSettingName() {
         Prefs.setRingtoneUri(ctx(), null);
-        assertEquals("跟随设置（系统默认）", AlarmEditor.ringtoneRowText(ctx(), null));
+        assertEquals("跟随设置（系统默认）", AlarmEditor.ringtoneRowText(ctx(), null, false));
     }
 
     @Test

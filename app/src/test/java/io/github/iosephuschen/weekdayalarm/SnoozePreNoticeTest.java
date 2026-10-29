@@ -238,7 +238,7 @@ public class SnoozePreNoticeTest {
     @Test
     public void settingsPage_flattensAllSettings() {
         Prefs.setHorizonDays(ctx(), 180);
-        Prefs.setVolume(ctx(), 0);
+        Prefs.setVolume(ctx(), 40);
         Prefs.setPreNoticeMinutes(ctx(), 0);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
@@ -247,7 +247,7 @@ public class SnoozePreNoticeTest {
                 MoreSettingsActivity.intent(ctx(), false)).setup().get();
         assertEquals("未来 180 天",
                 ((TextView) more.findViewById(R.id.tv_horizon)).getText().toString());
-        assertEquals("静音（仅震动）",
+        assertEquals("40%",
                 ((TextView) activity.findViewById(R.id.tv_volume)).getText().toString());
         // v0.41.0 起这一行是开关下方的副标题：关着时说「开着会怎样」，
         // 不再只复述一个「关闭」——那等于把开关状态念一遍，看完还是不知道有什么用

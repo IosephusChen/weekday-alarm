@@ -135,7 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                     if (!fromUser || tvVolume == null) return;
-                    tvVolume.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(SettingsActivity.this)));
+                    tvVolume.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
                 }
 
                 @Override
@@ -144,7 +144,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 @Override
                 public void onStopTrackingTouch(SeekBar bar) {
-                    Prefs.setVolume(SettingsActivity.this, bar.getProgress());
+                    Prefs.setVolume(SettingsActivity.this, bar.getProgress() + Prefs.MIN_VOLUME);
                     updateVolumeText();
                 }
             });
@@ -219,7 +219,7 @@ public class SettingsActivity extends AppCompatActivity {
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
-        if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this));
+        if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this) - Prefs.MIN_VOLUME);
         refreshCalendarContentValue();
         swAttaching = false;
     }
@@ -687,9 +687,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 闹钟音量（v0.22.0 由主界面迁入）=================
 
-    /** 音量行文案：0 时要说清到底还震不震，见 {@link PrefDialogs#volumeText}。 */
+    /** 音量行文案：v0.90.0 起只剩百分比，见 {@link PrefDialogs#volumeText}。 */
     private void updateVolumeText() {
-        tvVolume.setText(PrefDialogs.volumeText(Prefs.getVolume(this), Prefs.isVibrate(this)));
+        tvVolume.setText(PrefDialogs.volumeText(Prefs.getVolume(this)));
     }
 
     /**
@@ -724,12 +724,12 @@ public class SettingsActivity extends AppCompatActivity {
         android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
         TextView value = view.findViewById(R.id.tv_volume_value);
         int cur = Prefs.getVolume(this);
-        seek.setProgress(cur);
-        value.setText(PrefDialogs.volumeText(cur, Prefs.isVibrate(this)));
+        seek.setProgress(cur - Prefs.MIN_VOLUME);
+        value.setText(PrefDialogs.volumeText(cur));
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(SettingsActivity.this)));
+                value.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
             }
 
             @Override
@@ -743,7 +743,7 @@ public class SettingsActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setView(view)
                 .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setVolume(this, seek.getProgress());
+                    Prefs.setVolume(this, seek.getProgress() + Prefs.MIN_VOLUME);
                     updateVolumeText();
                 })
                 .setNegativeButton("取消", null)

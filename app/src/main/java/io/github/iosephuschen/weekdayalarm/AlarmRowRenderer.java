@@ -2,6 +2,9 @@ package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
 import android.graphics.Typeface;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -170,13 +173,29 @@ final class AlarmRowRenderer {
             //
             // v0.58.7：其余关掉的闹钟不再写「已停用」前缀。整行字已经是灰的、右侧开关也是灰的，
             // 状态早就说清了；再补一句「已停用」只是重复，还把真正有用的规则挤到后面。
+            String base;
             if (!a.enabled && a.mode == Alarm.Mode.ONCE
                     && a.isExpiredAt(LocalDateTime.now())) {
                 String day = a.onceDayText();
-                rule.setText("已响过 · " + (day == null ? "仅一次" : day));
+                base = "已响过 · " + (day == null ? "仅一次" : day);
             } else {
-                rule.setText(a.modeTextWithDate());
+                base = a.modeTextWithDate();
             }
+            // v0.90.0：「静音」接在规则后面，与「已响过 ·」同一套写法——不另起一行、
+            // 不加图标、不占新的横向空间。停用的闹钟整行已经是灰的，那个「静音」
+            // 也一起灰：本来就不响的闹钟，不值得再强调一次
+            SpannableStringBuilder line = new SpannableStringBuilder(base);
+            if (a.silent) {
+                line.append(" · ");
+                int from = line.length();
+                line.append("静音");
+                if (a.enabled) {
+                    line.setSpan(new ForegroundColorSpan(
+                                    ContextCompat.getColor(activity, R.color.indigo)),
+                            from, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+            rule.setText(line);
             rule.setTextColor(ContextCompat.getColor(activity, R.color.sub));
             rule.setTextSize(12);
             rule.setIncludeFontPadding(false);
@@ -194,8 +213,10 @@ final class AlarmRowRenderer {
             sw.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             sw.setTag(a.id);
-            // 无障碍（v0.45.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条
-            sw.setContentDescription(a.timeText() + " " + a.label + " 闹钟开关");
+            // 无障碍（v0.45.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条；
+            // v0.90.0 再加「静音」——否则视障用户看不出这条闹钟到点不会响
+            sw.setContentDescription(a.timeText() + " " + a.label
+                    + (a.silent ? " 静音" : "") + " 闹钟开关");
             // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
             sw.setChecked(a.enabled);
             sw.setOnCheckedChangeListener((v, checked) -> host.onToggle(a, checked));

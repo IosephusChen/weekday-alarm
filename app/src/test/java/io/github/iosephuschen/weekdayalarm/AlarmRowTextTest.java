@@ -102,4 +102,52 @@ public class AlarmRowTextTest {
 
         ctl.pause().stop().destroy();
     }
+
+    /**
+     * 静音的闹钟在列表里必须看得出来（v0.90.0）。
+     *
+     * <p>这条测试守的是这次改动最核心的一句：静音如果只存在数据里，
+     * 它就和以前那个「全局音量 0」一样是个幽灵状态——设的人转头就忘，
+     * 等到该响的早上才发现不响。写在行上，才叫显式选择。
+     */
+    @Test
+    public void silentAlarm_saysSilentInRow() {
+        SharedPreferences sp = ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE);
+        sp.edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+
+        Alarm a = new Alarm(3, 7, 30, "上班", Alarm.Mode.WORKDAY, true);
+        a.silent = true;
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(a));
+
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        View list = ctl.get().findViewById(R.id.alarm_list);
+
+        assertTrue("静音要在行上说得出来", containsText(list, "静音"));
+        assertTrue("规则本身不能被「静音」顶掉", containsText(list, "仅上班日"));
+
+        ctl.pause().stop().destroy();
+    }
+
+    /** 不静音的闹钟不能凭空空出一个「静音」，否则这个标识就没有信息量。 */
+    @Test
+    public void audibleAlarm_doesNotSaySilent() {
+        SharedPreferences sp = ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE);
+        sp.edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+
+        Alarm a = new Alarm(4, 8, 0, "开会", Alarm.Mode.WORKDAY, true);
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(a));
+
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        View list = ctl.get().findViewById(R.id.alarm_list);
+
+        assertFalse(containsText(list, "静音"));
+
+        ctl.pause().stop().destroy();
+    }
 }

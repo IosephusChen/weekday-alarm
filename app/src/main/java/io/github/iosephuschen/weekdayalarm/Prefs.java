@@ -15,7 +15,7 @@ import java.util.Set;
 /** 设置持久化。 */
 public final class Prefs {
 
-    private static final String NAME = "weekday_alarm";
+    static final String NAME = "weekday_alarm";   // 包内可见：测试要直接读盘上原值，见 PrefsTest 的迁移用例
     public static final String KEY_WEEK_BIG = "week_big";        // 本周是否大周
     public static final String KEY_ANCHOR = "anchor";            // 基准周六（大周周六）yyyy-MM-dd
     public static final String KEY_WEEK_MODE = "week_mode";      // 周休制度序号（v0.27.0，见 WeekSchedule.Mode）
@@ -32,7 +32,7 @@ public final class Prefs {
     public static final String KEY_LAST_RUN_VERSION = "last_run_version"; // 上次运行的 versionCode（升级后自动重排用）
     public static final String KEY_VACATION_DATES = "vacation_dates"; // 个人请假日期集合（yyyy-MM-dd）
     public static final String KEY_OVERTIME_DATES = "overtime_dates"; // 个人加班日期集合（yyyy-MM-dd）
-    public static final String KEY_VOLUME = "alarm_volume";           // 闹钟音量 0-100（0 = 静音，震动独立开关）
+    public static final String KEY_VOLUME = "alarm_volume";           // 闹钟音量 MIN_VOLUME-100（0 档自 v0.90.0 取消）
     public static final String KEY_VOLKEY_ACTION = "volkey_action";   // 音量键作用：0 无 / 1 稍后提醒 / 2 关闭
     public static final String KEY_POWERKEY_ACTION = "powerkey_action"; // 电源键作用：同上
     public static final String KEY_FADE_IN = "fade_in";               // 铃声渐响（约 30 秒到设定音量）
@@ -501,13 +501,33 @@ public final class Prefs {
 
     // ================= 响铃设置（v0.14.0 起）=================
 
-    /** 闹钟音量 0-100；0 = 静音（是否震动另由 {@link #isVibrate} 决定）。默认 80。 */
+    /**
+     * 响铃音量的下限（v0.90.0）。
+     *
+     * <p>0 档取消：一个能被调到彻底听不见的闹钟，本身就是个陷阱——
+     * 设的时候没人会记得，等到该响的那天已经晚了。要「这条别出声」请用
+     * 单条闹钟的静音（{@link Alarm#silent}），那是显式选择、看得见。
+     */
+    public static final int MIN_VOLUME = 10;
+
+    /**
+     * 闹钟音量 {@link #MIN_VOLUME}-100，默认 80。是否震动另由 {@link #isVibrate} 决定。
+     *
+     * <p>迁移放在读取处，不放在启动处：升级后用户可能一直没打开 App，
+     * 而闹钟照常在早上响。只有读取时纠正，那次响铃才是新下限。
+     */
     public static int getVolume(Context c) {
-        return sp(c).getInt(KEY_VOLUME, 80);
+        int v = sp(c).getInt(KEY_VOLUME, 80);
+        if (v < MIN_VOLUME) {
+            // 旧版允许 0（完全无声）。读到就地改掉，之后各处都不会再见到 0
+            setVolume(c, MIN_VOLUME);
+            return MIN_VOLUME;
+        }
+        return v;
     }
 
     public static void setVolume(Context c, int v) {
-        sp(c).edit().putInt(KEY_VOLUME, Math.max(0, Math.min(100, v))).apply();
+        sp(c).edit().putInt(KEY_VOLUME, Math.max(MIN_VOLUME, Math.min(100, v))).apply();
     }
 
     /** 音量键在响铃时的作用：0 无 / 1 稍后提醒 / 2 关闭闹钟。默认稍后提醒。 */

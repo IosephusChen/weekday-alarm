@@ -41,7 +41,7 @@
     <string name="more_fade_in_title">铃声渐响</string>
     <string name="more_fade_in_summary">从静音逐渐变大，约 30 秒到设定音量</string>
     <string name="more_vibrate_title">响铃时震动</string>
-    <string name="more_vibrate_summary">配合音量调到 0 可实现「静音仅震动」</string>
+    <string name="more_vibrate_summary">响铃时持续震动，静音的闹钟也照震</string>
     <!-- v0.82.0：稍后提醒搬回主页，键名跟着改（值不变） -->
     <string name="settings_snooze_title">稍后提醒</string>
     <string name="more_snooze_default">5 分钟 × 3 次</string>
@@ -227,7 +227,7 @@
          （原同族的 dialog_horizon 等五个单选圈布局已在 v0.76.4 换成 DialogKit
          卡片后删除，文案本身不变，仍由这几个 string 提供标题与说明。） -->
     <string name="dialog_volume_title">闹钟音量</string>
-    <string name="dialog_volume_message">拖动调节，下次响铃即用新音量。调到 0 就是静音，届时只震动、不响铃。</string>
+    <string name="dialog_volume_message">拖动调节，下次响铃即用新音量。想让某条闹钟不响铃，在它的铃声里选「静音」。</string>
     <string name="dialog_snooze_title">稍后提醒</string>
     <string name="dialog_snooze_message">响铃时按音量键（或通知上的按钮）会推迟多久再响、最多推迟几次。</string>
     <string name="dialog_pre_notice_title">响铃前提醒</string>

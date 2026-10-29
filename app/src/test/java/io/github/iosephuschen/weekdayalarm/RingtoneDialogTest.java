@@ -98,4 +98,112 @@ public class RingtoneDialogTest {
             assertTrue("列表里没有的 Uri 不该被预选中", !list.getChildAt(i).isSelected());
         }
     }
+
+    /**
+     * 单个闹钟的铃声列表，第一项必须是「静音」（v0.90.0）。
+     *
+     * <p>放在最上面是刻意的：想「这条别吵我」的人不该滑过一长串铃声才找到它。
+     * 设置页那条入口没有静音（全局铃声不能静音），所以这条只对 followLabel 非空成立。
+     */
+    @Test
+    public void showForAlarm_putsSilentBeforeFollow() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, false, "跟随设置（系统默认）", (uri, kind) -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertEquals("静音", optionTitle(list.getChildAt(0)));
+        assertEquals("跟随设置（系统默认）", optionTitle(list.getChildAt(1)));
+    }
+
+    /**
+     * 副标题必须真的显示出来（v0.90.0 修）。
+     *
+     * <p>dialog_pick 里 {@code tv_pick_sub} 默认 {@code gone}，这里原来只 setText 没让它可见，
+     * 于是「点一下试听」这句从 v0.74.0 起就没露过面——用户根本不知道能点。
+     */
+    @Test
+    public void showForAlarm_subtitleIsVisible() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, false, "跟随设置（系统默认）", (uri, kind) -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        TextView sub = d.findViewById(R.id.tv_pick_sub);
+        assertEquals(View.VISIBLE, sub.getVisibility());
+        assertTrue(sub.getText().toString().contains("试听"));
+    }
+
+    /** 选中「静音」后，副标题不能还教人试听——那一项本来就没有声音。 */
+    @Test
+    public void showForAlarm_pickSilent_stopsTellingUserToPreview() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, false, "跟随设置（系统默认）", (uri, kind) -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        list.getChildAt(0).performClick();
+        ShadowLooper.idleMainLooper();
+
+        TextView sub = d.findViewById(R.id.tv_pick_sub);
+        assertTrue("静音没有可试听的声音，别再写「试听」",
+                !sub.getText().toString().contains("试听"));
+    }
+
+    /** 静音的闹钟打开列表时，勾要落在「静音」上——状态不能只存在数据里。 */
+    @Test
+    public void showForAlarm_silentAlarm_marksSilentRow() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, true, "跟随设置（系统默认）", (uri, kind) -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertTrue("静音是当前状态，该行要选中", list.getChildAt(0).isSelected());
+    }
+
+    /**
+     * 选「静音」再确定，带回来的是 Kind.SILENT，而不是"某个 Uri"。
+     *
+     * <p>这一条钉的是那个最危险的退化：如果静音被编码成一个字符串塞进 ringtone，
+     * AlarmService 拿到非法 Uri 会走「铃声失效」的兜底，把系统默认铃放出来——
+     * 静音的闹钟反而响了。
+     */
+    @Test
+    public void showForAlarm_pickSilent_returnsSilentKind() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        final RingtoneDialog.Kind[] kind = {null};
+        final Uri[] uri = {Uri.parse("untouched")};
+        RingtoneDialog.show(a, null, false, "跟随设置（系统默认）", (u, k) -> {
+            uri[0] = u;
+            kind[0] = k;
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        list.getChildAt(0).performClick();
+        ShadowLooper.idleMainLooper();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(RingtoneDialog.Kind.SILENT, kind[0]);
+        assertEquals("静音没有 Uri，不能顺手带一个回去", null, uri[0]);
+    }
 }

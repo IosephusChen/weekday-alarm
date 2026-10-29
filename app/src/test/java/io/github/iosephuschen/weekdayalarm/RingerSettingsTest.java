@@ -46,8 +46,8 @@ public class RingerSettingsTest {
         assertEquals(80, Prefs.getVolume(ctx()));
         Prefs.setVolume(ctx(), 50);
         assertEquals(50, Prefs.getVolume(ctx()));
-        Prefs.setVolume(ctx(), -10);      // 越界压到 0 = 静音
-        assertEquals(0, Prefs.getVolume(ctx()));
+        Prefs.setVolume(ctx(), -10);      // 越界压到下限（v0.90.0 起 10，不再是 0）
+        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
         Prefs.setVolume(ctx(), 150);      // 越界压到 100
         assertEquals(100, Prefs.getVolume(ctx()));
     }
@@ -212,32 +212,50 @@ public class RingerSettingsTest {
     }
 
     /**
-     * 音量 0 的文案要说清还震不震（v0.61.4）。
+     * 音量行只写百分比（v0.90.0）。
      *
-     * <p>用户真机反馈：关掉「响铃时震动」后，设置页仍写着「静音（仅震动）」——
-     * 那时既没声也不震，文案在说假话。四个组合逐个钉。
+     * <p>v0.61.4 这里曾有「静音（仅震动）/ 静音（不震动）」两支：0 档既可能只震也可能全静，
+     * 文案必须说清。v0.90.0 把 0 档整个取消（{@link Prefs#MIN_VOLUME}），那个两难随之消失——
+     * 全局音量再也调不到静音，要某条不响就用那条闹钟的静音开关。
      */
     @Test
-    public void volumeText_saysWhetherVibrationStaysOn() {
-        assertEquals("80%", PrefDialogs.volumeText(80, true));
-        assertEquals("80%", PrefDialogs.volumeText(80, false));
-        assertEquals("静音（仅震动）", PrefDialogs.volumeText(0, true));
-        assertEquals("静音（不震动）", PrefDialogs.volumeText(0, false));
+    public void volumeText_isPercentageOnly() {
+        assertEquals("10%", PrefDialogs.volumeText(Prefs.MIN_VOLUME));
+        assertEquals("80%", PrefDialogs.volumeText(80));
+        assertEquals("100%", PrefDialogs.volumeText(100));
     }
 
-    /** 设置页那一行跟着震动开关走，不是硬编码。 */
+    /** 0 不再是合法音量：写进去会被抬到下限。 */
     @Test
-    public void volumeRow_reflectsVibrateSwitch() {
+    public void setVolume_zeroIsRaisedToFloor() {
         Prefs.setVolume(ctx(), 0);
-        Prefs.setVibrate(ctx(), true);
-        SettingsActivity on = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        assertEquals("静音（仅震动）",
-                ((TextView) on.findViewById(R.id.tv_volume)).getText().toString());
+        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
+    }
 
-        Prefs.setVibrate(ctx(), false);
-        SettingsActivity off = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        assertEquals("关了震动就不能再说「仅震动」",
-                "静音（不震动）",
-                ((TextView) off.findViewById(R.id.tv_volume)).getText().toString());
+    /**
+     * 升级迁移：盘上还是旧版留下的 0，读一次就抬到下限并落盘。
+     *
+     * <p>迁移必须发生在**读取处**。升级后用户可能一直没打开 App，
+     * 而闹钟照常在早上响——只有读的时候纠正，那次响铃才是新下限。
+     */
+    @Test
+    public void getVolume_migratesLegacyZeroOnDisk() {
+        ctx().getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
+                .edit().putInt(Prefs.KEY_VOLUME, 0).commit();
+
+        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
+        assertEquals("读到就该改掉，不能只是返回时抬一下",
+                Prefs.MIN_VOLUME,
+                ctx().getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
+                        .getInt(Prefs.KEY_VOLUME, -1));
+    }
+
+    /** 设置页那一行跟着存储值走，不是硬编码。 */
+    @Test
+    public void volumeRow_showsStoredPercentage() {
+        Prefs.setVolume(ctx(), 45);
+        SettingsActivity on = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        assertEquals("45%",
+                ((TextView) on.findViewById(R.id.tv_volume)).getText().toString());
     }
 }

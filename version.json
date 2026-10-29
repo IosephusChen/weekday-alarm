@@ -1,12 +1,13 @@
 {
-  "versionCode": 219,
-  "versionName": "0.89.10",
+  "versionCode": 220,
+  "versionName": "0.90.0",
   "published": "2026-10-29",
-  "title": "点完通知，界面当场跟着变",
+  "title": "静音改由每条闹钟自己管",
   "notes": [
-    "通知栏点「这次不响」，首页马上更新，不用再退出去重进",
-    "从通知点「停止」，首页那行「正在响铃」也会跟着消失"
+    "铃声里多了「静音」，这条不响铃，照样震动、照样弹响铃页",
+    "列表和编辑页都写着「静音」，不会转头就忘",
+    "响铃音量最低 10%，闹钟不会再被调到听不见"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.10/weekday-alarm-0.89.10.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.10"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.0/weekday-alarm-0.90.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.0"
 }

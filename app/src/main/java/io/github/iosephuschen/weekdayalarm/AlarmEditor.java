@@ -74,12 +74,17 @@ final class AlarmEditor {
         // v0.88.0：这条闹钟单独用的铃声。null = 跟随「设置 → 铃声」，
         // 新建时不把当时的默认铃声抄进来——否则以后改默认，这条不跟着变（见 Alarm.ringtone）
         final Uri[] ring = {target != null ? parseRingtone(target.ringtone) : null};
+        // 静音是叠加在原铃声之上的状态（v0.90.0）：选了静音不清掉原来的 Uri，
+        // 取消静音就能回到上次那条铃声，而不是被扔回「跟随设置」
+        final boolean[] silent = {target != null && target.silent};
         final String followLabel = "跟随设置（" + settingRingtoneName(activity) + "）";
-        tvRingtone.setText(ringtoneRowText(activity, ring[0]));
-        tvRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], followLabel,
-                (uri, follow) -> {
-                    ring[0] = follow ? null : uri;
-                    tvRingtone.setText(ringtoneRowText(activity, ring[0]));
+        tvRingtone.setText(ringtoneRowText(activity, ring[0], silent[0]));
+        tvRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], silent[0],
+                followLabel, (uri, kind) -> {
+                    silent[0] = kind == RingtoneDialog.Kind.SILENT;
+                    if (kind == RingtoneDialog.Kind.FOLLOW) ring[0] = null;
+                    else if (kind == RingtoneDialog.Kind.RINGTONE) ring[0] = uri;
+                    tvRingtone.setText(ringtoneRowText(activity, ring[0], silent[0]));
                 }));
 
         // 一次性闹钟的那一天。v0.58.5 起默认「今天」——
@@ -192,10 +197,12 @@ final class AlarmEditor {
                         Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
                                 true, onceStr);
                         created.ringtone = ringtoneString(ring[0]);
+                        created.silent = silent[0];
                         alarms.add(created);
                     } else {
                         // 铃声不属于「改完就开」那套业务规则，直接写字段即可
                         target.ringtone = ringtoneString(ring[0]);
+                        target.silent = silent[0];
                         String tip = applyEdit(activity, target, hour[0], minute[0],
                                 label, mode, onceStr);
                         if (tip != null) {
@@ -280,11 +287,15 @@ final class AlarmEditor {
     /**
      * 编辑器里「铃声」那一行显示什么。
      *
-     * <p>三种情况：跟随设置 / 正常铃声 / 原铃声已不可用。第三种必须说出来——
+     * <p>四种情况：静音 / 跟随设置 / 正常铃声 / 原铃声已不可用。最后一种必须说出来——
      * 换设备后 URI 对不上是最常见的，播放会回落默认，但用户如果只看到
      * 「已选铃声」会以为自己的设置还生效着。
+     *
+     * <p>静音优先于其余三种（v0.90.0）：静音的闹钟可能还留着上次选的 Uri，
+     * 但此刻它不会响，写成铃声名是在骗人。
      */
-    static String ringtoneRowText(android.content.Context ctx, Uri per) {
+    static String ringtoneRowText(android.content.Context ctx, Uri per, boolean silent) {
+        if (silent) return "静音";
         if (per == null) return "跟随设置（" + settingRingtoneName(ctx) + "）";
         if (!ringtoneAvailable(ctx, per)) return "原铃声不可用，将用默认";
         return ringtoneName(ctx, per);

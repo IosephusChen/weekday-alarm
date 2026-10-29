@@ -275,44 +275,49 @@ public class AlarmService extends Service {
     }
 
     private void startRinging() {
-        // v0.14.0：音量可调（0 = 静音仅震动），可选铃声渐响
-        int volumePct = Prefs.getVolume(this);
-        float targetVol = Math.max(0f, Math.min(1f, volumePct / 100f));
-        boolean fadeIn = Prefs.isFadeIn(this) && volumePct > 0;
-        try {
-            Uri uri = resolveRingtoneUri();
-            player = new MediaPlayer();
-            player.setDataSource(this, uri);
-            player.setAudioAttributes(new AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build());
-            player.setLooping(true);
-            player.prepare();
-            applyVolumeAndStart(targetVol, fadeIn);
-        } catch (Exception e) {
-            // 自定义铃声失效（备份还原到新设备后 Uri 不存在最常见）：先收尾失败的 player，
-            // 否则它被下面的兜底覆盖，MediaPlayer 一直不 release
+        // v0.90.0：静音的闹钟根本不创建 player —— 不是把音量拖到 0，而是不进这条路。
+        // 其余照旧：前台服务、全屏页、振动、通知、自动停止倒计时都归下面几段管。
+        // 这样「静音」和「音量很小」是两件事：前者不占音频焦点，也不会被系统音量影响
+        if (!isSilentAlarm(this, currentAlarmId)) {
+            // v0.14.0：音量可调，可选铃声渐响（0 档已随下限取消，见 Prefs.MIN_VOLUME）
+            int volumePct = Prefs.getVolume(this);
+            float targetVol = Math.max(0f, Math.min(1f, volumePct / 100f));
+            boolean fadeIn = Prefs.isFadeIn(this) && volumePct > 0;
             try {
-                if (player != null) {
-                    player.release();
-                    player = null;
+                Uri uri = resolveRingtoneUri();
+                player = new MediaPlayer();
+                player.setDataSource(this, uri);
+                player.setAudioAttributes(new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+                player.setLooping(true);
+                player.prepare();
+                applyVolumeAndStart(targetVol, fadeIn);
+            } catch (Exception e) {
+                // 自定义铃声失效（备份还原到新设备后 Uri 不存在最常见）：先收尾失败的 player，
+                // 否则它被下面的兜底覆盖，MediaPlayer 一直不 release
+                try {
+                    if (player != null) {
+                        player.release();
+                        player = null;
+                    }
+                } catch (Exception ignore) {
                 }
-            } catch (Exception ignore) {
-            }
-            try {
-                // 兜底用闹钟铃，不是来电铃——响铃页是闹钟，用户听到电话铃声会愣一下
-                Uri fallback = RingtoneManager.getActualDefaultRingtoneUri(this,
-                        RingtoneManager.TYPE_ALARM);
-                if (fallback == null) {
-                    fallback = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                try {
+                    // 兜底用闹钟铃，不是来电铃——响铃页是闹钟，用户听到电话铃声会愣一下
+                    Uri fallback = RingtoneManager.getActualDefaultRingtoneUri(this,
+                            RingtoneManager.TYPE_ALARM);
+                    if (fallback == null) {
+                        fallback = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+                    }
+                    player = MediaPlayer.create(this, fallback);
+                    if (player != null) {
+                        player.setLooping(true);
+                        applyVolumeAndStart(targetVol, fadeIn);
+                    }
+                } catch (Exception ignore) {
                 }
-                player = MediaPlayer.create(this, fallback);
-                if (player != null) {
-                    player.setLooping(true);
-                    applyVolumeAndStart(targetVol, fadeIn);
-                }
-            } catch (Exception ignore) {
             }
         }
         try {
@@ -365,6 +370,20 @@ public class AlarmService extends Service {
         if (custom != null) return custom;
         Uri def = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
         return def != null ? def : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+    }
+
+    /**
+     * 某条闹钟是不是静音（v0.90.0）。
+     *
+     * <p>和 {@link #alarmRingtone} 一样按 id 现查，而不是在响铃开始时把值拷进字段：
+     * 响铃期间用户可能进 App 把它改成静音或改回来，以最新状态为准。
+     */
+    static boolean isSilentAlarm(Context ctx, int alarmId) {
+        if (alarmId <= 0) return false;
+        for (Alarm a : Prefs.getAlarms(ctx)) {
+            if (a.id == alarmId) return a.silent;
+        }
+        return false;
     }
 
     /**

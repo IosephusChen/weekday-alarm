@@ -340,24 +340,24 @@ public class GuideActivity extends AppCompatActivity {
 
     private void refreshRing() {
         int v = Prefs.getVolume(this);
-        tvVolume.setText(PrefDialogs.volumeText(v, Prefs.isVibrate(this)));
+        tvVolume.setText(PrefDialogs.volumeText(v));
         tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
         if (tvVibrate != null) tvVibrate.setText(Prefs.isVibrate(this) ? "开" : "关");
         tvSnooze.setText(PrefDialogs.snoozeText(this));
         tvPreNotice.setText(PrefDialogs.preNoticeText(this));
     }
 
-    /** 音量条：与设置页同一个对话框布局，拖到 0 = 静音仅震动。 */
+    /** 音量条：与设置页同一个对话框布局，最低 10%（v0.90.0 起 0 档取消）。 */
     private void showVolumeDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_volume, null);
         android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
         TextView value = view.findViewById(R.id.tv_volume_value);
-        seek.setProgress(Prefs.getVolume(this));
-        value.setText(PrefDialogs.volumeText(seek.getProgress(), Prefs.isVibrate(this)));
+        seek.setProgress(Prefs.getVolume(this) - Prefs.MIN_VOLUME);
+        value.setText(PrefDialogs.volumeText(Prefs.getVolume(this)));
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(PrefDialogs.volumeText(progress, Prefs.isVibrate(GuideActivity.this)));
+                value.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
             }
 
             @Override
@@ -371,7 +371,7 @@ public class GuideActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setView(view)
                 .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setVolume(this, seek.getProgress());
+                    Prefs.setVolume(this, seek.getProgress() + Prefs.MIN_VOLUME);
                     refreshRing();
                 })
                 .setNegativeButton("取消", null)

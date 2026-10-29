@@ -95,6 +95,19 @@ public final class Alarm {
      */
     public String ringtone;
 
+    /**
+     * 这条闹钟不响铃，只走其余流程（v0.90.0）。
+     *
+     * <p><b>为什么不复用 {@code ringtone}</b>：那个字段的 null 已经表示「跟随设置」，
+     * 再让空值兼表示静音会分不开。更危险的是有人会图省事把静音编码成一个字符串
+     * （比如 {@code "silent"}）——{@link AlarmService} 拿到非法 Uri 会走「铃声失效」
+     * 的兜底，把系统默认闹钟铃放出来，于是「静音的闹钟」反而响了。必须是独立布尔。
+     *
+     * <p>到点仍然起前台服务、弹全屏页、震动（震动跟全局开关）、发通知、自动停止倒计时，
+     * 只跳过播放铃声那一段。和「这次不响」不是一回事：那是本次跳过，这是这条闹钟长期的属性。
+     */
+    public boolean silent;
+
     /** 把任意整数收敛到合法的配色下标。 */
     public static int clampColor(int c) {
         return c < 0 || c >= COLOR_COUNT ? 0 : c;
@@ -307,6 +320,8 @@ public final class Alarm {
                 if (a.color != 0) o.put("color", a.color);
                 // 同 color：默认值（跟随设置）不落盘，老备份里没有这个键也照常读
                 if (a.ringtone != null && !a.ringtone.isEmpty()) o.put("ringtone", a.ringtone);
+                // 同 color / ringtone：默认值（不静音）不落盘。老备份没有这个键，读时按 false
+                if (a.silent) o.put("silent", true);
                 arr.put(o);
             } catch (Exception ignore) {
             }
@@ -347,6 +362,8 @@ public final class Alarm {
                     // 空串等同于没设：老版本 / 手改的备份里可能是 ""，别让它覆盖默认铃声
                     String ring = o.optString("ringtone", null);
                     a.ringtone = ring == null || ring.trim().isEmpty() ? null : ring.trim();
+                    // 老版本 / 手改的备份里没有这个键：默认 false，即照常响
+                    a.silent = o.optBoolean("silent", false);
                     out.add(a);
                 } catch (Exception skip) {
                     // 单条坏数据跳过，别连带丢掉其余闹钟

@@ -106,4 +106,18 @@
         android:gravity="center"
         android:textColor="#CFCBFF"
         android:textSize="12sp" />
+
+    <!-- v0.91.1：试听模式的播放诊断。只有 test == true 时才由 AlarmActivity 显示，
+         正式响铃页一直是 GONE——早上半醒的人不需要看系统音量是百分之几。
+         写这一行的目的是：万一还是不响，用户截一张图就能定位断在哪一环，
+         不必再来一轮「改了还是没声音」的盲猜。 -->
+    <TextView
+        android:id="@+id/tv_diag"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:textColor="#8E88B8"
+        android:textSize="11sp"
+        android:visibility="gone" />
 </LinearLayout>

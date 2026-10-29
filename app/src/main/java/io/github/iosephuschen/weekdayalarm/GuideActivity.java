@@ -67,6 +67,8 @@ public class GuideActivity extends AppCompatActivity {
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
 
     private TextView tvVolume, tvFade, tvVibrate, tvSnooze, tvPreNotice;
+    /** 盯着系统闹钟音量（v0.91.1），见 {@link VolumeWatcher}。 */
+    private VolumeWatcher volumeWatcher;
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow;
@@ -150,6 +152,22 @@ public class GuideActivity extends AppCompatActivity {
         // 从系统设置回来，勾选状态要立刻更新
         refreshPermissions();
         updateChrome();
+        // v0.91.1：这一页原来在 onResume 里完全不碰音量。用户按音量键调了「闹钟」，
+        // 或者去系统设置里拖过，切回来数字还是进页面那一刻的——而这一页恰恰是新手
+        // 第一次看到音量在哪、是多少的地方，显示错了比不显示更糟。
+        refreshRing();
+        if (volumeWatcher == null) {
+            volumeWatcher = VolumeWatcher.start(this, this::refreshRing);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (volumeWatcher != null) {
+            volumeWatcher.stop();
+            volumeWatcher = null;
+        }
+        super.onPause();
     }
 
     // ================= 第 1 页：周休制度 =================

@@ -142,9 +142,25 @@ public class AlarmSilentTest {
         }
         String block = code.substring(start, i);
 
-        assertTrue("播铃声要跳过，不是把音量调 0", block.contains("player.setDataSource"));
-        assertTrue("兜底的默认铃声也不能漏在判断外——否则静音的闹钟反而会响",
-                block.contains("MediaPlayer.create"));
+        // v0.91.1：播放搬进了 startPlayer()，判断块里看不到 setDataSource 了。
+        // 钉子的本意不变——静音时不许走到任何一条播放路径，所以改成验「播放入口只有一个，
+        // 且这个入口只在静音判断内被调用」。
+        assertTrue("播铃声要跳过，不是把音量调 0", block.contains("startPlayer("));
+        assertTrue("渐响/音量的决策也必须在静音判断之内", block.contains("shouldFadeIn("));
+        assertEquals("setDataSource 只该有一处（startPlayer 内）；多一处就说明有播放路径绕过了静音判断",
+                1, countOf(code, "setDataSource"));
+        assertFalse("兜底不能再另起一条 MediaPlayer.create 的路——它当年就在静音判断外面",
+                code.contains("MediaPlayer.create"));
+    }
+
+    private static int countOf(String haystack, String needle) {
+        int n = 0;
+        int at = haystack.indexOf(needle);
+        while (at >= 0) {
+            n++;
+            at = haystack.indexOf(needle, at + needle.length());
+        }
+        return n;
     }
 
     /** 读源码并去掉注释：注释里大量提到旧写法，只看真正的代码。 */

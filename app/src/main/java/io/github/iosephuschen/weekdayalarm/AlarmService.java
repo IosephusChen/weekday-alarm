@@ -8,13 +8,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -25,6 +29,9 @@ import androidx.core.app.NotificationManagerCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /** 前台服务：播放闹钟铃声 + 震动 + 发送可全屏的闹钟通知。 */
 public class AlarmService extends Service {
@@ -66,6 +73,24 @@ public class AlarmService extends Service {
     private MediaPlayer player;
     private Vibrator vibrator;
     private int currentAlarmId;   // 本次响铃的闹钟 id（小睡沿用）
+    /** 本次是不是「试听 / 测试响铃」（v0.91.1 起影响渐响与诊断行）。 */
+    private boolean testRing;
+    /** 本次实际播的是哪条铃声的标题，只给测试模式的诊断行用。 */
+    private String playingRingtoneName;
+
+    /** 音频焦点（v0.91.1）：没有它，部分 ROM 会把 USAGE_ALARM 的播放压掉。 */
+    private AudioManager audioManager;
+    private AudioFocusRequest focusRequest;
+
+    /**
+     * 最近一次响铃的播放诊断（v0.91.1）。
+     *
+     * <p>为什么要有这个：v0.90.x 之前，铃声放不出来时两处 {@code catch} 都是
+     * {@code ignore}——界面上完全看不出发生过什么，用户只能反复说「没声音」，而代码里
+     * 一片安静。这里把「用什么铃声、系统音量多少、播放是否成功」摊开，只给试听模式看，
+     * 正式响铃页一个字都不显示。静态字段够用：服务与响铃页同进程。
+     */
+    private static volatile String lastRingDiagnostic;
     /** 本次响铃的日期（小睡计数 / 自动停止取消时用）。 */
     private LocalDate ringDate = LocalDate.now();
     /** 「自动停止」闹钟实际注册在哪一天（跨零点时与 ringDate 不同，取消必须用这个）。 */
@@ -142,6 +167,7 @@ public class AlarmService extends Service {
         BedtimeReminder.cancelNotice(this);
         ringDate = parseDate(dateStr);
         boolean test = ACTION_TEST.equals(action);
+        testRing = test;
         // 缺省 true：老路径（测试响铃直接起服务）没有带这个 extra，保持原来的全屏行为
         boolean popup = intent == null || intent.getBooleanExtra(EXTRA_POPUP, true);
         Notification notif = buildNotification(dateStr, label, test, popup);
@@ -283,43 +309,27 @@ public class AlarmService extends Service {
             // setVolume(1.0) 的意思是「按系统音量放满」——设置页显示 80%，
             // 实际就是系统闹钟那一档的 80%，不再是 80% × 系统档位的两层相乘。
             // 渐响仍从 0 渐到 1.0，在系统音量之内做，听感不变。
+            //
+            // v0.91.1：试听（ACTION_TEST）不走渐响。试听要回答的是「现在到底有没有声音」，
+            // 而渐响是 30 秒从 0 爬到满——点两下就关掉的人，听到的是 5% 都不到的音量，
+            // 得出的结论必然是「没声音」。这个坑把「音量太小」和「根本没播」搅在一起，
+            // 正是上一版没能查出真凶的原因之一。
             float targetVol = 1f;
-            boolean fadeIn = Prefs.isFadeIn(this) && AlarmVolume.level(this) > 0;
-            try {
-                Uri uri = resolveRingtoneUri();
-                player = new MediaPlayer();
-                player.setDataSource(this, uri);
-                player.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build());
-                player.setLooping(true);
-                player.prepare();
-                applyVolumeAndStart(targetVol, fadeIn);
-            } catch (Exception e) {
-                // 自定义铃声失效（备份还原到新设备后 Uri 不存在最常见）：先收尾失败的 player，
-                // 否则它被下面的兜底覆盖，MediaPlayer 一直不 release
-                try {
-                    if (player != null) {
-                        player.release();
-                        player = null;
-                    }
-                } catch (Exception ignore) {
-                }
-                try {
-                    // 兜底用闹钟铃，不是来电铃——响铃页是闹钟，用户听到电话铃声会愣一下
-                    Uri fallback = RingtoneManager.getActualDefaultRingtoneUri(this,
-                            RingtoneManager.TYPE_ALARM);
-                    if (fallback == null) {
-                        fallback = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-                    }
-                    player = MediaPlayer.create(this, fallback);
-                    if (player != null) {
-                        player.setLooping(true);
-                        applyVolumeAndStart(targetVol, fadeIn);
-                    }
-                } catch (Exception ignore) {
-                }
+            boolean fadeIn = shouldFadeIn(this, testRing);
+            // v0.91.1：先拿焦点再播。没有焦点时部分 ROM 会把 USAGE_ALARM 压掉，
+            // 表现同样是「界面正常、一点声音都没有」。
+            requestFocusForAlarm();
+            String lastError = null;
+            for (Uri uri : ringtoneChain()) {
+                lastError = startPlayer(uri, targetVol, fadeIn);
+                if (lastError == null) break;
+            }
+            if (player == null) {
+                // v0.91.1：整条链都失败时不再沉默。以前这里是两处空 catch，
+                // 用户只能反复说「没声音」，代码里一点线索都不留。
+                lastRingDiagnostic = "播放失败：" + (lastError != null ? lastError : "没有可用的铃声");
+            } else {
+                updateDiagnostic();
             }
         }
         try {
@@ -372,6 +382,162 @@ public class AlarmService extends Service {
         if (custom != null) return custom;
         Uri def = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
         return def != null ? def : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+    }
+
+    /**
+     * 这次要不要渐响（v0.91.1 抽出，便于单测）。
+     *
+     * <p>三个条件缺一不可：不是试听、用户开了渐响、系统闹钟音量不是 0。
+     * 第三条是 v0.90.0 留下的：音量在 0 时渐响等于「从 0 爬到 0」，白白延后 30 秒
+     * 才让人意识到根本没声音，不如直接放，让他立刻知道是音量问题。
+     *
+     * <p>试听排除在外，是 v0.91.1 的核心修正——试听要回答「现在有没有声音」，
+     * 从 0 爬的那 30 秒把这个问题变成了「等 10 秒再说」，用户等不了。
+     */
+    static boolean shouldFadeIn(Context c, boolean testRing) {
+        return !testRing && Prefs.isFadeIn(c) && AlarmVolume.level(c) > 0;
+    }
+
+    /**
+     * 本次响铃的铃声候选，按优先级去重（v0.91.1 起四级）。
+     *
+     * <p>前三级的顺序沿用 v0.88.0：闹钟单独设的 → 设置里的默认 → 系统默认闹钟铃。
+     *
+     * <p>第四级是 v0.91.1 新加的，专治一种没有任何异常可抓的哑巴故障：系统「闹钟」铃声
+     * 被设成「无」时（部分 ROM 允许，此时 {@code content://settings/system/alarm_alert}
+     * 指向一个静音文件），前三级都能正常 prepare、正常 start，就是一点声音都没有。
+     * 用户感受到的与「播放失败」完全一样，而代码里风平浪静。通知铃声几乎不会被设成静音。
+     *
+     * <p>用 {@link LinkedHashSet} 去重同时保序：系统默认闹钟铃与第三级常常是同一个 Uri，
+     * 重复试一遍纯属浪费一次 prepare。
+     */
+    List<Uri> ringtoneChain() {
+        return ringtoneChain(this, currentAlarmId);
+    }
+
+    /** 拆出来便于单测：给定闹钟 id，排出这次要依次尝试的铃声。 */
+    static List<Uri> ringtoneChain(Context ctx, int alarmId) {
+        LinkedHashSet<Uri> set = new LinkedHashSet<>();
+        Uri per = alarmRingtone(ctx, alarmId);
+        if (per != null) set.add(per);
+        Uri custom = Prefs.getRingtoneUri(ctx);
+        if (custom != null) set.add(custom);
+        Uri alarm = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
+        if (alarm == null) alarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alarm != null) set.add(alarm);
+        Uri notif = RingtoneManager.getActualDefaultRingtoneUri(ctx,
+                RingtoneManager.TYPE_NOTIFICATION);
+        if (notif != null) set.add(notif);
+        return new ArrayList<>(set);
+    }
+
+    /**
+     * 按给定 Uri 起一个播放器。
+     *
+     * @return {@code null} 表示已经开播；否则是一句可以显示给用户的原因（v0.91.1）
+     */
+    private String startPlayer(Uri uri, float targetVol, boolean fadeIn) {
+        if (uri == null) return "铃声地址为空";
+        MediaPlayer mp = null;
+        try {
+            mp = new MediaPlayer();
+            mp.setDataSource(this, uri);
+            mp.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+            // v0.91.1：屏幕熄灭后 CPU 会休眠，MediaPlayer 跟着断，铃声自己停在一半。
+            // 系统时钟（DeskClock）同样持 PARTIAL_WAKE_LOCK 放闹钟。
+            mp.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
+            mp.setLooping(true);
+            mp.prepare();
+            player = mp;
+            playingRingtoneName = testRing ? ringtoneLabel(uri) : null;
+            applyVolumeAndStart(targetVol, fadeIn);
+            return null;
+        } catch (Exception e) {
+            // 失败的实例必须就地回收：以前它被下一次尝试覆盖，MediaPlayer 一直不 release
+            if (mp != null) {
+                try {
+                    mp.release();
+                } catch (Exception ignore) {
+                }
+            }
+            if (player == mp) player = null;
+            String msg = e.getMessage();
+            return msg == null || msg.isEmpty() ? e.getClass().getSimpleName() : msg;
+        }
+    }
+
+    /** 铃声标题，取不到就退回 Uri 末段——诊断行里有个名字总比「未知」强。 */
+    private String ringtoneLabel(Uri uri) {
+        try {
+            Ringtone r = RingtoneManager.getRingtone(this, uri);
+            if (r != null) {
+                String t = r.getTitle(this);
+                if (t != null && !t.isEmpty()) return t;
+            }
+        } catch (Exception ignore) {
+        }
+        String seg = uri.getLastPathSegment();
+        return seg == null ? "未知" : seg;
+    }
+
+    /** 拼一句给试听模式看的诊断；正式响铃一个字都不写（v0.91.1）。 */
+    private void updateDiagnostic() {
+        if (!testRing) return;
+        StringBuilder sb = new StringBuilder();
+        sb.append("系统音量 ").append(AlarmVolume.percent(this)).append('%');
+        if (playingRingtoneName != null) sb.append(" · 铃声：").append(playingRingtoneName);
+        if (player != null) sb.append(" · 播放中");
+        lastRingDiagnostic = sb.toString();
+    }
+
+    /** 响铃页试听模式下要显示的那行小字；{@code null} 表示没什么可说的（v0.91.1）。 */
+    static String diagnostic() {
+        return lastRingDiagnostic;
+    }
+
+    /**
+     * 申请短暂的音频焦点（v0.91.1）。
+     *
+     * <p>{@code USAGE_ALARM} 管的是「这条声音算什么用途」，焦点管的是「谁在占用音频输出」，
+     * 两回事。没有焦点时，系统仍可能按「输出正被别的应用占着」处理，把我们的播放压下去。
+     * 用 {@code AUDIOFOCUS_GAIN_TRANSIENT} 而不是 GAIN：响铃结束就还回去，不长期霸占。
+     * 系统时钟也是这么申请的。
+     */
+    private void requestFocusForAlarm() {
+        try {
+            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager == null) return;
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+            focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setAudioAttributes(attrs)
+                    .setWillPauseWhenDucked(true)
+                    .setOnAudioFocusChangeListener(focus -> {
+                        // 闹钟不响应「被抢焦点」：它就该一直响到用户亲手停。
+                        // 留一个空监听是因为 Builder 必填，不是为了在这里做决定。
+                    })
+                    .build();
+            audioManager.requestAudioFocus(focusRequest);
+        } catch (Exception ignore) {
+            // 拿不到焦点也要继续放：很多机器根本不在意这件事
+        }
+    }
+
+    /** 停止后把焦点还回去（v0.91.1）。 */
+    private void abandonFocusForAlarm() {
+        try {
+            if (audioManager != null && focusRequest != null) {
+                audioManager.abandonAudioFocusRequest(focusRequest);
+            }
+        } catch (Exception ignore) {
+        }
+        focusRequest = null;
+        audioManager = null;
     }
 
     /**
@@ -439,6 +605,10 @@ public class AlarmService extends Service {
         FloatingAlarm.hide();
         fading = false;
         fadeHandler.removeCallbacks(fadeRunnable);
+        // v0.91.1：焦点跟着这次响铃走，停了就还回去——否则下一次响铃申请时
+        // 旧请求还挂着，部分 ROM 会当成「同一个应用重复申请」直接忽略
+        abandonFocusForAlarm();
+        playingRingtoneName = null;
         // 取消尚未触发的「自动停止」闹钟，避免它在停止之后又来一次（v0.16.0）。
         // 用注册时记录的实际日期，跨零点也能打中（v0.23.0）
         LocalDate stopDate = autoStopDate != null ? autoStopDate

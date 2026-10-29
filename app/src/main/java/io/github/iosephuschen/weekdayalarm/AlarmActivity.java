@@ -36,6 +36,8 @@ public class AlarmActivity extends AppCompatActivity {
         @Override
         public void run() {
             refreshClock();
+            // 顺路补诊断行：服务写结果比这一页晚，没必要为它单独起一个定时器（v0.91.1）
+            if (test) refreshDiagnostic();
             ticker.postDelayed(this, 1000L);
         }
     };
@@ -165,6 +167,33 @@ public class AlarmActivity extends AppCompatActivity {
         }
         btnStop.setOnSlideCompleteListener(() -> stopAlarm());
         ((TextView) findViewById(R.id.tv_hint)).setText(autoStopHint(this));
+
+        // v0.91.1：试听模式亮出播放诊断，正式响铃页一个字都不加。
+        // 服务是异步起来的（startForegroundService），这一刻可能还没有结果，
+        // 所以先亮出控件，内容交给每秒一次的 tick 去补。
+        TextView tvDiag = findViewById(R.id.tv_diag);
+        if (tvDiag != null) {
+            if (test) {
+                tvDiag.setVisibility(View.VISIBLE);
+                tvDiag.setText("正在准备铃声…");
+            } else {
+                tvDiag.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /**
+     * 刷新试听模式的播放诊断（v0.91.1）。
+     *
+     * <p>内容由 {@link AlarmService} 写（它才知道播放器有没有真的起来、用的是哪条铃声），
+     * 这里只负责在读到之后贴上去。读不到就保留「正在准备铃声…」，
+     * 那种情况本身就说明了问题：服务根本没走到播放那一步。
+     */
+    private void refreshDiagnostic() {
+        TextView tv = findViewById(R.id.tv_diag);
+        if (tv == null) return;
+        String d = AlarmService.diagnostic();
+        if (d != null) tv.setText(d);
     }
 
     /**

@@ -45,6 +45,15 @@ public class SettingsActivity extends AppCompatActivity {
     /** 主页就地音量滑块（v0.60.0）：拖完松手才落盘。 */
     private SeekBar sbVolume;
 
+    /**
+     * 盯着系统闹钟音量（v0.91.1）：页面开着时按音量键改档位，这一页要跟着动。
+     * 详见 {@link VolumeWatcher}。
+     */
+    private VolumeWatcher volumeWatcher;
+
+    /** 手指正按着滑块拖动——这期间别让轮询把位置抢回去。 */
+    private boolean volumeTracking;
+
     /** 开关同步保护：回写开关状态时避免触发用户操作逻辑。 */
     private boolean swAttaching = false;
 
@@ -141,10 +150,12 @@ public class SettingsActivity extends AppCompatActivity {
 
                 @Override
                 public void onStartTrackingTouch(SeekBar bar) {
+                    volumeTracking = true;
                 }
 
                 @Override
                 public void onStopTrackingTouch(SeekBar bar) {
+                    volumeTracking = false;
                     AlarmVolume.setLevel(SettingsActivity.this,
                             bar.getProgress() + AlarmVolume.min(SettingsActivity.this));
                     updateVolumeText();
@@ -205,6 +216,23 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         refreshAll();
+        // v0.91.1：音量是设备状态，用户随时可能在系统音量条上按一下。
+        // 只靠 onResume 读一次，页面开着的时候数字就是死的。
+        if (volumeWatcher == null) {
+            volumeWatcher = VolumeWatcher.start(this, () -> {
+                // 手指还按在滑块上时不要抢位置：拖到一半被轮询拽回去，手感会很怪
+                if (!volumeTracking) updateVolumeText();
+            });
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (volumeWatcher != null) {
+            volumeWatcher.stop();
+            volumeWatcher = null;
+        }
+        super.onPause();
     }
 
     private void refreshAll() {

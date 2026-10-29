@@ -119,6 +119,38 @@
                     android:progressDrawable="@drawable/seek_track"
                     android:splitTrack="false"
                     android:thumb="@drawable/seek_thumb" />
+
+                <!-- v0.90.2：两端刻度，与音量对话框同一把尺子。
+
+                     没有这行时，滑块停在最左，整条轨道是灰的、左边没有任何紫色填充，
+                     右上角的「10%」孤零零一个数字——读起来像"当前音量 10%"，不像
+                     "最低只能到 10%"。补上两端刻度之后，左下角的 10% 正好压在滑块
+                     下方，右端 100% 说明这条轨道通向哪里，量程边界不用再靠拖一下试。
+
+                     两个文字与 dialog_volume.xml 完全一致，VolumeBarTest 同时盯着两处：
+                     只改对话框、漏掉设置页，就是从另一个入口进来的用户又看不明白。 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="10%"
+                        android:textColor="@color/sub"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="100%"
+                        android:textColor="@color/sub"
+                        android:textSize="11sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <View style="@style/SettingsDivider" />

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 /**
- * 音量对话框的刻度与下限必须对得上（v0.90.1）。
+ * 音量条的刻度与下限必须对得上（v0.90.1 起草，v0.90.2 覆盖设置页）。
  *
  * <p>为什么用源码级断言而不是找 View：刻度是布局里写死的两个 TextView，
  * 它们不参与任何业务逻辑，只在屏幕上说话；而 {@link Prefs#MIN_VOLUME}
@@ -19,8 +19,18 @@ import java.nio.file.Files;
  * <p>同理 {@code android:max} 必须是 {@code 100 - MIN_VOLUME}：SeekBar 的
  * progress 是"减去下限之后的百分比"，改常量时忘了改 max，滑块能拖到的
  * 实际音量就会整体偏移。
+ *
+ * <p>音量条有两个入口：设置页那条和点开数值弹出的对话框。v0.90.2 之前
+ * 只有对话框有刻度，设置页从"量程看得懂"变回"一个孤零零的数字"——
+ * 从哪个入口进来，理解难度不该不一样。所以下面所有断言都跑两份布局。
  */
 public class VolumeBarTest {
+
+    /** 两处音量条：设置页内嵌，和点开数值的对话框。 */
+    private static final String[] VOLUME_LAYOUTS = {
+            "layout/activity_settings.xml",
+            "layout/dialog_volume.xml",
+    };
 
     private static String res(String path) {
         File dir = new File(System.getProperty("user.dir")).getAbsoluteFile();
@@ -41,19 +51,23 @@ public class VolumeBarTest {
 
     /** 滑块能拖到的最大值，是"100 减下限"，不是 100。 */
     @Test
-    public void dialogSlider_maxIsHundredMinusFloor() {
-        String xml = res("layout/dialog_volume.xml");
-        assertTrue("滑块 max 必须是 " + (100 - Prefs.MIN_VOLUME),
-                xml.contains("android:max=\"" + (100 - Prefs.MIN_VOLUME) + "\""));
+    public void sliderMax_isHundredMinusFloor() {
+        for (String f : VOLUME_LAYOUTS) {
+            String xml = res(f);
+            assertTrue(f + "：滑块 max 必须是 " + (100 - Prefs.MIN_VOLUME),
+                    xml.contains("android:max=\"" + (100 - Prefs.MIN_VOLUME) + "\""));
+        }
     }
 
     /** 两端的刻度要说出真实区间：左端就是下限，右端就是 100%。 */
     @Test
-    public void dialogRuler_statesRealRange() {
-        String xml = res("layout/dialog_volume.xml");
-        assertTrue("左端刻度应写 " + Prefs.MIN_VOLUME + "%",
-                xml.contains("android:text=\"" + Prefs.MIN_VOLUME + "%\""));
-        assertTrue("右端刻度应写 100%", xml.contains("android:text=\"100%\""));
+    public void ruler_statesRealRange() {
+        for (String f : VOLUME_LAYOUTS) {
+            String xml = res(f);
+            assertTrue(f + "：左端刻度应写 " + Prefs.MIN_VOLUME + "%",
+                    xml.contains("android:text=\"" + Prefs.MIN_VOLUME + "%\""));
+            assertTrue(f + "：右端刻度应写 100%", xml.contains("android:text=\"100%\""));
+        }
     }
 
     /** 说明文字里也要有下限——用户不看刻度、只看这行的人不少。 */

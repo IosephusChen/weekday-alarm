@@ -175,6 +175,11 @@ public final class RingtoneDialog {
         }
         final int[] picked = {selected};
 
+        // 打开时落点就是静音：副标题一上来就该按静音说，不能等用户点一下才改口
+        if (selected >= 0 && items.get(selected).kind == Kind.SILENT) {
+            tvSub.setText("选好按「确定」");
+        }
+
         // ---------- 列表 ----------
         final View[] rows = new View[n];
         final Ringtone[] playing = {null};

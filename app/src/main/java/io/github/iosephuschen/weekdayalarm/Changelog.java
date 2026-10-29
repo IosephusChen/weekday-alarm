@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(214, "0.89.5", "2026/10/29", "两项权限的说法统一了",
+                    "「后台弹出界面」和「锁屏显示」写的是同一个位置",
+                    "之前一句「进去点」，一句「在…里」，看着像两个地方"),
             new Entry(213, "0.89.4", "2026/10/29", "「锁屏显示」那行指错了地方",
                     "写着「同上一页」，点进去是自启动管理，里面没有这一项",
                     "改成直接说它在「其他权限」里"),

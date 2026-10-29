@@ -46,6 +46,15 @@ public class GuideActivity extends AppCompatActivity {
     /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
     private static final int PAGE_PERMISSIONS = 2;
 
+    /**
+     * 「还要再点一层」的统一说法（v0.89.5）。
+     *
+     * <p>「后台弹出界面」和「锁屏显示」点的是同一个页面——{@code ACTION_APPLICATION_DETAILS_SETTINGS}
+     * 落到「应用信息 → 权限」，两项都还在下一层的「其他权限」里。既然终点相同，
+     * 位置指引就必须是同一句话：两行写法不同时，用户会以为要跑两个地方去开两个东西。
+     */
+    private static final String HINT_OTHER_PERMS = "去开启 · 在「其他权限」里";
+
     private ViewFlipper flipper;
     private LinearLayout dots;
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
@@ -483,9 +492,10 @@ public class GuideActivity extends AppCompatActivity {
             stNotif.setTextColor(ContextCompat.getColor(this, R.color.danger));
         }
         setPermState(stFsi, fsi);
-        // v0.58.3：真机上这个 intent 落在「应用信息 → 权限」页，后台弹出界面还藏在
-        // 「其他权限」里，所以状态文案直接告诉用户下一层点哪
-        stFsi.setText(fsi ? "已开启 · 锁屏也能弹" : "去开启 · 进去点「其他权限」");
+        // 后台弹出界面与锁屏显示跳的是同一个页面（ACTION_APPLICATION_DETAILS_SETTINGS
+        // 落到「应用信息 → 权限」，目标都在下一层的「其他权限」里），所以位置指引
+        // 必须一字不差——两行说法不同，用户会以为要跑两个地方（v0.89.5 统一）
+        stFsi.setText(fsi ? "已开启 · 锁屏也能弹" : HINT_OTHER_PERMS);
         // v0.58.2：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
         // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
         // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
@@ -529,6 +539,9 @@ public class GuideActivity extends AppCompatActivity {
      * （自启动之后），上一页变成了「自启动管理」，而那一页里根本没有锁屏显示。
      * 2026-10-29 用户按字面找过去，才发现指向是错的。
      *
+     * <p>v0.89.5：这句话与「后台弹出界面」那行完全一致——两者跳同一个页面，
+     * 位置指引不该有两套说法。位置只在状态行说一次，副标题只讲后果。
+     *
      * <p>测过之后把探针结果写进来——通过、没锁屏、没测到各一句，不给无端指责。
      */
     private void refreshLockState() {
@@ -545,7 +558,7 @@ public class GuideActivity extends AppCompatActivity {
             stLock.setText("没测到 · 两个开关都要开");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.danger));
         } else {
-            stLock.setText("去开启 · 在「其他权限」里");
+            stLock.setText(HINT_OTHER_PERMS);
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         }
     }

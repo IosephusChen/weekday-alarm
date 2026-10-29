@@ -864,7 +864,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="@dimen/space_2"
-                                    android:text="去开启 · 进「其他权限」"
+                                    android:text="去开启 · 在「其他权限」里"
                                     android:textColor="@color/indigo"
                                     android:textSize="12sp" />
                             </LinearLayout>
@@ -1044,7 +1044,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。这一项在「其他权限」里。"
+                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 

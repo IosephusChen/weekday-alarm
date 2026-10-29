@@ -1,12 +1,12 @@
 {
-  "versionCode": 213,
-  "versionName": "0.89.4",
+  "versionCode": 214,
+  "versionName": "0.89.5",
   "published": "2026-10-29",
-  "title": "「锁屏显示」那行指错了地方",
+  "title": "两项权限的说法统一了",
   "notes": [
-    "写着「同上一页」，点进去是自启动管理，里面没有这一项",
-    "改成直接说它在「其他权限」里"
+    "「后台弹出界面」和「锁屏显示」写的是同一个位置",
+    "之前一句「进去点」，一句「在…里」，看着像两个地方"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.4/weekday-alarm-0.89.4.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.4"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.5/weekday-alarm-0.89.5.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.5"
 }

@@ -27,6 +27,9 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -576,6 +579,32 @@ public class GuideTest {
         assertEquals("没测过时应指向去开启，而不是指责没开", "去开启 · 在「其他权限」里", s);
         assertFalse("上一行是「自启动」，那一页里没有锁屏显示，不能写「同上一页」"
                 + "（2026-10-29 用户按字面找过去找不到）", s.contains("同上一页"));
+    }
+
+    /**
+     * 「后台弹出界面」与「锁屏显示」的位置指引必须是同一句话（v0.89.5）。
+     *
+     * <p>2026-10-29 用户看截图后提出「文案统一一下」：两行分别写「进去点「其他权限」」
+     * 和「在「其他权限」里」。读起来像两个不同的地方，实际上点进去是同一个页面——
+     * {@code ACTION_APPLICATION_DETAILS_SETTINGS} 落到「应用信息 → 权限」，两项都藏在
+     * 下一层的「其他权限」里。说法不一，用户会以为要跑两趟。
+     *
+     * <p>用源码钉子而不是界面断言：这两句由 {@code refreshPermissions()} 在运行时写入，
+     * 而是否显示「去开启」取决于 FSI 权限的当前值，Robolectric 里不好摆。真正要防的
+     * 是「有人顺手又把其中一行改回自己的说法」，所以直接盯源码：位置文案只能来自
+     * 那个常量，且旧的另一种写法不许再出现。
+     */
+    @Test
+    public void permissionRows_shareOneLocationHint() throws Exception {
+        String src = new String(Files.readAllBytes(new File(
+                "src/main/java/io/github/iosephuschen/weekdayalarm/GuideActivity.java").toPath()),
+                StandardCharsets.UTF_8);
+        assertFalse("两行指向同一个页面，不能再出现第二套说法（v0.89.5 统一过一次）",
+                src.contains("进去点「其他权限」"));
+        int uses = 0, from = 0;
+        while ((from = src.indexOf("HINT_OTHER_PERMS", from)) >= 0) { uses++; from += 5; }
+        assertTrue("位置文案要由 HINT_OTHER_PERMS 统一供给：定义 1 次 + 两行各用 1 次，实际 "
+                + uses + " 次", uses >= 3);
     }
 
     /** 测过并且没测到：两个开关都要查（真机 2×2：缺一个锁屏都不弹）。 */

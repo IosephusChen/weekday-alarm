@@ -42,17 +42,6 @@ public class RingerSettingsTest {
     }
 
     @Test
-    public void volume_defaultIs80_andClamped() {
-        assertEquals(80, Prefs.getVolume(ctx()));
-        Prefs.setVolume(ctx(), 50);
-        assertEquals(50, Prefs.getVolume(ctx()));
-        Prefs.setVolume(ctx(), -10);      // 越界压到下限（v0.90.0 起 10，不再是 0）
-        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
-        Prefs.setVolume(ctx(), 150);      // 越界压到 100
-        assertEquals(100, Prefs.getVolume(ctx()));
-    }
-
-    @Test
     public void keyActions_defaultsAndRoundTrip() {
         // 默认：音量键=稍后提醒，电源键=无（多被系统接管）
         assertEquals(Prefs.KEY_ACTION_SNOOZE, Prefs.getVolKeyAction(ctx()));
@@ -113,14 +102,12 @@ public class RingerSettingsTest {
 
     @Test
     public void settings_persistAcrossContexts() {
-        Prefs.setVolume(ctx(), 35);
         Prefs.setVolKeyAction(ctx(), Prefs.KEY_ACTION_STOP);
         Prefs.setPowerKeyAction(ctx(), Prefs.KEY_ACTION_SNOOZE);
         Prefs.setFadeIn(ctx(), true);
 
         // 换一次「新进程」式读取（同一 SharedPreferences 文件），值应仍在
         Context fresh = ApplicationProvider.getApplicationContext();
-        assertEquals(35, Prefs.getVolume(fresh));
         assertEquals(Prefs.KEY_ACTION_STOP, Prefs.getVolKeyAction(fresh));
         assertEquals(Prefs.KEY_ACTION_SNOOZE, Prefs.getPowerKeyAction(fresh));
         assertTrue(Prefs.isFadeIn(fresh));
@@ -212,50 +199,17 @@ public class RingerSettingsTest {
     }
 
     /**
-     * 音量行只写百分比（v0.90.0）。
+     * 设置页那一行跟着系统档位走，不是硬编码（v0.91.0）。
      *
-     * <p>v0.61.4 这里曾有「静音（仅震动）/ 静音（不震动）」两支：0 档既可能只震也可能全静，
-     * 文案必须说清。v0.90.0 把 0 档整个取消（{@link Prefs#MIN_VOLUME}），那个两难随之消失——
-     * 全局音量再也调不到静音，要某条不响就用那条闹钟的静音开关。
+     * <p>v0.90.x 及以前这里断言的是 Prefs 里那个乘数。现在那层乘数没了，
+     * 显示的是 {@code STREAM_ALARM} 的真实档位换算出来的百分比。
      */
     @Test
-    public void volumeText_isPercentageOnly() {
-        assertEquals("10%", PrefDialogs.volumeText(Prefs.MIN_VOLUME));
-        assertEquals("80%", PrefDialogs.volumeText(80));
-        assertEquals("100%", PrefDialogs.volumeText(100));
-    }
-
-    /** 0 不再是合法音量：写进去会被抬到下限。 */
-    @Test
-    public void setVolume_zeroIsRaisedToFloor() {
-        Prefs.setVolume(ctx(), 0);
-        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
-    }
-
-    /**
-     * 升级迁移：盘上还是旧版留下的 0，读一次就抬到下限并落盘。
-     *
-     * <p>迁移必须发生在**读取处**。升级后用户可能一直没打开 App，
-     * 而闹钟照常在早上响——只有读的时候纠正，那次响铃才是新下限。
-     */
-    @Test
-    public void getVolume_migratesLegacyZeroOnDisk() {
-        ctx().getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
-                .edit().putInt(Prefs.KEY_VOLUME, 0).commit();
-
-        assertEquals(Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
-        assertEquals("读到就该改掉，不能只是返回时抬一下",
-                Prefs.MIN_VOLUME,
-                ctx().getSharedPreferences(Prefs.NAME, Context.MODE_PRIVATE)
-                        .getInt(Prefs.KEY_VOLUME, -1));
-    }
-
-    /** 设置页那一行跟着存储值走，不是硬编码。 */
-    @Test
-    public void volumeRow_showsStoredPercentage() {
-        Prefs.setVolume(ctx(), 45);
+    public void volumeRow_showsSystemPercentage() {
+        AlarmVolume.setLevel(ctx(), AlarmVolume.max(ctx()));
+        int shown = AlarmVolume.level(ctx());
         SettingsActivity on = Robolectric.buildActivity(SettingsActivity.class).setup().get();
-        assertEquals("45%",
+        assertEquals(AlarmVolume.percentOf(ctx(), shown) + "%",
                 ((TextView) on.findViewById(R.id.tv_volume)).getText().toString());
     }
 }

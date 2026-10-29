@@ -96,7 +96,8 @@ public final class ConfigBackup {
             p.put(Prefs.KEY_VACATION_DATES, toArray(Prefs.getVacationDates(ctx)));
             p.put(Prefs.KEY_OVERTIME_DATES, toArray(Prefs.getOvertimeDates(ctx)));
 
-            p.put(Prefs.KEY_VOLUME, Prefs.getVolume(ctx));
+            // v0.91.0：音量不再进备份——它是系统 STREAM_ALARM 的档位，属于设备状态，
+            // 换到新设备上应当沿用那边的系统音量，而不是把旧机器的值搬过去
             p.put(Prefs.KEY_VOLKEY_ACTION, Prefs.getVolKeyAction(ctx));
             p.put(Prefs.KEY_POWERKEY_ACTION, Prefs.getPowerKeyAction(ctx));
             p.put(Prefs.KEY_FADE_IN, Prefs.isFadeIn(ctx));
@@ -232,7 +233,7 @@ public final class ConfigBackup {
         ed.putStringSet(Prefs.KEY_VACATION_DATES, vacations);
         ed.putStringSet(Prefs.KEY_OVERTIME_DATES, overtimes);
 
-        ed.putInt(Prefs.KEY_VOLUME, clamp(p.optInt(Prefs.KEY_VOLUME, Prefs.getVolume(ctx)), 0, 100));
+        // 旧备份里的 alarm_volume 字段忽略：v0.91.0 起音量由系统决定，导入不再覆盖
         ed.putInt(Prefs.KEY_VOLKEY_ACTION,
                 clamp(p.optInt(Prefs.KEY_VOLKEY_ACTION, Prefs.getVolKeyAction(ctx)), 0, 2));
         ed.putInt(Prefs.KEY_POWERKEY_ACTION,

@@ -1,13 +1,13 @@
 {
-  "versionCode": 224,
-  "versionName": "0.90.4",
-  "published": "2026-10-29",
-  "title": "返回时不再偶尔掉回首页",
+  "versionCode": 225,
+  "versionName": "0.91.0",
+  "published": "2026-10-30",
+  "title": "音量条调的就是系统闹钟音量",
   "notes": [
-    "开过铃声、再进二级页、再返回，有概率直接崩回首页",
-    "因为铃声列表的游标挂在了设置页名下，返回时系统重查已关闭的它",
-    "改成用应用级上下文查，关闭前先摘掉登记"
+    "试听没声音：App 里的 80% 只是乘数，系统闹钟音量在最低档时实际只有 8%",
+    "滑块直接读写系统「闹钟」音量，显示 80% 就是真的 80%",
+    "按音量键调「闹钟」，回到 App 滑块会跟着动；反过来也一样"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.4/weekday-alarm-0.90.4.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.4"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.0/weekday-alarm-0.91.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.0"
 }

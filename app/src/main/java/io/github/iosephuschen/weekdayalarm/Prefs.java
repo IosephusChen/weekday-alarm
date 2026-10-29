@@ -32,7 +32,6 @@ public final class Prefs {
     public static final String KEY_LAST_RUN_VERSION = "last_run_version"; // 上次运行的 versionCode（升级后自动重排用）
     public static final String KEY_VACATION_DATES = "vacation_dates"; // 个人请假日期集合（yyyy-MM-dd）
     public static final String KEY_OVERTIME_DATES = "overtime_dates"; // 个人加班日期集合（yyyy-MM-dd）
-    public static final String KEY_VOLUME = "alarm_volume";           // 闹钟音量 MIN_VOLUME-100（0 档自 v0.90.0 取消）
     public static final String KEY_VOLKEY_ACTION = "volkey_action";   // 音量键作用：0 无 / 1 稍后提醒 / 2 关闭
     public static final String KEY_POWERKEY_ACTION = "powerkey_action"; // 电源键作用：同上
     public static final String KEY_FADE_IN = "fade_in";               // 铃声渐响（约 30 秒到设定音量）
@@ -501,34 +500,16 @@ public final class Prefs {
 
     // ================= 响铃设置（v0.14.0 起）=================
 
-    /**
-     * 响铃音量的下限（v0.90.0）。
-     *
-     * <p>0 档取消：一个能被调到彻底听不见的闹钟，本身就是个陷阱——
-     * 设的时候没人会记得，等到该响的那天已经晚了。要「这条别出声」请用
-     * 单条闹钟的静音（{@link Alarm#silent}），那是显式选择、看得见。
-     */
-    public static final int MIN_VOLUME = 10;
-
-    /**
-     * 闹钟音量 {@link #MIN_VOLUME}-100，默认 80。是否震动另由 {@link #isVibrate} 决定。
-     *
-     * <p>迁移放在读取处，不放在启动处：升级后用户可能一直没打开 App，
-     * 而闹钟照常在早上响。只有读取时纠正，那次响铃才是新下限。
-     */
-    public static int getVolume(Context c) {
-        int v = sp(c).getInt(KEY_VOLUME, 80);
-        if (v < MIN_VOLUME) {
-            // 旧版允许 0（完全无声）。读到就地改掉，之后各处都不会再见到 0
-            setVolume(c, MIN_VOLUME);
-            return MIN_VOLUME;
-        }
-        return v;
-    }
-
-    public static void setVolume(Context c, int v) {
-        sp(c).edit().putInt(KEY_VOLUME, Math.max(MIN_VOLUME, Math.min(100, v))).apply();
-    }
+    // v0.91.0：App 不再持有自己的音量。
+    //
+    // 原来这里的 MIN_VOLUME / getVolume / setVolume 是一层乘数，最终响度等于
+    // 「它 × 系统 STREAM_ALARM 档位」。系统那一档被调到最低时（多数机器是 1 档，
+    // 界面显示 10%~14%，调不到 0），10% × 80% = 8%，响铃几乎听不见——而设置页
+    // 还理直气壮写着「80%」。用户没法从这个数字推断任何事。
+    //
+    // 现在音量条直接读写系统那一档，见 {@link AlarmVolume}。
+    // 旧键 alarm_volume 不再读取：它存的是乘数，换算不成系统档位，
+    // 硬迁移只会把用户机器的音量改得更莫名其妙。
 
     /** 音量键在响铃时的作用：0 无 / 1 稍后提醒 / 2 关闭闹钟。默认稍后提醒。 */
     public static int getVolKeyAction(Context c) {

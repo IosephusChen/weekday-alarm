@@ -46,7 +46,8 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_LAST_RUN_VERSION", "last_run_version");
         PREFS_KEYS.put("KEY_VACATION_DATES", "vacation_dates");
         PREFS_KEYS.put("KEY_OVERTIME_DATES", "overtime_dates");
-        PREFS_KEYS.put("KEY_VOLUME", "alarm_volume");
+        // KEY_VOLUME / alarm_volume 已删（v0.91.0）：音量交给系统 STREAM_ALARM，
+        // App 不再存这个键。旧备份里的同名字段导入时直接忽略。
         PREFS_KEYS.put("KEY_VOLKEY_ACTION", "volkey_action");
         PREFS_KEYS.put("KEY_POWERKEY_ACTION", "powerkey_action");
         PREFS_KEYS.put("KEY_FADE_IN", "fade_in");

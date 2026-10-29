@@ -58,7 +58,6 @@ public class ConfigBackupTest {
                 .putString(Prefs.KEY_ANCHOR, "2026-10-17")
                 .putBoolean(Prefs.KEY_SMALL_REST_SAT, true)
                 .putInt(Prefs.KEY_HORIZON, 180)
-                .putInt(Prefs.KEY_VOLUME, 55)
                 .putBoolean(Prefs.KEY_FADE_IN, true)
                 .putInt(Prefs.KEY_BEDTIME_MINUTES, 22 * 60)
                 .putBoolean(Prefs.KEY_LUNAR_FESTIVALS, false)
@@ -132,7 +131,6 @@ public class ConfigBackupTest {
         assertEquals(LocalDate.of(2026, 10, 17), Prefs.getAnchor(ctx()));
         assertTrue(Prefs.isSmallRestSat(ctx()));
         assertEquals(180, Prefs.getHorizonDays(ctx()));
-        assertEquals(55, Prefs.getVolume(ctx()));
         assertTrue(Prefs.isFadeIn(ctx()));
         assertEquals(22 * 60, Prefs.getBedtimeMinutes(ctx()));
         assertFalse(Prefs.isLunarFestivals(ctx()));
@@ -159,7 +157,6 @@ public class ConfigBackupTest {
                         "{\"app\":\"daxiaozhou-alarm\",\"format\":1}").ok);
 
         assertEquals("失败时不能改动已有配置", before, Prefs.getAlarms(ctx()).size());
-        assertEquals(55, Prefs.getVolume(ctx()));
     }
 
     @Test
@@ -184,7 +181,7 @@ public class ConfigBackupTest {
                 + "}}";
         ConfigBackup.Result r = ConfigBackup.importJson(ctx(), json);
         assertTrue(r.message, r.ok);
-        assertEquals(100, Prefs.getVolume(ctx()));
+        // 旧备份里的 alarm_volume 已不再读取（v0.91.0），所以这里不校验它
         assertEquals(1, Prefs.getHorizonDays(ctx()));
         assertEquals(1, Prefs.getSnoozeMinutes(ctx()));
         assertEquals(1, Prefs.getSnoozeTimes(ctx()));

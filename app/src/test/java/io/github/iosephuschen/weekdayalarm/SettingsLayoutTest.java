@@ -226,15 +226,15 @@ public class SettingsLayoutTest {
         assertNotNull(sb);
 
         ShadowSeekBar shadow = shadowOf(sb);
-        // v0.90.0：滑块 0–90 加上下限 10 才是音量，所以 progress 35 落盘是 45
-        int before = Prefs.getVolume(ctx());
-        sb.setProgress(35);
-        assertEquals("拖动中不该落盘", before, Prefs.getVolume(ctx()));
+        // v0.91.0：滑块量的是系统档位，progress 加上最低档才是真实 index
+        int before = AlarmVolume.level(ctx());
+        sb.setProgress(1);
+        assertEquals("拖动中不该写系统音量", before, AlarmVolume.level(ctx()));
 
         SeekBar.OnSeekBarChangeListener l = shadow.getOnSeekBarChangeListener();
         assertNotNull("应挂了监听", l);
         l.onStopTrackingTouch(sb);
-        assertEquals("松手后落盘", 35 + Prefs.MIN_VOLUME, Prefs.getVolume(ctx()));
+        assertEquals("松手后写到系统", 1 + AlarmVolume.min(ctx()), AlarmVolume.level(ctx()));
 
         ctl.pause().stop().destroy();
     }

@@ -227,7 +227,7 @@
          （原同族的 dialog_horizon 等五个单选圈布局已在 v0.76.4 换成 DialogKit
          卡片后删除，文案本身不变，仍由这几个 string 提供标题与说明。） -->
     <string name="dialog_volume_title">闹钟音量</string>
-    <string name="dialog_volume_message">下次响铃即用新音量，最低 10%。想让某条闹钟完全不响，在它的铃声里选「静音」。</string>
+    <string name="dialog_volume_message">下次响铃即用新音量。这一条调的就是系统「闹钟」音量，按音量键改的也是它。想让某条闹钟完全不响，在它的铃声里选「静音」。</string>
     <string name="dialog_snooze_title">稍后提醒</string>
     <string name="dialog_snooze_message">响铃时按音量键（或通知上的按钮）会推迟多久再响、最多推迟几次。</string>
     <string name="dialog_pre_notice_title">响铃前提醒</string>

@@ -141,16 +141,9 @@ public final class PrefDialogs {
                 });
     }
 
-    /**
-     * 音量行的文案。
-     *
-     * <p>v0.61.4 这里曾经分出「静音（仅震动）/ 静音（不震动）」两支：0 档必须说清还震不震，
-     * 因为震动是独立开关，关掉之后既不响也不震，还写「仅震动」就是在说假话。
-     *
-     * <p>v0.90.0 把 0 档整个取消了（见 {@link Prefs#MIN_VOLUME}），两支一起消失——
-     * 不再需要为「静音」找说法，因为全局音量调不到静音了。要某条不响，用那条闹钟的静音开关。
-     */
-    public static String volumeText(int v) {
-        return v + "%";
-    }
+    // 音量文案（v0.91.0）：volumeText(int) 已删。
+    //
+    // 它原来把「App 内部的音量百分比」拼成 "80%"。现在音量行显示的是系统
+    // STREAM_ALARM 的真实档位，百分比由 {@link AlarmVolume#percent} 算，
+    // 多一层 DTO 只会让调用方以为那个数字还是可以随便传的。
 }

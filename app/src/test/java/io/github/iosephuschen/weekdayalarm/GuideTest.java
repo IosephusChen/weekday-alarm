@@ -305,13 +305,19 @@ public class GuideTest {
         assertEquals(15, alarms.get(0).minute);
     }
 
-    /** 音量按当前设置显示百分比；0 会被抬到下限，不再有「静音」这个读法（v0.90.0）。 */
+    /**
+     * 音量行显示系统 STREAM_ALARM 的真实百分比（v0.91.0）。
+     *
+     * <p>v0.90.x 及以前断言的是 App 自己那个乘数被抬到下限。现在没有乘数了，
+     * 这一行说的就是系统那一档——新手第一次看到「10%」时会明白该去按音量键，
+     * 而不是以为 App 默认音量太小。
+     */
     @Test
     public void volumeRow_showsCurrentSetting() {
         wipe();
-        Prefs.setVolume(ctx(), 0);
+        AlarmVolume.setLevel(ctx(), AlarmVolume.min(ctx()));
         GuideActivity a = launch();
-        assertEquals(Prefs.MIN_VOLUME + "%", text(a, R.id.tv_volume));
+        assertEquals(AlarmVolume.minPercent(ctx()) + "%", text(a, R.id.tv_volume));
     }
 
     /** 渐响行点一下切换，立刻写进设置并回显——不做「改完还得回设置页确认」的蠢事。 */

@@ -337,7 +337,14 @@ public class PastMarkTest {
         assertTrue("格子上应出现「假加」", hasLabel(a, "假加"));
     }
 
-    /** 只有加班时印「加班」，不受班休限制——工作日也能显示。 */
+    /**
+     * 只有加班时印「加班」，不受班休限制——工作日也能显示。
+     *
+     * <p>2026-10-30 这条红过一次，不是功能坏了：日历只画当前月，
+     * 而那天是当月最后一个工作日，{@code dayOf(true, false)} 往后找到的
+     * 第一个工作日已经是 11-02，格子根本不在网格里。所以现在先算出差几个月，
+     * 点「下一月」翻过去再断言。
+     */
     @Test
     public void workdayOvertime_rendersOvertimeLabel() throws Exception {
         resetPrefs();
@@ -345,6 +352,14 @@ public class PastMarkTest {
         Prefs.addOvertime(ctx(), work);
 
         MainActivity a = launch();
+
+        java.time.YearMonth now = java.time.YearMonth.from(LocalDate.now());
+        java.time.YearMonth target = java.time.YearMonth.from(work);
+        int months = (target.getYear() - now.getYear()) * 12
+                + (target.getMonthValue() - now.getMonthValue());
+        for (int i = 0; i < months; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+        }
 
         assertTrue("工作日加班也应显示「加班」", hasLabel(a, "加班"));
     }

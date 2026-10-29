@@ -279,10 +279,12 @@ public class AlarmService extends Service {
         // 其余照旧：前台服务、全屏页、振动、通知、自动停止倒计时都归下面几段管。
         // 这样「静音」和「音量很小」是两件事：前者不占音频焦点，也不会被系统音量影响
         if (!isSilentAlarm(this, currentAlarmId)) {
-            // v0.14.0：音量可调，可选铃声渐响（0 档已随下限取消，见 Prefs.MIN_VOLUME）
-            int volumePct = Prefs.getVolume(this);
-            float targetVol = Math.max(0f, Math.min(1f, volumePct / 100f));
-            boolean fadeIn = Prefs.isFadeIn(this) && volumePct > 0;
+            // v0.91.0：响度不再乘 App 的系数，完全交给系统 STREAM_ALARM。
+            // setVolume(1.0) 的意思是「按系统音量放满」——设置页显示 80%，
+            // 实际就是系统闹钟那一档的 80%，不再是 80% × 系统档位的两层相乘。
+            // 渐响仍从 0 渐到 1.0，在系统音量之内做，听感不变。
+            float targetVol = 1f;
+            boolean fadeIn = Prefs.isFadeIn(this) && AlarmVolume.level(this) > 0;
             try {
                 Uri uri = resolveRingtoneUri();
                 player = new MediaPlayer();

@@ -10,8 +10,9 @@
      轨道左侧没有任何填充，看起来像"还没开始调"。现在标题行右边永远显示真实
      数值（拖到最左是 10%），滑块下方两端再标出 10% / 100%，下限就不再需要猜。
 
-     刻度文字写死 10%，与 Prefs.MIN_VOLUME 必须一致——有测试盯着，改常量忘了
-     改这里会红。 -->
+     v0.91.0：刻度不再写死。音量条直接读写系统 STREAM_ALARM，量程是机型的
+     实际档位数（7 档、15 档都有），最低那一档换算是 10% 还是 14% 由系统决定，
+     文字由调用方按 AlarmVolume.minPercent() 填。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -59,7 +60,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:max="90"
         android:minHeight="36dp"
         android:paddingStart="14dp"
         android:paddingEnd="14dp"
@@ -75,10 +75,10 @@
         android:paddingEnd="14dp">
 
         <TextView
+            android:id="@+id/tv_volume_floor"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="10%"
             android:textColor="@color/sub"
             android:textSize="11sp" />
 

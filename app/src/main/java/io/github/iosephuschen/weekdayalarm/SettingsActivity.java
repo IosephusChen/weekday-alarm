@@ -127,14 +127,16 @@ public class SettingsActivity extends AppCompatActivity {
         bind(R.id.row_more_ring, v -> startActivity(new Intent(this, MoreSettingsActivity.class)
                 .putExtra(MoreSettingsActivity.EXTRA_SECTION, MoreSettingsActivity.SECTION_RING)));
         bind(R.id.row_more, v -> startActivity(new Intent(this, MoreSettingsActivity.class)));
-        // v0.60.0：音量就地拖。拖动中只改文字，松手才写 Prefs——
-        // 每移动一格都落盘会反复触发重排，而且没必要。
+        // v0.60.0：音量就地拖。v0.91.0 起这一条直接读写系统 STREAM_ALARM——
+        // 拖动中只改文字，松手才写系统，避免每移动一格都发一次 setStreamVolume
+        // （系统每改一次都会播音效，连续调会「咔咔咔」响成一片）。
         if (sbVolume != null) {
             sbVolume.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                     if (!fromUser || tvVolume == null) return;
-                    tvVolume.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
+                    tvVolume.setText(AlarmVolume.percentOf(SettingsActivity.this,
+                            progress + AlarmVolume.min(SettingsActivity.this)) + "%");
                 }
 
                 @Override
@@ -143,7 +145,8 @@ public class SettingsActivity extends AppCompatActivity {
 
                 @Override
                 public void onStopTrackingTouch(SeekBar bar) {
-                    Prefs.setVolume(SettingsActivity.this, bar.getProgress() + Prefs.MIN_VOLUME);
+                    AlarmVolume.setLevel(SettingsActivity.this,
+                            bar.getProgress() + AlarmVolume.min(SettingsActivity.this));
                     updateVolumeText();
                 }
             });
@@ -217,7 +220,7 @@ public class SettingsActivity extends AppCompatActivity {
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
-        if (sbVolume != null) sbVolume.setProgress(Prefs.getVolume(this) - Prefs.MIN_VOLUME);
+        // 滑块位置已在 updateVolumeText 里连同 max 一起设好，这里不再重复
         refreshCalendarContentValue();
         swAttaching = false;
     }
@@ -685,9 +688,24 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 闹钟音量（v0.22.0 由主界面迁入）=================
 
-    /** 音量行文案：v0.90.0 起只剩百分比，见 {@link PrefDialogs#volumeText}。 */
+    /** 音量行文案：显示系统 STREAM_ALARM 的真实百分比，见 {@link AlarmVolume}。 */
+    /**
+     * 音量行：文字与滑块都跟系统 STREAM_ALARM 走（v0.91.0）。
+     *
+     * <p>滑块量程是系统的档位数，不是固定 0~90：机型不同，最大档有 7 档也有 15 档。
+     * 这里同时设 max 和 progress，所以 {@code onResume} 走进来时会自动同步——
+     * 用户在系统里按音量键调过「闹钟」，切回来滑块就在新位置。
+     */
     private void updateVolumeText() {
-        tvVolume.setText(PrefDialogs.volumeText(Prefs.getVolume(this)));
+        int min = AlarmVolume.min(this);
+        tvVolume.setText(AlarmVolume.percent(this) + "%");
+        if (sbVolume != null) {
+            int max = AlarmVolume.max(this);
+            sbVolume.setMax(Math.max(1, max - min));
+            sbVolume.setProgress(Math.max(0, AlarmVolume.level(this) - min));
+            TextView floor = findViewById(R.id.tv_volume_floor);
+            if (floor != null) floor.setText(AlarmVolume.minPercent(this) + "%");
+        }
     }
 
     /**
@@ -716,18 +734,29 @@ public class SettingsActivity extends AppCompatActivity {
                 getString(R.string.pin_guide_message));
     }
 
-    /** 音量条对话框：拖动实时显示百分比，确定后保存（下次响铃即用新音量）。 */
+    /**
+     * 音量条对话框：读写系统「闹钟」那一档（v0.91.0）。
+     *
+     * <p>量程取自系统（{@code getStreamMinVolume}~{@code getStreamMaxVolume}），
+     * 左端刻度是「最低那一档换算成的百分比」——机型不同，可能 14%，也可能 10%，
+     * 所以不能写死在布局里。点「确定」才写系统：拖动过程中每格都写会连带
+     * 触发系统音量音效，连续拖听起来像卡带。
+     */
     private void showVolumeDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_volume, null);
         android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
         TextView value = view.findViewById(R.id.tv_volume_value);
-        int cur = Prefs.getVolume(this);
-        seek.setProgress(cur - Prefs.MIN_VOLUME);
-        value.setText(PrefDialogs.volumeText(cur));
+        TextView floor = view.findViewById(R.id.tv_volume_floor);
+        int min = AlarmVolume.min(this);
+        seek.setMax(Math.max(1, AlarmVolume.max(this) - min));
+        seek.setProgress(Math.max(0, AlarmVolume.level(this) - min));
+        value.setText(AlarmVolume.percent(this) + "%");
+        if (floor != null) floor.setText(AlarmVolume.minPercent(this) + "%");
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
+                value.setText(AlarmVolume.percentOf(SettingsActivity.this,
+                        progress + AlarmVolume.min(SettingsActivity.this)) + "%");
             }
 
             @Override
@@ -741,7 +770,7 @@ public class SettingsActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setView(view)
                 .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setVolume(this, seek.getProgress() + Prefs.MIN_VOLUME);
+                    AlarmVolume.setLevel(this, seek.getProgress() + AlarmVolume.min(this));
                     updateVolumeText();
                 })
                 .setNegativeButton("取消", null)

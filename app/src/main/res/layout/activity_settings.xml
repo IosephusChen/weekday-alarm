@@ -112,7 +112,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_2"
-                    android:max="90"
                     android:minHeight="36dp"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp"
@@ -127,8 +126,9 @@
                      "最低只能到 10%"。补上两端刻度之后，左下角的 10% 正好压在滑块
                      下方，右端 100% 说明这条轨道通向哪里，量程边界不用再靠拖一下试。
 
-                     两个文字与 dialog_volume.xml 完全一致，VolumeBarTest 同时盯着两处：
-                     只改对话框、漏掉设置页，就是从另一个入口进来的用户又看不明白。 -->
+                     v0.91.0：左端刻度不再写死 10%——音量条量的是系统 STREAM_ALARM 的
+                     档位，机型档数不同，最低那一档换算成百分比可能是 10%，也可能是 14%。
+                     文字由 SettingsActivity.updateVolumeText() 按实际值填。 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -137,10 +137,10 @@
                     android:paddingEnd="14dp">
 
                     <TextView
+                        android:id="@+id/tv_volume_floor"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="10%"
                         android:textColor="@color/sub"
                         android:textSize="11sp" />
 

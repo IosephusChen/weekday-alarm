@@ -221,7 +221,6 @@ public class SnoozePreNoticeTest {
     @Test
     public void mainActivity_settingsEntryOpensSettingsPage() {
         enableSingleDailyAlarm(30);
-        Prefs.setVolume(ctx(), 0);
         Prefs.setSnoozeMinutes(ctx(), 30);
         Prefs.setSnoozeTimes(ctx(), Prefs.SNOOZE_UNLIMITED);
         // v0.23.0：首次启动会先拉起新手引导，这里模拟「已看过」，让断言聚焦设置入口
@@ -238,7 +237,6 @@ public class SnoozePreNoticeTest {
     @Test
     public void settingsPage_flattensAllSettings() {
         Prefs.setHorizonDays(ctx(), 180);
-        Prefs.setVolume(ctx(), 40);
         Prefs.setPreNoticeMinutes(ctx(), 0);
 
         SettingsActivity activity = Robolectric.buildActivity(SettingsActivity.class).setup().get();
@@ -247,7 +245,8 @@ public class SnoozePreNoticeTest {
                 MoreSettingsActivity.intent(ctx(), false)).setup().get();
         assertEquals("未来 180 天",
                 ((TextView) more.findViewById(R.id.tv_horizon)).getText().toString());
-        assertEquals("40%",
+        // v0.91.0：音量行显示系统 STREAM_ALARM 的真实百分比，不再有 App 内部值
+        assertEquals(AlarmVolume.percent(ctx()) + "%",
                 ((TextView) activity.findViewById(R.id.tv_volume)).getText().toString());
         // v0.41.0 起这一行是开关下方的副标题：关着时说「开着会怎样」，
         // 不再只复述一个「关闭」——那等于把开关状态念一遍，看完还是不知道有什么用

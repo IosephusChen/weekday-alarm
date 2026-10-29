@@ -339,25 +339,36 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     private void refreshRing() {
-        int v = Prefs.getVolume(this);
-        tvVolume.setText(PrefDialogs.volumeText(v));
+        // v0.91.0：显示的是系统 STREAM_ALARM 的真实档位，不再是 App 内部乘数
+        tvVolume.setText(AlarmVolume.percent(this) + "%");
         tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
         if (tvVibrate != null) tvVibrate.setText(Prefs.isVibrate(this) ? "开" : "关");
         tvSnooze.setText(PrefDialogs.snoozeText(this));
         tvPreNotice.setText(PrefDialogs.preNoticeText(this));
     }
 
-    /** 音量条：与设置页同一个对话框布局，最低 10%（v0.90.0 起 0 档取消）。 */
+    /**
+     * 音量条：与设置页同一个对话框，同样直接读写系统 STREAM_ALARM（v0.91.0）。
+     *
+     * <p>这一页是新手第一次见音量条的地方。以前这里写 80% 而实际可能只有系统的
+     * 8%，用户会以为「默认音量怎么这么小」；现在显示的就是系统真实档位，
+     * 听不到时他自己按音量键也能对上。
+     */
     private void showVolumeDialog() {
         View view = getLayoutInflater().inflate(R.layout.dialog_volume, null);
         android.widget.SeekBar seek = view.findViewById(R.id.seek_volume);
         TextView value = view.findViewById(R.id.tv_volume_value);
-        seek.setProgress(Prefs.getVolume(this) - Prefs.MIN_VOLUME);
-        value.setText(PrefDialogs.volumeText(Prefs.getVolume(this)));
+        TextView floor = view.findViewById(R.id.tv_volume_floor);
+        int min = AlarmVolume.min(this);
+        seek.setMax(Math.max(1, AlarmVolume.max(this) - min));
+        seek.setProgress(Math.max(0, AlarmVolume.level(this) - min));
+        value.setText(AlarmVolume.percent(this) + "%");
+        if (floor != null) floor.setText(AlarmVolume.minPercent(this) + "%");
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {
-                value.setText(PrefDialogs.volumeText(progress + Prefs.MIN_VOLUME));
+                value.setText(AlarmVolume.percentOf(GuideActivity.this,
+                        progress + AlarmVolume.min(GuideActivity.this)) + "%");
             }
 
             @Override
@@ -371,7 +382,7 @@ public class GuideActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setView(view)
                 .setPositiveButton("确定", (d, w) -> {
-                    Prefs.setVolume(this, seek.getProgress() + Prefs.MIN_VOLUME);
+                    AlarmVolume.setLevel(this, seek.getProgress() + AlarmVolume.min(this));
                     refreshRing();
                 })
                 .setNegativeButton("取消", null)

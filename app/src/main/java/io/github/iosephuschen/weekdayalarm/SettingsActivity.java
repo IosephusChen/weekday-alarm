@@ -17,7 +17,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.pm.PackageInfoCompat;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -215,7 +214,6 @@ public class SettingsActivity extends AppCompatActivity {
         if (reminders != null) reminders.refresh();
         if (tvRingtone != null) updateRingtoneText();
         updateRunStatusText();
-        updateVersionText();
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));
         if (swVibrate != null) swVibrate.setChecked(Prefs.isVibrate(this));
@@ -748,25 +746,6 @@ public class SettingsActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("取消", null)
                 .show();
-    }
-
-    /**
-     * 底部版本号：方便确认手机上实际安装的版本。
-     *
-     * <p>版本号只在这一处出现（v0.85.5）。它带 versionCode——同一个 versionName 可能
-     * 重打过多次包，只有 code 能对上 mapping，反馈问题时以它为准。二级页「更新日志」
-     * 行右侧的那个「v0.85.4」已删：同一串数字换个地方再写一遍，读的人不会多知道什么。
-     */
-    private void updateVersionText() {
-        try {
-            android.content.pm.PackageInfo pi = getPackageManager()
-                    .getPackageInfo(getPackageName(), 0);
-            TextView v = findViewById(R.id.tv_version);
-            if (v == null) return;
-            v.setText("版本 " + pi.versionName + " ("
-                    + PackageInfoCompat.getLongVersionCode(pi) + ")");
-        } catch (Exception ignored) {
-        }
     }
 
     /** 铃声行文案：系统默认 / 自定义铃声名（v0.19.0）。 */

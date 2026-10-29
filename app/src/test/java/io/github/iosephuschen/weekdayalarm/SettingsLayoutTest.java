@@ -375,28 +375,25 @@ public class SettingsLayoutTest {
     }
 
     /**
-     * 版本号只在主页底部出现一处（v0.85.5）。
+     * 版本号只在「更多设置 → 关于」出现（v0.90.3 起），主页不再放。
      *
-     * <p>v0.73.4 曾在「更新日志」行右侧也写一个「v当前版本」——当时的理由是
-     * 「一眼看出日志是不是这一版」。但主页最底下那行本来就写着完整版本，而且带
-     * versionCode；同一串数字在同一屏出现两次，第二次不告诉读的人任何新东西。
-     * 更要紧的是右侧那一格的语义：这一页里它装的是「当前取值」（周日 / 未来 90 天 /
-     * 全部显示）或「动作」（重看 / 查看）。「更新日志」是动作入口，不是取值。
+     * <p>历史：v0.73.4 曾在「更新日志」行右侧写一个「v当前版本」，v0.85.5 把它收敛成
+     * 「只留主页底部一处」，理由是那行带 versionCode，重打包时分得清是哪个包。
+     * 但「关于」页写的就是同一串（`v0.90.2 (222)`），信息重复；而主页那行贴在最后，
+     * v0.90.2 给音量条加了两端刻度之后，它正好被顶出首屏。冗余信息占着首页最贵的
+     * 一行位置，于是删掉。
      *
-     * <p>所以右侧改成「查看」，与上面「使用说明」同一口径；底部那行保留（它带
-     * versionCode，重打包时才分得清是哪一个包）。
+     * <p>主页这条用 findViewById 判空，不按名字查 R.id：`tv_version` 这个 id 在
+     * activity_about.xml 里还在用，资源 id 是全局的，按名字查永远非 0。
+     *
+     * <p>「更新日志」行右侧仍然写动作词「查看」，与「使用说明」同一口径。
      */
     @Test
-    public void versionShownOnce_atBottomOfHome() {
+    public void version_livesOnAboutPageOnly() {
         ActivityController<SettingsActivity> ctl = openHome();
         SettingsActivity a = ctl.get();
-
-        android.widget.TextView v = a.findViewById(R.id.tv_version);
-        assertNotNull("主页底部应有版本号", v);
-        assertTrue("应带 versionCode——同一个 versionName 可能重打过多次包，"
-                        + "只有 code 能对上 mapping。实际：" + v.getText(),
-                v.getText().toString().matches("版本 \\S+ \\(\\d+\\)"));
-
+        assertNull("主页不该再有版本号——查版本去「更多设置 → 关于」",
+                a.findViewById(R.id.tv_version));
         ctl.pause().stop().destroy();
 
         ActivityController<MoreSettingsActivity> ctl2 =

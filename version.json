@@ -1,13 +1,13 @@
 {
-  "versionCode": 222,
-  "versionName": "0.90.2",
+  "versionCode": 223,
+  "versionName": "0.90.3",
   "published": "2026-10-29",
-  "title": "设置页也标出音量下限了",
+  "title": "设置页不再重复写版本号",
   "notes": [
-    "设置页那条滑块下加了 10% 和 100%，和音量对话框一致",
-    "以前这里空着，一个孤零零的 10% 像当前值，不像底线",
-    "两处刻度由同一个测试盯着，改下限不会漏掉一边"
+    "底部那行删了，「更多设置 → 关于」里本来就是同一串",
+    "删掉之后这一页回到一屏，音量条的刻度不会再把它顶出去",
+    "查版本走「更多设置 → 关于」，版本名和 versionCode 都在"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.2/weekday-alarm-0.90.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.90.3/weekday-alarm-0.90.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.90.3"
 }

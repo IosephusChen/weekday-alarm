@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(223, "0.90.3", "2026/10/29", "设置页不再重复写版本号",
+                    "底部那行删了，「更多设置 → 关于」里本来就是同一串",
+                    "删掉之后这一页回到一屏，音量条的刻度不会再把它顶出去",
+                    "查版本走「更多设置 → 关于」，版本名和 versionCode 都在"),
             new Entry(222, "0.90.2", "2026/10/29", "设置页也标出音量下限了",
                     "设置页那条滑块下加了 10% 和 100%，和音量对话框一致",
                     "以前这里空着，一个孤零零的 10% 像当前值，不像底线",

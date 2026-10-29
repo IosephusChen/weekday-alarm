@@ -331,6 +331,11 @@ public class PreNoticeReceiver extends BroadcastReceiver {
             Toast.makeText(ctx, "已关闭这次响铃", Toast.LENGTH_SHORT).show();
         } catch (Exception ignore) {
         }
+        // 界面开着时点了通知，卡片上的「下次闹钟」和列表里的开关必须当场变，
+        // 否则要等用户退出去再进来（刷新只在 onResume 发生）。
+        // 和 BedtimeReceiver 的「明天请假」同一个位置、同一个理由：改完 Prefs 立刻发，
+        // 后面的重排只是对齐 AlarmManager 实例，界面读的是 Prefs，不用等它。
+        UiRefresh.request(ctx);
         final PendingResult pending = goAsync();
         final Context app = ctx.getApplicationContext();
         new Thread(() -> {
@@ -341,7 +346,7 @@ public class PreNoticeReceiver extends BroadcastReceiver {
                 // 对齐失败不影响「这次不响」本身：实例与通知已撤、标记已记，
                 // 下一次重排仍会认标记
             } finally {
-                pending.finish();
+                if (pending != null) pending.finish();   // 直接调用（测试）时为 null
             }
         }, "prenotice-cancel-reschedule").start();
     }

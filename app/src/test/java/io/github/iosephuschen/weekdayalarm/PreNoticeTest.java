@@ -10,11 +10,14 @@ import android.app.Application;
 import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -31,6 +34,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 提前提醒（v0.31.0 起）：档位映射、通知文案、常驻卡片。
@@ -510,6 +514,39 @@ public class PreNoticeTest {
         assertEquals("卡片布局要是 notif_content", R.layout.notif_content, n.contentView.getLayoutId());
         assertEquals("强调色必须是品牌紫，否则白字压在白卡片上", 
                 ctx().getColor(R.color.indigo), n.color);
+    }
+
+    /**
+     * 通知栏点「这次不响」后必须发刷新信号（v0.89.10）。
+     *
+     * <p>用户实录：App 开着时点通知里的「这次不响」，通知消失了、Toast 也弹了，
+     * 但首页卡片还写着「下次闹钟 14:50 响铃」、列表里那一行开关还亮着；
+     * 点一下「设置」再返回才变。根因是刷新只在 {@code onResume} 发生，
+     * Receiver 改完状态没通知界面——和 v0.56.6 修的「明天请假」是同一条。
+     */
+    @Test
+    public void cancelThisAlarm_emitsUiRefresh() {
+        reset();
+        seedAlarm(30);
+        final AtomicInteger hits = new AtomicInteger();
+        BroadcastReceiver spy = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                hits.incrementAndGet();
+            }
+        };
+        ContextCompat.registerReceiver(ctx(), spy,
+                new IntentFilter(UiRefresh.ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
+
+        new PreNoticeReceiver().onReceive(ctx(), new Intent(ctx(), PreNoticeReceiver.class)
+                .setAction(PreNoticeReceiver.ACTION_CANCEL_THIS)
+                .putExtra(PreNoticeReceiver.EXTRA_ALARM_ID, 1)
+                .putExtra(PreNoticeReceiver.EXTRA_DATE, LocalDate.now().toString()));
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点「这次不响」后必须发一次刷新信号，否则界面要等下一次 onResume",
+                1, hits.get());
+        ctx().unregisterReceiver(spy);
     }
 
     /**

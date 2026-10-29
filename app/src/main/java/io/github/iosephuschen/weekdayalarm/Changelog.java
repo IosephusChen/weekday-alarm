@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(219, "0.89.10", "2026/10/29", "点完通知，界面当场跟着变",
+                    "通知栏点「这次不响」，首页马上更新，不用再退出去重进",
+                    "从通知点「停止」，首页那行「正在响铃」也会跟着消失"),
             new Entry(218, "0.89.9", "2026/10/29", "通知卡片不当贴纸了",
                     "文字颜色重新交给系统，浅色深色都跟着变",
                     "上一版给文字垫了块深紫底，看着像贴了张标签",

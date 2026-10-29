@@ -1,13 +1,12 @@
 {
-  "versionCode": 218,
-  "versionName": "0.89.9",
+  "versionCode": 219,
+  "versionName": "0.89.10",
   "published": "2026-10-29",
-  "title": "通知卡片不当贴纸了",
+  "title": "点完通知，界面当场跟着变",
   "notes": [
-    "文字颜色重新交给系统，浅色深色都跟着变",
-    "上一版给文字垫了块深紫底，看着像贴了张标签",
-    "次要按钮只留字，不再画底"
+    "通知栏点「这次不响」，首页马上更新，不用再退出去重进",
+    "从通知点「停止」，首页那行「正在响铃」也会跟着消失"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.9/weekday-alarm-0.89.9.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.9"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.10/weekday-alarm-0.89.10.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.10"
 }

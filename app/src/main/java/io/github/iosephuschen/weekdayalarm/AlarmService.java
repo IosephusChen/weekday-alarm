@@ -439,6 +439,9 @@ public class AlarmService extends Service {
             }
             vibrator = null;
         }
+        // 首页那行「正在响铃 · 停止」跟着 isRinging() 走，而它只在 refreshAll 时重算。
+        // 用户开着 App、从通知栏点了「停止 / 稍后」，不广播的话那行会一直挂着（v0.89.10）。
+        UiRefresh.request(this);
     }
 
     /**

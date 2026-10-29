@@ -395,10 +395,13 @@ public class AlarmService extends Service {
     }
 
     /**
-     * 本次响铃使用的铃声（v0.88.0 起三级回落）：
-     * 闹钟单独设的 → 设置里的默认 → 系统默认闹钟铃。
+     * 本次响铃使用的铃声：就是兜底链的第一条（v0.91.3 起）。
      *
-     * <p>中间那级不能省：绝大多数闹钟没单独设过铃声（{@code ringtone == null}），
+     * <p>以前这里自己排了一遍「单闹钟 → 设置 → 系统默认」，和 {@link #ringtoneChain} 是两处
+     * 并行的排序规则。改一处忘一处，两条路就会播出不同的声音，而且都不报错。现在只留一个
+     * 排序点，这个方法退化成取首位。
+     *
+     * <p>中间「设置里的默认」那级不能省：绝大多数闹钟没单独设过铃声（{@code ringtone == null}），
      * 它们必须跟着「设置 → 铃声」走，否则用户在设置里换铃声会觉得没生效。
      */
     Uri resolveRingtoneUri() {
@@ -407,12 +410,8 @@ public class AlarmService extends Service {
 
     /** 拆出来便于单测：给定闹钟 id，算出该用哪条铃声。 */
     static Uri resolveRingtoneUri(Context ctx, int alarmId) {
-        Uri per = alarmRingtone(ctx, alarmId);
-        if (per != null) return per;
-        Uri custom = Prefs.getRingtoneUri(ctx);
-        if (custom != null) return custom;
-        Uri def = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
-        return def != null ? def : RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        List<Uri> chain = ringtoneChain(ctx, alarmId);
+        return chain.isEmpty() ? null : chain.get(0);
     }
 
     /**
@@ -448,15 +447,28 @@ public class AlarmService extends Service {
         return ringtoneChain(this, currentAlarmId);
     }
 
-    /** 拆出来便于单测：给定闹钟 id，排出这次要依次尝试的铃声。 */
+    /**
+     * 拆出来便于单测：给定闹钟 id，排出这次要依次尝试的铃声。
+     *
+     * <p>v0.91.3 把「系统默认」拆成了两级，别名排在真文件前面。原因是一次实测：
+     * 用户手机系统设置里闹钟铃声写着「小爱智慧铃声」，设置页对话框（走别名）能放出来，
+     * 试听却放的是 {@code BirdCivlcada_preview}——因为 {@code getActualDefaultRingtoneUri}
+     * 只是把 {@code Settings.System.ALARM_ALERT} 里的字符串 parse 一下，不做任何校验；
+     * 而澎湃压根不往那个字段写，它接管的是别名那一层。
+     *
+     * <p>顺序反过来没有风险：别名打不开的 ROM 会抛异常，自动落到下一级真文件，
+     * 行为与 0.91.2 完全一致。能在别名这层返回声音的 ROM，就拿到它真正在用的那条。
+     */
     static List<Uri> ringtoneChain(Context ctx, int alarmId) {
         LinkedHashSet<Uri> set = new LinkedHashSet<>();
         Uri per = alarmRingtone(ctx, alarmId);
         if (per != null) set.add(per);
         Uri custom = Prefs.getRingtoneUri(ctx);
         if (custom != null) set.add(custom);
+        // 先别名，后真文件：别名的解析权在 ROM 手里，它比 Settings 里那个死字段更能反映现状
+        Uri alias = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alias != null) set.add(alias);
         Uri alarm = RingtoneManager.getActualDefaultRingtoneUri(ctx, RingtoneManager.TYPE_ALARM);
-        if (alarm == null) alarm = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (alarm != null) set.add(alarm);
         Uri notif = RingtoneManager.getActualDefaultRingtoneUri(ctx,
                 RingtoneManager.TYPE_NOTIFICATION);
@@ -485,7 +497,7 @@ public class AlarmService extends Service {
             mp.setLooping(true);
             mp.prepare();
             player = mp;
-            playingRingtoneName = testRing ? ringtoneLabel(uri) : null;
+            playingRingtoneName = testRing ? ringtoneLabel(this, uri) : null;
             applyVolumeAndStart(targetVol, fadeIn);
             return null;
         } catch (Exception e) {
@@ -502,12 +514,20 @@ public class AlarmService extends Service {
         }
     }
 
-    /** 铃声标题，取不到就退回 Uri 末段——诊断行里有个名字总比「未知」强。 */
-    private String ringtoneLabel(Uri uri) {
+    /**
+     * 铃声标题，取不到就退回 Uri 末段——诊断行里有个名字总比「未知」强。
+     *
+     * <p>别名 {@code content://settings/system/alarm_alert} 单独认一下：它的末段是
+     * {@code alarm_alert}，直接显示出来会让人以为我们放了首叫这名字的铃声（v0.91.3）。
+     */
+    static String ringtoneLabel(Context ctx, Uri uri) {
+        if (uri == null) return "未知";
+        Uri alias = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        if (alias != null && alias.equals(uri)) return "系统默认";
         try {
-            Ringtone r = RingtoneManager.getRingtone(this, uri);
+            Ringtone r = RingtoneManager.getRingtone(ctx, uri);
             if (r != null) {
-                String t = r.getTitle(this);
+                String t = r.getTitle(ctx);
                 if (t != null && !t.isEmpty()) return t;
             }
         } catch (Exception ignore) {

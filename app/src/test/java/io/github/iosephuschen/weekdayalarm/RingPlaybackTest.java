@@ -2,10 +2,12 @@ package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
+import android.media.RingtoneManager;
 import android.net.Uri;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -186,5 +188,53 @@ public class RingPlaybackTest {
         List<Uri> chain = AlarmService.ringtoneChain(ctx(), 99);
         assertTrue("删掉闹钟之后仍要有一条可用铃声",
                 chain.contains(Uri.parse(SOUND_A)));
+    }
+
+    // ---------- 系统默认的两副面孔（v0.91.3）----------
+
+    /**
+     * 「系统默认」有两个 URI，别名和真文件，而且它们经常不等价。
+     *
+     * <p>实测来源：用户手机系统设置里写着「小爱智慧铃声」，铃声对话框（别名）放得出来，
+     * 试听却放 {@code BirdCivlcada_preview}。因为 {@code getActualDefaultRingtoneUri}
+     * 只是把 {@code Settings.System.ALARM_ALERT} parse 一下，澎湃压根不往那个字段写，
+     * 它接管的是别名那一层。
+     */
+    @Test
+    public void chain_aliasComesBeforeActualDefault() {
+        List<Uri> chain = AlarmService.ringtoneChain(ctx(), 99);
+        Uri alias = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        assertNotNull("别名是「系统默认」唯一能被 ROM 接管的形式，必须在链里", alias);
+        assertTrue("链里要有别名：" + chain, chain.contains(alias));
+
+        Uri actual = RingtoneManager.getActualDefaultRingtoneUri(ctx(), RingtoneManager.TYPE_ALARM);
+        if (actual != null && !actual.equals(alias)) {
+            assertTrue("别名要排在真文件前面，否则又回到读那个从不同步的死字段的老路",
+                    chain.indexOf(alias) < chain.indexOf(actual));
+        }
+    }
+
+    /**
+     * 顺序不能只靠运行时观测——Robolectric 的 Settings 是空的，真机上的差异它复现不了。
+     * 所以再钉一遍源码：`ringtoneChain` 里别名那行必须写在 actual 那行之前。
+     */
+    @Test
+    public void chain_sourceAddsAliasBeforeActual() throws Exception {
+        String code = read("AlarmService.java");
+        int start = code.indexOf("static List<Uri> ringtoneChain");
+        assertTrue("找不到 ringtoneChain", start > 0);
+        String body = code.substring(start, code.indexOf("\n    }", start));
+        int aliasAt = body.indexOf("getDefaultUri(RingtoneManager.TYPE_ALARM)");
+        int actualAt = body.indexOf("getActualDefaultRingtoneUri");
+        assertTrue("链里必须有别名", aliasAt > 0);
+        assertTrue("别名的 add 必须在真文件之前", actualAt < 0 || aliasAt < actualAt);
+    }
+
+    /** 别名的末段是 `alarm_alert`，直接显示出来会让人以为我们放了首叫这个名字的铃声。 */
+    @Test
+    public void label_aliasReadsAsSystemDefault() {
+        Uri alias = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        assertNotNull(alias);
+        assertEquals("系统默认", AlarmService.ringtoneLabel(ctx(), alias));
     }
 }

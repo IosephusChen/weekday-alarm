@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(228, "0.91.3", "2026/10/30", "试听更贴近系统里选的那条铃声",
+                    "系统默认闹钟铃改走别名，ROM 接管过的那条也能播出来",
+                    "试听页的铃声名会写成「系统默认」，不再是 alarm_alert",
+                    "铃声候选只保留一处排序，试听和真响铃从此不会播出不同的声音"),
             new Entry(227, "0.91.2", "2026/10/30", "试听照设置渐响了",
                     "试听重新遵守渐响设置，开 30 秒就真的是 30 秒",
                     "渐响曲线改成按分贝升，全程听感均匀，不再前快后慢",

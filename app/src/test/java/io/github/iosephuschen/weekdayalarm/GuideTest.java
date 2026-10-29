@@ -481,38 +481,46 @@ public class GuideTest {
     }
 
     /**
-     * 「精确闹钟」这一行必须存在，开了/没开都要说清各自的好处与代价（v0.89.2）。
+     * 「精确闹钟」这一行：给到了就藏起来，没给才出现（v0.89.2）。
      *
      * <p>v0.58.3 删掉它的理由是：<i>声明了 {@code USE_EXACT_ALARM}，Android 13+ 安装即
      * 授予且用户关不掉，留一行只能点、进去还改不了的项，只会让人以为哪里没设置好。</i>
-     * 这个判断在真机上被推翻了——2026-10-29，Android 16 + 澎湃，状态栏没有闹钟图标，
-     * 而系统设置里既没有「闹钟和提醒」，也没有任何能改的开关。
+     * 这个判断今天仍然成立一半——2026-10-29 真机（Android 16 + 澎湃）确认，系统页那个
+     * 开关是开着且灰的，点不动，App 里永远是绿勾。用户看到之后的第一反应就是
+     * 「既然改不了，这行是不是可以删了」。
      *
-     * <p>所以这一行的职责变了：<b>不是让用户改一个改不了的开关，是把看不出来的状态
-     * 显示出来</b>。以前那个理由成立的前提是「一定给到」，一旦给不到，界面保持沉默
-     * 就等于让用户永远查不出「为什么我的闹钟晚了一分钟」。
+     * <p>但另一半不成立：{@code USE_EXACT_ALARM} 是 Android 13 才有的权限，Android 12
+     * 上只有能手动关闭的 {@code SCHEDULE_EXACT_ALARM}。那种机器关掉之后闹钟会晚最多
+     * 1 分钟且没有状态栏图标，用户没有任何别的途径看出来。
+     *
+     * <p>所以结论既不是「一直显示」也不是「删掉」，而是<b>只在出问题时出现</b>：
+     * 平时不占位置，出问题时不沉默。
      */
     @Test
-    public void exactAlarmRow_showsGrantedState() {
+    public void exactAlarmRow_hiddenWhenGranted() {
         org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
         try {
             GuideActivity a = fresh();
-            assertNotNull("这一行不能没有，否则权限没开时用户完全看不出来",
-                    a.findViewById(R.id.perm_exact));
-            String s = text(a, R.id.st_exact);
-            assertTrue("开了要说清拿到了什么，实际：" + s, s.contains("精确到秒"));
+            assertEquals("权限正常时这一行不该占位置：它永远是绿勾，用户什么也改不了",
+                    View.GONE, a.findViewById(R.id.perm_exact).getVisibility());
+            assertEquals("分隔线要跟着一起收起，否则会留下一条孤零零的线",
+                    View.GONE, a.findViewById(R.id.divider_exact).getVisibility());
         } finally {
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
         }
     }
 
     @Test
-    public void exactAlarmRow_warnsWhenNotGranted() {
+    public void exactAlarmRow_appearsWhenNotGranted() {
         org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         try {
             GuideActivity a = fresh();
+            View row = a.findViewById(R.id.perm_exact);
+            assertEquals("没给权限时必须出现，否则用户查不出为什么闹钟晚了一分钟",
+                    View.VISIBLE, row.getVisibility());
+            assertTrue("这一行要能点，点了才有地方去开", row.isClickable());
             String s = text(a, R.id.st_exact);
-            assertTrue("没开要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
+            assertTrue("要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
             assertFalse("不能只写「去开启」——那是催人，不是告知", s.startsWith("去开启"));
         } finally {
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
@@ -522,7 +530,8 @@ public class GuideTest {
     @Test
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
-        int[] ids = {R.id.perm_notif, R.id.perm_fsi, R.id.perm_exact,
+        // perm_exact 不在这里：它默认是 GONE（权限正常时），单独由上面两条测试管
+        int[] ids = {R.id.perm_notif, R.id.perm_fsi,
                 R.id.perm_autostart, R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);

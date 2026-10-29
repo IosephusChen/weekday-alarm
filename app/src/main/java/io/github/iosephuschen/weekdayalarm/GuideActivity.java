@@ -62,6 +62,7 @@ public class GuideActivity extends AppCompatActivity {
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
+    private View rowExact, dividerExact;
 
     private int index = 0;
     private int hour = 7;
@@ -92,6 +93,8 @@ public class GuideActivity extends AppCompatActivity {
         stOverlay = findViewById(R.id.st_overlay);
         stLock = findViewById(R.id.st_lock);
         stExact = findViewById(R.id.st_exact);
+        rowExact = findViewById(R.id.perm_exact);
+        dividerExact = findViewById(R.id.divider_exact);
 
         ringDetail = findViewById(R.id.ring_detail);
         tvRingHint = findViewById(R.id.tv_ring_hint);
@@ -492,23 +495,27 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「精确闹钟」那一行的状态（v0.89.2）。
+     * 「精确闹钟」那一行只在没给权限时出现（v0.89.2）。
      *
-     * <p>这是唯一一个「关掉后闹钟照样响、只是响得不准」的权限，所以文案必须写出
-     * 代价——只说「去开启」，用户没有任何理由去点它。关掉时的实际表现（真机
-     * 2026-10-29 实测）：状态栏没有闹钟图标，触发时刻落在 60 秒窗口内的任意位置。
+     * <p><b>为什么不是一直显示</b>：Android 13+ 装了 {@code USE_EXACT_ALARM} 之后，
+     * 这一项就是安装即授予、用户在系统里改不了的——2026-10-29 真机（Android 16 +
+     * 澎湃）确认，系统页那个开关是开着且灰的，点不动，而 App 里永远是绿勾。
+     * 一行永远绿、点进去什么也做不了的条目，只会让人以为「这里还有事没确认」，
+     * 而它恰恰什么都确认不了（v0.58.3 删掉它的理由，今天仍然成立一半）。
      *
-     * <p>为什么容易漏：Android 14 起 {@code SCHEDULE_EXACT_ALARM} 默认不授予，
-     * 而本应用声明的 {@code USE_EXACT_ALARM} 在部分国产 ROM 上对侧载包不生效，
-     * 两者叠加就落到「能响但不准」这个最难自己发现的状态里。
+     * <p><b>为什么也不是彻底删掉</b>：{@code USE_EXACT_ALARM} 是 Android 13 才有的
+     * 权限，Android 12 上只有 {@code SCHEDULE_EXACT_ALARM}，而它是用户可以关的。
+     * 那种机器上这一行才真正有用——关掉之后闹钟会晚最多 1 分钟、且没有状态栏图标，
+     * 用户没有任何别的途径看出来。
+     *
+     * <p>所以：给到了就藏起来，没给才出现。平时不占位置，出问题时不沉默。
      */
     private void refreshExactState() {
-        if (stExact == null) return;
-        if (ScheduleManager.canScheduleExactAlarms(this)) {
-            stExact.setText("已开启 · 到点精确到秒");
-            stExact.setTextColor(ContextCompat.getColor(this, R.color.success));
-            return;
-        }
+        if (stExact == null || rowExact == null) return;
+        int vis = ScheduleManager.canScheduleExactAlarms(this) ? View.GONE : View.VISIBLE;
+        rowExact.setVisibility(vis);
+        if (dividerExact != null) dividerExact.setVisibility(vis);
+        if (vis != View.VISIBLE) return;
         stExact.setText("未开 · 可能晚 1 分钟，状态栏也没有闹钟图标");
         stExact.setTextColor(ContextCompat.getColor(this, R.color.danger));
     }

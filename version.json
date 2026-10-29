@@ -1,13 +1,12 @@
 {
-  "versionCode": 211,
-  "versionName": "0.89.2",
+  "versionCode": 212,
+  "versionName": "0.89.3",
   "published": "2026-10-29",
-  "title": "精确闹钟没开，现在看得见了",
+  "title": "精确闹钟那行，平时收起来了",
   "notes": [
-    "没开时闹钟可能晚最多 1 分钟，状态栏也没有图标",
-    "「权限」那页新增一行，点它去开",
-    "之前以为系统一定给，真机上并不成立"
+    "开着的用户看不到它，没开时才出现",
+    "突然出现说明权限被收了，点它去开"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.2/weekday-alarm-0.89.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.3/weekday-alarm-0.89.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.3"
 }

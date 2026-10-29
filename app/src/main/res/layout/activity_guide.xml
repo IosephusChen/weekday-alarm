@@ -694,7 +694,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="前四项决定闹钟响不响、准不准，系统能检测，开了会打勾。"
+                    android:text="这几项决定闹钟响不响、准不准，系统能检测，开了会打勾。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -878,6 +878,7 @@
                         </LinearLayout>
 
                         <View
+                            android:id="@+id/divider_exact"
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:background="@color/line" />

@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(212, "0.89.3", "2026/10/29", "精确闹钟那行，平时收起来了",
+                    "开着的用户看不到它，没开时才出现",
+                    "突然出现说明权限被收了，点它去开"),
             new Entry(211, "0.89.2", "2026/10/29", "精确闹钟没开，现在看得见了",
                     "没开时闹钟可能晚最多 1 分钟，状态栏也没有图标",
                     "「权限」那页新增一行，点它去开",

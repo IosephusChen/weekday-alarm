@@ -66,9 +66,12 @@ public class AlarmService extends Service {
     /** 通知不可用时，响铃的最长时长（分钟）：没有停止入口，必须自己停（v0.58.0）。 */
     static final int DEGRADED_MAX_MINUTES = 5;
 
-    /** 铃声渐响：从静音线性升至设定音量的总时长与步进（v0.14.0）。 */
+    /** 铃声渐响的总时长（v0.14.0）。 */
     private static final long FADE_IN_MS = 30_000;
-    private static final long FADE_STEP_MS = 250;
+    /** 渐响步进：v0.91.2 从 250ms 提到 50ms，与系统时钟一致，爬升听不出台阶。 */
+    private static final long FADE_STEP_MS = 50;
+    /** 渐响的分贝跨度：-40dB 起步，0dB 到顶（v0.91.2，照 AOSP DeskClock）。 */
+    private static final float FADE_RANGE_DB = 40f;
 
     private MediaPlayer player;
     private Vibrator vibrator;
@@ -101,20 +104,49 @@ public class AlarmService extends Service {
     private long fadeStartUptime;
     private float fadeTargetVol = 1f;
     private boolean fading = false;
+    /** 渐响进度百分比（v0.91.2）：-1 表示没在渐响，只给试听模式的诊断行读。 */
+    private int fadePercent = -1;
     private final Runnable fadeRunnable = new Runnable() {
         @Override
         public void run() {
             if (!fading || player == null) return;
             long elapsed = SystemClock.uptimeMillis() - fadeStartUptime;
             float t = Math.min(1f, elapsed / (float) FADE_IN_MS);
-            applyPlayerVolume(fadeTargetVol * t);
+            applyPlayerVolume(fadeTargetVol * fadeGain(t));
+            // 诊断行每变化一个百分点才重拼一次，不在 50ms 循环里拼 20 次字符串
+            int pct = Math.round(t * 100f);
+            if (pct != fadePercent) {
+                fadePercent = pct;
+                if (testRing) updateDiagnostic();
+            }
             if (t < 1f) {
                 fadeHandler.postDelayed(this, FADE_STEP_MS);
             } else {
                 fading = false;
+                fadePercent = -1;
+                if (testRing) updateDiagnostic();
             }
         }
     };
+
+    /**
+     * 渐响曲线：给定时间进度 {@code t}（0→1），返回振幅系数。
+     *
+     * <p>v0.91.2 之前这里是振幅线性（{@code 直接用 t}）。那是错的：人耳对响度的感知
+     * 接近对数，振幅线性听起来是「前半程一下子变响，后半程几乎没变化」。
+     * AOSP DeskClock 的做法是按分贝线性——{@code -40dB} 匀速升到 {@code 0dB}——
+     * 振幅便呈指数，听感才是「匀速变响」。
+     *
+     * <p>一个直观的对照：进度过半时，旧曲线给 50% 振幅，新曲线只有 10%。
+     * 前半程安静得多，这既是「像慢慢醒来」的来源，也是试听头几秒几乎听不见的原因，
+     * 所以试听页那行诊断要把进度数字亮出来，让人知道它在爬升而不是坏了。
+     */
+    static float fadeGain(float t) {
+        if (t <= 0f) return 0f;
+        if (t >= 1f) return 1f;
+        float gainDb = (t - 1f) * FADE_RANGE_DB;
+        return (float) Math.pow(10, gainDb / 20.0);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -310,12 +342,11 @@ public class AlarmService extends Service {
             // 实际就是系统闹钟那一档的 80%，不再是 80% × 系统档位的两层相乘。
             // 渐响仍从 0 渐到 1.0，在系统音量之内做，听感不变。
             //
-            // v0.91.1：试听（ACTION_TEST）不走渐响。试听要回答的是「现在到底有没有声音」，
-            // 而渐响是 30 秒从 0 爬到满——点两下就关掉的人，听到的是 5% 都不到的音量，
-            // 得出的结论必然是「没声音」。这个坑把「音量太小」和「根本没播」搅在一起，
-            // 正是上一版没能查出真凶的原因之一。
+            // v0.91.2：试听也照设置渐响。上一版为了让「听不见」好定位，替试听关掉了渐响，
+            // 等于让试听演示的效果和明天早上真实发生的不一样——试听的全部意义就是预演，
+            // 关掉渐响就把它变成了谎话。真问题在曲线，见 fadeGain()。
             float targetVol = 1f;
-            boolean fadeIn = shouldFadeIn(this, testRing);
+            boolean fadeIn = shouldFadeIn(this);
             // v0.91.1：先拿焦点再播。没有焦点时部分 ROM 会把 USAGE_ALARM 压掉，
             // 表现同样是「界面正常、一点声音都没有」。
             requestFocusForAlarm();
@@ -387,15 +418,17 @@ public class AlarmService extends Service {
     /**
      * 这次要不要渐响（v0.91.1 抽出，便于单测）。
      *
-     * <p>三个条件缺一不可：不是试听、用户开了渐响、系统闹钟音量不是 0。
-     * 第三条是 v0.90.0 留下的：音量在 0 时渐响等于「从 0 爬到 0」，白白延后 30 秒
+     * <p>两个条件缺一不可：用户开了渐响、系统闹钟音量不是 0。
+     * 第二条是 v0.90.0 留下的：音量在 0 时渐响等于「从 0 爬到 0」，白白延后 30 秒
      * 才让人意识到根本没声音，不如直接放，让他立刻知道是音量问题。
      *
-     * <p>试听排除在外，是 v0.91.1 的核心修正——试听要回答「现在有没有声音」，
-     * 从 0 爬的那 30 秒把这个问题变成了「等 10 秒再说」，用户等不了。
+     * <p>v0.91.1 曾把试听排除在外，理由是「点两下就关掉的人听不到声」。那是治标：
+     * 试听的意义就是「先听一遍明天早上会被怎么叫醒」，替用户关掉渐响等于骗他。
+     * v0.91.2 起试听照设置走，真正的问题——旧曲线前段涨得太快、后段几乎没变化——
+     * 改由 {@link #fadeGain(float)} 的分贝曲线解决。
      */
-    static boolean shouldFadeIn(Context c, boolean testRing) {
-        return !testRing && Prefs.isFadeIn(c) && AlarmVolume.level(c) > 0;
+    static boolean shouldFadeIn(Context c) {
+        return Prefs.isFadeIn(c) && AlarmVolume.level(c) > 0;
     }
 
     /**
@@ -483,13 +516,20 @@ public class AlarmService extends Service {
         return seg == null ? "未知" : seg;
     }
 
-    /** 拼一句给试听模式看的诊断；正式响铃一个字都不写（v0.91.1）。 */
+    /** 拼一句给试听模式看的诊断；正式响铃一个字都不写（v0.91.1，v0.91.2 加渐响进度）。 */
     private void updateDiagnostic() {
         if (!testRing) return;
         StringBuilder sb = new StringBuilder();
         sb.append("系统音量 ").append(AlarmVolume.percent(this)).append('%');
         if (playingRingtoneName != null) sb.append(" · 铃声：").append(playingRingtoneName);
-        if (player != null) sb.append(" · 播放中");
+        if (player != null) {
+            if (fading && fadePercent >= 0) {
+                // 分贝曲线前段极轻，光写「播放中」会让人以为坏了。进度数字说明它在爬
+                sb.append(" · 渐响中 ").append(fadePercent).append('%');
+            } else {
+                sb.append(" · 播放中");
+            }
+        }
         lastRingDiagnostic = sb.toString();
     }
 
@@ -574,7 +614,7 @@ public class AlarmService extends Service {
         return null;
     }
 
-    /** 按设定音量开始播放；开启渐响时从 0 线性爬升（v0.14.0）。 */
+    /** 按设定音量开始播放；开启渐响时按分贝曲线从极轻爬到设定音量（v0.14.0 / v0.91.2）。 */
     private void applyVolumeAndStart(float targetVol, boolean fadeIn) {
         if (player == null) return;
         try {
@@ -583,9 +623,12 @@ public class AlarmService extends Service {
                 fadeTargetVol = targetVol;
                 fadeStartUptime = SystemClock.uptimeMillis();
                 fading = true;
+                fadePercent = 0;
                 fadeHandler.post(fadeRunnable);
             } else {
                 player.setVolume(targetVol, targetVol);
+                fading = false;
+                fadePercent = -1;
             }
             player.start();
         } catch (Exception ignore) {
@@ -604,6 +647,7 @@ public class AlarmService extends Service {
         // v0.54.0：小悬浮窗是独立窗口，不随通知一起消失，必须自己撤
         FloatingAlarm.hide();
         fading = false;
+        fadePercent = -1;
         fadeHandler.removeCallbacks(fadeRunnable);
         // v0.91.1：焦点跟着这次响铃走，停了就还回去——否则下一次响铃申请时
         // 旧请求还挂着，部分 ROM 会当成「同一个应用重复申请」直接忽略

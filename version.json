@@ -1,14 +1,13 @@
 {
-  "versionCode": 226,
-  "versionName": "0.91.1",
+  "versionCode": 227,
+  "versionName": "0.91.2",
   "published": "2026-10-30",
-  "title": "试听能听见了，音量也跟手了",
+  "title": "试听照设置渐响了",
   "notes": [
-    "试听不再走 30 秒渐响，点一下就是满音量",
-    "铃声读不出来时不再沉默，改成逐级换一条能播的",
-    "按音量键改系统音量，页面上的数字立刻跟着变",
-    "试听页多一行小字，写着音量、铃声名和播放状态"
+    "试听重新遵守渐响设置，开 30 秒就真的是 30 秒",
+    "渐响曲线改成按分贝升，全程听感均匀，不再前快后慢",
+    "开头几秒很轻属正常，试听页会显示渐响进度和当前音量"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.1/weekday-alarm-0.91.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.2/weekday-alarm-0.91.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.2"
 }

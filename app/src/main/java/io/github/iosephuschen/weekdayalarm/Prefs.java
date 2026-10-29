@@ -529,7 +529,12 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_POWERKEY_ACTION, action).apply();
     }
 
-    /** 铃声渐响：从静音用约 30 秒线性升至设定音量。默认关。 */
+    /**
+     * 铃声渐响：约 30 秒从极轻升到设定音量。默认关。
+     *
+     * <p>「逐步变响」按分贝算而不是按振幅（v0.91.2）：曲线形状见
+     * {@code AlarmService.fadeGain}，来自 AOSP DeskClock 的 -40dB→0dB。
+     */
     public static boolean isFadeIn(Context c) {
         return sp(c).getBoolean(KEY_FADE_IN, false);
     }

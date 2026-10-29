@@ -1,29 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 音量条轨道（v0.61.4）。
+<!-- 音量条轨道（v0.61.4 起草，v0.90.1 加粗）。
 
      以前用系统默认 drawable，在澎湃 / MIUI 上轨道细得几乎看不见，
      而且和滑块的比例不搭（滑块 18dp，轨道只有 2-3dp）。
-     自绘成 4dp 圆角轨道：静止部分 @color/line，已选部分 @color/indigo。 -->
+
+     v0.90.1：4dp → 10dp，圆角改用 radius_chip。
+     借 chip 而不是新造档位：10dp 的圆角落在 10dp 高的形状上会被系统压到
+     半高（5dp），画出来就是胶囊，与直接写 5dp 等价；而圆角只有七档
+     （DesignTokenTest 守着），为一条轨道加第八档不值当。
+     起因是用户拿澎湃的闹钟设置页做对比：那边整条轨道是一条粗胶囊，
+     已选部分是一块实心色，"响铃音量"四个字指的是一个看得见的量；
+     我们这条 4dp 的细线在同样的行高里几乎不存在，读起来像一条分隔线。
+
+     粗轨道还有一个附带好处：音量下限改成 10% 之后，用户需要知道
+     "最左边不等于关闭"。一条有厚度的胶囊，配合实心滑块（seek_thumb），
+     最左端看起来是"一个实心的端点"，而不是"一条被拖空的细线"。 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
         android:id="@android:id/background"
         android:gravity="center_vertical"
-        android:height="4dp">
+        android:height="10dp">
         <shape android:shape="rectangle">
             <solid android:color="@color/line" />
-            <corners android:radius="@dimen/radius_hairline" />
+            <corners android:radius="@dimen/radius_chip" />
         </shape>
     </item>
 
     <item
         android:id="@android:id/progress"
         android:gravity="center_vertical"
-        android:height="4dp">
+        android:height="10dp">
         <clip>
             <shape android:shape="rectangle">
                 <solid android:color="@color/indigo" />
-                <corners android:radius="@dimen/radius_hairline" />
+                <corners android:radius="@dimen/radius_chip" />
             </shape>
         </clip>
     </item>

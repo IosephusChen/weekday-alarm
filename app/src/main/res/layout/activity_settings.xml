@@ -114,8 +114,8 @@
                     android:layout_marginTop="@dimen/space_2"
                     android:max="90"
                     android:minHeight="36dp"
-                    android:paddingStart="9dp"
-                    android:paddingEnd="9dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:progressDrawable="@drawable/seek_track"
                     android:splitTrack="false"
                     android:thumb="@drawable/seek_thumb" />

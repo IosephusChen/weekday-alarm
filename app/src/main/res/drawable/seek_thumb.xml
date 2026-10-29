@@ -1,19 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 音量条滑块（v0.61.4）。
+<!-- 音量条滑块（v0.61.4 起草，v0.90.1 改实心）。
 
-     18dp 白底 + 2dp 主色描边，比系统默认的实心圆更轻，压在 4dp 轨道上不会显得头重脚轻。
-     用白底而不是纯色，是因为音量条横跨整张白卡片：实心紫点在浅色模式太抢眼，
-     描边圆既能看到位置，又不至于把注意力从「闹钟音量」这四个字上拉走。
+     v0.61.4 是 18dp 白底 + 2dp 细描边，理由是"实心紫点太抢眼"。
+     v0.90.1 反过来了：要的正是抢眼。
 
-     注意：SeekBar 必须留出 >= 9dp 的左右 padding，否则滑块滚到 0 时
-     左半会被自己的边界裁掉——截图上那个「半月形」就是这么来的。 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <solid android:color="@color/card" />
-    <stroke
-        android:width="2dp"
-        android:color="@color/indigo" />
-    <size
-        android:width="18dp"
-        android:height="18dp" />
-</shape>
+     背景是上线后的反馈——新建闹钟时选了铃声、试听也有声，到点却不响，
+     回头查设置才发现全局音量被拖到了 0。0.90.0 把下限抬到 10% 之后，
+     还剩一个问题：**看不出来最左边不是关闭**。细环压在 4dp 轨道起点上，
+     读起来像"还没开始调"，而不是"已经是下限"。
+
+     所以：实心主色圆 24dp + 2dp 白环，压在 10dp 的胶囊轨道上。
+     - 在浅色卡片上：白环与卡面同色，看到的是一个实心紫圆点，有重量
+     - 在已选的紫色填充上：白环把两者隔开，边界不糊
+     半径 14dp，SeekBar 左右必须留 >= 14dp padding，否则滚到最左会被裁。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/card" />
+            <size
+                android:width="28dp"
+                android:height="28dp" />
+        </shape>
+    </item>
+
+    <item
+        android:bottom="2dp"
+        android:left="2dp"
+        android:right="2dp"
+        android:top="2dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/indigo" />
+        </shape>
+    </item>
+</layer-list>

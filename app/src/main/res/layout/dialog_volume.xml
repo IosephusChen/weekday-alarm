@@ -1,18 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 闹钟音量对话框（v1.16）：SeekBar 0-100，0 = 静音仅震动。 -->
+<!-- 闹钟音量对话框（v1.16）；v0.90.1 重排：值移到标题行右侧，滑块下加两端刻度。
+
+     为什么要动（用户拿澎湃的闹钟设置页做对比）：那边一条粗胶囊轨道 + 一块实心
+     填充 + 右上角的当前值，一眼能读出"这是一个有下限的量"。我们原来是一条 4dp
+     细线、一个空心环、下面一个居中的大数字——线太轻，读起来像分隔线；数字离
+     轨道远，拖的时候眼睛要在两处来回跑。
+
+     更要紧的是"拉不到最小"这件事：音量下限改成 10% 之后，滑块停在最左边时
+     轨道左侧没有任何填充，看起来像"还没开始调"。现在标题行右边永远显示真实
+     数值（拖到最左是 10%），滑块下方两端再标出 10% / 100%，下限就不再需要猜。
+
+     刻度文字写死 10%，与 Prefs.MIN_VOLUME 必须一致——有测试盯着，改常量忘了
+     改这里会红。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="20dp">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/dialog_volume_title"
-        android:textColor="@color/ink"
-        android:textSize="17sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/dialog_volume_title"
+            android:textColor="@color/ink"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_volume_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="80%"
+            android:textColor="@color/indigo"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"
@@ -23,46 +52,42 @@
         android:textColor="@color/sub"
         android:textSize="12sp" />
 
-
-
-    <!-- 与设置主页那条同一套轨道与滑块（v0.61.4）；padding 留出滑块半径，否则贴到 0 就被裁 -->
+    <!-- 与设置主页那条同一套轨道与滑块（v0.61.4）；padding 留出滑块半径（14dp），
+         否则拖到最左时左半会被自己的边界裁掉 -->
     <SeekBar
         android:id="@+id/seek_volume"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="10dp"
         android:max="90"
         android:minHeight="36dp"
-        android:paddingStart="9dp"
-        android:paddingEnd="9dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
         android:progressDrawable="@drawable/seek_track"
         android:splitTrack="false"
         android:thumb="@drawable/seek_thumb" />
 
-    <TextView
-        android:id="@+id/tv_volume_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="4dp"
-        android:text="80%"
-        android:textColor="@color/ink"
-        android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="拖到 0 = 静音，响铃时不发声（震不震看「响铃时震动」）"
-        android:textColor="@color/sub"
-        android:textSize="12sp" />
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="测试响铃会用当前音量，可即时验证效果"
-        android:textColor="@color/sub"
-        android:textSize="12sp" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="10%"
+            android:textColor="@color/sub"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100%"
+            android:textColor="@color/sub"
+            android:textSize="11sp" />
+    </LinearLayout>
+
 </LinearLayout>

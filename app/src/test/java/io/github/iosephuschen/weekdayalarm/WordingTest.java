@@ -144,4 +144,30 @@ public class WordingTest {
                 src.contains("\" · 渐响中 \""));
         assertTrue("诊断行必须把「渐响进度」写全", src.contains("渐响进度"));
     }
+
+    /**
+     * 铃声对话框的副标题不许再长回三行（v0.91.6）。
+     *
+     * <p>v0.91.5 写的是「厂商的「智慧铃声」（如小爱）读不到，下面显示的是底层那条」，
+     * 真机 360dp 屏上折成三行，把列表首项往下压了整整一行。12sp 下每行约 23 字，
+     * 两行的量给到 38 字上限（现状 34 字，旧文案 41 字）——改文案时如果又往回加修饰词，这条会红。
+     */
+    @Test
+    public void ringtoneSubtitle_fitsInTwoLines() {
+        String src = read("app/src/main/java/io/github/iosephuschen/weekdayalarm/RingtoneDialog.java");
+        int at = src.indexOf("tvSub.setText(\"点一下试听");
+        assertTrue("找不到铃声对话框的副标题", at >= 0);
+        int end = src.indexOf(");", at);
+        assertTrue("副标题那句没有收尾", end > at);
+
+        Matcher m = Pattern.compile("\"([^\"]*)\"").matcher(src.substring(at, end));
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) sb.append(m.group(1));
+        // 源码里的 \n 是两个字符，换成真正的换行再统计
+        String text = sb.toString().replace("\\n", "\n").replace("\n", "");
+        assertTrue("副标题 " + text.length() + " 字，360dp 屏上会折成三行：" + text,
+                text.length() <= 38);
+        assertTrue("得说清小爱那类智慧铃声读不到", text.contains("小爱"));
+        assertTrue("得说清列表里是底层那条", text.contains("底层"));
+    }
 }

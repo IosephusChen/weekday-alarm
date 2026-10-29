@@ -124,7 +124,6 @@
     <string name="about_title">关于</string>
     <string name="about_app_name">打工人闹钟</string>
     <string name="about_app_name_en">Weekday Alarm</string>
-    <string name="about_first_work">这是我的第一个作品</string>
     <string name="about_source">源代码</string>
     <string name="about_source_value">GitHub ›</string>
     <string name="about_license">开源许可</string>

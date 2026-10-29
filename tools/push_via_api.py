@@ -14,6 +14,12 @@
     tools/push_via_api.py                 # 推到 origin 的当前分支
     tools/push_via_api.py --dry-run       # 只构造并校验，不更新 ref
     tools/push_via_api.py --branch main
+    tools/push_via_api.py --tag v1.0.0    # 顺手推一个标签（v0.91.3 起）
+    tools/push_via_api.py --tags          # 推本地全部标签
+
+标签两种形态都支持：annotated（本地是 tag 对象，走 /git/tags 重建并比对 SHA）
+与 lightweight（直接指向提交，建 ref 即完）。远端已有同名标签且指向相同就跳过；
+指向不同一律报错退出，不覆盖。
 
 不支持：merge 提交、submodule、远端已有的分叉。遇到会直接退出，请走 git push。
 """
@@ -25,6 +31,7 @@ import os
 import re
 import subprocess
 import sys
+from urllib.parse import quote
 
 import requests
 
@@ -94,11 +101,83 @@ def local_tree_meta(commit):
     return meta
 
 
+def push_tag(api, base, name, dry_run):
+    """把本地标签重建到远端（v0.91.3）。
+
+    标签在 Git 里是四种对象叠在一起：ref → 可能一层 tag 对象 → commit。annotated 标签
+    的 tag 对象自己也带 SHA，所以能像提交那样「先建、再比对」，比对不上就不建 ref。
+    lightweight 没有中间对象，直接把 ref 指到提交上。
+
+    远端已有同名标签时只接受「指向完全相同」，其余一律报错——移动标签会让别人的
+    克隆静默分叉，这种操作不该由一个应急脚本替人做。
+    """
+    ref = "refs/tags/" + name
+    obj = git("rev-parse", ref)
+    typ = git("cat-file", "-t", obj)
+
+    r = api.s.get(API + base + "/git/ref/tags/" + quote(name, safe="/"), timeout=60)
+    if r.status_code == 200:
+        there = r.json()["object"]["sha"]
+        if there == obj:
+            print("  =  %s  （远端已有，相同）" % name)
+            return
+        sys.exit("远端已有标签 %s 指向 %s，本地是 %s——不覆盖，请人工处理"
+                 % (name, there[:7], obj[:7]))
+    if r.status_code != 404:
+        sys.exit("读远端标签失败 HTTP %d\n%s" % (r.status_code, r.text[:300]))
+
+    payload = None
+    if typ == "commit":
+        target, how = obj, "lightweight"
+    elif typ == "tag":
+        raw = git("cat-file", "tag", obj, strip=False)
+        header, _, message = raw.partition("\n\n")
+        target, tagged = None, None
+        for line in header.splitlines():
+            if line.startswith("object "):
+                target = line.split(None, 1)[1]
+            elif line.startswith("type "):
+                tagged = line.split(None, 1)[1]
+        if target is None or tagged != "commit":
+            sys.exit("标签 %s 指向 %s（type=%s），本脚本只处理打到提交上的标签"
+                     % (name, (target or "?")[:7], tagged))
+        # message 原样带上，包括结尾换行——少一个字节 SHA 就变，比对会拦下来
+        payload, how = {"tag": name, "message": message, "object": target,
+                        "type": "commit", "tagger": ident(header, "tagger")}, "annotated"
+    else:
+        sys.exit("标签 %s 指向 %s，既不是提交也不是标签对象" % (name, typ))
+
+    # 被标记的提交必须已经在远端，否则建 ref 会被拒（422），错在最后一步很难查
+    if api.s.get(API + base + "/git/commits/" + target, timeout=60).status_code != 200:
+        sys.exit("标签 %s 标记的提交 %s 不在远端——先把分支推上去" % (name, target[:7]))
+
+    if dry_run:
+        print("  ?  %s  %s → %s（dry-run，未创建）" % (name, how, target[:7]))
+        return
+
+    if payload is None:
+        sha = target
+    else:
+        sha = api.req("POST", base + "/git/tags", json=payload)["sha"]
+        if sha != obj:
+            sys.exit("标签对象对不上：远端算出 %s，本地 %s。ref 未建立"
+                     % (sha[:7], obj[:7]))
+
+    api.req("POST", base + "/git/refs", json={"ref": ref, "sha": sha})
+    got = api.req("GET", base + "/git/ref/tags/" + quote(name, safe="/"))["object"]["sha"]
+    if got != sha:
+        sys.exit("建完再读回是 %s，不是 %s" % (got[:7], sha[:7]))
+    print("  +  %s  %s → %s" % (name, how, sha[:7]))
+
+
 def main():
     ap = argparse.ArgumentParser(description="经 Git Data API 推送，不碰 github.com")
     ap.add_argument("--remote", default="origin")
     ap.add_argument("--branch", help="默认当前分支")
     ap.add_argument("--dry-run", action="store_true", help="只校验，不更新 ref")
+    ap.add_argument("--tag", action="append", default=[], metavar="NAME",
+                    help="推这个标签，可重复")
+    ap.add_argument("--tags", action="store_true", help="推本地全部标签")
     args = ap.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN", "")
@@ -127,14 +206,15 @@ def main():
     print("远端 HEAD %s" % remote[:7])
 
     if remote == head:
-        print("已是最新，无需推送")
-        return 0
-    if subprocess.run(["git", "merge-base", "--is-ancestor", remote, head]).returncode != 0:
-        sys.exit("远端有本地没有的提交（或已分叉），拒绝自动推送，请先人工对齐")
+        print("分支已是最新")
+        commits = []
+    else:
+        if subprocess.run(["git", "merge-base", "--is-ancestor", remote, head]).returncode != 0:
+            sys.exit("远端有本地没有的提交（或已分叉），拒绝自动推送，请先人工对齐")
+        commits = git("rev-list", "--reverse", "%s..%s" % (remote, head)).splitlines()
 
     parent_sha = remote
     parent_tree = api.req("GET", base + "/git/commits/" + remote)["tree"]["sha"]
-    commits = git("rev-list", "--reverse", "%s..%s" % (remote, head)).splitlines()
     print("待推 %d 个提交\n" % len(commits))
 
     for idx, short in enumerate(commits, 1):
@@ -207,16 +287,27 @@ def main():
         print("  tree %s  commit %s  ✓ %s\n" % (new_tree[:7], new_commit[:7], how))
         parent_sha, parent_tree = new_commit, new_tree
 
-    if args.dry_run:
-        print("[dry-run] 全部校验通过，ref 未更新")
-        return 0
+    if not args.dry_run and commits:
+        api.req("PATCH", base + "/git/refs/heads/" + branch,
+                json={"sha": parent_sha, "force": False})
+        final = api.req("GET", base + "/git/ref/heads/" + branch)["object"]["sha"]
+        if final != head:
+            sys.exit("更新后远端是 %s，不是 %s" % (final[:7], head[:7]))
+        print("远端 %s 现在指向 %s  ✓" % (branch, final[:7]))
+    elif args.dry_run and commits:
+        print("[dry-run] 提交全部校验通过，分支 ref 未更新")
 
-    api.req("PATCH", base + "/git/refs/heads/" + branch,
-            json={"sha": parent_sha, "force": False})
-    final = api.req("GET", base + "/git/ref/heads/" + branch)["object"]["sha"]
-    if final != head:
-        sys.exit("更新后远端是 %s，不是 %s" % (final[:7], head[:7]))
-    print("远端 %s 现在指向 %s  ✓ 完成" % (branch, final[:7]))
+    names = [n for n in dict.fromkeys((git("tag", "--list").splitlines() if args.tags else [])
+                                      + args.tag) if n]
+    if names:
+        print("\n标签 %d 个" % len(names))
+        for n in names:
+            push_tag(api, base, n, args.dry_run)
+
+    if args.dry_run:
+        print("\n[dry-run] 结束，远端没有任何改动")
+    else:
+        print("\n完成")
     return 0
 
 

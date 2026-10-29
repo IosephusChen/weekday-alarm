@@ -132,8 +132,8 @@ public class App extends Application {
         pre.setSound(null, null);
         pre.enableVibration(false);
         pre.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        // 睡前提醒渠道（v0.24.0）：普通优先级、无铃声无震动——只是「提前说一声」，
-        // 真正叫醒用户的仍然是闹钟本身
+        // 测试响铃渠道（v0.31.1）：普通优先级、无铃声无震动——界面本来就由我们打开，
+        // 这条只是给前台服务占个位置，不需要再抢一次屏
         NotificationChannel test = new NotificationChannel(
                 CHANNEL_TEST, "测试响铃", NotificationManager.IMPORTANCE_LOW);
         test.setDescription("点「测试响铃」时的前台服务通知，不横幅、不抢屏");
@@ -150,6 +150,8 @@ public class App extends Application {
         banner.enableVibration(false);
         banner.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
+        // 睡前提醒渠道（v0.24.0）：普通优先级、无铃声无震动——只是「提前说一声」，
+        // 真正叫醒用户的仍然是闹钟本身
         NotificationChannel bedtime = new NotificationChannel(
                 CHANNEL_BEDTIME, "睡前提醒", NotificationManager.IMPORTANCE_DEFAULT);
         bedtime.setDescription("睡前告诉你明天要不要早起、闹钟几点响，可一键标记明天请假");

@@ -734,12 +734,17 @@ public final class ScheduleManager {
         int horizon = Prefs.getHorizonDays(ctx);
         Set<LocalDate> vacations = Prefs.getVacationDates(ctx);
         Set<LocalDate> overtimes = Prefs.getOvertimeDates(ctx);
+        // v0.91.4：「这次不响」的实例不该算进来。这里原来漏了这笔标记，于是点完
+        // 「这次不响」之后设置页的「已排 N 次」纹丝不动，而实际系统里已经撤掉了——
+        // 界面说的和它在做的事对不上，是这一类统计最容易出的错。
+        Set<String> skipOnce = Prefs.getSkipOnce(ctx);
         int n = 0;
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
             for (int i = 0; i < horizon; i++) {
                 LocalDate d = today.plusDays(i);
+                if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 if (LocalDateTime.of(d, alarmTime).isAfter(now)) n++;
@@ -844,7 +849,7 @@ public final class ScheduleManager {
     public static NextAlarm nextRing(Context ctx, LocalDateTime from) {
         return nextRing(Prefs.getAlarms(ctx), Prefs.getRule(ctx),
                 Prefs.getVacationDates(ctx), Prefs.getOvertimeDates(ctx),
-                from, Prefs.getHorizonDays(ctx));
+                Prefs.getSkipOnce(ctx), from, Prefs.getHorizonDays(ctx));
     }
 
     /**
@@ -856,6 +861,22 @@ public final class ScheduleManager {
     static NextAlarm nextRing(List<Alarm> alarms, WeekSchedule.Rule rule,
                               Set<LocalDate> vacations, Set<LocalDate> overtimes,
                               LocalDateTime from, int days) {
+        return nextRing(alarms, rule, vacations, overtimes, java.util.Collections.emptySet(),
+                from, days);
+    }
+
+    /**
+     * v0.91.4 加了 {@code skipOnce}：用户点过「这次不响」的那一天不算「下次响铃」。
+     *
+     * <p>漏掉它的时候，首页倒计时和桌面小组件会照旧写着「明天 07:30」——用户点完
+     * 「这次不响」的用意就是「明天别叫我」，看着那行字他会以为按钮没生效，
+     * 第二天没响又会怀疑 App 是不是漏了。同样的口径也用在
+     * {@link #countCandidates}，两处一起改才不会再漂。
+     */
+    static NextAlarm nextRing(List<Alarm> alarms, WeekSchedule.Rule rule,
+                              Set<LocalDate> vacations, Set<LocalDate> overtimes,
+                              Set<String> skipOnce,
+                              LocalDateTime from, int days) {
         NextAlarm best = null;
         LocalDate start = from.toLocalDate();
         for (int i = 0; i < days; i++) {
@@ -866,6 +887,7 @@ public final class ScheduleManager {
             boolean overtime = overtimes.contains(d);
             for (Alarm a : alarms) {
                 if (!a.enabled) continue;
+                if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (vacation && !a.ignoresVacation()) continue;
                 if (!a.appliesTo(d, rule, overtime)) continue;
                 LocalDateTime when = LocalDateTime.of(d, LocalTime.of(a.hour, a.minute));

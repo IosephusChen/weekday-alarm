@@ -618,7 +618,6 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_BEDTIME_MINUTES, v).apply();
     }
 
-    /** 睡前提醒是否只在「明天要上班」时发送；默认 true（休息日不打扰）。 */
     /** 通知栏那条睡前提醒是哪天发的（ISO 日期，v0.58.8）。没发过为 null。 */
     public static final String KEY_BEDTIME_NOTICE_DAY = "bedtime_notice_day";
 
@@ -644,6 +643,7 @@ public final class Prefs {
         }
     }
 
+    /** 睡前提醒是否只在「明天要上班」时发送；默认 true（休息日不打扰）。 */
     public static boolean isBedtimeWorkdayOnly(Context c) {
         return sp(c).getBoolean(KEY_BEDTIME_WORKDAY_ONLY, true);
     }

@@ -243,7 +243,6 @@ public class AlarmService extends Service {
         return START_NOT_STICKY;
     }
 
-    /** 兜底：把整屏响铃页拉到前面（悬浮窗挂不上、或锁屏时用）。 */
     /**
      * 本次响铃的闹钟时刻（HH:mm）。
      *
@@ -261,6 +260,7 @@ public class AlarmService extends Service {
         return null;
     }
 
+    /** 兜底：把整屏响铃页拉到前面（悬浮窗挂不上、或锁屏时用）。 */
     private void openAlarmPage(String dateStr, String label) {
         try {
             Intent full = new Intent(this, AlarmActivity.class);
@@ -274,7 +274,6 @@ public class AlarmService extends Service {
     }
 
 
-    /** 注册「响铃自动停止」闹钟：到点触发 StopReceiver，避免无人时一直响。 */
     /**
      * 响铃时，App 之外是否还有能停的入口（v0.58.7）。
      *
@@ -312,6 +311,7 @@ public class AlarmService extends Service {
         return minutes;
     }
 
+    /** 注册「响铃自动停止」闹钟：到点触发 StopReceiver，避免无人时一直响。 */
     private void scheduleAutoStop() {
         int minutes = effectiveRingMinutes(this);
         if (minutes <= 0) return;
@@ -680,12 +680,19 @@ public class AlarmService extends Service {
         ScheduleManager.cancelAutoStop(this, currentAlarmId, stopDate);
         autoStopDate = null;
         if (player != null) {
+            // 先把字段摘空再动手：stop / release 在异常状态下都会抛 IllegalStateException，
+            // 抛在这里就是主线程崩溃——0.90.4 那次游标崩溃是同一类事。
+            // 旧写法 release() 裸奔在 try 之外，一旦它抛，字段还留着悬空引用（v0.91.4）
+            final MediaPlayer p = player;
+            player = null;
             try {
-                player.stop();
+                p.stop();
             } catch (Exception ignore) {
             }
-            player.release();
-            player = null;
+            try {
+                p.release();
+            } catch (Exception ignore) {
+            }
         }
         if (vibrator != null) {
             try {
@@ -715,7 +722,8 @@ public class AlarmService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private Notification buildNotification(String dateStr, String label, boolean test, boolean popup) {        Intent full = new Intent(this, AlarmActivity.class);
+    private Notification buildNotification(String dateStr, String label, boolean test, boolean popup) {
+        Intent full = new Intent(this, AlarmActivity.class);
         full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
         full.putExtra(AlarmActivity.EXTRA_TEST, test);
         full.putExtra(AlarmActivity.EXTRA_ALARM_ID, currentAlarmId);

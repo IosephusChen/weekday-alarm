@@ -26,4 +26,6 @@
 - 密钥文件永不入库，`keystore.properties` 已被 `.gitignore` 排除，需要时手写。
 - 发版前跑 `tools/release.sh --check`：它会校验五处文档版本一致、跑全量测试、跑 lint。
 - 全量测试偶发 exit 134 时，先删 `app/core.*` 和 `app/hs_err_pid*.log` 再重跑。
-- 沙箱推 GitHub 卡住时用 `git -c http.version=HTTP/1.1 push`，见 `docs/流程规范.md` 第十三条。
+- 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。
+  `github.com` 整个不通时别反复重试 `git push`，用 `tools/push_via_api.py`——走
+  `api.github.com`，逐对象校验 SHA，不碰 `github.com`。`HTTP/1.1` 那个旧结论是错的。

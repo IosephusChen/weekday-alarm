@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(213, "0.89.4", "2026/10/29", "「锁屏显示」那行指错了地方",
+                    "写着「同上一页」，点进去是自启动管理，里面没有这一项",
+                    "改成直接说它在「其他权限」里"),
             new Entry(212, "0.89.3", "2026/10/29", "精确闹钟那行，平时收起来了",
                     "开着的用户看不到它，没开时才出现",
                     "突然出现说明权限被收了，点它去开"),

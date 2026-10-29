@@ -521,11 +521,15 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 「锁屏显示」那一行的状态（v0.55.3 引入，v0.73.5 改文案）。
+     * 「锁屏显示」那一行的状态（v0.55.3 引入，v0.73.5 改文案，v0.89.4 再改）。
      *
      * <p>四态而不是两态：这一项查不到，只能靠自测。没测过时按普通权限行显示
-     * 「去开启 · 同上一页」（它和「后台弹出界面」同在小米权限编辑页）；
-     * 测过之后把探针结果写进来——通过、没锁屏、没测到各一句，不给无端指责。
+     * 「去开启 · 在「其他权限」里」——v0.73.5 之前这里写的是「同上一页」，
+     * 当时这一行紧跟在「后台弹出界面」下面，指的就是它。后来这一行被移到底部
+     * （自启动之后），上一页变成了「自启动管理」，而那一页里根本没有锁屏显示。
+     * 2026-10-29 用户按字面找过去，才发现指向是错的。
+     *
+     * <p>测过之后把探针结果写进来——通过、没锁屏、没测到各一句，不给无端指责。
      */
     private void refreshLockState() {
         if (stLock == null) return;
@@ -541,7 +545,7 @@ public class GuideActivity extends AppCompatActivity {
             stLock.setText("没测到 · 两个开关都要开");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.danger));
         } else {
-            stLock.setText("去开启 · 同上一页");
+            stLock.setText("去开启 · 在「其他权限」里");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         }
     }
@@ -568,7 +572,7 @@ public class GuideActivity extends AppCompatActivity {
      * 「试一下锁屏响铃」的对话框（v0.55.3 引入，v0.73.5 精简，v0.73.6 再瘦身）。
      *
      * <p>v0.73.5：路径入口整个去掉——「锁屏显示」已经和「后台弹出界面」并成
-     * 权限清单里的两行，点行内「去开启 · 同上一页」直达同一个权限编辑页，
+     * 权限清单里的两行，点行内状态直达同一个权限编辑页（`APP_PERM_EDITOR`），
      * 这里只留测试本身。开启路径不再需要第二份说明。
      *
      * <p>v0.73.6：正文与按钮下方小字、与开始后的 Toast 三者原来说的是同一件事，

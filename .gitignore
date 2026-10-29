@@ -25,3 +25,7 @@ replay_pid*.log
 # 进程崩溃转储（core dump 动辄上百 MB，一旦误提交会写进历史）
 core.*
 core
+
+# Python 字节码（tools/ 下的辅助脚本）
+__pycache__/
+*.pyc

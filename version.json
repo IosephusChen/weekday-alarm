@@ -1,12 +1,13 @@
 {
-  "versionCode": 217,
-  "versionName": "0.89.8",
+  "versionCode": 218,
+  "versionName": "0.89.9",
   "published": "2026-10-29",
-  "title": "通知文字自带底色了",
+  "title": "通知卡片不当贴纸了",
   "notes": [
-    "文字压在自己画的紫底上，系统怎么切深浅色都看得清",
-    "之前切到深色后，卡片变了、文字没跟着变"
+    "文字颜色重新交给系统，浅色深色都跟着变",
+    "上一版给文字垫了块深紫底，看着像贴了张标签",
+    "次要按钮只留字，不再画底"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.8/weekday-alarm-0.89.8.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.8"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.9/weekday-alarm-0.89.9.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.9"
 }

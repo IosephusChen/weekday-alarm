@@ -493,8 +493,9 @@ public class PreNoticeTest {
      * 取色的内边距露在外面，成了「紫方块套白框」。所以 v0.89.6 恢复 {@code setColor}，
      * 这条断言也回到「强调色是品牌紫」。
      *
-     * <p>它同时是白字的前提：{@code NotifTheme} 把文字定死白色，只有卡片确实被染成
-     * 紫的，白字才读得出来。染色被删掉时这条会红。
+     * <p>v0.89.9 起它只是「品牌识别」，不再承担「白字能否读」的责任——文字色已经交给
+     * 布局里的 {@code @color/ink}，由 SystemUI 按当前明暗解析。强调色没了也不会导致字糊，
+     * 但展开态和小图标会退回系统灰，认不出是谁家的通知。
      */
     @Test
     public void preNotice_usesBrandCard() {

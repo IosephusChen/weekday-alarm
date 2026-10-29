@@ -35,19 +35,16 @@
         android:background="@drawable/bg_notif_icon"
         android:contentDescription="@null" />
 
-    <!-- 文字自带品牌紫底（v0.89.8）：文字色是在创建通知那一刻写死的，而卡片底色
-         由 SystemUI 按当前明暗实时画——系统一切深色，卡片变深、文字不变，就糊了。
-         给文字一块固定的底，颜色从此与卡片无关。见 bg_notif_text.xml 的注释。 -->
+    <!-- 文字不画任何底（v0.89.9）。颜色的唯一来源是 @color/ink / @color/indigo —
+         它们有 values-night 版本，而这份布局是 SystemUI 在**它自己的进程、它自己的
+         配置**下 inflate 的，切深浅色时系统重建通知视图，颜色随之重解析。
+         代码里一行 setTextColor 都不写：那才是把颜色焊死在创建时刻的原因。
+         正文不加第二个灰度 token，用 ink + 78% 透明度做层次——一个色两端都对。 -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginStart="10dp"
-        android:background="@drawable/bg_notif_text"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
         android:orientation="vertical">
 
         <TextView
@@ -57,6 +54,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:includeFontPadding="false"
+            android:textColor="@color/ink"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -75,7 +73,9 @@
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:ellipsize="end"
+                android:alpha="0.78"
                 android:includeFontPadding="false"
+                android:textColor="@color/ink"
                 android:textSize="12sp" />
 
             <Chronometer
@@ -84,6 +84,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:includeFontPadding="false"
+                android:textColor="@color/indigo"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
@@ -92,19 +93,23 @@
 
     <!-- 药丸在右侧，和 v0.53.0 一致：一次只露出一个主操作时最紧凑。
          高度写死 30dp + 文字居中：wrap_content 一旦被折叠态上限压扁，
-         字就会从上下两头被切掉（v0.53.1 的 bug）。 -->
+         字就会从上下两头被切掉（v0.53.1 的 bug）。
+
+         次操作（v0.89.9）：不画底，只留字。它是「次要操作」，本来就不该有实体感；
+         而任何自绘的底都要在「浅卡 / 深卡」之间二选一，选哪个都在另一边上突兀。
+         纯文字 + @color/indigo（有夜里更亮的一版）就没有这个两难。 -->
     <TextView
         android:id="@+id/nc_action2"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:layout_marginStart="8dp"
-        android:background="@drawable/bg_notif_action_dim"
         android:gravity="center"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:minWidth="44dp"
         android:paddingStart="10dp"
         android:paddingEnd="10dp"
+        android:textColor="@color/indigo"
         android:textSize="13sp"
         android:textStyle="bold"
         android:visibility="gone" />
@@ -121,6 +126,7 @@
         android:minWidth="44dp"
         android:paddingStart="10dp"
         android:paddingEnd="10dp"
+        android:textColor="@color/white"
         android:textSize="13sp"
         android:textStyle="bold" />
 </LinearLayout>

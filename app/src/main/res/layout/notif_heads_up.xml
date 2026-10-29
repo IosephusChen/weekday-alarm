@@ -28,18 +28,12 @@
         android:background="@drawable/bg_notif_icon"
         android:contentDescription="@null" />
 
-    <!-- 文字自带品牌紫底，理由同 notif_content.xml：文字色在构建时写死，
-         卡片底色由 SystemUI 实时画，两者会脱钩（v0.89.8）。 -->
+    <!-- 文字不画底（v0.89.9），颜色全部来自 @color/* 的日夜两版。 -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:layout_marginStart="12dp"
-        android:background="@drawable/bg_notif_text"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
         android:orientation="vertical">
 
         <TextView
@@ -49,6 +43,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:includeFontPadding="false"
+            android:textColor="@color/ink"
             android:textSize="15sp"
             android:textStyle="bold" />
 
@@ -59,7 +54,9 @@
             android:layout_marginTop="3dp"
             android:maxLines="1"
             android:ellipsize="end"
+            android:alpha="0.78"
             android:includeFontPadding="false"
+            android:textColor="@color/ink"
             android:textSize="12sp" />
     </LinearLayout>
 
@@ -75,5 +72,6 @@
         android:paddingTop="7dp"
         android:paddingBottom="7dp"
         android:text="这次不响"
+        android:textColor="@color/white"
         android:textSize="13sp" />
 </LinearLayout>

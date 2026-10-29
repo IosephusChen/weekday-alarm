@@ -481,22 +481,48 @@ public class GuideTest {
     }
 
     /**
-     * 「闹钟和提醒」整行已删（v0.58.3）：我们声明了 {@code USE_EXACT_ALARM}，
-     * Android 13+ 安装即授予且用户在系统里关不掉（开关是灰的）。留一行只能点、
-     * 进去还改不了的项，只会让用户以为哪里没设置好。
+     * 「精确闹钟」这一行必须存在，开了/没开都要说清各自的好处与代价（v0.89.2）。
+     *
+     * <p>v0.58.3 删掉它的理由是：<i>声明了 {@code USE_EXACT_ALARM}，Android 13+ 安装即
+     * 授予且用户关不掉，留一行只能点、进去还改不了的项，只会让人以为哪里没设置好。</i>
+     * 这个判断在真机上被推翻了——2026-10-29，Android 16 + 澎湃，状态栏没有闹钟图标，
+     * 而系统设置里既没有「闹钟和提醒」，也没有任何能改的开关。
+     *
+     * <p>所以这一行的职责变了：<b>不是让用户改一个改不了的开关，是把看不出来的状态
+     * 显示出来</b>。以前那个理由成立的前提是「一定给到」，一旦给不到，界面保持沉默
+     * 就等于让用户永远查不出「为什么我的闹钟晚了一分钟」。
      */
     @Test
-    public void exactAlarmRow_isGone() {
-        assertEquals("这一行应该已经被删掉", 0, ctx().getResources()
-                .getIdentifier("perm_exact", "id", ctx().getPackageName()));
-        assertEquals(0, ctx().getResources()
-                .getIdentifier("st_exact", "id", ctx().getPackageName()));
+    public void exactAlarmRow_showsGrantedState() {
+        org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
+        try {
+            GuideActivity a = fresh();
+            assertNotNull("这一行不能没有，否则权限没开时用户完全看不出来",
+                    a.findViewById(R.id.perm_exact));
+            String s = text(a, R.id.st_exact);
+            assertTrue("开了要说清拿到了什么，实际：" + s, s.contains("精确到秒"));
+        } finally {
+            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
+        }
+    }
+
+    @Test
+    public void exactAlarmRow_warnsWhenNotGranted() {
+        org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
+        try {
+            GuideActivity a = fresh();
+            String s = text(a, R.id.st_exact);
+            assertTrue("没开要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
+            assertFalse("不能只写「去开启」——那是催人，不是告知", s.startsWith("去开启"));
+        } finally {
+            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
+        }
     }
 
     @Test
     public void permissionRows_areClickable() {
         GuideActivity a = fresh();
-        int[] ids = {R.id.perm_notif, R.id.perm_fsi,
+        int[] ids = {R.id.perm_notif, R.id.perm_fsi, R.id.perm_exact,
                 R.id.perm_autostart, R.id.perm_overlay, R.id.perm_lock};
         for (int id : ids) {
             View row = a.findViewById(id);

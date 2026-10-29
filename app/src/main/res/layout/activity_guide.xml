@@ -694,7 +694,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="前三项不开闹钟会哑，系统能检测，开了这里会打勾。"
+                    android:text="前四项决定闹钟响不响、准不准，系统能检测，开了会打勾。"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -865,6 +865,65 @@
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="@dimen/space_2"
                                     android:text="去开启 · 进「其他权限」"
+                                    android:textColor="@color/indigo"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="›"
+                                android:textColor="@color/sub"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/line" />
+
+                        <LinearLayout
+                            android:id="@+id/perm_exact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp"
+                            android:orientation="horizontal"
+                            android:paddingStart="@dimen/space_16"
+                            android:paddingTop="@dimen/space_8"
+                            android:paddingEnd="@dimen/space_12"
+                            android:paddingBottom="@dimen/space_8">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="精确闹钟"
+                                    android:textColor="@color/ink"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="不开的话，到点可能晚最多 1 分钟，状态栏也没有闹钟图标。"
+                                    android:textColor="@color/sub"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/st_exact"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:text="去开启"
                                     android:textColor="@color/indigo"
                                     android:textSize="12sp" />
                             </LinearLayout>

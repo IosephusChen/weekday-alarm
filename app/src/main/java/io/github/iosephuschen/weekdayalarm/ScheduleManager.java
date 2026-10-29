@@ -275,12 +275,22 @@ public final class ScheduleManager {
         try {
             PendingIntent pi = alarmPendingIntent(ctx, alarmId, when.toLocalDate(), label, segment);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-            if (canScheduleExactAlarms(ctx)) {
+            // v0.89.2：不预先判断权限，直接试 setAlarmClock，失败才降级。
+            //
+            // 起因是真机（Android 16 + 澎湃）状态栏没有闹钟图标。排掉「ROM 屏蔽
+            // 第三方图标」——同机系统时钟的图标是正常显示的。剩下的解释就是我们
+            // 走了降级分支，即 canScheduleExactAlarms() 返回了 false。
+            //
+            // 而 canScheduleExactAlarms() 只是个「系统认为你该不该有」的预判，不是
+            // 硬拦截：某些 ROM 对侧载包报 false，实际仍放行 setAlarmClock。预判断
+            // 会让这种机器白丢一个状态栏图标和 60 秒精度，代价却只是一次被拒的调用。
+            try {
                 // v0.23.0：showIntent 之前传 null，点状态栏的闹钟图标没反应；
                 // 现在指向主界面，用户点图标就能核对「这闹钟是哪来的」
                 am.setAlarmClock(new AlarmManager.AlarmClockInfo(millis, showIntent(ctx)), pi);
-            } else {
-                // 无精确闹钟权限时降级：1 分钟窗口闹钟，仍会准时触发（分钟级偏差）
+            } catch (Exception notAllowed) {
+                // 没有任何精确闹钟权限时的第二条路：1 分钟窗口闹钟。系统会在
+                // [millis, millis+60s] 之间触发，仍会响，只是分钟级偏差且无图标。
                 am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
             }
         } catch (Exception ignore) {

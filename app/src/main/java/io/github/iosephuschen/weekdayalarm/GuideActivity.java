@@ -61,7 +61,7 @@ public class GuideActivity extends AppCompatActivity {
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow;
-    private TextView stNotif, stFsi, stOverlay, stLock;
+    private TextView stNotif, stFsi, stOverlay, stLock, stExact;
 
     private int index = 0;
     private int hour = 7;
@@ -91,6 +91,7 @@ public class GuideActivity extends AppCompatActivity {
         stFsi = findViewById(R.id.st_fsi);
         stOverlay = findViewById(R.id.st_overlay);
         stLock = findViewById(R.id.st_lock);
+        stExact = findViewById(R.id.st_exact);
 
         ringDetail = findViewById(R.id.ring_detail);
         tvRingHint = findViewById(R.id.tv_ring_hint);
@@ -384,6 +385,10 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.perm_overlay).setOnClickListener(v -> openOverlaySettings());
         // v0.73.5：锁屏显示移到底部测试按钮，这一行只负责跳去同一个权限编辑页开它
         findViewById(R.id.perm_lock).setOnClickListener(v -> openPopupPerms());
+        // v0.89.2：精确闹钟。之前这行不存在，PermissionGuides.requestExactAlarm()
+        // 也从没被调用过——权限没开时用户翻遍设置也找不到入口，只能接受「闹钟
+        // 可能晚 1 分钟、状态栏没有图标」这种看不出原因的表现。
+        findViewById(R.id.perm_exact).setOnClickListener(v -> PermissionGuides.requestExactAlarm(this));
         // v0.36.0：权限开完当场试一次——「到底会不会响」是这 App 唯一需要证明的事，
         // 让用户等到第二天早上才发现不响，比什么都不做还糟。
         findViewById(R.id.btn_try).setOnClickListener(v -> tryRing());
@@ -482,7 +487,30 @@ public class GuideActivity extends AppCompatActivity {
         // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
         // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
         setPermState(stOverlay, Settings.canDrawOverlays(this));
+        refreshExactState();
         refreshLockState();
+    }
+
+    /**
+     * 「精确闹钟」那一行的状态（v0.89.2）。
+     *
+     * <p>这是唯一一个「关掉后闹钟照样响、只是响得不准」的权限，所以文案必须写出
+     * 代价——只说「去开启」，用户没有任何理由去点它。关掉时的实际表现（真机
+     * 2026-10-29 实测）：状态栏没有闹钟图标，触发时刻落在 60 秒窗口内的任意位置。
+     *
+     * <p>为什么容易漏：Android 14 起 {@code SCHEDULE_EXACT_ALARM} 默认不授予，
+     * 而本应用声明的 {@code USE_EXACT_ALARM} 在部分国产 ROM 上对侧载包不生效，
+     * 两者叠加就落到「能响但不准」这个最难自己发现的状态里。
+     */
+    private void refreshExactState() {
+        if (stExact == null) return;
+        if (ScheduleManager.canScheduleExactAlarms(this)) {
+            stExact.setText("已开启 · 到点精确到秒");
+            stExact.setTextColor(ContextCompat.getColor(this, R.color.success));
+            return;
+        }
+        stExact.setText("未开 · 可能晚 1 分钟，状态栏也没有闹钟图标");
+        stExact.setTextColor(ContextCompat.getColor(this, R.color.danger));
     }
 
     /**

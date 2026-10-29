@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(211, "0.89.2", "2026/10/29", "精确闹钟没开，现在看得见了",
+                    "没开时闹钟可能晚最多 1 分钟，状态栏也没有图标",
+                    "「权限」那页新增一行，点它去开",
+                    "之前以为系统一定给，真机上并不成立"),
             new Entry(210, "0.89.1", "2026/10/29", "通知卡片自己带底色",
                     "标题正文固定白字，不再猜系统深浅",
                     "之前深色模式下标题压在紫底上看不清",

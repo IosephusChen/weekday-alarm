@@ -10,8 +10,8 @@ android {
         applicationId "io.github.iosephuschen.weekdayalarm"
         minSdk 26
         targetSdk 34
-        versionCode 210
-        versionName "0.89.1"
+        versionCode 211
+        versionName "0.89.2"
     }
 
     // 签名配置（v1.0.0 起用正式 keystore；v1.63.0 的「条件式」思路保留）：

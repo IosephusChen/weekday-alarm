@@ -2,6 +2,11 @@
 <resources>
     <color name="indigo">#4F46E5</color>
     <color name="indigo_dark">#4338CA</color>
+    <!-- 通知文字的自带底色（v0.89.8）。**故意不随 values-night 切换**，理由同 ic_launcher_bg：
+         它出现的场景是 SystemUI 画的卡片，卡片底色跟着系统明暗走，而我们的文字色在构建通知
+         那一刻就写死了、之后不会更新——如果这块底也跟着夜间变，等于把同一个 bug 又搬回来。
+         indigo-900：白字对比 11:1，浅卡上是收敛的深色标签，深卡上几乎与卡片融合。 -->
+    <color name="notif_text_bg">#312E81</color>
     <!-- 桌面图标专用底色（v0.76.1）。**故意不随 values-night 切换**：
          启动器是系统 surface，资源解析走夜间配置——v0.76.1 之前图标背景直接引用
          @color/indigo，而它在 values-night 里被提亮成 #818CF8（浅紫），

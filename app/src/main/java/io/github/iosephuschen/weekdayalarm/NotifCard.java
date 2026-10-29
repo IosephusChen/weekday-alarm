@@ -65,10 +65,10 @@ final class NotifCard {
         rv.setTextViewText(R.id.nc_title, title);
         rv.setTextViewText(R.id.nc_text, text);
 
-        // 文字色跟系统明暗走（v0.89.7）：卡片本身是系统画的半透明底，浅色偏白、
-        // 深色偏深，定死任何一种颜色都会在一半场景糊掉——见 NotifTheme 的类注释
-        rv.setTextColor(R.id.nc_title, NotifTheme.title());
-        rv.setTextColor(R.id.nc_text, NotifTheme.text());
+        // 文字色固定，不再问系统明暗（v0.89.8）：文字自带品牌紫底，卡片怎么变
+        // 都与它无关。为什么不能按明暗挑，见 NotifTheme 的类注释
+        rv.setTextColor(R.id.nc_title, NotifTheme.TITLE);
+        rv.setTextColor(R.id.nc_text, NotifTheme.TEXT);
         // 图标底是品牌紫渐变，压在上面的图标一律白
         rv.setInt(R.id.nc_icon, "setColorFilter", NotifTheme.ON_BRAND);
         if (contentPi != null) {
@@ -83,7 +83,7 @@ final class NotifCard {
             rv.setViewVisibility(R.id.nc_chrono, View.VISIBLE);
             rv.setChronometer(R.id.nc_chrono, base, null, true);
             rv.setChronometerCountDown(R.id.nc_chrono, true);
-            rv.setTextColor(R.id.nc_chrono, NotifTheme.accent());
+            rv.setTextColor(R.id.nc_chrono, NotifTheme.ACCENT);
         } else {
             rv.setViewVisibility(R.id.nc_chrono, View.GONE);
         }
@@ -108,14 +108,12 @@ final class NotifCard {
         }
         if (secondary != null) {
             rv.setTextViewText(R.id.nc_action2, secondary.text);
-            rv.setTextColor(R.id.nc_action2, NotifTheme.accent());
-            // 描边得跟着卡片深浅换：深卡用 60% 白（紫描边会融进背景），
-            // 浅卡用 violet（白描边在浅卡上只剩一个空药丸）。v0.89.7 之前
-            // 只有白色那一版，是「卡片恒为紫」时的假设，卡片改成跟明暗后失效
+            rv.setTextColor(R.id.nc_action2, NotifTheme.ACCENT);
+            // 描边换成实色半透明底（v0.89.8）：描边必须挑一个颜色，而卡片在浅色下偏白、
+            // 深色下偏深，紫描边在深卡上融、白描边在浅卡上只剩空药丸。实色半透明底
+            // 没有这个两难，主次靠色相（紫 / 深灰）区分，不靠明暗
             rv.setInt(R.id.nc_action2, "setBackgroundResource",
-                    NotifTheme.isNight()
-                            ? R.drawable.bg_notif_action_outline_on_brand
-                            : R.drawable.bg_notif_action_outline);
+                    R.drawable.bg_notif_action_dim);
             rv.setViewVisibility(R.id.nc_action2, View.VISIBLE);
             rv.setOnClickPendingIntent(R.id.nc_action2, secondary.pi);
         } else {

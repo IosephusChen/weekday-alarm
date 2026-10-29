@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  通知文字自带的底色（v0.89.8）。
+
+  为什么要给文字加底：通知卡片是 SystemUI 画的半透明卡，浅色模式偏白、
+  深色模式偏深，还会透出壁纸。我们的文字色是 RemoteViews 在**创建那一刻**
+  写死的，之后系统切了深浅色，卡片会被重画、文字不会。
+
+  换信号源、加判断都治不了这个：错的不是"判断"，是"颜色被固化在一个会变的
+  底上"。所以让文字自己带一块固定的底，颜色从此与卡片无关。
+
+  为什么只包文字、不铺满整块卡片：铺满会盖住内容区外的内边距，露出系统卡片
+  色形成一圈白框（v0.89.1 的教训）。局部小底不触碰卡片边界，不会有框。
+
+  为什么是深靛而不是品牌亮紫：试过 hero 渐变（indigo-600 → violet-600），
+  渲染出来是一大块亮紫，和左侧图标、右侧主按钮三块紫并排，抢视线且显得吵。
+  深靛（indigo-900）压得住：白字对比 11:1，浅色卡上是一块收敛的深色标签，
+  深色卡上几乎与卡片融合，靠文字本身表达内容。
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="@color/notif_text_bg" />
+
+    <corners android:radius="@dimen/radius_chip" />
+
+</shape>

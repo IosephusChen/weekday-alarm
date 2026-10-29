@@ -1,80 +1,53 @@
 package io.github.iosephuschen.weekdayalarm;
 
-import android.content.res.Configuration;
-import android.content.res.Resources;
-
 /**
- * 通知卡片的文字配色（v0.55.0 起；v0.89.7 定为「跟系统明暗」）。
+ * 通知卡片的文字配色（v0.55.0 起；v0.89.8 定为「不判断，文字自带底」）。
  *
- * <p><b>这条路走了三遍，记下来免得再走第四遍</b>：
+ * <p><b>这条路走了四遍，记下来免得再走第五遍</b>：
  * <ol>
- *   <li>v0.87.7：读 {@code Resources.getSystem()} 挑白/黑字，通知栏里正常。</li>
+ *   <li>v0.87.7：读 {@code Resources.getSystem()} 挑白/黑字。深色锁屏下仍偶发看不清。</li>
  *   <li>v0.89.1：认定「卡片底色不可控」，改成布局自绘紫底 + 文字定死白色。
- *       真机上自绘底只铺满内容区，系统卡片还有一圈按壁纸取色的内边距，
- *       变成「紫方块套白框」（0.89.5 用户截图：「外圈套了一层白色」）。</li>
+ *       自绘底只铺满内容区，系统卡片还有一圈按壁纸取色的内边距，变成「紫方块套白框」。</li>
  *   <li>v0.89.6：撤掉自绘底，底色交回系统染色，文字仍定死白色。
- *       结果暴露了第二半问题——卡片并不总是被染成紫的：通知栏里它是跟随
- *       明暗的半透明卡片（浅色偏白、深色偏深），白字在浅色下直接糊掉
- *       （0.89.6 用户截图：「深色能看清了，浅色却看不清了」）。</li>
+ *       卡片并不被染色——它跟随明暗，白字在浅色下糊掉。</li>
+ *   <li>v0.89.7：改回按明暗挑色。浅色下好了，深色下又糊。</li>
  * </ol>
  *
- * <p><b>结论：卡片底色跟着系统明暗走，文字就必须跟着明暗走。</b>
- * 定死任何一种颜色，都必然在一半场景失败；这是「通知卡片是半透明的、
- * 透出壁纸」这个事实决定的，不是靠调色能绕过的。
+ * <p><b>前四版都在同一个坑里：把「选什么颜色」当成问题，真正的问题是「颜色什么时候定下来」。</b>
+ * 通知里的文字色是 RemoteViews 在**创建那一刻**写死的；而卡片底色是 SystemUI 在**每一帧**
+ * 按当前明暗重画的。两者时效不同——只要通知活过了系统切深浅色（睡前提醒会活一整夜，
+ * 必然会跨过自动切换），字色就永远停在旧模式那一套上。2026-10-29 的两张截图是直接证据：
+ * 深色模式下卡片已经是深色，标题却还是浅色那套的近黑（{@code #1E2235}）。
  *
- * <p>信号必须用 {@link Resources#getSystem()}（系统资源的配置），不能用
- * {@code context.getResources()}——后者是 App 自己的配置，用户开了「单个应用深色」
- * 就会被污染，拿到与通知栏相反的答案。这条有测试钉着。
+ * <p>所以 v0.89.8 换了个思路：<b>不去问底色是什么，给文字一块自己画的底</b>
+ * （{@code bg_notif_text}，品牌紫渐变）。文字压在自己的底上，卡片怎么变都与它无关，
+ * 什么时候切主题都是对的。底色只包文字、不铺满卡片，因此不会露出内容区外的内边距
+ * （那是 v0.89.1 翻车的地方）。
  *
- * <p>图标底、主按钮底不受影响：它们一直是品牌紫渐变 + 白字，自带对比度。
+ * <p>这也带来一个副作用，是好事：浅色和深色下通知长得一模一样，用户不会再看到
+ * 「两种模式两个样子」。
+ *
+ * <p><b>改这里之前先想清楚</b>：颜色和 {@code bg_notif_text} 是一对，只改一边必然出事故。
+ * 改色时两边同时动，并跑 {@code NotifThemeTest} 的对比度断言。
  */
 final class NotifTheme {
 
-    /** 标题：深色模式纯白；浅色模式近黑（#1E2235，在 92% 白卡上 14:1）。 */
-    static final int TITLE_NIGHT = 0xFFFFFFFF;
-    static final int TITLE_DAY = 0xFF1E2235;
+    /** 标题：纯白。压在最亮的渐变端（violet-600）上仍有 5.7:1。 */
+    static final int TITLE = 0xFFFFFFFF;
 
-    /** 正文：深色 70% 白；浅色蓝灰（#5C6377）。项目主色板里的次级灰 #6B7189 在
-     * 92% 白卡上只有 4.44:1，差一点点不够 AA，这里压深一档到此 5.5:1。 */
-    static final int TEXT_NIGHT = 0xB3FFFFFF;
-    static final int TEXT_DAY = 0xFF5C6377;
+    /** 正文：90% 白。合成到最亮的渐变端后仍有 4.9:1（AA 要求 4.5）。 */
+    static final int TEXT = 0xE6FFFFFF;
 
     /**
-     * 强调色（倒计时、次操作文字）。
+     * 倒计时与次操作文字：浅紫白。
      *
-     * <p>深色用 violet-300——在深卡上够亮，又不像纯白那样和标题抢；
-     * 浅色必须换成 indigo-600，violet-300 压在浅卡上只有 1.9:1，等于消失。
+     * <p>不用纯白——它和标题一样亮，会在同一屏里抢视线；也不用紫，紫压在紫底上等于消失。
      */
-    static final int ACCENT_NIGHT = 0xFFC4B5FD;
-    static final int ACCENT_DAY = 0xFF4F46E5;
+    static final int ACCENT = 0xFFE9E4FF;
 
-    /** 品牌紫底上的文字与图标：纯白，不分模式。 */
+    /** 品牌紫底上的图标与主按钮文字：纯白。 */
     static final int ON_BRAND = 0xFFFFFFFF;
 
     private NotifTheme() {
-    }
-
-    /**
-     * 系统当前是不是深色。
-     *
-     * <p>用 {@code Resources.getSystem()} 而不是实例方法：通知卡片由 SystemUI 绘制，
-     * 它的配色跟的是系统设置；App 自己的 uiMode 可能被「单个应用深色」覆盖，
-     * 两者会不一致（v0.87.7 修过一次，v0.89.1 又把它绕回去了，v0.89.7 再修回来）。
-     */
-    static boolean isNight() {
-        return (Resources.getSystem().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-    }
-
-    static int title() {
-        return isNight() ? TITLE_NIGHT : TITLE_DAY;
-    }
-
-    static int text() {
-        return isNight() ? TEXT_NIGHT : TEXT_DAY;
-    }
-
-    static int accent() {
-        return isNight() ? ACCENT_NIGHT : ACCENT_DAY;
     }
 }

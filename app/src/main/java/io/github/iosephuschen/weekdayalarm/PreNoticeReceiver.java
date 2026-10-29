@@ -306,16 +306,16 @@ public class PreNoticeReceiver extends BroadcastReceiver {
     /**
      * 给自绘卡片上色（两套布局共用）。
      *
-     * <p>v0.89.1 起不再按明暗挑色，文字一律白。原来按 {@code uiMode} 判断的那套在
-     * 真机上行不通——系统染色的深浅与 uiMode 不是一回事，详见 {@link NotifTheme}。
+     * <p>v0.89.8 起不再判断明暗，文字一律白：标题和正文外面有一块自己画的品牌紫底
+     * （{@code bg_notif_text}），压在上面的字只需要对付这一块底，与系统卡片无关。
      *
-     * <p>底色不由这里管：v0.89.6 起把卡片底交回系统（{@code setColor(indigo)} 染色），
-     * 布局不挂背景。v0.89.1 试过自绘，结果只铺满内容区，外围露出系统卡片色。
+     * <p>为什么不按 uiMode 挑：通知的文字色是构建那一刻写死的，卡片底色却是 SystemUI
+     * 每帧按当前明暗重画——通知活过系统切深浅色就会错色。详见 {@link NotifTheme}。
      */
     private static void theme(Context ctx, RemoteViews rv, int iconId, int titleId,
                               int textId, int actionId) {
-        rv.setTextColor(titleId, NotifTheme.title());
-        rv.setTextColor(textId, NotifTheme.text());
+        rv.setTextColor(titleId, NotifTheme.TITLE);
+        rv.setTextColor(textId, NotifTheme.TEXT);
         // 紫底上只能放白字、白图标
         rv.setTextColor(actionId, NotifTheme.ON_BRAND);
         rv.setInt(iconId, "setColorFilter", NotifTheme.ON_BRAND);

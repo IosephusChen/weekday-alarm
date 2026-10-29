@@ -50,6 +50,10 @@ public class ColorTokenTest {
      *       资源解析走**启动器的**配置——系统深色模式下 values-night 会作用到图标上。
      *       早先图标背景引用 {@code indigo}（有夜间版），深夜色壁纸上整个图标发白，
      *       用户反馈「夜间变得有些透明」。这个色必须日夜同值，故不设夜间版。</li>
+     *   <li>{@code notif_text_bg}：v0.89.8 通知文字的自带底色。它出现的场景是 SystemUI
+     *       画的通知卡，卡片底色跟着系统明暗走，而我们的文字色在构建通知那一刻就写死了、
+     *       之后不会更新——这块底如果也跟着夜间换色，等于把「颜色依赖会变的信号」这个
+     *       bug 原样搬回来，只是从文字挪到了底色。必须日夜同值。</li>
      * </ul>
      */
     private static final Set<String> NIGHTLESS = new LinkedHashSet<>();
@@ -65,6 +69,7 @@ public class ColorTokenTest {
         NIGHTLESS.add("hero_end");
         NIGHTLESS.add("hero_text");
         NIGHTLESS.add("ic_launcher_bg");
+        NIGHTLESS.add("notif_text_bg");
     }
 
     @Test

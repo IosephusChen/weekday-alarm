@@ -1,12 +1,12 @@
 {
-  "versionCode": 214,
-  "versionName": "0.89.5",
+  "versionCode": 215,
+  "versionName": "0.89.6",
   "published": "2026-10-29",
-  "title": "两项权限的说法统一了",
+  "title": "通知卡片又是整片紫的了",
   "notes": [
-    "「后台弹出界面」和「锁屏显示」写的是同一个位置",
-    "之前一句「进去点」，一句「在…里」，看着像两个地方"
+    "上一版把底色画进布局，外面多出一圈白边",
+    "现在把底色交回系统，整张卡片染色"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.5/weekday-alarm-0.89.5.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.5"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.89.6/weekday-alarm-0.89.6.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.89.6"
 }

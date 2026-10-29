@@ -499,6 +499,10 @@ public class AlarmService extends Service {
                 .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(fpi)   // 全屏 intent 被系统拒绝时，点通知同样能打开闹钟页
+                // v0.89.6：和另外三类通知保持一致。这条以前没设过，是四条里唯一
+                // 走系统模板、不染色的一条（0.89.1 靠自绘底「顺带」统一了，现在
+                // 自绘底撤了，要显式补上，否则响铃时通知栏里一张白卡夹在三张紫卡中间）
+                .setColor(getColor(R.color.indigo))
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setPriority(Notification.PRIORITY_MAX)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
@@ -569,6 +573,7 @@ public class AlarmService extends Service {
                     .setContentTitle(name + "时间到了")
                     .setContentText("点此停止")
                     .setContentIntent(fpi)
+                    .setColor(ctx.getColor(R.color.indigo))
                     .setCategory(Notification.CATEGORY_ALARM)
                     .setPriority(Notification.PRIORITY_MAX)
                     .setVisibility(Notification.VISIBILITY_PUBLIC)

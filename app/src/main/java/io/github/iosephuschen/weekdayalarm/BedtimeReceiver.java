@@ -77,9 +77,12 @@ public class BedtimeReceiver extends BroadcastReceiver {
                 .setContentTitle(m.title)
                 .setContentText(m.text)
                 .setContentIntent(contentPi)
-                // v0.89.1：不再 setColor。卡片自带品牌紫底（bg_notif_card），
-                // 再让系统按这个色做 colorized 染色就会叠成两层紫——外层浅紫、
-                // 内层深紫，文字区反而更难读。品牌色由布局自己保证。
+                // v0.89.6：恢复 setColor。卡片底由系统按这个色染色，整张卡片是紫的。
+                // v0.89.1 曾改成「布局自带紫底 + 不要 setColor」，真机上却不是那么回事：
+                // 自绘底只能铺满内容区，系统卡片还有一圈按壁纸取色的内边距，于是变成
+                // 「紫方块套在白/深灰框里」，比原来更难看（2026-10-29 用户截图）。
+                // 染色交给系统，文字色则由 NotifTheme 定死白色，不再看明暗。
+                .setColor(ctx.getColor(R.color.indigo))
                 .setAutoCancel(true)
                 // quiet=true 时只更新内容：同 id 重发不会再次弹横幅 / 响铃
                 .setOnlyAlertOnce(quiet)

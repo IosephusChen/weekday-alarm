@@ -29,11 +29,16 @@ import java.nio.file.Files;
  *
  * <p>第二次说明「按 uiMode 挑色」这条路本身不成立：通知一旦 {@code setColor}，
  * 卡片底会被系统按那个色染色，<b>与明暗模式无关</b>；而进程里读到的 uiMode 还可能
- * 被「单应用深色」影响。所以 v0.89.1 干脆不判断——底色自己画（品牌紫），文字定死白色。
+ * 被「单应用深色」影响。所以 v0.89.1 干脆不判断——文字定死白色。
  *
- * <p>这里验四件事：两种模式下都是白字、在渐变两端都够对比度、源码里没有残留的
- * uiMode 判断、两个通知布局都挂着紫底。<b>最后一条最要紧</b>——白字一旦失去紫底，
- * 就是白字压白卡，比原来的 bug 更彻底。
+ * <p><b>v0.89.6 的更正</b>：v0.89.1 连底色也收回自己画（{@code bg_notif_card}），
+ * 想彻底不依赖系统染色。真机上自绘底只铺满内容区，系统卡片外围还有一圈按壁纸取色的
+ * 内边距，于是变成「紫方块套在白/深灰框里」——2026-10-29 用户截图说「比之前丑」。
+ * 现在底色交回系统，布局不挂背景。
+ *
+ * <p>这里验五件事：两种模式下都是白字、对比度够、源码里没有残留的 uiMode 判断、
+ * 四条通知都设了品牌色、两个通知布局都不自绘底色。<b>后两条是一对</b>——白字必须
+ * 压在系统的紫上；谁把 setColor 删了、或又给布局加一层深色背景，白字就会贴浅底。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34)
@@ -94,17 +99,40 @@ public class NotifThemeTest {
     }
 
     /**
-     * 布局钉子：两个通知布局都要挂 {@code bg_notif_card}。
+     * 布局钉子：两个通知布局都<b>不许</b>自绘底色（v0.89.6 反转）。
      *
-     * <p>这是白字能存在的前提。删掉背景 → 白字压白卡片 → 通知内容直接消失，
-     * 而单元测试看不到像素，只能检查布局里有没有这行。
+     * <p>v0.89.1 这里是相反的断言（必须挂 {@code bg_notif_card}）。真机证明那条路
+     * 走不通：自绘底只能铺满内容区，系统卡片还有一圈按壁纸取色的内边距，浅色壁纸下
+     * 就是「紫方块套白框」。底色只能由系统整卡染，布局必须保持透明。
      */
     @Test
-    public void layouts_haveBrandBackground() throws Exception {
+    public void layouts_doNotPaintTheirOwnBackground() throws Exception {
         for (String name : new String[]{"notif_content.xml", "notif_heads_up.xml"}) {
             String xml = codeOf("src/main/res/layout/" + name);
-            assertTrue(name + " 必须自带品牌紫底，否则白色文字会压在白卡片上",
-                    xml.contains("@drawable/bg_notif_card"));
+            assertFalse(name + " 不该再挂 bg_notif_card：它只铺满内容区，"
+                    + "外围会露出系统卡片色（0.89.1 的教训）", xml.contains("@drawable/bg_notif_card"));
+            assertFalse(name + " 不该给根布局挂任何背景色，理由同上",
+                    xml.contains("android:background=\"@color"));
+        }
+    }
+
+    /**
+     * 四条通知都必须设品牌色（v0.89.6）。
+     *
+     * <p>这是白字能读的前提：{@code NotifTheme} 把文字定死白色，只有卡片确实被系统
+     * 染成紫的，白字才看得见。谁删掉某一处的 {@code setColor}，那条通知就会变成
+     * 白字压白卡——本地上根本看不出来，只能靠这条源码钉子。
+     *
+     * <p>响铃那条（{@code AlarmService}）以前从没设过，是四条里唯一走系统模板的；
+     * 0.89.1 靠自绘底「顺带」统一了，现在自绘底撤了，必须显式补上。
+     */
+    @Test
+    public void everyNotificationIsBrandColored() throws Exception {
+        for (String name : new String[]{"BedtimeReceiver.java", "PreNoticeReceiver.java",
+                "SnoozeNotice.java", "AlarmService.java"}) {
+            String code = codeOf("src/main/java/io/github/iosephuschen/weekdayalarm/" + name);
+            assertTrue(name + " 少了 setColor(indigo)：白字会压在白卡片上",
+                    code.contains(".setColor(") && code.contains("R.color.indigo"));
         }
     }
 
@@ -118,7 +146,9 @@ public class NotifThemeTest {
         }
         String src = new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8);
         // 注释里大量提到旧写法（正是为了说明为什么改），只看真正的代码
-        return src.replaceAll("(?s)/\\*.*?\\*/", "").replaceAll("//[^\n]*", "");
+        return src.replaceAll("(?s)/\\*.*?\\*/", "")
+                .replaceAll("(?s)<!--.*?-->", "")   // 布局文件的注释同理
+                .replaceAll("//[^\n]*", "");
     }
 
     private static void assertContrast(String what, int fg, int bg) {

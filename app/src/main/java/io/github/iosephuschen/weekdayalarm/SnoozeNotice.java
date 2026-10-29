@@ -77,8 +77,9 @@ final class SnoozeNotice {
                 .setContentTitle(name + " 稍后再响")
                 .setContentText(mins + " 分钟后 · " + clock + " 再次响铃")
                 .setContentIntent(openPi)
-                // v0.89.1：不再 setColor，理由同另外三条——卡片自带紫底，
-                // 系统染色会叠成两层
+                // v0.89.6：恢复 setColor，理由同另外三条——染色交给系统，
+                // 自绘底只能铺满内容区，外围那圈会露出系统卡片色
+                .setColor(ctx.getColor(R.color.indigo))
                 .setCategory(Notification.CATEGORY_ALARM)
                 // 渠道已经是 LOW，这里再写 HIGH 只会误导下一个读代码的人
                 .setPriority(Notification.PRIORITY_DEFAULT)

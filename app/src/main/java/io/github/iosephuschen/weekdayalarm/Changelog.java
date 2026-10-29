@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(215, "0.89.6", "2026/10/29", "通知卡片又是整片紫的了",
+                    "上一版把底色画进布局，外面多出一圈白边",
+                    "现在把底色交回系统，整张卡片染色"),
             new Entry(214, "0.89.5", "2026/10/29", "两项权限的说法统一了",
                     "「后台弹出界面」和「锁屏显示」写的是同一个位置",
                     "之前一句「进去点」，一句「在…里」，看着像两个地方"),

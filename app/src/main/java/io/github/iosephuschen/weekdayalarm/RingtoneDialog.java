@@ -108,7 +108,12 @@ public final class RingtoneDialog {
         // v0.90.0 顺手修：dialog_pick 里 tv_pick_sub 默认 gone，这里只 setText 没让它可见，
         // 于是「点一下试听」这句从 v0.74.0 起就一直没显示过——用户不知道能点。
         tvSub.setVisibility(View.VISIBLE);
-        tvSub.setText("点一下试听，选好按「确定」");
+        // v0.91.5：第二句专门解释「系统默认」为什么可能和系统设置里那个名字对不上。
+        // 小米的「小爱智慧铃声」是响铃时当场合成的播报，不进 Settings.System.ALARM_ALERT，
+        // 第三方 App 读不到；用户看到系统里写小爱、这里写 BirdCivlcada，会以为我们读错了。
+        // 这不是小米独有的坑（华为、OPPO 也有各自的智慧铃声），所以不判断机型，统一说一句。
+        tvSub.setText("点一下试听，选好按「确定」\n"
+                + "厂商的「智慧铃声」（如小爱）读不到，下面显示的是底层那条");
 
         // ---------- 枚举 ----------
         final List<Item> items = new ArrayList<>();
@@ -119,9 +124,18 @@ public final class RingtoneDialog {
             // 跟随设置：没有具体铃声可试听，点它只是把这条闹钟交回设置管
             items.add(new Item(followLabel, null, null, Kind.FOLLOW));
         }
-        Uri def = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        // v0.91.5：这里要两个 URI，各管一件事——
+        //   别名 content://settings/system/alarm_alert 用来「播」：澎湃在这一层接管过，
+        //   能返回小爱合成的音频，所以试听必须用它；
+        //   真文件 content://media/... 用来「比」：媒体库枚举出来的条目是真文件，
+        //   拿别名去 equals 它永远不相等。
+        // 上一版只留了别名一个变量，既播又比，于是下面那段「库里那条就是默认铃声，
+        // 并进去别列两遍」从 v0.74.0 写下来就没执行过——列表里一直有两个「系统默认」。
+        Uri defAlias = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        Uri defActual = RingtoneManager.getActualDefaultRingtoneUri(
+                activity.getApplicationContext(), RingtoneManager.TYPE_ALARM);
         final int defaultIndex = items.size();
-        items.add(new Item("系统默认", null, def, Kind.RINGTONE));
+        items.add(new Item("系统默认", null, defAlias, Kind.RINGTONE));
 
         // v0.90.4：查媒体库不再挂在本页 Activity 名下。
         //
@@ -150,7 +164,7 @@ public final class RingtoneDialog {
                 if (u == null) continue;
                 String t = c.getString(RingtoneManager.TITLE_COLUMN_INDEX);
                 if (t == null || t.isEmpty()) continue;
-                if (def != null && u.equals(def)) {
+                if (defActual != null && u.equals(defActual)) {
                     // 库里那一条就是默认铃声：并到「系统默认」项，别重复列两遍
                     Item d = items.get(defaultIndex);
                     items.set(defaultIndex,

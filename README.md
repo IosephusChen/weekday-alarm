@@ -21,18 +21,18 @@
 - **节假日与调休**：内置 2007–2026 年法定节假日数据，可在线增量更新
 - **日历标记**：农历节日、二十四节气、基督教节日可开关；请假 / 加班手动标，标了当天不响
 - **提醒链路**：睡前提醒（明天要不要早起）→ 响铃前提前提醒 → 响铃 → 稍后提醒，环环可配
-- **响铃**：铃声（全局默认 + 每条闹钟可单独指定）、音量（直接就是系统「闹钟」那一档）、淡入；解锁使用时是小悬浮窗，锁屏 / 息屏直接全屏
+- **响铃**：铃声（全局默认 + 每条闹钟可单独指定）、音量（直接就是系统「闹钟」那一档）、渐响；解锁使用时是小悬浮窗，锁屏 / 息屏直接全屏
 - **桌面小组件**：4×2 下一个闹钟、本月班表 4×4 / 4×3 极简
 - **备份**：闹钟（含各自的铃声）、排班、请假加班标记，导出一个文件，换机一键恢复
 - 深色模式、无账号、无广告、无统计
 
 ## 下载
 
-**1.0.0 正在做最后的真机验证**（当前候选版 `v0.91.4`）。
+**1.0.0 正在做最后的真机验证**（当前候选版 `v0.91.5`）。
 
 仓库目前是私有的，Releases 页外人打不开；转公开后会在这里给出下载入口。
 每个候选版都已建好 tag 与 Release（APK + mapping.txt），地址形如
-`https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.4`。
+`https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.5`。
 
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
 
@@ -48,12 +48,13 @@
 App 备案库，查不到就弹这个提示——它自己不也说了「可能为境外应用、**单机应用**或未履行备案手续」。
 原生 Android 不会弹。本项目单人维护、不收费、不上架，没有做备案；装完照常用。
 
-## 权限说明（全部 11 条，逐条对得上用途）
+## 权限说明（全部 12 条，逐条对得上用途）
 
 | 权限 | 用途 |
 | --- | --- |
 | `POST_NOTIFICATIONS` | 响铃通知、提前提醒、睡前提醒 |
 | `INTERNET` | 只有两处，都是只读 GET：节假日数据（holiday-cn 仓库）、版本号（本仓库根的 `version.json`）。不带设备信息，不上传任何数据 |
+| `MODIFY_AUDIO_SETTINGS` | 设置页的音量条直接读写系统「闹钟」音量档位（v0.91.0 起）。只改这一路，不碰铃声、通话、媒体 |
 | `VIBRATE` | 响铃震动 |
 | `WAKE_LOCK` | 响铃期间保持 CPU 唤醒，息屏也能响完 |
 | `RECEIVE_BOOT_COMPLETED` | 开机后恢复排程 |
@@ -102,8 +103,8 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 
 作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）
 
-我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：236 次提交、
-1.6 万行 Java、729 条自动化测试。正因为看不懂代码，每改一处都得先让测试跑一遍，
+我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：近三百次提交、
+一万六千多行 Java、七百七十多条自动化测试。正因为看不懂代码，每改一处都得先让测试跑一遍，
 红了就退回去重来——这些测试是我唯一能确认「没改坏」的办法。
 
 它开源，所以上面的每个数字你都能自己核：代码可以读，测试可以跑，网络请求只有两处
@@ -139,13 +140,13 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（729 条，Robolectric + JUnit）
+# 单元测试（七百七十多条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
 ./gradlew lint
 
-# 出包（release 已开 R8 + 资源压缩，约 2.7MB）
+# 出包（release 已开 R8 + 资源压缩，约 2.8MB）
 ./gradlew assembleRelease
 ```
 
@@ -208,7 +209,7 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ```bash
 ./gradlew assembleRelease      # JDK 17, Android SDK 34
-./gradlew testDebugUnitTest    # 729 unit tests
+./gradlew testDebugUnitTest    # ~770 unit tests
 ```
 
 ## License

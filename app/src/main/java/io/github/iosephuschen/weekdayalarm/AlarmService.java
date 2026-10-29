@@ -544,8 +544,10 @@ public class AlarmService extends Service {
         if (playingRingtoneName != null) sb.append(" · 铃声：").append(playingRingtoneName);
         if (player != null) {
             if (fading && fadePercent >= 0) {
-                // 分贝曲线前段极轻，光写「播放中」会让人以为坏了。进度数字说明它在爬
-                sb.append(" · 渐响中 ").append(fadePercent).append('%');
+                // 分贝曲线前段极轻，光写「播放中」会让人以为坏了。进度数字说明它在爬。
+                // v0.91.5：从「渐响中 24%」改成「渐响进度 24%」——前面刚有一个「系统音量 60%」，
+                // 两个百分比并排，24% 会被读成「音量掉到 24% 了」，正好和想表达的意思相反。
+                sb.append(" · 渐响进度 ").append(fadePercent).append('%');
             } else {
                 sb.append(" · 播放中");
             }

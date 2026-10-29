@@ -13,7 +13,7 @@
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
     <string name="settings_volume_label">闹钟音量</string>
-    <string name="settings_volume_default">80%</string>
+    <string name="settings_volume_default">—</string>
     <string name="settings_ringtone_title">铃声</string>
     <string name="settings_ringtone_default">系统默认</string>
     <string name="settings_more_ring_title">更多响铃设置</string>
@@ -37,7 +37,7 @@
     <string name="more_page_title">更多</string>
     <string name="more_section_ring">响铃</string>
     <string name="more_ring_duration_title">响铃时长</string>
-    <string name="more_ring_duration_default">不限</string>
+    <string name="more_ring_duration_default">10 分钟</string>
     <string name="more_fade_in_title">铃声渐响</string>
     <string name="more_fade_in_summary">从静音逐渐变大，约 30 秒到设定音量</string>
     <string name="more_vibrate_title">响铃时震动</string>
@@ -175,7 +175,7 @@
     <string name="dialog_export_done_title">已导出</string>
     <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。\n\n文件里有你的请假 / 加班日期，发给别人前留意。</string>
     <string name="dialog_import_confirm_title">导入配置？</string>
-    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、音量铃声、睡前提醒、日历显示。</string>
+    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、铃声、睡前提醒、日历显示。\n\n音量不在备份里——它存在系统里，跟着设备走，导入不会改它。</string>
     <string name="import_confirm_guide_extra">包括你刚才选的班表。</string>
     <string name="import_confirm_warning">覆盖后无法撤销，当前设置不会自动备份。</string>
     <string name="import_confirm_positive">覆盖导入</string>

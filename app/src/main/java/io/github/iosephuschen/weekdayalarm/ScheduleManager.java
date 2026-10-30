@@ -50,19 +50,30 @@ public final class ScheduleManager {
     private static final int REQUEST_BASE = 100000;   // 每个闹钟占 10 万个 requestCode 位
 
     /**
-     * alarmId 的安全上限（v1.0.0）：21474 是 int 能装下的最大乘积。
+     * alarmId 的安全上限（v1.0.0）：21473 是 int 装得下的最大 id。
      *
      * <p>{@code alarmId * REQUEST_BASE + 段偏移 + 日偏移} 全在 int 里算，段与日偏移
-     * 最大 98999，所以 alarmId 越过这条线就会溢出成<b>负数</b>。负数同样是合法的
-     * requestCode，会与别的实例撞上：取消 A 的时候连 B 一起取消，症状是「某天的闹钟
-     * 莫名不响」，事后极难查——它不报错、不崩，只是少了一次。
+     * 最大 98999，所以 alarmId 越过这条线就会溢出成<b>负数</b>。21473 × 100000 + 98999
+     * = 2,147,398,999，还在 {@code Integer.MAX_VALUE} 之内；再大一个就出去了。
      *
-     * <p>触发条件是「累计建过两万多个闹钟」：id 只增不减，删掉的也不回收。正常使用
-     * 到不了，但这是算得出来的边界，不该靠「到不了」兜着。
+     * <p>负数同样是合法的 requestCode，会与别的实例撞上：取消 A 的时候连 B 一起取消，
+     * 症状是「某天的闹钟莫名不响」，事后极难查——它不报错、不崩，只是少了一次。
+     *
+     * <p>触发条件是「累计建过两万多个闹钟」：id 只增不减，删掉的也不回收（见
+     * {@code Prefs.nextAlarmId}）。正常使用到不了，但这是算得出来的边界，不该靠
+     * 「到不了」兜着。
      *
      * <p><b>为什么不换个编码</b>：PendingIntent 靠 requestCode 匹配，用户设备上已经
      * 排进系统的闹钟是用旧编码登记的。改编码等于升级后一律取消不掉，旧闹钟会和新闹钟
      * 一起响——修一个问题换来一个更难查的问题。
+     *
+     * <p><b>什么情况下该回来重新考虑</b>（2026-10-31 定）：一是出现了「id 逼近两万」的
+     * 现实路径——比如将来做批量导入、或多设备共用一份配置，一次能塞进几百条闹钟；
+     * 二是真在日志里看到「某天的闹钟没响」，且能定位到同余撞号。到那时候的正确做法
+     * 仍然不是让用户卸载重装，而是照抄 {@link #cancelLegacyScheme} 加第三段清道夫：
+     * 按旧编码重建 Intent、{@code FLAG_NO_CREATE} 只查不建、查到就 cancel，再用一个
+     * Prefs 标记保证只跑一次。换编码本身只要动 {@link #requestCode} 一处，真正要小心的
+     * 是「注册与取消必须永远同源」——v0.23.0 栽过一次。
      */
     private static final int MAX_SAFE_ALARM_ID = (Integer.MAX_VALUE - REQUEST_BASE) / REQUEST_BASE;
 

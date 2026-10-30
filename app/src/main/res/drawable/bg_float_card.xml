@@ -1,23 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  响铃横幅的卡片底（v0.55.0 改成深色半透明）。
+  响铃横幅的卡片底（v0.55.0 深色半透明；v0.92.0 换 B 方案）。
 
   为什么不再用桃色：用户要的是「透明感，和其他通知栏一样」。
   真正的系统模糊（FLAG_BLUR_BEHIND + setBlurBehindRadius）需要 Android 12+
-  且系统开启「跨窗口模糊」，第三方悬浮窗基本拿不到——所以退一步，
-  用「深色 + 88% 不透明」做出通知栏那种「浮在内容之上」的观感：
-  底下透出一点点，但不至于让字压到壁纸上读不清。
+  且系统开启「跨窗口模糊」，第三方悬浮窗基本拿不到——所以只能靠底色本身做观感。
 
-  深色卡是刻意的：横幅只在「正在响铃」时出现，那一刻要的是「被叫醒」，
-  不是「融入界面」。白天夜里都用这一张，所以没有浅色版本。
+  v0.92.0 的具体变化：原来是 #E61B1D2B 一整块近黑紫。用户说不难看，但在亮壁纸上
+  是一块硬边的塑料板。现在换成**压暗的品牌紫**渐变（hero 那对紫压暗到 10% 亮度），
+  顶部再叠一层 12% 白向下淡出，模拟「光从上打下来」——悬浮窗吃不到 elevation 阴影，
+  这是唯一能做出「浮起来」的办法，且不需要任何额外权限。
 
-  圆角 22dp、1dp 白色 20% 描边：悬浮窗吃不到 elevation 阴影，靠描边交代边界。
+  三层：① 底色渐变 ② 顶高光 ③ 描边。描边必须压在最上层，否则会被 ② 盖掉边缘。
 -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/float_card_bg" />
-    <stroke
-        android:width="1dp"
-        android:color="@color/float_card_line" />
-    <corners android:radius="@dimen/radius_banner" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ① 底：angle=270 表示自上而下，startColor 在顶部 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="@color/float_card_bg_start"
+                android:endColor="@color/float_card_bg_end" />
+            <corners android:radius="@dimen/radius_banner" />
+        </shape>
+    </item>
+
+    <!-- ② 顶高光：白 12% 淡出到全透明 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:startColor="#1FFFFFFF"
+                android:endColor="#00FFFFFF" />
+            <corners android:radius="@dimen/radius_banner" />
+        </shape>
+    </item>
+
+    <!-- ③ 白 20% 描边：交代边界，代替拿不到的阴影 -->
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="1dp"
+                android:color="@color/float_card_line" />
+            <corners android:radius="@dimen/radius_banner" />
+        </shape>
+    </item>
+</layer-list>

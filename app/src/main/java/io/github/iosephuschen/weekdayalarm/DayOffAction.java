@@ -100,23 +100,4 @@ final class DayOffAction {
         Prefs.addOvertime(ctx, day);
         return true;
     }
-
-    /**
-     * 按 offset 切换，并返回一句可以直接丢给 Toast 的话。
-     *
-     * <p>文案跟原来三处保持一致，用户看不出实现换了地方。
-     */
-    static String toggle(Context ctx, int dayOffset) {
-        int offset = clampOffset(dayOffset);
-        LocalDate day = dateOf(offset);
-        String label = offset == TODAY ? "今天" : "明天";
-        boolean work = isWorkDay(typeOf(ctx, day));
-        boolean marked = toggle(ctx, day);
-        if (work) {
-            return marked ? label + "已标记请假，闹钟不会响"
-                    : label + "恢复上班，闹钟照常";
-        }
-        return marked ? label + "已标记加班，「仅上班日」闹钟照响"
-                : label + "恢复休息，不响闹钟";
-    }
 }

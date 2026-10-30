@@ -39,31 +39,36 @@
         android:padding="10dp"
         android:src="@drawable/ic_float_alarm" />
 
+    <!-- 大号时刻 + 名称同行（v0.92.0）。
+         原来名称在时间下方占一行，整条横幅 74dp，而横幅里唯一要确认的信息就是时刻。
+         改成同行后：时间放大到 32sp（原来 30sp），名称贴着它的基线，整条矮了 10dp，
+         视线也不会被第二行往下拽。 -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:layout_weight="1"
-        android:orientation="vertical">
+        android:baselineAligned="true"
+        android:orientation="horizontal">
 
         <!-- 大号时刻：横幅出现时用户第一眼要确认「是不是我这个点」，
              所以它比闹钟名大三倍多，和系统闹钟的主次一致 -->
         <TextView
             android:id="@+id/fa_time"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:textColor="@color/float_card_time"
-            android:textSize="30sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/fa_name"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
+            android:layout_marginStart="7dp"
+            android:layout_weight="1"
             android:ellipsize="end"
             android:includeFontPadding="false"
             android:maxLines="1"

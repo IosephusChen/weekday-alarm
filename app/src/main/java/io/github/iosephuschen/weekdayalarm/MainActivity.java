@@ -652,10 +652,17 @@ public class MainActivity extends AppCompatActivity {
         return DayOffAction.buttonText(dayOffset, type, marked);
     }
 
-    /** 一键把今天 / 明天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。 */
+    /**
+     * 一键把今天 / 明天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。
+     *
+     * <p>v0.92.0 去掉了这里的一颗 Toast。原来点完会飘一句「今天已标记请假，闹钟不会响」，
+     * 可同一瞬间卡片上已经有四处变了：大标题「今天上班 → 今天请假」、副标题
+     * 「个人请假 · 闹钟全部跳过」、按钮从半透明白底换成实白底紫字「今天已请假」、
+     * 倒计时跳到下一天。Toast 说的是副标题那句的缩写，还正好压在「排班日历」
+     * 标题上——用户 2026-10-30 截图问「这个有必要吗」，答：没有。
+     */
     private void toggleDayOff(int dayOffset) {
-        String msg = DayOffAction.toggle(this, dayOffset);
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        DayOffAction.toggle(this, DayOffAction.dateOf(dayOffset));
         // 按钮状态先回，重排挪后台——「点了没反应」比晚一点排好更难受
         updateDayOffButton();
         // v0.91.9：重排完要把整页刷新拉起来。原来只传了 null 回调，于是点完「今天不上班」

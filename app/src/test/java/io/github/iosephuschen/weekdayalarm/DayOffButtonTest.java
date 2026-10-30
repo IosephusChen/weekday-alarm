@@ -258,4 +258,39 @@ public class DayOffButtonTest {
         assertEquals(((LinearLayout.LayoutParams) today.getLayoutParams()).weight,
                 ((LinearLayout.LayoutParams) tomorrow.getLayoutParams()).weight, 0.001f);
     }
+
+    /**
+     * 今日卡点完不再弹 Toast（v0.92.0）。
+     *
+     * <p>点一下的瞬间，卡片上已经有四处变了：大标题「今天上班 → 今天请假」、副标题
+     * 「个人请假 · 闹钟全部跳过」、按钮从半透明白底换成实白底紫字、倒计时跳到下一天。
+     * Toast 说的是副标题那句的缩写，还正好压在「排班日历」四个字上。
+     * 用户 2026-10-30 拿着截图问「这个有必要吗」——没有。
+     *
+     * <p>源码级断言守的是「别哪天又觉得少点反馈，把它加回来」：真点一下只能证伪
+     * 「现在有没有」，证不了「为什么不该有」。
+     */
+    @Test
+    public void toggleDayOff_showsNoToast() throws Exception {
+        String src = readSource("MainActivity.java");
+        int from = src.indexOf("private void toggleDayOff(");
+        assertTrue("找不到 toggleDayOff", from > 0);
+        int to = src.indexOf("private void refreshStatus(", from);
+        String body = src.substring(from, to > from ? to : from + 1500);
+        assertFalse("点完卡片四处都变了，再来一颗 Toast 是第五遍，而且它压在日历标题上",
+                body.contains("Toast.makeText"));
+    }
+
+    /** 从仓库根读源码（工作目录可能是 app/，也可能是仓库根）。 */
+    private static String readSource(String name) throws Exception {
+        java.io.File dir = new java.io.File("").getAbsoluteFile();
+        while (dir != null && !new java.io.File(dir, "app/src/main").isDirectory()) {
+            dir = dir.getParentFile();
+        }
+        assertNotNull("找不到仓库根目录", dir);
+        java.io.File f = new java.io.File(dir,
+                "app/src/main/java/io/github/iosephuschen/weekdayalarm/" + name);
+        return new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+    }
 }

@@ -15,6 +15,7 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +48,8 @@ final class CalendarPanel {
     private final LinearLayout calRows;
     private final LinearLayout legendRow;
     private final TextView tvTitle;
+    /** 格子下方的「本月 20 天班 · 11 天休」（v0.92.0）。 */
+    private final TextView tvStats;
     /** 标记变化后通知宿主：重排闹钟 + 刷新首页（含本面板）。 */
     private final Runnable onChanged;
 
@@ -78,6 +81,7 @@ final class CalendarPanel {
         this.host = host;
         this.onChanged = onChanged;
         tvTitle = root.findViewById(R.id.tv_cal_title);
+        tvStats = root.findViewById(R.id.tv_cal_stats);
         calRows = root.findViewById(R.id.cal_rows);
         legendRow = root.findViewById(R.id.legend_row);
         for (int i = 0; i < dow.length; i++) {
@@ -149,6 +153,9 @@ final class CalendarPanel {
         int labelGap = (int) (2 * density);
         ensureGrid(density, cellHeight, margin, labelGap);
 
+        // 统计在同一个循环里累加，不为了一个数再扫一遍 42 格（v0.92.0）
+        int workDays = 0;
+
         for (int r = 0; r < 6; r++) {
             for (int c = 0; c < 7; c++) {
                 LocalDate d = start.plusDays(r * 7L + c);
@@ -160,6 +167,7 @@ final class CalendarPanel {
                 // 同一天可以既有请假又有加班（白天请假、晚上补工），格子上写「假加」。
                 boolean vacation = inMonth && vacations.contains(d);
                 boolean overtime = inMonth && overtimes.contains(d);
+                if (inMonth && MonthStats.countsAsWork(type, vacation, overtime)) workDays++;
 
                 int bgRes;
                 int textColorRes;
@@ -257,6 +265,9 @@ final class CalendarPanel {
                 }
             }
         }
+
+        // 只有显示当月时才说「本月」，翻到 9 月就说「9 月 20 天班 · 11 天休」
+        tvStats.setText(MonthStats.text(YearMonth.of(year, month), today, workDays));
     }
 
     /**

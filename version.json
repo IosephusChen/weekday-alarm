@@ -1,14 +1,14 @@
 {
-  "versionCode": 234,
-  "versionName": "0.91.9",
+  "versionCode": 235,
+  "versionName": "0.92.0",
   "published": "2026-10-30",
-  "title": "几处会把你叫错的地方",
+  "title": "日历页也会数天数了",
   "notes": [
-    "删掉或关掉一条闹钟，它排上的「稍后提醒」不再自己响一次",
-    "闹钟列表按时间从早到晚排，起床那条落在最上面",
-    "选「小周休周六」时，大周的周日现在也休息",
-    "响铃自动停止后全屏页会自己关掉，不再一直亮着"
+    "日历格子下面多一行「本月 20 天班 · 11 天休」，和小部件同一个数法",
+    "「回本月」缩成「今」，年月终于落在卡片正中间",
+    "响铃横幅换成深紫渐变，时间和闹钟名并排，整条矮了一截",
+    "关于页多了一段介绍，配置和崩溃日志的文件名也统一了"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.9/weekday-alarm-0.91.9.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.9"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.92.0/weekday-alarm-0.92.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.92.0"
 }

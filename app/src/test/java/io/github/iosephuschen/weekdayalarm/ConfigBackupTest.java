@@ -226,4 +226,20 @@ public class ConfigBackupTest {
         ConfigBackup.applyAfterImport(ctx());
         assertNotNull(Prefs.getAlarms(ctx()));
     }
+
+    /**
+     * 导出文件名（v0.92.0）：中文前缀 + 带横线的日期。
+     *
+     * <p>原来配置叫「打工人闹钟-配置-20261030-0354.json」、崩溃日志叫
+     * 「weekday-alarm-crash-20261029-2210.txt」，两个文件躺在同一个 Download 目录里
+     * 各说各的语言。用户 2026-10-30 说「最好统一下」——统一成中文，
+     * 因为这两个文件最后都是自己在文件管理器里认。
+     */
+    @Test
+    public void suggestFileName_chinesePrefixWithDashedDate() {
+        String name = ConfigBackup.suggestFileName();
+        assertTrue("前缀要和崩溃日志一致，实际：" + name, name.startsWith("打工人闹钟-配置-"));
+        assertTrue("日期要写成 2026-10-30_0354 这种，实际：" + name,
+                name.matches("打工人闹钟-配置-\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.json"));
+    }
 }

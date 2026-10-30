@@ -151,8 +151,10 @@ final class MonthWidgetRender {
             boolean leave = Prefs.isVacation(ctx, d);
             boolean overtime = Prefs.isOvertime(ctx, d);
 
-            // v0.80.0 底部统计用：请了假就不算上班，休息日加了班就算上班
-            if (work ? !leave : overtime) workDays++;
+            // v0.80.0 底部统计用：请了假就不算上班，休息日加了班就算上班。
+            // v0.92.0 起判断交给 MonthStats，日历页底部那行统计也调它——
+            // 同一个数在两处显示，口径只能有一份。
+            if (MonthStats.countsAsWork(type, leave, overtime)) workDays++;
 
             // 颜色始终表达上班 / 休息；文字在有节日时换成节日名（v0.65.0）。
             // 与日历页同一套优先级：法定节假日 > 农历节日 > 基督教节日 > 班 / 休。
@@ -181,7 +183,7 @@ final class MonthWidgetRender {
         // v0.80.2：前面补「本月」——单独一句「20 天班 · 11 天休」没有主语，用户
         // 2026-10-26 原话「不然有点不明所以」。标题行写着「2026 年 10 月」，但底部
         // 隔着 42 个格子，读到时已经想不起这是哪个月了。
-        m.stats = "本月 " + workDays + " 天班 · " + (len - workDays) + " 天休";
+        m.stats = MonthStats.text(ym, today, workDays);
         // v0.80.1：倒计时换成「下次闹钟」——假期倒计时受 HolidayCountdown.SCAN_DAYS
         // 限制，2026 年 10 月查下一个假已经是 2027 元旦，超出窗口就整段消失，底部
         // 常年只剩统计。下次响铃天天都有，这一行才稳定是两段。

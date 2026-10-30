@@ -65,6 +65,13 @@ public class ColorTokenTest {
         NIGHTLESS.add("hero_end");
         NIGHTLESS.add("hero_text");
         NIGHTLESS.add("ic_launcher_bg");
+        // v0.92.0：响铃悬浮横幅。整条横幅的底是固定深紫渐变（float_card_bg_start/end），
+        // 本来就不跟夜间模式变——它只在响铃那一刻出现，那一刻要的是「被叫醒」。
+        // 压在这个底上的四个色也必须日夜同值，否则夜里会换一档紫，和底对不上。
+        NIGHTLESS.add("float_card_bg_start");
+        NIGHTLESS.add("float_card_bg_end");
+        NIGHTLESS.add("float_stop_start");
+        NIGHTLESS.add("float_stop_end");
     }
 
     @Test

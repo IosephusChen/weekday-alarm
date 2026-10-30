@@ -122,11 +122,18 @@ public final class ConfigBackup {
         }
     }
 
-    /** 导出文件名：打工人闹钟-配置-20261020-2215.json */
+    /**
+     * 导出文件名：打工人闹钟-配置-2026-10-20_2215.json
+     *
+     * <p>v0.92.0 统一：崩溃日志原来叫 {@code weekday-alarm-crash-…}，配置叫中文，两个文件
+     * 在同一个 Download 目录里各说各的语言。都改成「打工人闹钟-…」，用户在文件管理器里
+     * 一眼能认出是自己哪个 App 导出的。日期也加上横线——{@code 20261020-2215} 读起来
+     * 要先数位数才知道哪年哪月。
+     */
     public static String suggestFileName() {
         return "打工人闹钟-配置-"
                 + java.time.LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm")) + ".json";
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm")) + ".json";
     }
 
     private static JSONArray toArray(Set<LocalDate> dates) {

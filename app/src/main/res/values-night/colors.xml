@@ -27,9 +27,8 @@
     <color name="float_card_time">#FFFFFF</color>
     <color name="float_card_sub">#CCFFFFFF</color>
     <color name="float_card_icon">#FFFFFF</color>
-    <color name="float_btn_outline_bg">#14FFFFFF</color>
-    <color name="float_btn_outline_line">#B3FFFFFF</color>
-    <color name="float_stop_bg">#8B5CF6</color>
+    <color name="float_btn_outline_bg">#1FFFFFFF</color>
+    <color name="float_btn_outline_line">#59FFFFFF</color>
     <!-- 引导页选中项：同色相压暗，配 ink（近白）对比度约 9:1 -->
     <color name="guide_option_selected">#2A2350</color>
     <color name="white">#FFFFFFFF</color>

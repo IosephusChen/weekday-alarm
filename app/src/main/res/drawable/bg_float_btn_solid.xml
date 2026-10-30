@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 横幅上的「停止」圆钮（v0.54.1 起；v0.55.0 改实色紫）。
+<!-- 横幅上的「停止」圆钮（v0.54.1 起；v0.55.0 改实色紫；v0.92.0 改渐变）。
 
-     v0.55.0：底色改成深色半透明之后，原来的 indigo→violet 渐变在深底上偏暗，
-     两个圆钮分不出主次。改成一整块实色紫（@color/float_stop_bg），
-     白图标压上去对比度约 5.8:1，也是用户原话「按钮做成紫色」的落点。 -->
+     v0.55.0 是一整块实色紫 #7C3AED 套一个白色方块，用户 2026-10-30 说
+     「纯紫实心圆套一个方块，形状重复，看不出是停」。方块本身没问题（停止符号就是方块），
+     问题在底和图标都是纯色、没有体积感。
+
+     v0.92.0：底改成上亮下深的渐变（亮紫 → 深紫），再加一圈 1dp 白 25% 描边。
+     渐变让圆钮看起来是个有厚度的按键，描边那一下就是「高光」。
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
-    <solid android:color="@color/float_stop_bg" />
+    <gradient
+        android:angle="270"
+        android:startColor="@color/float_stop_start"
+        android:endColor="@color/float_stop_end" />
+    <stroke
+        android:width="1dp"
+        android:color="#40FFFFFF" />
 </shape>

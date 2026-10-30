@@ -37,9 +37,15 @@
     <color name="float_card_time">#FFFFFF</color>
     <color name="float_card_sub">#CCFFFFFF</color>    <!-- 白 80% -->
     <color name="float_card_icon">#FFFFFF</color>
-    <color name="float_btn_outline_bg">#14FFFFFF</color>     <!-- 白 8% -->
-    <color name="float_btn_outline_line">#B3FFFFFF</color>   <!-- 白 70% -->
-    <color name="float_stop_bg">#7C3AED</color>              <!-- 实色紫 -->
+    <color name="float_btn_outline_bg">#1FFFFFFF</color>     <!-- 白 12%（v0.92.0 从 8% 提亮，配渐变停止钮） -->
+    <color name="float_btn_outline_line">#59FFFFFF</color>   <!-- 白 35%（v0.92.0 从 70% 压柔，别抢停止钮） -->
+    <!-- v0.92.0 悬浮窗 B：卡片底改成「压暗的品牌紫」渐变，和首页 hero 卡同一族色。
+         这两组是固定 token，不跟夜间模式——横幅只在响铃那一刻出现，那一刻要的是
+         「被叫醒」，不是「融入主题」，深色底上白字才有对比。 -->
+    <color name="float_card_bg_start">#F02A2158</color>     <!-- 顶：偏亮的深紫 -->
+    <color name="float_card_bg_end">#F0161230</color>       <!-- 底：更深的紫黑 -->
+    <color name="float_stop_start">#A78BFA</color>          <!-- 停止钮渐变：亮紫 -->
+    <color name="float_stop_end">#6D28D9</color>            <!-- 停止钮渐变：深紫 -->
     <color name="white">#FFFFFFFF</color>
     <!-- 语义色（v0.43.0）：删除 / 危险操作与「已开启」状态。
          以前这两处分别写死在 dialog_alarm.xml 和 GuideActivity 里，

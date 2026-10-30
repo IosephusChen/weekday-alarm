@@ -239,8 +239,9 @@ public class AboutActivity extends AppCompatActivity {
             return;
         }
         pendingCrash = mergeCrash(files);
-        String name = "weekday-alarm-crash-"
-                + new SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(new Date()) + ".txt";
+        // v0.92.0：与「打工人闹钟-配置-…json」统一成中文前缀，日期也统一成 yyyy-MM-dd_HHmm
+        String name = "打工人闹钟-崩溃日志-"
+                + new SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(new Date()) + ".txt";
         crashExport.launch(name);
     }
 

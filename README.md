@@ -44,7 +44,7 @@
 
 ## 下载
 
-**v1.0.0（2026-10-31）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.0/weekday-alarm-1.0.0.apk)
+**v1.0.1（2026-10-31）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.1/weekday-alarm-1.0.1.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
@@ -118,7 +118,7 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）
 
 我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：二百九十多次提交、
-一万七千多行 Java、八百三十多条自动化测试。工具是 [WorkBuddy](https://www.workbuddy.cn)，
+一万八千多行 Java、八百五十多条自动化测试。工具是 [WorkBuddy](https://www.workbuddy.cn)，
 主力模型 DeepSeek-V4.1 Flash；早期试过 Hy4 preview、Hy3、Step-5-Preview、GLM-5.3 Flash、
 DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎么读这个仓库：`docs/` 里那些
 逐条记着「为什么这么改」的日志、`AGENTS.md` 里「动代码前先拿许可」这类规矩，都是一个看不懂
@@ -160,7 +160,7 @@ DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（八百三十多条，Robolectric + JUnit）
+# 单元测试（八百五十多条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
@@ -234,7 +234,7 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ```bash
 ./gradlew assembleRelease      # JDK 17, Android SDK 34
-./gradlew testDebugUnitTest    # ~830 unit tests
+./gradlew testDebugUnitTest    # ~850 unit tests
 ```
 
 ## License

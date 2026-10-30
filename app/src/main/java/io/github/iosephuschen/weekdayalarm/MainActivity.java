@@ -136,6 +136,16 @@ public class MainActivity extends AppCompatActivity {
             rowUpdate.setVisibility(View.GONE);
         });
 
+        // v1.0.1：崩溃过一次就提示。点整条直接拉起导出（关于页注册着文件选择器，
+        // 主页只管带个 extra 过去）；× 只关不导，用户不想理也拦不住。
+        rowCrash = findViewById(R.id.row_crash);
+        rowCrash.setOnClickListener(v -> startActivity(new Intent(this, AboutActivity.class)
+                .putExtra(AboutActivity.EXTRA_EXPORT_CRASH, true)));
+        findViewById(R.id.btn_crash_close).setOnClickListener(v -> {
+            Prefs.setCrashSeen(this, CrashLog.latestName(this));
+            rowCrash.setVisibility(View.GONE);
+        });
+
         // v0.56.3：闹钟总开关已删除。每条闹钟自己的开关就是唯一开关——
         // 总开关只是多一层「关了却没提醒」的静默失败，还要靠今日卡、小组件、
         // 睡前提醒、编辑弹窗四处补一句「总开关还关着」，不如不要。
@@ -189,6 +199,9 @@ public class MainActivity extends AppCompatActivity {
 
     /** 「有新版本」提示条（v1.0.0）：不上商店，这是唯一能让用户知道该更新的地方。 */
     private View rowUpdate;
+
+    /** 「上次运行崩溃过」提示条（v1.0.1）：崩溃日志写了没人知道，等于没写。 */
+    private View rowCrash;
 
     private final BroadcastReceiver refreshReceiver = new BroadcastReceiver() {
         @Override
@@ -625,6 +638,23 @@ public class MainActivity extends AppCompatActivity {
         calendarPanel.refresh();
         updateDayOffButton();
         updateUpdateRow();
+        updateCrashRow();
+    }
+
+    /**
+     * 主页那条「上次运行崩溃过」（v1.0.1）。
+     *
+     * <p>判断只看一件事：目录里最新那份崩溃日志的名字，是否比记录里已确认的更大。
+     * 用文件名而不是时间戳比较——文件名的毫秒串本身就是时间序，而文件属性在部分 ROM 上
+     * 会被改成挂载时间，比出来是错的。
+     *
+     * <p>关掉与导出都会写 {@code crashSeen}：前者是「我不想理」，后者是「我拿到文件了」，
+     * 两种都该让它消失。真又崩了会多一份新文件，名字更大，提示自然回来。
+     */
+    private void updateCrashRow() {
+        String latest = CrashLog.latestName(this);
+        boolean show = latest != null && !latest.equals(Prefs.crashSeen(this));
+        rowCrash.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     /**

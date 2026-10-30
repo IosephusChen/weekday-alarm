@@ -11,14 +11,10 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -39,6 +35,15 @@ public class AboutActivity extends AppCompatActivity {
 
     /** 源码地址：仓库还没推，但地址是先定好的（见交接文档）。 */
     private static final String SOURCE_URL = "https://github.com/IosephusChen/weekday-alarm";
+
+    /**
+     * 进来就拉起「导出崩溃日志」（v1.0.1）。
+     *
+     * <p>主页那条「上次运行崩溃过」的提示条点进来时带这个 extra。带 extra 而不是让主页
+     * 自己做导出：导出要走系统文件选择器，{@code CreateDocument} 的结果必须回到注册它的
+     * Activity，而这套东西现成就在本页。
+     */
+    public static final String EXTRA_EXPORT_CRASH = "export_crash";
 
     /** 待写入的崩溃日志内容；用户选完保存位置后由回调取用。 */
     private String pendingCrash;
@@ -62,6 +67,9 @@ public class AboutActivity extends AppCompatActivity {
                     if (uri == null || pendingCrash == null) return;
                     writeCrash(uri);
                 });
+
+        // 从主页提示条进来的，直接把文件选择器拉起来，省掉再点一次「导出崩溃日志」
+        if (getIntent().getBooleanExtra(EXTRA_EXPORT_CRASH, false)) exportCrash();
     }
 
     private void bindVersion() {
@@ -232,56 +240,26 @@ public class AboutActivity extends AppCompatActivity {
      * <p>没有崩溃记录时直接说明，不生成空文件——空文件发到 issue 里只会让人困惑。
      */
     private void exportCrash() {
-        List<File> files = crashFiles();
-        if (files.isEmpty()) {
+        if (CrashLog.files(this).isEmpty()) {
             DialogKit.showMessage(this, getString(R.string.about_export_crash),
                     getString(R.string.about_crash_none));
             return;
         }
-        pendingCrash = mergeCrash(files);
+        pendingCrash = CrashLog.merge(this);
         // v0.92.0：与「打工人闹钟-配置-…json」统一成中文前缀，日期也统一成 yyyy-MM-dd_HHmm
         String name = "打工人闹钟-崩溃日志-"
                 + new SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US).format(new Date()) + ".txt";
         crashExport.launch(name);
     }
 
-    /** 列出所有崩溃日志，按文件名倒序（时间新的在前）。 */
-    private List<File> crashFiles() {
-        File dir = getExternalFilesDir(null);
-        if (dir == null) dir = getFilesDir();
-        File[] all = dir.listFiles((d, n) -> n.startsWith("crash-") && n.endsWith(".txt"));
-        List<File> out = new ArrayList<>();
-        if (all != null) {
-            out.addAll(Arrays.asList(all));
-            out.sort((a, b) -> b.getName().compareTo(a.getName()));
-        }
-        return out;
-    }
-
-    /** 把所有崩溃日志拼成一份，每份前面加一行分隔与文件名。 */
-    private String mergeCrash(List<File> files) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("===== 打工人闹钟 · 崩溃日志 =====\n");
-        sb.append("导出时间: ")
-                .append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date()))
-                .append("\n共 ").append(files.size()).append(" 份\n\n");
-        for (File f : files) {
-            sb.append("---- ").append(f.getName()).append(" ----\n");
-            try {
-                sb.append(new String(java.nio.file.Files.readAllBytes(f.toPath()),
-                        StandardCharsets.UTF_8));
-            } catch (Exception e) {
-                sb.append("（这份读不出来：").append(e.getClass().getSimpleName()).append("）\n");
-            }
-            sb.append("\n");
-        }
-        return sb.toString();
-    }
 
     private void writeCrash(Uri uri) {
         try (OutputStream os = getContentResolver().openOutputStream(uri)) {
             if (os == null) throw new java.io.IOException("openOutputStream 返回 null");
             os.write(pendingCrash.getBytes(StandardCharsets.UTF_8));
+            // 用户手里已经有这份文件了：主页不必再提示，日志也不必无限攒着
+            Prefs.setCrashSeen(this, CrashLog.latestName(this));
+            CrashLog.trim(this, CrashLog.KEEP);
             Toast.makeText(this, R.string.about_crash_done, Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, R.string.about_crash_failed, Toast.LENGTH_LONG).show();

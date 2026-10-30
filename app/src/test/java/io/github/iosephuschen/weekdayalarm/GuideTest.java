@@ -327,7 +327,8 @@ public class GuideTest {
         tap(a, R.id.btn_next); // 末页 = 开始使用（v0.84.1 起四页）
 
         List<Alarm> alarms = Prefs.getAlarms(ctx());
-        assertEquals("预置的起床 / 午休两条都在，不该多出第三条", 2, alarms.size());
+        assertEquals("只有预置的「起床」一条（v1.0.1 起不再预置午休），不该多出第二条",
+                1, alarms.size());
         Alarm first = alarms.get(0);
         assertEquals(8, first.hour);
         assertEquals(45, first.minute);

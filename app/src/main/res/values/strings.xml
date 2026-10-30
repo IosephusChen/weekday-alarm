@@ -162,6 +162,8 @@
 
     <string name="about_privacy_body">本应用不收集任何个人信息：没有账号、没有统计 SDK、没有广告、没有设备指纹。\n\n网络请求只有两处：拉取节假日数据、检查有没有新版本（v0.89.0 起）。两者都只带版本号作标识，不携带任何设备信息或使用记录。\n\n闹钟、班表、请假加班记录全部存在本机，只有你自己能看到。导出的配置文件也由你决定放在哪里、给谁。</string>
 
+    <string name="crash_notice">上次运行崩溃过 · 点这里导出日志</string>
+    <string name="crash_notice_close">不再提示</string>
     <string name="about_crash_none">还没有崩溃记录。\n\n应用崩溃时会把调用栈写到本机，方便反馈问题时带上——现在这里空的，说明它一直好好活着。</string>
     <string name="about_crash_done">崩溃日志已导出。把它发到 GitHub Issues 即可。</string>
     <string name="about_crash_failed">导出失败，换一个位置再试。</string>

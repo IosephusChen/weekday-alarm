@@ -62,6 +62,27 @@ public class UiLayoutTest {
     }
 
     /**
+     * 起一个「有两条闹钟」的主页（v1.0.1）。
+     *
+     * <p>加它的原因：v1.0.1 删掉了预置的午休，而下面两条用例一直靠「开箱两条闹钟」才拿得到
+     * 第 2 行与那条 1dp 分隔线——数据一变，它们就 NPE。测试依赖的应该是它自己摆好的前提，
+     * 而不是别处碰巧留下的种子数据。
+     */
+    private MainActivity launchWithTwoAlarms() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.getAlarms(ctx());            // 先触发迁移把标记写掉，否则 setAlarms 会被覆盖
+        java.util.List<Alarm> two = new java.util.ArrayList<>();
+        two.add(new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true));
+        two.add(new Alarm(2, 15, 31, "下班", Alarm.Mode.WORKDAY, true));
+        Prefs.setAlarms(ctx(), two);
+        ActivityController<MainActivity> ctl = Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        return ctl.get();
+    }
+
+    /**
      * v0.56.3：首页不再有「闹钟总开关」。
      *
      * <p>每条闹钟都有自己的开关，系统闹钟也没有全局总开关；多一层总开关只会造出
@@ -302,7 +323,7 @@ public class UiLayoutTest {
      */
     @Test
     public void alarmRows_dividerIndentsToNameColumn() {
-        MainActivity a = launch();
+        MainActivity a = launchWithTwoAlarms();
         ViewGroup list = a.findViewById(R.id.alarm_list);
         LinearLayout row = (LinearLayout) list.getChildAt(0);
         View divider = list.getChildAt(1);
@@ -323,9 +344,9 @@ public class UiLayoutTest {
      */
     @Test
     public void alarmRows_timeColumnIsFixedWidth() {
-        MainActivity a = launch();
+        MainActivity a = launchWithTwoAlarms();
         ViewGroup list = a.findViewById(R.id.alarm_list);
-        // 默认两个闹钟，中间夹一条 1dp 分隔线
+        // 本用例自己摆的两条闹钟，中间夹一条 1dp 分隔线
         View time0 = ((LinearLayout) list.getChildAt(0)).getChildAt(0);
         View time1 = ((LinearLayout) list.getChildAt(2)).getChildAt(0);
 

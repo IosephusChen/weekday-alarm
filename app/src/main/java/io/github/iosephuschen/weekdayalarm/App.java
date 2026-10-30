@@ -5,8 +5,6 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
@@ -211,13 +209,10 @@ public class App extends Application {
                     + "\n版本: " + version
                     + "\n线程: " + thread.getName()
                     + "\n\n" + sw;
-            File dir = getExternalFilesDir(null);
-            if (dir == null) dir = getFilesDir();
-            File f = new File(dir, "crash-"
-                    + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date()) + ".txt");
-            FileWriter w = new FileWriter(f);
-            w.write(text);
-            w.close();
+            // v1.0.1：落盘交给 CrashLog，主页与导出用的是同一份列举结果
+            CrashLog.write(this, text, new Date());
+            // 顺手裁剪：崩溃日志不作长期存档，留最近 KEEP 份够定位问题了
+            CrashLog.trim(this, CrashLog.KEEP);
         } catch (Exception ignore) {
             // 捕获器本身不能再抛异常，否则会递归崩溃
         }

@@ -338,6 +338,53 @@
                 android:textSize="18sp" />
         </LinearLayout>
 
+        <!-- 上次崩溃过（v1.0.1）：
+             崩溃日志 v0.87.1 就写了，但用户不知道有这回事——闪退完就没了，等他想反馈时
+             早忘了去「设置 → 其他设置 → 关于 → 导出崩溃日志」翻。这条把「有日志」这件事
+             主动说出来，点整条直接拉起导出。
+             与上面那条「有新版本」同款同位置，都放在今日卡之后、闹钟之前：临时状态，
+             不该打断「今天 → 闹钟 → 日历」的顺序。两条同时出现时上下叠着，互不遮挡。 -->
+        <LinearLayout
+            android:id="@+id/row_crash"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:background="@drawable/bg_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="44dp"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/space_16"
+            android:paddingEnd="@dimen/space_6"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_crash"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/crash_notice"
+                android:textColor="@color/ink"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btn_crash_close"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/crash_notice_close"
+                android:focusable="true"
+                android:gravity="center"
+                android:minHeight="40dp"
+                android:text="×"
+                android:textColor="@color/sub"
+                android:textSize="18sp" />
+        </LinearLayout>
+
         <!-- ===== ② 闹钟（v0.56.3 上移到日历之前）=====
              它是这个 App 的主功能，名字就叫闹钟。v0.56.2 为了把日历整月塞进第一屏，
              把闹钟列表压到了日历下面，用起来变成「想看闹钟得先滚过一整张日历」。

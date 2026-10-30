@@ -71,6 +71,15 @@ public final class Prefs {
      * 用布尔开关就得在每次查到新版时手动复位，漏一处就再也不会提示第二次。
      */
     public static final String KEY_UPDATE_DISMISSED_CODE = "update_dismissed_code";
+
+    /**
+     * 已经确认过的最后一份崩溃日志文件名（v1.0.1）。
+     *
+     * <p>为什么按文件名记而不是记布尔：崩溃文件是带秒级时间戳的，新崩溃的名字一定更大。
+     * 存布尔就得在每次崩溃后手动复位，而崩溃的那一刻正是代码最不可靠的时刻（写文件本身
+     * 都可能失败），少一处复位就再也不提示了。
+     */
+    public static final String KEY_CRASH_SEEN = "crash_seen";
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -203,8 +212,15 @@ public final class Prefs {
     // ================= 多闹钟（v0.11.0 起）=================
 
     /**
-     * 原始读取：首次读取时把旧版单闹钟（alarm_hour/alarm_min）迁移为「起床」闹钟，
-     * 并预置一个默认关闭的「午休」闹钟——老用户无感，新用户开箱即有午休可选。
+     * 原始读取：首次读取时把旧版单闹钟（alarm_hour/alarm_min）迁移为「起床」闹钟。
+     *
+     * <p>v1.0.1 去掉了原来顺带预置的那条「午休 12:30 · 每天 · 关闭」：它是 v0.11.0
+     * 从单闹钟改多闹钟时留下的，当时的理由是「新用户开箱即有午休可选」。可它默认是关的，
+     * 连演示都算不上，只是一行灰掉的占位；用户看到的第一反应是「这谁设的，是不是有 bug」
+     * （2026-10-31 用户重装后正是这么问的）。而且它的模式是「每天」，对一个主打
+     * 「只在该上班的日子响」的 App 来说，恰好是最不该当范本的那一条。
+     *
+     * <p>只影响从未迁移过的设备（全新安装）。老用户走的是下面的分支，列表一个字都不会变。
      */
     private static List<Alarm> getAlarmsRaw(Context c) {
         SharedPreferences sp = sp(c);
@@ -213,7 +229,6 @@ public final class Prefs {
             int h = sp.getInt(KEY_ALARM_HOUR, 7);
             int m = sp.getInt(KEY_ALARM_MIN, 30);
             migrated.add(new Alarm(1, h, m, "起床", Alarm.Mode.WORKDAY, true));
-            migrated.add(new Alarm(2, 12, 30, "午休", Alarm.Mode.DAILY, false));
             sp.edit()
                     .putString(KEY_ALARMS, Alarm.toJson(migrated))
                     .putBoolean(KEY_ALARMS_MIGRATED, true)
@@ -917,5 +932,20 @@ public final class Prefs {
 
     public static void setUpdateDismissed(Context c, int code) {
         sp(c).edit().putInt(KEY_UPDATE_DISMISSED_CODE, code).apply();
+    }
+
+    /**
+     * 已确认过的最后一份崩溃日志（v1.0.1）。空串表示一份都没确认过。
+     *
+     * <p>主页据此判断要不要提示「上次运行崩溃过」：目录里最新那份的名字比这里大，就说明
+     * 上游有新崩溃没被处理过。
+     */
+    public static String crashSeen(Context c) {
+        String s = sp(c).getString(KEY_CRASH_SEEN, "");
+        return s == null ? "" : s;
+    }
+
+    public static void setCrashSeen(Context c, String name) {
+        sp(c).edit().putString(KEY_CRASH_SEEN, name == null ? "" : name).apply();
     }
 }

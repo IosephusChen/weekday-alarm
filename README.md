@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="docs/screenshots/1-home.jpg" width="235" alt="首页：今天上不上班、下次闹钟、本月班表">
-  <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃方式 / 周休与节假日 / 提醒 / 其他设置">
+  <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃 / 周休与节假日 / 提醒 / 更多">
   <img src="docs/screenshots/3-ringing.jpg" width="235" alt="响铃页：滑动停止、5 分钟后再响">
 </p>
 

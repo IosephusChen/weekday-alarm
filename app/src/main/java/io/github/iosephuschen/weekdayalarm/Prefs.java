@@ -312,6 +312,7 @@ public final class Prefs {
         }
         int next = Math.max(max, sp(c).getInt(KEY_ALARM_ID_SEQ, 0)) + 1;
         sp(c).edit().putInt(KEY_ALARM_ID_SEQ, next).apply();
+        ScheduleManager.warnIfAlarmIdNearLimit(next);   // v1.0.0：逼近 requestCode 上限时留一行日志
         return next;
     }
 

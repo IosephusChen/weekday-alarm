@@ -77,6 +77,35 @@ public final class ScheduleManager {
      */
     private static final int MAX_SAFE_ALARM_ID = (Integer.MAX_VALUE - REQUEST_BASE) / REQUEST_BASE;
 
+    /**
+     * id 逼近上限时的哨兵线（v1.0.0）：只打一行日志，不拦、不改行为。
+     *
+     * <p>20000 是上限 21473 的 93%，留出一千多个的余量。真越过去了也不会立刻出事
+     * （折回只在同余时撞号），但到那时 logcat 里已经有痕迹，不必等「某天闹钟没响」再回头猜。
+     *
+     * <p>为什么不干脆拦下来：这里没有「正确的拦法」。拒绝建闹钟会让用户莫名其妙建不了；
+     * 自动重置 id 会让所有已排进系统的旧实例失联——那正是这段注释开头说的、更难查的问题。
+     * 留痕是唯一不添乱的动作。
+     */
+    static final int ALARM_ID_WARN_AT = 20000;
+
+    /**
+     * 新建闹钟时调用一次（由 {@code Prefs.nextAlarmId} 触发）：越过哨兵线打一行日志。
+     *
+     * <p>用 {@code android.util.Log} 是本项目第一次——此前全项目零日志调用，因为
+     * 「响了没有」靠真机就能判断。这里是个例外：它要回答的是「五年前建的第一个闹钟
+     * 还在不在」，只能靠留痕。
+     */
+    static void warnIfAlarmIdNearLimit(int alarmId) {
+        if (alarmId < ALARM_ID_WARN_AT) return;
+        int left = MAX_SAFE_ALARM_ID - alarmId;
+        android.util.Log.w("WeekdayAlarm", left > 0
+                ? "闹钟 id 已到 " + alarmId + "，距 requestCode 上限 " + MAX_SAFE_ALARM_ID
+                        + " 只剩 " + left + " 个"
+                : "闹钟 id 已越过 requestCode 上限 " + MAX_SAFE_ALARM_ID + "（当前 " + alarmId
+                        + "），编码开始折回，留意撞号");
+    }
+
     /** 主闹钟广播的 action。单独提出来，因为升级清理时要按同一个字符串重建 PendingIntent。 */
     static final String ACTION_ALARM = "io.github.iosephuschen.weekdayalarm.ALARM";
 

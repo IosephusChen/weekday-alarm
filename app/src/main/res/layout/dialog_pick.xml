@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  列表选择对话框（v0.74.0）。
+  列表选择对话框（v0.74.0，v0.91.7 改结构）。
 
   替掉 AlertDialog 的 setItems / setSingleChoiceItems，两个原因：
 
@@ -9,17 +9,32 @@
   2. 系统列表是「一行灰字」，跟 App 里其它对话框不是一套东西。这里沿用引导页
      的 bg_guide_option 卡片：未选中卡片底 + 细边，选中淡紫底 + 主色描边 + 右侧勾。
 
-  选项由 DialogKit.showPick 动态往 dlg_pick_list 里加，布局里只放标题、副说明与容器。
+  v0.91.7 把最外层的 ScrollView 换成「固定头 + 可滚列表」。起因是铃声列表：
+  12 个内置铃声一屏放不下，而标题原来也在那个 ScrollView 里，滚到底部时
+  「选择闹钟铃声」整块滚走，只剩半截副标题贴着屏幕边缘——像界面画坏了，
+  用户也不知道自己还在哪儿选。现在标题和副说明钉在顶部，只有列表滚。
+
+  滚动条改成常显（fadeScrollbars=false）：原来停手就隐藏，屏幕上看不出
+  「下面还有 7 条」，用户以为已经到底。列表比上限矮时 ScrollView 根本不会画条，
+  所以只用三五张卡的对话框看起来和改之前一样。
+
+  列表高度上限不写在布局里（ScrollView 没有 maxHeight）：DialogKit.capListHeight
+  在布局完成后量一次，超了才压到屏幕的 55%。写死高度会让短列表留一大块空白。
+
+  选项由 DialogKit 动态往 dlg_pick_list 里加，布局里只放标题、副说明与容器。
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="20dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
 
         <TextView
             android:id="@+id/tv_pick_title"
@@ -38,12 +53,23 @@
             android:textColor="@color/sub"
             android:textSize="12sp"
             android:visibility="gone" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/dlg_pick_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:fadeScrollbars="false"
+        android:scrollbars="vertical">
 
         <LinearLayout
             android:id="@+id/dlg_pick_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:orientation="vertical" />
-    </LinearLayout>
-</ScrollView>
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="14dp" />
+    </ScrollView>
+</LinearLayout>

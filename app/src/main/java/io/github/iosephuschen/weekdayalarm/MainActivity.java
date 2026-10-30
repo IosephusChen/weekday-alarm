@@ -270,6 +270,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * 系统铃声选择器的返回（v0.91.7）。
+     *
+     * <p>编辑闹钟时的「从系统铃声选择器挑…」是从这个页面发起的，结果得由这里接住
+     * 再转给 {@link SystemRingtonePicker}。别的请求码一律交给父类，不吞掉。
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        SystemRingtonePicker.handleResult(this, requestCode, resultCode, data);
+    }
+
+    /**
      * 每秒一次的轻量刷新（v0.30.0）。
      *
      * <p>只做两件事：把倒计时数字往下拨；发现跨天或到点才触发完整刷新。

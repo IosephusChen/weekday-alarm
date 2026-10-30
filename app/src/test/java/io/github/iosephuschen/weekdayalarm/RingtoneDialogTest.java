@@ -206,4 +206,56 @@ public class RingtoneDialogTest {
         assertEquals(RingtoneDialog.Kind.SILENT, kind[0]);
         assertEquals("静音没有 Uri，不能顺手带一个回去", null, uri[0]);
     }
+
+    /**
+     * 标题不能跟着列表一起滚（v0.91.7）。
+     *
+     * <p>真机反馈：十二个铃声一屏放不下，滚到底部时「选择闹钟铃声」整块滚走，
+     * 只剩半截副标题贴着屏幕边缘——像界面画坏了，用户也不知道自己还在哪儿选。
+     * 现在标题在 ScrollView 外面，只有列表滚。
+     *
+     * <p>钉的是层级关系而不是像素：只要标题的祖先里出现 ScrollView，这条就红。
+     */
+    @Test
+    public void titleStaysOutsideTheScrollingList() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, uri -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        View title = d.findViewById(R.id.tv_pick_title);
+        assertNotNull("标题不该被删掉", title);
+
+        View p = (View) title.getParent();
+        while (p != null) {
+            assertTrue("标题跑进了 ScrollView，滚到底就看不见了",
+                    !(p instanceof android.widget.ScrollView));
+            if (p.getParent() instanceof View) {
+                p = (View) p.getParent();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /** 列表本身必须挂在那个可滚的 ScrollView 里，否则十二项会把对话框撑破。 */
+    @Test
+    public void listLivesInsideTheScrollView() {
+        resetPrefs();
+        MainActivity a = launch();
+        ShadowAlertDialog.reset();
+
+        RingtoneDialog.show(a, null, uri -> {
+        });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        View list = d.findViewById(R.id.dlg_pick_list);
+        View scroll = d.findViewById(R.id.dlg_pick_scroll);
+        assertNotNull("列表容器不该被删掉", list);
+        assertNotNull("可滚容器不该被删掉", scroll);
+        assertEquals("列表应当是可滚容器的子视图", scroll, list.getParent());
+    }
 }

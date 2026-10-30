@@ -226,10 +226,25 @@ public final class RingtoneDialog {
         }
 
         // ---------- 列表 ----------
+        // v0.91.7：媒体库条目前面插一行分组小标题。十二项一屏放不下，用户不知道
+        // 底下还有几条，滚到一半就以为「没有我想要的」。带上数字之后，「内置铃声 · 9 个」
+        // 本身就是「还没到底」的提示。空库时 count 为 0，这一行不出现。
+        final int firstBuiltin = defaultIndex + 1;
+        final int builtinCount = Math.max(0, n - firstBuiltin);
         final View[] rows = new View[n];
         final Ringtone[] playing = {null};
         final int[] playingIdx = {-1};
         for (int i = 0; i < n; i++) {
+            if (i == firstBuiltin && builtinCount > 0) {
+                TextView gh = DialogKit.groupHeader(activity, "内置铃声 · " + builtinCount + " 个");
+                float d = activity.getResources().getDisplayMetrics().density;
+                LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                glp.topMargin = Math.round(16 * d);
+                glp.bottomMargin = Math.round(2 * d);
+                list.addView(gh, glp);
+            }
             final int idx = i;
             View row = DialogKit.optionView(activity, items.get(i).name, null);
             row.setSelected(i == selected);
@@ -255,6 +270,25 @@ public final class RingtoneDialog {
             list.addView(row, lp);
         }
 
+        // ---------- 系统选择器入口（v0.91.7）----------
+        // 上面这一串只枚举得到媒体库里的闹钟铃声：用户自己放进手机的 mp3、
+        // 厂商整合进来的在线铃声都不在其中。这条路把选择范围交回系统。
+        // 选完会当场验一次能不能打开，打不开的当场拒掉（见 SystemRingtonePicker）。
+        final androidx.appcompat.app.AlertDialog[] holder = {null};
+        View sysRow = DialogKit.optionView(activity, "从系统铃声选择器挑…",
+                "能用手机里的音乐，各机型界面不一样");
+        LinearLayout.LayoutParams sysLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        sysLp.topMargin = Math.round(18 * activity.getResources().getDisplayMetrics().density);
+        sysRow.setOnClickListener(v -> {
+            if (holder[0] != null) holder[0].dismiss();
+            SystemRingtonePicker.open(activity, current, uri -> {
+                if (onPicked != null) onPicked.onPicked(uri, Kind.RINGTONE);
+            });
+        });
+        list.addView(sysRow, sysLp);
+
         RoundedDialog.Builder b = new RoundedDialog.Builder(activity);
         b.setView(view);
         b.setPositiveButton("确定", (d, w) -> {
@@ -270,7 +304,9 @@ public final class RingtoneDialog {
             stop(playing[0]);
             playing[0] = null;
         });
+        DialogKit.capListHeight(view);
         androidx.appcompat.app.AlertDialog dialog = b.create();
+        holder[0] = dialog;
         // 点对话框外面、按返回键都要停——铃声在后台响起来是最吵的一种 bug
         dialog.setOnDismissListener(d -> {
             stop(playing[0]);

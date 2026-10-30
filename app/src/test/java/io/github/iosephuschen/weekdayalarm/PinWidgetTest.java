@@ -1,6 +1,7 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -35,8 +36,9 @@ import org.robolectric.shadows.ShadowLooper;
  *       点进去就是三步教程 + 三个尺寸叫什么。</li>
  * </ul>
  *
- * <p>这里钉两件事：点一下必须直接出教程（不再先弹「选哪个组件」）；
- * 教程里三个尺寸的名字都要在——用户加完要在桌面上认得出自己加的是哪一个。
+ * <p>这里钉三件事：点一下必须直接出教程（不再先弹「选哪个组件」）；
+ * 教程里三个尺寸的名字都要在——用户加完要在桌面上认得出自己加的是哪一个；
+ * <b>路径要写全到「安卓小部件」那一层</b>（v0.91.7，见下面那条用例的注释）。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -104,14 +106,66 @@ public class PinWidgetTest {
 
         Dialog d = ShadowAlertDialog.getLatestDialog();
         String text = allText(d.getWindow().getDecorView());
-        assertTrue("应有 4×2 下一个闹钟", text.contains("下一个闹钟"));
-        assertTrue("应有 4×4 完整", text.contains("完整"));
-        assertTrue("应有 4×3 极简", text.contains("极简"));
-        assertTrue("三个尺寸都得标出来", text.contains("4×2") && text.contains("4×4")
-                && text.contains("4×3"));
+        assertTrue("应有 4×2 下次响铃", text.contains("4×2") && text.contains("下次响铃"));
+        assertTrue("应有 4×4 整月班表", text.contains("4×4") && text.contains("整月班表"));
+        assertTrue("应有 4×3 紧凑月历", text.contains("4×3") && text.contains("紧凑月历"));
     }
 
-    /** 设置页那一行的摘要就要写清路径，不用点进去才知道。 */
+    /**
+     * 路径必须写到「安卓小部件」这一层（v0.91.7）。
+     *
+     * <p>用户实测的澎湃路径是五层：长按桌面空白处 → 小部件 → 全部应用 →
+     * 最底下「安卓小部件」→ 打工人闹钟。v0.84.0 的文案只写了前三层，
+     * 而第三方 App 的组件恰恰只在最后那一组里——用户翻到「全部应用」就断了，
+     * 以为这 App 没有小部件。写漏一层比不写更让人挫败。
+     */
+    @Test
+    public void pinGuide_pathReachesTheAndroidWidgetGroup() {
+        SettingsActivity a = openSettings();
+        a.findViewById(R.id.row_pin_widget).performClick();
+        ShadowLooper.idleMainLooper();
+
+        Dialog d = ShadowAlertDialog.getLatestDialog();
+        String text = allText(d.getWindow().getDecorView());
+        assertTrue("路径漏了「全部应用」这一层，实际：" + text, text.contains("全部应用"));
+        assertTrue("路径漏了「安卓小部件」这一层——第三方组件只在这里", text.contains("安卓小部件"));
+    }
+
+    /** 三张预览图要真的画出来：只写名字的话，用户加完才知道长什么样。 */
+    @Test
+    public void pinGuide_showsAllThreePreviews() {
+        SettingsActivity a = openSettings();
+        a.findViewById(R.id.row_pin_widget).performClick();
+        ShadowLooper.idleMainLooper();
+
+        Dialog d = ShadowAlertDialog.getLatestDialog();
+        java.util.List<android.widget.ImageView> imgs = new java.util.ArrayList<>();
+        collectImg(d.getWindow().getDecorView(), imgs);
+        // 只数带无障碍描述的：对话框里还有别的 ImageView（装饰、图标），
+        // 三张预览图是唯一主动写了 contentDescription 的
+        int previews = 0;
+        for (android.widget.ImageView iv : imgs) {
+            if (iv.getContentDescription() == null) continue;
+            previews++;
+            assertNotNull("预览图 " + iv.getContentDescription() + " 没画出来", iv.getDrawable());
+        }
+        assertEquals("三个组件应各配一张预览图", 3, previews);
+    }
+
+    private static void collectImg(View v, java.util.List<android.widget.ImageView> out) {
+        if (v instanceof android.widget.ImageView) out.add((android.widget.ImageView) v);
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) collectImg(g.getChildAt(i), out);
+        }
+    }
+
+    /**
+     * 设置页那一行的摘要就要写清路径，不用点进去才知道。
+     *
+     * <p>v0.91.7 改过一次：原来写「找『打工人闹钟』」，可这一页里根本没有它——
+     * 第三方组件在「全部应用 → 安卓小部件」下面。摘要指错地方比不写更费劲。
+     */
     @Test
     public void pinRowSummary_showsThePath() {
         SettingsActivity a = openSettings();
@@ -122,8 +176,10 @@ public class PinWidgetTest {
             }
         }
         assertNotNull("「添加到桌面」这一行的副标题应写路径", summary);
-        assertEquals("长按桌面空白 →「小部件」→ 找「打工人闹钟」",
+        assertEquals("长按桌面空白 →「小部件」→「全部应用」",
                 summary.getText().toString());
+        assertFalse("摘要不能写「找打工人闹钟」——这一页里没有它",
+                summary.getText().toString().contains("打工人闹钟"));
     }
 
     private static java.util.List<TextView> findAll(View root) {

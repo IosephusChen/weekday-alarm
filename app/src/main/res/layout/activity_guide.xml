@@ -1278,6 +1278,53 @@
                     android:text="没响？回到上一步把权限开齐，再试一次。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
+
+                <!-- 桌面小部件（v0.91.7）：三个组件做完很久了，引导页一直没提，
+                     不知道的人永远不知道。这里只放一行入口，点开是带三张预览图的
+                     说明对话框——图放大了才看得清，塞进这一页会把整页撑长一大截。 -->
+                <LinearLayout
+                    android:id="@+id/btn_widget_guide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_16"
+                    android:background="@drawable/bg_guide_perm"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="56dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingEnd="14dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="桌面小部件"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="1dp"
+                            android:text="不用点开 App，桌面直接看下次响铃"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="看一眼 ›"
+                        android:textColor="@color/indigo"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
         </ScrollView>
 

@@ -1,14 +1,14 @@
 {
-  "versionCode": 231,
-  "versionName": "0.91.6",
+  "versionCode": 232,
+  "versionName": "0.91.7",
   "published": "2026-10-30",
-  "title": "「这次不响」现在真的会跳到下一天",
+  "title": "铃声列表不再滚丢标题，小部件有了去处",
   "notes": [
-    "上一版只改了设置页的数字，首页和小组件走的是另一个入口",
-    "点完「这次不响」，倒计时和小组件立刻指向下一天",
-    "铃声列表的说明压成两行，不再把首项往下挤",
-    "首页翻月按钮和「设置」入口放大一点，好点"
+    "铃声列表的标题钉在顶上，滚到底也看得见自己在选什么",
+    "列表中间多一行「内置铃声 · N 个」，不用猜底下还有几条",
+    "末尾可以走系统选择器，把自己手机里的音乐设成闹钟",
+    "引导末页和设置页都能看到三个桌面小部件长什么样"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.6/weekday-alarm-0.91.6.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.6"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.7/weekday-alarm-0.91.7.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.7"
 }

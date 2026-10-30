@@ -394,18 +394,17 @@
                 <TextView
                     android:id="@+id/btn_today"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_marginEnd="@dimen/space_8"
                     android:background="@drawable/bg_time_outline"
                     android:clickable="true"
                     android:focusable="true"
-                    android:paddingStart="@dimen/space_10"
-                    android:paddingEnd="@dimen/space_10"
-                    android:paddingTop="@dimen/space_8"
-                    android:paddingBottom="@dimen/space_8"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:text="回本月"
                     android:textColor="@color/indigo"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView

@@ -204,6 +204,7 @@ public final class DialogKit {
             list.addView(row);
         }
 
+        capListHeight(view);
         dlg[0] = new RoundedDialog.Builder(c).setView(view).show();
     }
 
@@ -255,6 +256,7 @@ public final class DialogKit {
             list.addView(row);
         }
 
+        capListHeight(view);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
         b.setView(view);
         b.setPositiveButton("完成", (d, w) -> {
@@ -345,6 +347,7 @@ public final class DialogKit {
             }
         }
 
+        capListHeight(view);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
         b.setView(view);
         b.setPositiveButton("确定", (d, w) -> {
@@ -472,6 +475,56 @@ public final class DialogKit {
         card.addView(mark, mlp);
 
         return card;
+    }
+
+    /**
+     * 列表超高时压住它（v0.91.7）。
+     *
+     * <p>dialog_pick 从 v0.91.7 起把标题钉在顶部、只让列表滚，但 {@code ScrollView}
+     * 没有 {@code maxHeight} 可写。布局里给死高度的话，三张卡的短列表下面会留一大块
+     * 空白；不给的话，十二张卡的铃声列表把对话框撑出屏幕。所以等布局完成量一次
+     * 真实高度，超了才压。
+     *
+     * <p>55% 是量出来的：360×800dp 屏上对话框可用高约 800dp，减去标题区约 80dp、
+     * 按钮区约 56dp、上下留白约 60dp，还剩 600dp。压到 440dp 之后，铃声列表一屏
+     * 能看到 7 张卡，剩下的交给常显滚动条提示。
+     */
+    static void capListHeight(View root) {
+        capScrollHeight(root.findViewById(R.id.dlg_pick_scroll), 0.55f);
+    }
+
+    /**
+     * 把任意 ScrollView 压到屏幕高度的 {@code ratio}（v0.91.7）。
+     *
+     * <p>只在内容真的超高时才压，矮内容原样 wrap——写死高度会留一块空白。
+     * 大字体（fontScale 1.5 以上）时列表会长出屏幕，这一层是兜底。
+     */
+    static void capScrollHeight(final View scroll, float ratio) {
+        if (scroll == null) return;
+        final int max = Math.round(scroll.getContext().getResources()
+                .getDisplayMetrics().heightPixels * ratio);
+        scroll.post(() -> {
+            if (scroll.getHeight() > max) {
+                android.view.ViewGroup.LayoutParams lp = scroll.getLayoutParams();
+                lp.height = max;
+                scroll.setLayoutParams(lp);
+            }
+        });
+    }
+
+    /**
+     * 列表里的分组小标题（v0.91.7）。
+     *
+     * <p>铃声列表一屏放不下十二项，用户不知道底下还有几条。组标题带数量，
+     * 一眼就知道「内置铃声 · 9 个」意味着还要往下翻。和
+     * {@link #showGroupPick} 里那组标题同一套样式，两处别各写一遍。
+     */
+    static TextView groupHeader(Context c, String text) {
+        TextView t = new TextView(c);
+        t.setText(text);
+        t.setTextColor(ContextCompat.getColor(c, R.color.sub));
+        t.setTextSize(11);
+        return t;
     }
 
     private static int dp(Context c, int v) {

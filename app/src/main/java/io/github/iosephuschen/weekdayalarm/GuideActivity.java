@@ -437,6 +437,9 @@ public class GuideActivity extends AppCompatActivity {
         // 真机 2×2 实测确认；探针只验「锁屏上能不能看到响铃页」，不碰业务。
         findViewById(R.id.btn_lock_try).setOnClickListener(v -> showLockScreenHint());
         findViewById(R.id.btn_notify_try).setOnClickListener(v -> tryNotify());
+        // v0.91.7：桌面小部件。三个组件早就做完了，但只有主动翻设置的人知道它们存在。
+        // 末页放一行入口，点开是带预览图的说明——和设置页「添加到桌面」同一个对话框。
+        findViewById(R.id.btn_widget_guide).setOnClickListener(v -> WidgetGuide.show(this));
     }
 
     /**

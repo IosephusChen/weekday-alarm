@@ -65,7 +65,9 @@
     <string name="more_about_title">关于</string>
     <string name="more_section_widget">数据与桌面</string>
     <string name="more_pin_widget_title">添加到桌面</string>
-    <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→ 找「打工人闹钟」</string>
+    <!-- v0.91.7：摘要把「找「打工人闹钟」」改成「全部应用」。原来那句在「小部件」
+         页面上是找不到的——第三方组件在更下面一组里，摘要指错地方反而更费劲。 -->
+    <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→「全部应用」</string>
     <string name="more_export_title">导出配置</string>
     <string name="more_export_summary">闹钟、排班、请假/加班、响铃与日历设置存成一个文件</string>
     <string name="more_import_title">导入配置</string>
@@ -189,16 +191,10 @@
     <string name="dialog_run_status_title">运行状态</string>
     <!-- v0.84.0：不再尝试 requestPinAppWidget（小米桌面实机无效：接口报支持，
          调用也返回 true，桌面就是不弹框），直接给步骤。 -->
-    <string name="pin_guide_message">组件不能由 App 直接放到桌面，要从桌面加：
-
-1. 长按桌面空白处
-2. 点「小部件」（有的桌面叫「添加工具」）
-3. 找「打工人闹钟」，把要的那个拖到桌面
-
-三个尺寸：
-4×2 下一个闹钟 — 只看下次响铃
-4×4 本月班表 · 完整 — 整月 + 图例
-4×3 本月班表 · 极简 — 格子更大</string>
+    <!-- v0.91.7：pin_guide_message 已删。那段纯文字把路径写成三层，漏掉
+         「全部应用 → 安卓小部件」——第三方 App 的组件恰恰只在最后那一组里，
+         用户翻到「全部应用」就断了。现在换成 dialog_widgets.xml（三张预览图 +
+         完整五步路径），文案直接写在布局里，不再走字符串资源。 -->
 
     <!-- ===== 设置页对话框布局（v0.73.7 从内联迁入）===== -->
     <string name="dialog_horizon_title">提醒范围</string>

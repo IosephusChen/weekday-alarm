@@ -235,6 +235,19 @@ public class SettingsActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    /**
+     * 系统铃声选择器的返回（v0.91.7）。
+     *
+     * <p>设置页的「铃声」行也会给出「从系统铃声选择器挑…」这个入口，
+     * 走系统界面选完的结果要在这里接住。别的请求码交给父类。
+     */
+    @Override
+    @SuppressWarnings("deprecation")
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        SystemRingtonePicker.handleResult(this, requestCode, resultCode, data);
+    }
+
     private void refreshAll() {
         // v0.60.0：主页与二级页共用这份刷新，控件不在当前布局里就跳过
         if (tvHorizon != null) updateHorizonText();
@@ -750,16 +763,19 @@ public class SettingsActivity extends AppCompatActivity {
      * 弹没弹框 API 没有回调，所以确认对话框里同时留一个「手动添加」出口，不让用户卡住。
      */
     /**
-     * 「添加到桌面」：直接给三步教程（v0.84.0）。
+     * 「添加到桌面」（v0.84.0，v0.91.7 换成带图版）。
      *
      * <p>原来先弹「选哪个组件」再调 {@code requestPinAppWidget}，接口报支持、调用也返回
      * true，但小米桌面就是不弹框——用户看到「已请求添加」，桌面上什么也没发生。
      * 一个看起来成功、实际没有效果的按钮，比一句「要从桌面加」更伤人。
-     * 所以不再尝试请求，直接把路径写清楚：三个尺寸叫什么、加完长什么样。
+     * 所以不再尝试请求，直接把路径写清楚。
+     *
+     * <p>v0.91.7：纯文字换成 {@link WidgetGuide}——三个组件的预览图本来就在包里，
+     * 而且老文案的路径漏了「全部应用 → 安卓小部件」两层，那一层正是第三方组件的
+     * 唯一入口。引导页末页也指向同一个对话框，省得两处文案各改各的。
      */
     private void showPinWidgetDialog() {
-        DialogKit.showMessage(this, getString(R.string.more_pin_widget_title),
-                getString(R.string.pin_guide_message));
+        WidgetGuide.show(this);
     }
 
     /**

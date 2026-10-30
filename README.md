@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="docs/screenshots/1-home.jpg" width="235" alt="首页：今天上不上班、下次闹钟、本月班表">
-  <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃 / 排班与节假日 / 提醒 / 更多">
+  <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃方式 / 周休与节假日 / 提醒 / 其他设置">
   <img src="docs/screenshots/3-ringing.jpg" width="235" alt="响铃页：滑动停止、5 分钟后再响">
 </p>
 
@@ -44,12 +44,10 @@
 
 ## 下载
 
-**v1.0.0 已发布。**
+**v1.0.0（2026-10-31）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.0/weekday-alarm-1.0.0.apk)
+· [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
-仓库目前是私有的，Releases 页外人打不开；转公开后会在这里给出下载入口。
-每个版本都已建好 tag 与 Release（APK + mapping.txt），地址形如
-`https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.5`。
-
+每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
 
 ### 安装时可能看到这个弹窗
@@ -119,8 +117,8 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 
 作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）
 
-我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：近三百次提交、
-一万六千多行 Java、八百多条自动化测试。工具是 [WorkBuddy](https://www.workbuddy.cn)，
+我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：二百九十多次提交、
+一万七千多行 Java、八百三十多条自动化测试。工具是 [WorkBuddy](https://www.workbuddy.cn)，
 主力模型 DeepSeek-V4.1 Flash；早期试过 Hy4 preview、Hy3、Step-5-Preview、GLM-5.3 Flash、
 DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎么读这个仓库：`docs/` 里那些
 逐条记着「为什么这么改」的日志、`AGENTS.md` 里「动代码前先拿许可」这类规矩，都是一个看不懂
@@ -162,7 +160,7 @@ DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎
 环境：JDK 17、Android SDK（`android-34` + build-tools `34.0.0`）。
 
 ```bash
-# 单元测试（七百七十多条，Robolectric + JUnit）
+# 单元测试（八百三十多条，Robolectric + JUnit）
 ./gradlew testDebugUnitTest
 
 # lint
@@ -236,7 +234,7 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ```bash
 ./gradlew assembleRelease      # JDK 17, Android SDK 34
-./gradlew testDebugUnitTest    # ~770 unit tests
+./gradlew testDebugUnitTest    # ~830 unit tests
 ```
 
 ## License

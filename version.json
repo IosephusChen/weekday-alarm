@@ -1,14 +1,13 @@
 {
-  "versionCode": 236,
-  "versionName": "0.92.1",
+  "versionCode": 237,
+  "versionName": "1.0.0",
   "published": "2026-10-31",
-  "title": "字调大了也不会被切掉",
+  "title": "第一个正式版",
   "notes": [
-    "引导页和日历页的按钮不再把字截成上下两半",
-    "引导页选大小周时，能顺手定下小周休周六还是周日",
-    "关于页那段自我介绍删了，回到一屏看完的样子",
-    "响铃页的「稍后提醒」跟着字一起长高"
+    "功能和上一版完全一样，没有为了凑整数字改任何东西",
+    "从这版起签名固定，以后覆盖安装就能升级，不用卸载",
+    "排班规则和数据结构也就此定下，不再随手换算法"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.92.1/weekday-alarm-0.92.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.92.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.0/weekday-alarm-1.0.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.0"
 }

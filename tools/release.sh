@@ -46,7 +46,9 @@ need docs/打工人闹钟-使用说明.md "versionCode $CODE）" "使用说明 v
 need docs/交接-给下一个会话.md "**v$NAME / versionCode $CODE**" "交接现状表"
 # v0.91.4：README 的「下载」节也会过时，而且是最容易被外人看到的一处。
 # 0.91.3 那次就漏了——检查全绿，README 还停在 v0.89.0。文档一致性不该挑文件。
-need README.md "当前候选版 \`v$NAME\`" "README 候选版号"
+# v1.0.0：不再有「候选版」这个说法，检查改成只要 README 里出现当前版本号即可
+# （正式版那段写的是「**v1.0.0 已发布。**」）。
+need README.md "**v$NAME" "README 版本号"
 
 if [ $fail -ne 0 ]; then
     echo

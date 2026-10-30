@@ -44,10 +44,10 @@
 
 ## 下载
 
-**1.0.0 正在做最后的真机验证**（当前候选版 `v0.92.1`）。
+**v1.0.0 已发布。**
 
 仓库目前是私有的，Releases 页外人打不开；转公开后会在这里给出下载入口。
-每个候选版都已建好 tag 与 Release（APK + mapping.txt），地址形如
+每个版本都已建好 tag 与 Release（APK + mapping.txt），地址形如
 `https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.5`。
 
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。

@@ -234,6 +234,77 @@ public class GuideTest {
         assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
     }
 
+    /**
+     * 大小周的「小周休哪天」（v0.92.1）。
+     *
+     * <p>设置页一直有这一项，引导页没有——从引导进来的人只会被按默认「小周休周日」排班。
+     * 公司若行「小周休周六」，前两周的排班就全错，而且没有任何地方提示过他们。
+     * 用户 2026-10-30 指出这处缺口。
+     */
+    @Test
+    public void tapBigSmall_showsSmallRestRow() {
+        GuideActivity a = fresh();
+        // 全新安装默认就是大小周（老用户升级也不能变），所以这一行一进来就该在
+        assertEquals(View.VISIBLE, visibility(a, R.id.row_smallrest));
+
+        tap(a, R.id.mode_double);
+        assertEquals("双休时收起来——双休不存在「小周」", View.GONE, visibility(a, R.id.row_smallrest));
+        assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
+
+        tap(a, R.id.mode_bigsmall);
+        assertEquals("选了大小周才显示「小周休哪天」", View.VISIBLE,
+                visibility(a, R.id.row_smallrest));
+        assertTrue("默认按周日休起步（国内绝大多数如此）",
+                a.findViewById(R.id.opt_smallrest_sun).isSelected());
+        assertFalse(a.findViewById(R.id.opt_smallrest_sat).isSelected());
+        assertEquals("两个子选项同时在：本周是大周还是小周，与小周休哪天无关", View.VISIBLE,
+                visibility(a, R.id.row_weekbig));
+    }
+
+    /** 选「周六休」：只写 smallRestSat，不动制度、不动 anchor。 */
+    @Test
+    public void chooseSmallRestSat_writesSmallRestSatOnly() {
+        GuideActivity a = fresh();
+        tap(a, R.id.mode_bigsmall);
+        LocalDate anchorBefore = Prefs.getAnchor(ctx());
+
+        tap(a, R.id.opt_smallrest_sat);
+
+        assertTrue("小周休周六要写进去", Prefs.isSmallRestSat(ctx()));
+        assertEquals("制度仍是大小周", WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
+        assertEquals("选小周休哪天不该挪 anchor", anchorBefore, Prefs.getAnchor(ctx()));
+        assertTrue(a.findViewById(R.id.opt_smallrest_sat).isSelected());
+        assertFalse(a.findViewById(R.id.opt_smallrest_sun).isSelected());
+    }
+
+    /** 已经设过「小周休周六」的人重看引导：要回显，不能一进来就显示周日休。 */
+    @Test
+    public void existingSmallRestSat_isReflectedOnLaunch() {
+        wipe();
+        Prefs.getAlarms(ctx());
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.BIG_SMALL);
+        Prefs.setSmallRestSat(ctx(), true);
+        GuideActivity a = launch();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.row_smallrest));
+        assertTrue(a.findViewById(R.id.opt_smallrest_sat).isSelected());
+        assertFalse(a.findViewById(R.id.opt_smallrest_sun).isSelected());
+    }
+
+    /** 切走再切回来：那份记忆要还在，不能退回周日休。 */
+    @Test
+    public void switchingAwayAndBack_keepsSmallRestDay() {
+        GuideActivity a = fresh();
+        tap(a, R.id.mode_bigsmall);
+        tap(a, R.id.opt_smallrest_sat);
+        tap(a, R.id.mode_double);
+        assertEquals("双休时这一行收起来", View.GONE, visibility(a, R.id.row_smallrest));
+
+        tap(a, R.id.mode_bigsmall);
+        assertTrue("切回来还是周六休", a.findViewById(R.id.opt_smallrest_sat).isSelected());
+        assertTrue(Prefs.isSmallRestSat(ctx()));
+    }
+
     // ================= 第二页：第一个闹钟 =================
 
     /** 默认 07:30 —— 和预置的「起床」闹钟一致，用户不改就等于确认它。 */

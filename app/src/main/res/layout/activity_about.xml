@@ -102,23 +102,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 简介（v0.92.0）：版本卡下面一段话，回答「这是个什么 App」。
-             不进版本卡里——那张卡左边是 52dp 图标、右边三行是名字，
-             再塞五段文字会把卡片撑成又高又窄一条。 -->
-        <LinearLayout
-            style="@style/HelpCard"
-            android:clipToOutline="true"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lineSpacingExtra="4dp"
-                android:text="@string/about_intro"
-                android:textColor="@color/sub"
-                android:textSize="13sp" />
-        </LinearLayout>
-
         <!-- 检查更新 / 源代码 / 许可 -->
         <LinearLayout
             style="@style/HelpCard"

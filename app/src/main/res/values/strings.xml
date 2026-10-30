@@ -126,11 +126,9 @@
     <string name="about_title">关于</string>
     <string name="about_app_name">打工人闹钟</string>
     <string name="about_app_name_en">Weekday Alarm</string>
-    <!-- v0.92.0：关于页原来只有一堆法律文本，没有一句「这是个什么 App」。
-         用户 2026-10-30 问「需要写一个简单的功能介绍吗」——需要，但只写一段。
-         注意别把它写成「只在上班日响铃」：闹钟有四种模式（仅上班日 / 每天 /
-         仅休息日 / 仅一次），这么写等于把另外三种吞掉了。 -->
-    <string name="about_intro">按大小周、单休或双休，叠上法定节假日与调休补班，算出哪天该上班、哪天该休息。闹钟默认只在上班日响，也可以单独设成每天、仅休息日，或者只响一次的某一天。\n\n所有数据都在本机，不联网、不要账号、无广告，卸载即清空。</string>
+    <!-- v0.92.1：v0.92.0 加过一段 about_intro，用户 2026-10-30 看过说「不要介绍了，
+         加了反而不简洁」——已删除。关于页只留版本卡 + 功能入口，不写自我说明。
+         教训：条款页上多一段介绍，读者真正要找的东西反而被推下去了。 -->
     <string name="about_source">源代码</string>
     <string name="about_source_value">GitHub ›</string>
     <string name="about_license">开源许可</string>

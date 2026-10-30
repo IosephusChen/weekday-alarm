@@ -173,28 +173,17 @@ public class AboutActivityTest {
     }
 
     /**
-     * 简介要把四种闹钟模式说全（v0.92.0）。
+     * 关于页不该再写自我介绍了（v0.92.1）。
      *
-     * <p>第一版草稿写的是「只在上班日响铃」，用户 2026-10-30 当场指出漏了「休息日响铃」。
-     * 这类错误用眼睛看不出来——句子读起来很顺，只是把 {@code Alarm.Mode} 里的三种
-     * 模式吞掉了。钉成断言，以后改文案删掉一档就会红。
+     * <p>v0.92.0 加过一段 about_intro，用户 2026-10-30 看过之后的原话是
+     * 「不要介绍了，加了介绍反而不简洁」。这条测试把它钉死：将来谁再想
+     * 「顺手给关于页加段说明」，先看这条，别再往回加。
      */
     @Test
-    public void intro_mentionsEveryAlarmMode() {
-        String intro = ctx().getString(R.string.about_intro);
-        assertTrue("默认行为是上班日响，实际：" + intro, intro.contains("上班日"));
-        assertTrue("「每天」不能说丢", intro.contains("每天"));
-        assertTrue("「仅休息日」不能说丢——这正是那天指出的漏项", intro.contains("休息日"));
-        assertTrue("「仅一次」也要有", intro.contains("某一天"));
-        assertTrue("隐私那句要在", intro.contains("不联网"));
-    }
-
-    /** 简介得真的出现在页面上，不能只躺在 strings.xml 里。 */
-    @Test
-    public void introIsRenderedOnThePage() {
+    public void aboutPage_hasNoSelfIntroduction() {
         String page = allText(open().getWindow().getDecorView());
-        assertTrue("关于页应显示简介首句，实际：" + page, page.contains("按大小周"));
-        assertTrue("还应显示「卸载即清空」这句", page.contains("卸载即清空"));
+        assertFalse("关于页不该有简介段落，实际出现「按大小周」：" + page, page.contains("按大小周"));
+        assertFalse("也不该有「卸载即清空」这类介绍句：" + page, page.contains("卸载即清空"));
     }
 
     /**

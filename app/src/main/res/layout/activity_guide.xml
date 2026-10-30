@@ -255,6 +255,59 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
+                <!-- 大小周专属：小周那天休周日还是休周六（v0.92.1）
+                     设置页早就有这一项，引导页没有——于是同一个「大小周」，从引导进来的人
+                     被按默认（小周休周日）排了班，而公司若行「小周休周六」，前两周就全错。
+                     用户 2026-10-30 指出这处缺口。 -->
+                <LinearLayout
+                    android:id="@+id/row_smallrest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_10"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="小周休哪天"
+                        android:textColor="@color/sub"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/opt_smallrest_sun"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_guide_option"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
+                        android:text="周日休"
+                        android:textColor="@color/ink"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/opt_smallrest_sat"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_8"
+                        android:background="@drawable/bg_guide_option"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="@dimen/space_16"
+                        android:paddingTop="@dimen/space_8"
+                        android:paddingEnd="@dimen/space_16"
+                        android:paddingBottom="@dimen/space_8"
+                        android:text="周六休"
+                        android:textColor="@color/ink"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
                 <!-- 单休专属：休周日还是休周六（v0.39.0） -->
                 <LinearLayout
                     android:id="@+id/row_singleday"
@@ -475,11 +528,12 @@
                     <LinearLayout
                         android:id="@+id/row_volume"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -507,11 +561,12 @@
                     <LinearLayout
                         android:id="@+id/row_fade"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -539,11 +594,12 @@
                     <LinearLayout
                         android:id="@+id/row_vibrate"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -574,11 +630,12 @@
                     <LinearLayout
                         android:id="@+id/row_snooze"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -606,11 +663,12 @@
                     <LinearLayout
                         android:id="@+id/row_prenotice"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
+                        android:minHeight="48dp"
                         android:orientation="horizontal">
 
                         <TextView
@@ -1366,8 +1424,9 @@
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_next"
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
+            android:layout_height="wrap_content"
             android:background="@drawable/bg_guide_btn"
+            android:minHeight="48dp"
             android:minWidth="128dp"
             android:paddingStart="@dimen/space_24"
             android:paddingEnd="@dimen/space_24"

@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -22,6 +23,7 @@ import org.robolectric.annotation.Config;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Collections;
 
 /**
@@ -143,24 +145,32 @@ public class SkipOnceDisplayTest {
      */
     @Test
     public void homeScreen_afterSkip_pointsToTheDayAfter() {
+        // v0.92.1：原来把闹钟写死在 09:00，等于假设「跑测试时今天 9 点已经过了」。
+        // 2026-10-30 23:57 跑是绿的，过了零点再跑就红——00:05 时今天 9 点还没到，
+        // 首页的「下次」当然是今天（「休息日 · 下次闹钟 09:00 起床」），不是明天。
+        // 功能一个字没改，只是跑的时刻变了。现在把闹钟设在「刚刚过去」，前提天然成立。
+        LocalTime t = LocalTime.now().minusMinutes(5);
+        if (t.isAfter(LocalTime.now())) t = LocalTime.MIDNIGHT;   // 减出昨天了，退到今天 00:00（已过）
+        String clock = String.format(java.util.Locale.ROOT, "%02d:%02d", t.getHour(), t.getMinute());
+
         LocalDate tomorrow = LocalDate.now().plusDays(1);
-        Alarm a = new Alarm(1, 9, 0, "起床", Alarm.Mode.DAILY, true);
+        Alarm a = new Alarm(1, t.getHour(), t.getMinute(), "起床", Alarm.Mode.DAILY, true);
         Prefs.setAlarms(ctx(), Collections.singletonList(a));
 
         ActivityController<MainActivity> c = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = c.get();
 
         String before = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
-        assertTrue("前提：没跳过时首页该写「明天 09:00」，实际是「" + before + "」",
-                before.contains("明天 09:00"));
+        assertTrue("前提：没跳过时首页该写「明天 " + clock + "」，实际是「" + before + "」",
+                before.contains("明天 " + clock));
 
         Prefs.addSkipOnce(ctx(), 1, tomorrow);
         c.pause().resume();   // 回到前台，走的是真实刷新路径
 
         String after = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
         assertFalse("点完「这次不响」，首页不能还写着明天那一趟：「" + after + "」",
-                after.contains("明天 09:00"));
-        assertTrue("跳过明天，下次就该是后天：「" + after + "」", after.contains("后天 09:00"));
+                after.contains("明天 " + clock));
+        assertTrue("跳过明天，下次就该是后天：「" + after + "」", after.contains("后天 " + clock));
     }
 
     /**

@@ -23,6 +23,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowNotificationManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 /**
@@ -67,6 +68,23 @@ public class SnoozeLifecycleTest {
     }
 
     /**
+     * 小睡实际会落在哪一天（v0.92.1 修）。
+     *
+     * <p>{@link ScheduleManager#snooze} 按「现在 + N 分钟」排，23:58 点下去就落到第二天。
+     * 这三条用例原来直接拿 {@code LocalDate.now()} 当断言键，白天跑一直绿，
+     * 一过 23:55 就集体红——2026-10-30 23:58 全量跑的时候就是这么红的，看着像功能坏了，
+     * 其实产品行为是对的（那一趟确实排在明天）。
+     *
+     * <p>断言必须跟着「响的那一刻」走，不能在测试里假设「+5 分钟还在今天」。
+     * 必须在调用 {@code snooze()} <b>之前</b>取，取完再过几毫秒也不会变天。
+     */
+    private LocalDate snoozeDay() {
+        return LocalDateTime.now()
+                .plusMinutes(Math.max(1, Prefs.getSnoozeMinutes(ctx())))
+                .toLocalDate();
+    }
+
+    /**
      * 改时间要作废三样：排程、计数、那条通知。
      *
      * <p>少清任何一样，用户都会看到「界面说的话」和「它要做的事」不一致。
@@ -74,17 +92,18 @@ public class SnoozeLifecycleTest {
     @Test
     public void dropSnooze_clearsScheduleCountAndNotice() {
         LocalDate today = LocalDate.now();
+        LocalDate fireDay = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
         Prefs.incrementSnoozeCount(ctx(), 1, today);
         SnoozeNotice.post(ctx(), 1, "起床", 5);
 
-        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
         assertEquals("前提：用掉了一格", 1, Prefs.getSnoozeCount(ctx(), 1, today));
 
         ScheduleManager.dropSnooze(ctx(), 1);
 
         assertFalse("改时间后上一轮排下的小睡必须作废，否则它还会在旧时刻响",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
         assertEquals("计数要归零，新一轮才有完整的次数",
                 0, Prefs.getSnoozeCount(ctx(), 1, today));
         assertNull("那条「12:41 再次响铃」也得撤，不能和新的提前提醒并排挂着",
@@ -100,9 +119,10 @@ public class SnoozeLifecycleTest {
     @Test
     public void ringing_cancelsPendingSnoozeButKeepsCount() {
         LocalDate today = LocalDate.now();
+        LocalDate fireDay = snoozeDay();
         Prefs.incrementSnoozeCount(ctx(), 1, today);
         ScheduleManager.snooze(ctx(), 1, "起床");
-        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
 
         Robolectric.buildService(AlarmService.class,
                         new Intent(ctx(), AlarmService.class)
@@ -112,7 +132,7 @@ public class SnoozeLifecycleTest {
                 .startCommand(0, 0);
 
         assertFalse("响了就说明这一轮结束了，之前排下的那趟不该再补一次",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
         assertNotEquals("但计数不能清——这次响可能就是小睡触发的",
                 0, Prefs.getSnoozeCount(ctx(), 1, today));
     }
@@ -158,13 +178,14 @@ public class SnoozeLifecycleTest {
 
         MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
         LocalDate today = LocalDate.now();
+        LocalDate fireDay = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
-        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
 
         a.removeAlarm(new Alarm(1, 7, 30, "起床", Alarm.Mode.DAILY, true));
 
         assertFalse("删掉的闹钟不该还能在 5 分钟后响一次",
-                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, fireDay));
         assertFalse("跨零点的小睡落在明天，也要一起清",
                 ScheduleManager.isSnoozeRegistered(ctx(), 1, today.plusDays(1)));
         assertTrue("另一条闹钟的小睡不受影响（这条本来就没排，只是确认没误伤到 id）",

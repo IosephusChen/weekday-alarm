@@ -60,8 +60,8 @@ public class GuideActivity extends AppCompatActivity {
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
     /** 导入旧备份（v0.57.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
-    private LinearLayout rowWeekBig, rowSingleDay;
-    private TextView optBig, optSmall, optRestSun, optRestSat;
+    private LinearLayout rowWeekBig, rowSmallRest, rowSingleDay;
+    private TextView optBig, optSmall, optSmallRestSun, optSmallRestSat, optRestSun, optRestSat;
     private final List<View> modeCards = new ArrayList<>();
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
@@ -95,6 +95,9 @@ public class GuideActivity extends AppCompatActivity {
         rowWeekBig = findViewById(R.id.row_weekbig);
         optBig = findViewById(R.id.opt_big);
         optSmall = findViewById(R.id.opt_small);
+        rowSmallRest = findViewById(R.id.row_smallrest);
+        optSmallRestSun = findViewById(R.id.opt_smallrest_sun);
+        optSmallRestSat = findViewById(R.id.opt_smallrest_sat);
         rowSingleDay = findViewById(R.id.row_singleday);
         optRestSun = findViewById(R.id.opt_rest_sun);
         optRestSat = findViewById(R.id.opt_rest_sat);
@@ -181,6 +184,9 @@ public class GuideActivity extends AppCompatActivity {
 
         optBig.setOnClickListener(v -> setWeekBig(true));
         optSmall.setOnClickListener(v -> setWeekBig(false));
+        // v0.92.1：大小周的「小周休哪天」原来只有设置页能改，引导页漏了这一项
+        optSmallRestSun.setOnClickListener(v -> setSmallRestDay(true));
+        optSmallRestSat.setOnClickListener(v -> setSmallRestDay(false));
         optRestSun.setOnClickListener(v -> setSingleRestDay(true));
         optRestSat.setOnClickListener(v -> setSingleRestDay(false));
     }
@@ -226,6 +232,18 @@ public class GuideActivity extends AppCompatActivity {
         syncModeUi();
     }
 
+    /**
+     * 大小周的小周休哪天（v0.92.1）。
+     *
+     * <p>和单休的「休哪天」不是一个东西：单休那天写进 mode（SINGLE_REST_SUN / _SAT），
+     * 大小周的小周休息日写在 {@code smallRestSat} 里，两者共用同一个键——
+     * 设置页就是这么存的，这里跟着它走，不另开一份，否则两处会各记各的。
+     */
+    private void setSmallRestDay(boolean sunday) {
+        Prefs.setSmallRestSat(this, !sunday);
+        syncModeUi();
+    }
+
     private void setWeekBig(boolean big) {
         Prefs.setWeekBig(this, big);
         LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
@@ -245,12 +263,16 @@ public class GuideActivity extends AppCompatActivity {
 
         boolean bigSmall = current == WeekSchedule.Mode.BIG_SMALL;
         rowWeekBig.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
+        rowSmallRest.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
         if (bigSmall) {
             // v0.91.9：以前读的是 Prefs.isWeekBig（上次点击时的快照）。重进引导页时
             // 那个值可能已经是几周前的，会把「本周大/小周」高亮错。按今天现算。
             boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(this));
             optBig.setSelected(big);
             optSmall.setSelected(!big);
+            boolean restSat = Prefs.isSmallRestSat(this);
+            optSmallRestSun.setSelected(!restSat);
+            optSmallRestSat.setSelected(restSat);
         }
 
         boolean single = isSingleRest(current);

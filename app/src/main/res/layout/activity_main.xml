@@ -82,10 +82,11 @@
         <LinearLayout
             android:id="@+id/row_ringing"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"
             android:background="@drawable/bg_card"
             android:gravity="center_vertical"
+            android:minHeight="52dp"
             android:orientation="horizontal"
             android:paddingStart="@dimen/space_16"
             android:paddingEnd="@dimen/space_12"
@@ -363,21 +364,26 @@
                  标题要真正落在卡片中线上。原来用 weight=1，右侧还有「回本月」，
                  两边宽度不等，weight 只在「剩下的空间」里居中，整行看着偏左。
                  现在外面套一层 FrameLayout：标题 layout_gravity=center 钉死在整行中点，
-                 左右按钮组各自贴边，标题左右各留 90dp 让位（右侧按钮组合计 86dp）。 -->
+                 左右按钮组各自贴边，标题左右各留 90dp 让位（右侧按钮组合计 86dp）。
+                 v0.92.1：高度从写死的 40dp 改成 minHeight。系统字体拉到 1.5 倍以上时，
+                 20sp 的「‹」「›」行高超过 40dp，字会被裁掉上下两截；minHeight 在正常
+                 字号下高度不变，字体放大时让按钮自己长高。 -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="40dp">
+                android:layout_height="wrap_content"
+                android:minHeight="40dp">
 
                 <TextView
                     android:id="@+id/btn_prev"
                     android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="start|center_vertical"
                     android:background="@drawable/bg_time_outline"
                     android:clickable="true"
                     android:contentDescription="上个月"
                     android:focusable="true"
                     android:gravity="center"
+                    android:minHeight="40dp"
                     android:text="‹"
                     android:textColor="@color/ink"
                     android:textSize="20sp"
@@ -410,13 +416,14 @@
                     <TextView
                         android:id="@+id/btn_today"
                         android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginEnd="@dimen/space_6"
                         android:background="@drawable/bg_time_outline"
                         android:clickable="true"
                         android:contentDescription="回到本月"
                         android:focusable="true"
                         android:gravity="center"
+                        android:minHeight="40dp"
                         android:text="今"
                         android:textColor="@color/indigo"
                         android:textSize="13sp"
@@ -425,12 +432,13 @@
                     <TextView
                         android:id="@+id/btn_next"
                         android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_height="wrap_content"
                         android:background="@drawable/bg_time_outline"
                         android:clickable="true"
                         android:contentDescription="下个月"
                         android:focusable="true"
                         android:gravity="center"
+                        android:minHeight="40dp"
                         android:text="›"
                         android:textColor="@color/ink"
                         android:textSize="20sp"

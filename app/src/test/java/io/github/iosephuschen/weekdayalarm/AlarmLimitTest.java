@@ -212,13 +212,24 @@ public class AlarmLimitTest {
         assertTrue("闹钟开关必须是可点击的（回归：v0.11.1 曾设为 false 导致点开关弹编辑框）",
                 sw.isClickable());
 
-        boolean before = Prefs.getAlarms(ctx()).get(0).enabled;
+        // v0.91.9：列表改成按时间升序显示后，「第 0 行」不再等于「存储里的第 0 条」——
+        // 这里必须按开关自己带的 tag（alarmId）去找对应那条，否则断言的是一条没被点的闹钟。
+        int rowId = (Integer) sw.getTag();
+        boolean before = enabledOf(rowId);
         sw.performClick();
-        boolean after = Prefs.getAlarms(ctx()).get(0).enabled;
+        boolean after = enabledOf(rowId);
         assertNotEquals("点击开关应直接切换启停", before, after);
 
         // 再点一次切回
         sw.performClick();
-        assertEquals(before, Prefs.getAlarms(ctx()).get(0).enabled);
+        assertEquals(before, enabledOf(rowId));
+    }
+
+    /** 按 id 读某条闹钟的启停状态（列表顺序会变，不能按下标取）。 */
+    private boolean enabledOf(int id) {
+        for (Alarm a : Prefs.getAlarms(ctx())) {
+            if (a.id == id) return a.enabled;
+        }
+        throw new AssertionError("找不到 id=" + id + " 的闹钟");
     }
 }

@@ -312,6 +312,21 @@ public final class RingtoneDialog {
             stop(playing[0]);
             playing[0] = null;
         });
+        // v0.91.9：onDismiss 只覆盖「用户主动关掉」这一条路。旋转屏幕时 Activity 重建、
+        // 窗口被直接拆掉，Dialog 不一定会走 dismiss，于是试听的铃声继续响（而且走的是
+        // USAGE_ALARM，声音不小，只能杀进程）。挂到视图的 detach 上兜住这一类：
+        // 不论是关闭、重建还是页面被回收，视图一离窗就停。
+        view.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(android.view.View v) {
+            }
+
+            @Override
+            public void onViewDetachedFromWindow(android.view.View v) {
+                stop(playing[0]);
+                playing[0] = null;
+            }
+        });
         dialog.show();
     }
 

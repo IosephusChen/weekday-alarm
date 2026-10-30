@@ -96,6 +96,12 @@ public class AlarmService extends Service {
     private static volatile String lastRingDiagnostic;
     /** 本次响铃的日期（小睡计数 / 自动停止取消时用）。 */
     private LocalDate ringDate = LocalDate.now();
+    /**
+     * 小睡次数的记账日（v0.91.9）。平时与 {@link #ringDate} 相同；只有「这一响是小睡触发的」
+     * 且跨了零点时才不同——23:58 响 → 小睡到 00:03，目标日期已是新的一天，
+     * 若拿它记账，次数会从 0 重来，「还能睡 3 次」直接满血。
+     */
+    private LocalDate countDate = LocalDate.now();
     /** 「自动停止」闹钟实际注册在哪一天（跨零点时与 ringDate 不同，取消必须用这个）。 */
     private LocalDate autoStopDate;
 
@@ -160,7 +166,8 @@ public class AlarmService extends Service {
             String label = intent.getStringExtra(EXTRA_LABEL);
             // v0.17.1 修复：通知栏的小睡按钮此前不看剩余次数，界面禁用后
             // 用户仍能从通知栏无限续睡。次数用尽时忽略操作并提示。
-            LocalDate d = parseDate(intent.getStringExtra(EXTRA_DATE));
+            // v0.91.9：记账用「这一轮的起始日」，不是小睡的目标日。后者跨零点就换天。
+            LocalDate d = snoozeCountDate(intent);
             if (!ScheduleManager.canSnooze(this, alarmId, d)) {
                 Toast.makeText(this, "稍后提醒次数已用完，请滑动停止",
                         Toast.LENGTH_SHORT).show();
@@ -168,7 +175,7 @@ public class AlarmService extends Service {
             }
             Prefs.incrementSnoozeCount(this, alarmId, d);
             int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
-            ScheduleManager.snooze(this, alarmId, label != null ? label : "闹钟");
+            ScheduleManager.snooze(this, alarmId, label != null ? label : "闹钟", d);
             // v0.53.1：小睡排好之后立刻补一条通知。原来这里只 stopSelf，通知栏随响铃通知
             // 一起清空，用户点完「5 分钟后再响」什么反馈都看不到，不知道它到底还响不响。
             SnoozeNotice.post(this, alarmId, label != null ? label : "闹钟", mins);
@@ -206,6 +213,10 @@ public class AlarmService extends Service {
         // v0.58.8：响铃＝这一夜结束，昨晚那条「明天 07:30 起床」已经兑现，留着就是废话
         BedtimeReminder.cancelNotice(this);
         ringDate = parseDate(dateStr);
+        // v0.91.9：起始日优先取 Intent 里带的 snooze_origin（小睡链一路传下来的），
+        // 没有就按这次响铃的日期。见 countDate 的注释。
+        String origin = intent != null ? intent.getStringExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN) : null;
+        countDate = origin != null ? parseDate(origin) : ringDate;
         boolean test = ACTION_TEST.equals(action);
         testRing = test;
         // 缺省 true：老路径（测试响铃直接起服务）没有带这个 extra，保持原来的全屏行为
@@ -240,7 +251,7 @@ public class AlarmService extends Service {
         // 才退回整屏。锁屏 / 息屏仍由 AlarmReceiver 直接拉整屏，这里不再重复。
         if (!popup && !test) {
             int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
-            boolean canSnooze = ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
+            boolean canSnooze = ScheduleManager.canSnooze(this, currentAlarmId, countDate);
             // v0.55.0：横幅上要显示大号响铃时刻。取闹钟自己的 HH:mm 而不是当前时间——
             // 迟到几十秒（系统排程有抖动）时，显示「07:30」才是用户认识的那个闹钟
             if (!FloatingAlarm.show(this, currentAlarmId, label, dateStr,
@@ -328,6 +339,19 @@ public class AlarmService extends Service {
         // 旧版取消时用 ringDate（今天）算 requestCode，打不中，残留一条无用广播。
         autoStopDate = when.toLocalDate();
         ScheduleManager.setAutoStop(this, when, currentAlarmId);
+    }
+
+    /**
+     * 小睡次数的记账日（v0.91.9）：起始日优先，其次这次响铃的日期，最后才是今天。
+     *
+     * <p>起始日由 {@link ScheduleManager#snooze} 一路带着走，整条小睡链共用同一个键——
+     * 23:58 响、00:03 再响时，次数仍然记在 23:58 那天，不会因为跨了零点就归零。
+     */
+    private static LocalDate snoozeCountDate(Intent intent) {
+        if (intent == null) return LocalDate.now();
+        String origin = intent.getStringExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN);
+        if (origin != null) return parseDate(origin);
+        return parseDate(intent.getStringExtra(EXTRA_DATE));
     }
 
     /** 解析日期字符串；为空或非法时回退到今天。 */
@@ -724,11 +748,23 @@ public class AlarmService extends Service {
      * 点小睡小睡的都是第一个闹钟。回归测试见 {@code BugfixRegressionTest}。
      */
     static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr) {
-        return PendingIntent.getService(ctx, 2,
-                new Intent(ctx, AlarmService.class).setAction(ACTION_SNOOZE)
-                        .putExtra(EXTRA_ALARM_ID, alarmId)
-                        .putExtra(EXTRA_LABEL, label)
-                        .putExtra(EXTRA_DATE, dateStr),
+        return snoozePi(ctx, alarmId, label, dateStr, null);
+    }
+
+    /**
+     * @param originDateStr 这一轮响铃的起始日（v0.91.9）。跨零点的小睡必须按它记账，
+     *                      否则 00:03 那次点小睡，次数会记到新的一天、从 0 开始。
+     */
+    static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr,
+                                  String originDateStr) {
+        Intent i = new Intent(ctx, AlarmService.class).setAction(ACTION_SNOOZE)
+                .putExtra(EXTRA_ALARM_ID, alarmId)
+                .putExtra(EXTRA_LABEL, label)
+                .putExtra(EXTRA_DATE, dateStr);
+        if (originDateStr != null) {
+            i.putExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN, originDateStr);
+        }
+        return PendingIntent.getService(ctx, 2, i,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
@@ -756,7 +792,8 @@ public class AlarmService extends Service {
         // UPDATE_CURRENT，这里属漏写。有了它，每次 post 通知都会把 extras 刷成当前闹钟。
         // 抽成静态方法供守门测试直接拿（BugfixRegressionTest）。
         PendingIntent snoozePi = snoozePi(this, currentAlarmId, label,
-                ringDate != null ? ringDate.toString() : null);
+                ringDate != null ? ringDate.toString() : null,
+                countDate != null ? countDate.toString() : null);
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
         // v0.54.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
@@ -792,7 +829,7 @@ public class AlarmService extends Service {
         // 小睡按钮：次数用尽时不再提供，避免通知栏无限续睡（v0.17.1）。
         // v0.31.0：测试模式也不给——测试闹钟没有排班实例，点了只会静默地「什么都不发生」，
         // 用户会以为按钮坏了；现在测试通知里只留「结束测试」。
-        boolean canSnooze = !test && ScheduleManager.canSnooze(this, currentAlarmId, ringDate);
+        boolean canSnooze = !test && ScheduleManager.canSnooze(this, currentAlarmId, countDate);
         int snoozeMins = Math.max(1, Prefs.getSnoozeMinutes(this));
         // v0.54.2：能弹横幅时不再挂 addAction。自绘卡片上已经有两个药丸，
         // 系统模板的 action 只在 heads-up / 展开态出现，重复且样式不一致。

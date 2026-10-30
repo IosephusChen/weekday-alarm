@@ -246,7 +246,9 @@ public class GuideActivity extends AppCompatActivity {
         boolean bigSmall = current == WeekSchedule.Mode.BIG_SMALL;
         rowWeekBig.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
         if (bigSmall) {
-            boolean big = Prefs.isWeekBig(this);
+            // v0.91.9：以前读的是 Prefs.isWeekBig（上次点击时的快照）。重进引导页时
+            // 那个值可能已经是几周前的，会把「本周大/小周」高亮错。按今天现算。
+            boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(this));
             optBig.setSelected(big);
             optSmall.setSelected(!big);
         }

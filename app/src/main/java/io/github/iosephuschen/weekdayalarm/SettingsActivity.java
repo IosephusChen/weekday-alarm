@@ -314,7 +314,13 @@ public class SettingsActivity extends AppCompatActivity {
         // 小周休哪天与单休休哪天共用一份记忆（smallRestSat）：在单休里选过周六，
         // 切到大小周时小周也按周六休，不用重选一遍。
         final boolean[] restSat = {Prefs.isSmallRestSat(this)};
-        final boolean[] big = {Prefs.isWeekBig(this)};
+        // v0.91.9：这行以前读的是 Prefs.isWeekBig——「上次点确定那周是大周还是小周」的快照。
+        // 隔几周再进来，快照早就过期；那时点确定会无条件把 anchor 重置到本周，
+        // 于是「我只想改小周休哪天」也会把本周的大/小周静默翻面：排班变了，闹钟却还按旧的响。
+        // 现在按「今天 + 当前 anchor」现算，并用 bigTouched 区分「用户真的选了」和「只是路过」。
+        final boolean[] big = {WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(this))};
+        final boolean[] bigTouched = {false};
+        final boolean wasBigSmall = Prefs.getWeekMode(this) == WeekSchedule.Mode.BIG_SMALL;
         final WeekSchedule.Mode[] mode = {Prefs.getWeekMode(this)};
 
         Runnable refresh = () -> {
@@ -344,10 +350,12 @@ public class SettingsActivity extends AppCompatActivity {
         });
         groupWeekBig.getChildAt(0).setOnClickListener(v -> {
             big[0] = true;
+            bigTouched[0] = true;
             refresh.run();
         });
         groupWeekBig.getChildAt(1).setOnClickListener(v -> {
             big[0] = false;
+            bigTouched[0] = true;
             refresh.run();
         });
         groupSmallRest.getChildAt(0).setOnClickListener(v -> {
@@ -377,9 +385,14 @@ public class SettingsActivity extends AppCompatActivity {
                     if (mode[0] == WeekSchedule.Mode.BIG_SMALL) {
                         Prefs.setWeekMode(this, WeekSchedule.Mode.BIG_SMALL);
                         Prefs.setWeekBig(this, big[0]);
-                        // anchor 始终是「最近的一个大周周六」
-                        LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
-                        Prefs.setAnchor(this, big[0] ? sat : sat.minusWeeks(1));
+                        // anchor 始终是「最近的一个大周周六」。但只在两种情况下重设：
+                        // 用户在对话框里真的点了大/小周，或者本来不是大小周、这次切进来。
+                        // 其余情况（只改小周休哪天、或什么都没改直接确定）保持原 anchor，
+                        // 否则等于每周都被悄悄重排一次。
+                        if (bigTouched[0] || !wasBigSmall) {
+                            LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
+                            Prefs.setAnchor(this, big[0] ? sat : sat.minusWeeks(1));
+                        }
                         Prefs.setSmallRestSat(this, restSat[0]);
                     } else if (mode[0] == WeekSchedule.Mode.DOUBLE_REST) {
                         Prefs.setWeekMode(this, WeekSchedule.Mode.DOUBLE_REST);
@@ -586,6 +599,9 @@ public class SettingsActivity extends AppCompatActivity {
         tvHolidayData.setText(getString(R.string.holiday_checking));
         findViewById(R.id.row_holiday_data).setEnabled(false);
         HolidayUpdater.check(this, true, result -> {
+            // v0.91.9：网络回来时这一页可能已经关了（点完就返回，或系统回收）。
+            // 下面的 Toast / 对话框都要求有效窗口，不判就是 BadTokenException。
+            if (isFinishing() || isDestroyed()) return;
             findViewById(R.id.row_holiday_data).setEnabled(true);
             switch (result) {
                 case UPDATED:

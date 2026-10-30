@@ -237,7 +237,12 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Throwable ignore) {
                 }
                 if (showChangelog) {
-                    runOnUiThread(() -> maybeShowChangelog(version));
+                    // v0.91.9：重排可能要几秒，这期间用户完全可能已经退出（升级后首启、
+                    // 顺手划掉）。原样回到主线程 show() 就是 BadTokenException。
+                    runOnUiThread(() -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        maybeShowChangelog(version);
+                    });
                 }
             }, "upgrade-reschedule").start();
         }
@@ -478,6 +483,11 @@ public class MainActivity extends AppCompatActivity {
      * 二是以后从别处（比如编辑框里的删除）也能复用同一段，不会各写一遍漏掉重排。
      */
     void removeAlarm(Alarm a) {
+        // v0.91.9：先把这条的小睡作废，再删。applyAlarmChange 在「还有别的闹钟开着」
+        // 时走的是 rescheduleAll，它碰不到 SNOOZE 段；而 cancelAllIncludingTransient
+        // 遍历的是「列表里还在的闹钟」——删掉的这条已经不在表里，同样清不到。
+        // 结果就是删完 5 分钟内照响一次，铃声还是默认的。
+        ScheduleManager.dropSnooze(this, a.id);
         // 按 id 删而不是按对象引用：列表每次刷新都会从 Prefs 重新解析出一批新对象，
         // 调用方手里那条多半已经不是列表里的同一个实例，remove(Object) 会静默失败
         for (int i = alarms.size() - 1; i >= 0; i--) {
@@ -523,6 +533,12 @@ public class MainActivity extends AppCompatActivity {
         for (Alarm x : alarms) {
             if (x.id == a.id) {
                 x.enabled = checked;
+                // v0.91.9：停用等于「这条以后不响了」，它已经排上的小睡也必须一起作废。
+                // rescheduleAll 只管主实例与提前提醒，SNOOZE 段是「一次响铃的临时状态」，
+                // 刻意跨重排存活（见 cancelAll 注释）——不改这里，就会出现
+                // 「点过小睡 → 把闹钟关掉 → 5 分钟后照样响，还是默认铃声」（闹钟已停用，
+                // 查不到它的铃声配置，AlarmService 回落到默认值）。
+                if (!checked) ScheduleManager.dropSnooze(this, x.id);
                 // v0.87.6：关掉再打开 = 重新启用，今天的「这次不响」一并作废。
                 // 和 applyEdit 的「改完就开」同一套语义：显式操作就是要它响。
                 if (checked) Prefs.clearSkipOnce(this, x.id);
@@ -642,7 +658,15 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
         // 按钮状态先回，重排挪后台——「点了没反应」比晚一点排好更难受
         updateDayOffButton();
-        Reschedule.run(this, null);
+        // v0.91.9：重排完要把整页刷新拉起来。原来只传了 null 回调，于是点完「今天不上班」
+        // 只有那颗按钮换了色，大标题还写「今天上班」、倒计时还指着刚被跳过的闹钟、
+        // 日历格里也没有「假」——用户看到的是两块自相矛盾的信息。
+        // refreshAll 里含 refreshStatus → Widgets.updateAll，桌面小组件一并跟上。
+        Reschedule.run(this, () -> {
+            if (isFinishing() || isDestroyed()) return;
+            refreshAll();
+            BedtimeReminder.refreshIfShown(this);
+        });
     }
 
     private void refreshStatus() {

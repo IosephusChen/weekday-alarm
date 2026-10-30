@@ -16,6 +16,8 @@ import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -64,7 +66,25 @@ final class AlarmRowRenderer {
         this.host = host;
     }
 
-    void render(List<Alarm> alarms) {
+    /**
+     * 列表按时间升序排列（v0.91.9），同一时刻保持创建顺序。
+     *
+     * <p>只在显示层排：存储顺序不动，导出备份、复制新增的语义都不变，
+     * 用户也不会因为「改了一下某条的时间」就把整份备份的顺序重排一遍。
+     *
+     * <p>抽成静态方法是为了能直接断言顺序，不必去数 View 层级——
+     * 行是代码里 new 出来的，没有 id 也没有 tag，从外面认不出哪个是时间。
+     */
+    static List<Alarm> sortedByTime(List<Alarm> raw) {
+        List<Alarm> list = new ArrayList<>(raw);
+        // List.sort 是稳定排序：同一时刻的两条闹钟保持原有（创建）顺序
+        list.sort(Comparator.comparingInt(a -> a.hour * 60 + a.minute));
+        return list;
+    }
+
+    void render(List<Alarm> raw) {
+        List<Alarm> alarms = sortedByTime(raw);
+
         container.removeAllViews();
         float density = activity.getResources().getDisplayMetrics().density;
         int padV = (int) (13 * density);

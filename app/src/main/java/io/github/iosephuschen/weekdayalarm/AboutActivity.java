@@ -121,6 +121,9 @@ public class AboutActivity extends AppCompatActivity {
         value.setTextColor(getColor(R.color.sub));
 
         UpdateChecker.check(this, result -> {
+            // v0.91.9：同 SettingsActivity 的节假日检查——回来时页面可能已经关了，
+            // 后面既要刷视图又要弹对话框，不判就是 BadTokenException。
+            if (isFinishing() || isDestroyed()) return;
             row.setEnabled(true);
             if (result == UpdateChecker.Result.AVAILABLE) {
                 showUpdateDialog();

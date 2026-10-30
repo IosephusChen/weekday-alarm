@@ -35,6 +35,21 @@ public class AlarmActivity extends AppCompatActivity {
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
+            // v0.91.9：服务已经停了，这一页就不能再留着。
+            //
+            // 只有「用户在本页亲自停止 / 小睡」才会走 stopAlarm / snoozeAlarm 里的 finish()；
+            // 另外两条路——到点自动停止（StopReceiver）、通知栏点「停止 / 稍后」——
+            // 只停服务，没有任何人通知这一页。结果：页面停在最后那一帧，滑条还在、
+            // 大字还在走时，而 FLAG_KEEP_SCREEN_ON 让它一直亮着，用户回来以为死机了。
+            //
+            // 用 sawRinging 挡一次启动竞态：广播先 startActivity 再 startForegroundService，
+            // 页面有可能比服务先到，那一刻 isRinging() 还是 false，不能因此立刻关掉自己。
+            if (AlarmService.isRinging()) {
+                sawRinging = true;
+            } else if (sawRinging) {
+                finish();
+                return;
+            }
             refreshClock();
             // 顺路补诊断行：服务写结果比这一页晚，没必要为它单独起一个定时器（v0.91.1）
             if (test) refreshDiagnostic();
@@ -42,10 +57,15 @@ public class AlarmActivity extends AppCompatActivity {
         }
     };
 
+    /** 本页是否已经见过「正在响铃」。用于区分「还没开响」与「响完了」两种 !isRinging()。 */
+    private boolean sawRinging;
+
     private boolean test;
     private int alarmId;
     private String label;
     private LocalDate date;
+    /** 小睡次数的记账日：通常等于 date，只有跨零点的小睡链才不同（v0.91.9）。 */
+    private LocalDate countDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,6 +144,16 @@ public class AlarmActivity extends AppCompatActivity {
         } catch (Exception e) {
             date = LocalDate.now();
         }
+        // v0.91.9：小睡次数按「这一轮响铃的起始日」记账。跨零点时它会和 date 不同：
+        // 23:58 响、小睡到 00:03，date 已是新的一天，拿它记账次数就归零了。
+        countDate = date;
+        String origin = getIntent().getStringExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN);
+        if (origin != null) {
+            try {
+                countDate = LocalDate.parse(origin);
+            } catch (Exception ignore) {
+            }
+        }
 
         TextView tvDate = findViewById(R.id.tv_date);
         TextView tvSub = findViewById(R.id.tv_sub);
@@ -144,7 +174,7 @@ public class AlarmActivity extends AppCompatActivity {
         // v0.15.0：稍后提醒可自定义间隔与次数；次数用尽后只留「停止」
         int snoozeMinutes = Math.max(1, Prefs.getSnoozeMinutes(this));
         int snoozeTimes = Prefs.getSnoozeTimes(this);
-        int used = Prefs.getSnoozeCount(this, alarmId, date);
+        int used = Prefs.getSnoozeCount(this, alarmId, countDate);
         boolean exhausted = !test && snoozeTimes != Prefs.SNOOZE_UNLIMITED
                 && used >= snoozeTimes;
         if (test) {
@@ -207,10 +237,19 @@ public class AlarmActivity extends AppCompatActivity {
      * <p>包级可见，单测直接断言文案，不必去启动一个锁屏全屏 Activity。
      */
     static String autoStopHint(Context c) {
-        int minutes = Prefs.getRingMinutes(c);
-        return minutes <= 0
-                ? "滑到底才会停 · 铃声会一直响"
-                : "滑到底才会停 · " + minutes + " 分钟后自动停止";
+        // v0.91.9：跟着「实际生效」的时长走，不是跟着设置值走。
+        // 通知被关掉时 AlarmService 会把时长封顶到 DEGRADED_MAX_MINUTES（5 分钟）——
+        // 那时候没有通知栏的停止按钮，只能靠自动停止兜底。页面若照设置写「10 分钟」，
+        // 用户会以为还有 10 分钟可赖，实际 5 分钟就哑了。
+        int minutes = AlarmService.effectiveRingMinutes(c);
+        int configured = Prefs.getRingMinutes(c);
+        if (minutes <= 0) {
+            return "滑到底才会停 · 铃声会一直响";
+        }
+        if (configured > minutes) {
+            return "滑到底才会停 · " + minutes + " 分钟后自动停止（通知被关闭，已缩短）";
+        }
+        return "滑到底才会停 · " + minutes + " 分钟后自动停止";
     }
 
     /** 日期行：「10月21日 星期三」——与澎湃一致，月日不补零。 */
@@ -250,7 +289,7 @@ public class AlarmActivity extends AppCompatActivity {
     private void snoozeAlarm() {
         // v0.23.0：按键（音量键设为「稍后提醒」）这条路此前绕过了次数上限——
         // 按钮变灰后按音量键仍能无限续睡。与通知栏、界面按钮统一到同一个判断。
-        if (!ScheduleManager.canSnooze(this, alarmId, date)) {
+        if (!ScheduleManager.canSnooze(this, alarmId, countDate)) {
             Toast.makeText(this, "本次响铃的稍后提醒次数已用完，请滑动停止",
                     Toast.LENGTH_SHORT).show();
             return;
@@ -258,8 +297,8 @@ public class AlarmActivity extends AppCompatActivity {
         // v0.74.3：同 stopAlarm——兜底通知不走 onDestroy，小睡也要能把它取消掉
         NotificationManagerCompat.from(this).cancel(AlarmService.NOTIF_ID);
         int mins = Math.max(1, Prefs.getSnoozeMinutes(this));
-        Prefs.incrementSnoozeCount(this, alarmId, date);
-        ScheduleManager.snooze(this, alarmId, label);
+        Prefs.incrementSnoozeCount(this, alarmId, countDate);
+        ScheduleManager.snooze(this, alarmId, label, countDate);
         // v0.53.1：排好之后补一条通知，通知栏才不会在点了「再响」之后空掉
         SnoozeNotice.post(this, alarmId, label, mins);
         Toast.makeText(this, mins + " 分钟后再响", Toast.LENGTH_SHORT).show();

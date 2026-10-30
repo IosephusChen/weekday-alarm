@@ -13,6 +13,13 @@ public class AlarmReceiver extends BroadcastReceiver {
     public static final String EXTRA_ALARM_ID = "alarm_id";
     public static final String EXTRA_LABEL = "alarm_label";
 
+    /**
+     * 这一轮响铃的起始日期（v0.91.9）。只有小睡触发的那几次会带上：
+     * 23:58 响 → 小睡到 00:03 时，URI 里的日期已经是新的一天，但「这一轮用了几次小睡」
+     * 必须记在起始那天，否则次数归零、可以无限续睡。
+     */
+    public static final String EXTRA_SNOOZE_ORIGIN = "snooze_origin";
+
     @Override
     public void onReceive(Context context, Intent intent) {
         // data URI 形如 weekdayalarm://alarm/{alarmId}/{date}；lastPathSegment 是日期
@@ -27,6 +34,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         // 解锁使用中：不在这里拉界面，交给 AlarmService 弹一个 300dp 的小悬浮窗——
         // v0.53.2 试过「解锁也整屏」，用户反馈太粗暴：正在用手机时被整屏盖住，
         // 要的是「小窗提醒一下」。挂不上悬浮窗时服务自己退回整屏。
+        final String origin = intent.getStringExtra(EXTRA_SNOOZE_ORIGIN);
         final boolean popup = ScreenLock.shouldPopup(context);
         if (popup) {
             try {
@@ -35,6 +43,8 @@ public class AlarmReceiver extends BroadcastReceiver {
                 full.putExtra(AlarmActivity.EXTRA_TEST, false);
                 full.putExtra(AlarmActivity.EXTRA_ALARM_ID, alarmId);
                 full.putExtra(AlarmActivity.EXTRA_LABEL, label);
+                // v0.91.9：全屏页点「稍后提醒」也要按起始日记账，跟着一起带过去
+                if (origin != null) full.putExtra(EXTRA_SNOOZE_ORIGIN, origin);
                 full.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 context.startActivity(full);
             } catch (Exception ignore) {
@@ -53,6 +63,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         svc.putExtra(AlarmService.EXTRA_DATE, dateStr);
         svc.putExtra(AlarmService.EXTRA_ALARM_ID, alarmId);
         svc.putExtra(AlarmService.EXTRA_LABEL, label);
+        if (origin != null) svc.putExtra(EXTRA_SNOOZE_ORIGIN, origin);
         try {
             ContextCompat.startForegroundService(context, svc);
         } catch (Exception startFailure) {

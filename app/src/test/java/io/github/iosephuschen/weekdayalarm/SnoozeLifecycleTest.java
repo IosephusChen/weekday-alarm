@@ -139,4 +139,91 @@ public class SnoozeLifecycleTest {
         assertTrue("而且只在时间/规则真的变了时才清——只换铃声不该掐掉正在等的小睡",
                 src.contains("oldHour != target.hour"));
     }
+
+    /**
+     * v0.91.9：删掉一条闹钟，它没兑现的小睡必须跟着作废。
+     *
+     * <p>走的是真实路径：首页 {@code removeAlarm} → {@code applyAlarmChange}。
+     * 两头都清不到：还有别的闹钟开着时走 {@code rescheduleAll}，而它刻意不碰 SNOOZE 段；
+     * 一条都不剩时走 {@code cancelAllIncludingTransient}，可它遍历的是「列表里还在的闹钟」，
+     * 被删的那条已经不在表里。于是 5 分钟后那一趟照样触发——闹钟已经不存在，
+     * AlarmService 查不到它的铃声，回落到默认铃声，用户听到的是「不知道哪来的闹钟」。
+     */
+    @Test
+    public void removeAlarm_dropsPendingSnooze() {
+        // 留一条别的闹钟开着 → 走 rescheduleAll 分支（不是「全清」）
+        Prefs.setAlarms(ctx(), java.util.Arrays.asList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.DAILY, true),
+                new Alarm(2, 13, 30, "午休", Alarm.Mode.DAILY, true)));
+
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        LocalDate today = LocalDate.now();
+        ScheduleManager.snooze(ctx(), 1, "起床");
+        assertTrue("前提：小睡排上了", ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+
+        a.removeAlarm(new Alarm(1, 7, 30, "起床", Alarm.Mode.DAILY, true));
+
+        assertFalse("删掉的闹钟不该还能在 5 分钟后响一次",
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
+        assertFalse("跨零点的小睡落在明天，也要一起清",
+                ScheduleManager.isSnoozeRegistered(ctx(), 1, today.plusDays(1)));
+        assertTrue("另一条闹钟的小睡不受影响（这条本来就没排，只是确认没误伤到 id）",
+                !ScheduleManager.isSnoozeRegistered(ctx(), 2, today));
+    }
+
+    /**
+     * v0.91.9：停用（关掉开关）同样要作废小睡——「这条以后不响了」。
+     *
+     * <p>toggleAlarm 是 private，且要点到行里的开关才能触发；这里钉的是
+     * 「那条分支上有没有这个调用」，与上面 editorSave 的写法一致。
+     */
+    @Test
+    public void disableAlarm_callsDropSnooze() throws Exception {
+        String src = readSource("MainActivity.java");
+        assertTrue("停用闹钟时必须作废它待执行的小睡，否则关掉之后还会响一次",
+                src.contains("if (!checked) ScheduleManager.dropSnooze(this, x.id);"));
+        assertTrue("删除路径同理", src.contains("ScheduleManager.dropSnooze(this, a.id);"));
+    }
+
+    /**
+     * v0.91.9：跨零点的小睡要把「起始日」一路带下去，否则次数会在零点归零。
+     *
+     * <p>23:58 响 → 点小睡排到 00:03 → 00:03 再响时 URI 里的日期已经是新的一天，
+     * 若照它记账，次数从 0 开始，「还能睡 3 次」直接满血。
+     */
+    @Test
+    public void snoozeCarriesOriginDate() {
+        LocalDate origin = LocalDate.of(2026, 10, 31);
+        ScheduleManager.snooze(ctx(), 1, "起床", origin);
+
+        // 从系统里把刚注册的那条捞出来，读它真正携带的 extra——
+        // 光断言源码里有这行字不算数，PendingIntent 可能压根没带上
+        android.app.AlarmManager am = (android.app.AlarmManager)
+                ctx().getSystemService(Context.ALARM_SERVICE);
+        org.robolectric.shadows.ShadowAlarmManager sam = shadowOf(am);
+        boolean found = false;
+        for (org.robolectric.shadows.ShadowAlarmManager.ScheduledAlarm sa : sam.getScheduledAlarms()) {
+            if (sa.operation == null) continue;
+            Intent i = shadowOf(sa.operation).getSavedIntent();
+            if (i == null || i.getComponent() == null) continue;
+            if (!AlarmReceiver.class.getName().equals(i.getComponent().getClassName())) continue;
+            found = true;
+            assertEquals("小睡 Intent 必须带上起始日，否则零点之后次数会归零",
+                    origin.toString(), i.getStringExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN));
+        }
+        assertTrue("前提：小睡已经注册进系统", found);
+    }
+
+    /** 读一份生产源码（仓库根向上找）。 */
+    private static String readSource(String name) throws Exception {
+        java.io.File dir = new java.io.File("").getAbsoluteFile();
+        while (dir != null && !new java.io.File(dir, "app/src/main").isDirectory()) {
+            dir = dir.getParentFile();
+        }
+        assertTrue("找不到仓库根目录", dir != null);
+        java.io.File f = new java.io.File(dir,
+                "app/src/main/java/io/github/iosephuschen/weekdayalarm/" + name);
+        return new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                java.nio.charset.StandardCharsets.UTF_8);
+    }
 }

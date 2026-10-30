@@ -38,6 +38,31 @@ public class WeekScheduleTest {
         assertEquals(WeekSchedule.DayType.REST, type(ANCHOR, true));                  // 大周周六仍休
     }
 
+    /**
+     * v0.91.9 回归：选「小周休周六」时，<b>大周的周日也必须是休息</b>。
+     *
+     * <p>上一个测试的注释写着「大周不受影响」，却只断言了大周周六——周日那行漏了。
+     * 而 dayType 里周日分支写的是 {@code smallRestSat ? WORK : REST}，压根没看大周，
+     * 于是这个模式下大周周日被判成上班：14 天里两个周日全在上班，大周的双休退化成单休，
+     * 闹钟在周日照样响。这是「测试覆盖了注释想说的，却没覆盖代码实际做的」的典型。
+     */
+    @Test
+    public void smallRestSat_bigWeekSundayStillRests() {
+        assertEquals(DayOfWeek.SUNDAY, ANCHOR.plusDays(1).getDayOfWeek());
+        assertEquals(WeekSchedule.DayType.REST, type(ANCHOR.plusDays(1), true));      // 大周周日休
+        assertEquals(WeekSchedule.DayType.REST, type(ANCHOR.plusDays(15), true));     // 下一个大周周日也休
+        // 对照组：小周周日仍然是上班日，没有被这条改动带偏
+        assertEquals(WeekSchedule.DayType.WORK, type(ANCHOR.plusDays(8), true));
+        assertEquals(WeekSchedule.DayType.WORK, type(ANCHOR.plusDays(22), true));
+    }
+
+    /** 默认模式（小周只休周日）下，大周周日一直是休息——这条本来就对，钉住防止改坏。 */
+    @Test
+    public void defaultMode_bigWeekSundayRests() {
+        assertEquals(WeekSchedule.DayType.REST, type(ANCHOR.plusDays(1), false));
+        assertEquals(WeekSchedule.DayType.REST, type(ANCHOR.plusDays(8), false));
+    }
+
     @Test
     public void weekdaysAlwaysWork() {
         for (int i = 0; i < 28; i++) {

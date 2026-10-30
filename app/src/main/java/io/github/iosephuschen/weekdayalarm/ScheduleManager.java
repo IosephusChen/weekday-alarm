@@ -128,7 +128,18 @@ public final class ScheduleManager {
 
     private static PendingIntent alarmPendingIntent(Context ctx, int alarmId, LocalDate d,
                                                      String label, int segment) {
-        Intent i = pendingIntentShell(ctx, alarmId, d, segment, label);
+        return alarmPendingIntent(ctx, alarmId, d, label, segment, null);
+    }
+
+    /**
+     * @param snoozeOrigin 小睡链的起始响铃日（v0.91.9）。只有 SNOOZE 段用得上：
+     *                     它随 PendingIntent 一路带进 AlarmService，作为小睡次数的记账键。
+     *                     PendingIntent 的匹配不看 extras，所以取消一侧不必带它。
+     */
+    private static PendingIntent alarmPendingIntent(Context ctx, int alarmId, LocalDate d,
+                                                     String label, int segment,
+                                                     LocalDate snoozeOrigin) {
+        Intent i = pendingIntentShell(ctx, alarmId, d, segment, label, snoozeOrigin);
         return PendingIntent.getBroadcast(ctx, requestCode(alarmId, d, segment), i,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
@@ -276,6 +287,11 @@ public final class ScheduleManager {
      */
     private static Intent pendingIntentShell(Context ctx, int alarmId, LocalDate d,
                                              int segment, String label) {
+        return pendingIntentShell(ctx, alarmId, d, segment, label, null);
+    }
+
+    private static Intent pendingIntentShell(Context ctx, int alarmId, LocalDate d,
+                                             int segment, String label, LocalDate snoozeOrigin) {
         String scheme = segment == SEG_PRE_NOTICE ? "prenotice" : "alarm";
         Intent i = new Intent(ctx, segment == SEG_PRE_NOTICE ? PreNoticeReceiver.class : AlarmReceiver.class);
         i.setAction(segment == SEG_PRE_NOTICE
@@ -283,6 +299,9 @@ public final class ScheduleManager {
         i.setData(Uri.parse("weekdayalarm://" + scheme + "/" + alarmId + "/" + d));
         i.putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId);
         if (label != null) i.putExtra(AlarmReceiver.EXTRA_LABEL, label);
+        if (snoozeOrigin != null) {
+            i.putExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN, snoozeOrigin.toString());
+        }
         return i;
     }
 
@@ -292,10 +311,16 @@ public final class ScheduleManager {
     }
 
     private static void setAlarm(Context ctx, LocalDateTime when, int alarmId, String label, int segment) {
+        setAlarm(ctx, when, alarmId, label, segment, null);
+    }
+
+    private static void setAlarm(Context ctx, LocalDateTime when, int alarmId, String label,
+                                 int segment, LocalDate snoozeOrigin) {
         AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
         try {
-            PendingIntent pi = alarmPendingIntent(ctx, alarmId, when.toLocalDate(), label, segment);
+            PendingIntent pi = alarmPendingIntent(ctx, alarmId, when.toLocalDate(), label,
+                    segment, snoozeOrigin);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             // v0.89.2：不预先判断权限，直接试 setAlarmClock，失败才降级。
             //
@@ -311,9 +336,18 @@ public final class ScheduleManager {
                 // 现在指向主界面，用户点图标就能核对「这闹钟是哪来的」
                 am.setAlarmClock(new AlarmManager.AlarmClockInfo(millis, showIntent(ctx)), pi);
             } catch (Exception notAllowed) {
-                // 没有任何精确闹钟权限时的第二条路：1 分钟窗口闹钟。系统会在
-                // [millis, millis+60s] 之间触发，仍会响，只是分钟级偏差且无图标。
-                am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
+                // 没有任何精确闹钟权限时的第二条路。
+                //
+                // v0.91.9：原来这里只用 setWindow，注释还写着「[millis, millis+60s] 之间触发」。
+                // 那对窗口只在设备醒着时成立：setWindow 没有 allow-while-idle 语义，
+                // 夜里手机进了 Doze，这条会被推迟到维护窗口——闹钟可能晚几十分钟才响，
+                // 对起床闹钟就是漏叫。现在先试 setAndAllowWhileIdle（不需要精确闹钟权限，
+                // Doze 下每 9 分钟允许一次，会唤醒设备），真被拒了再退回窗口闹钟。
+                try {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
+                } catch (Exception alsoDenied) {
+                    am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
+                }
             }
         } catch (Exception ignore) {
             // ROM 闹钟数量上限等情况下单个 set 会抛 SecurityException；
@@ -356,9 +390,19 @@ public final class ScheduleManager {
      * rescheduleAll（响铃后、重启后）的 cancelAll 都会把它连带取消，导致小睡失效。
      */
     public static void snooze(Context ctx, int alarmId, String label) {
+        snooze(ctx, alarmId, label, null);
+    }
+
+    /**
+     * @param origin 这一轮响铃的起始日期（v0.91.9）。小睡可能跨零点——23:58 按「稍后提醒」
+     *               排到 00:03——那时目标日期已经是新的一天，若拿它当记账键，次数会从 0
+     *               重新开始，「还能睡 3 次」又满血。把起始日期一路带过去，整条小睡链
+     *               共用同一个键。为 null 时退回旧行为（按目标日期记账）。
+     */
+    public static void snooze(Context ctx, int alarmId, String label, LocalDate origin) {
         LocalDateTime when = LocalDateTime.now()
                 .plusMinutes(Math.max(1, Prefs.getSnoozeMinutes(ctx)));
-        setAlarm(ctx, when, alarmId, label, SEG_SNOOZE);
+        setAlarm(ctx, when, alarmId, label, SEG_SNOOZE, origin);
     }
 
     /**

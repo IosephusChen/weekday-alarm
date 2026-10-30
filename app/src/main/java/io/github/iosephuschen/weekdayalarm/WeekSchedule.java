@@ -164,6 +164,14 @@ public final class WeekSchedule {
                     if (isBigWeekSaturday(d, rule.anchor)) return DayType.REST;
                     return rule.smallRestSat ? DayType.REST : DayType.WORK;
                 }
+                // 周日（v0.91.9 修）：大周恒休，小周才看「小周休哪天」。
+                //
+                // 旧写法是 `smallRestSat ? WORK : REST`，只在默认模式（小周只休周日）下
+                // 碰巧算对：那时大周小周的周日都休。可一旦用户选了「小周休周六」——
+                // 本意是「小周的单休挪到周六，大周照旧双休」——大周的周日也被判成上班，
+                // 于是 14 天里两个周日全在上班，大周的双休退化成单休。
+                // 类注释第 20 行早就写明「大周：周六、周日都休」，是这里漏了判大周。
+                if (isBigWeekSaturday(saturdayOf(d), rule.anchor)) return DayType.REST;
                 return rule.smallRestSat ? DayType.WORK : DayType.REST;
         }
     }

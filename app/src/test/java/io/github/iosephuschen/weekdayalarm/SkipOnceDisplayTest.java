@@ -1,18 +1,22 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
+import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.time.LocalDate;
@@ -120,5 +124,41 @@ public class SkipOnceDisplayTest {
 
         assertEquals("跳过一天就该少一次，否则这个数字是骗人的",
                 before - 1, ScheduleManager.countScheduled(ctx()));
+    }
+
+    /**
+     * 首页读的必须是「认跳过」的那条路（v0.91.6）。
+     *
+     * <p>0.91.4 修了 {@link ScheduleManager#nextRing} 本身，可首页在
+     * {@code MainActivity.refreshStatus} 里调的是另一个**不带 skipOnce 的重载**，
+     * 那个重载内部塞空集。真机上的表现正是用户报的：点完「这次不响」，通知没了、
+     * 设置页的统计少了一个，首页倒计时和小组件却照旧指着今天。
+     *
+     * <p>为什么上面几条测试没拦住：它们都直接调带 skipOnce 的版本，等于测了一条
+     * UI 从不走的路。所以这条必须从界面读——把 Activity 真起起来，看那行字。
+     *
+     * <p>用「明天 09:00」做素材而不是「今天某点」：跑测试的钟点不确定，取今天
+     * 可能已经过点。换个日子，断言也变成「明天」→「后天」，跟当前时间无关。
+     */
+    @Test
+    public void homeScreen_afterSkip_pointsToTheDayAfter() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        Alarm a = new Alarm(1, 9, 0, "起床", Alarm.Mode.DAILY, true);
+        Prefs.setAlarms(ctx(), Collections.singletonList(a));
+
+        ActivityController<MainActivity> c = Robolectric.buildActivity(MainActivity.class).setup();
+        MainActivity act = c.get();
+
+        String before = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
+        assertTrue("前提：没跳过时首页该写「明天 09:00」，实际是「" + before + "」",
+                before.contains("明天 09:00"));
+
+        Prefs.addSkipOnce(ctx(), 1, tomorrow);
+        c.pause().resume();   // 回到前台，走的是真实刷新路径
+
+        String after = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
+        assertFalse("点完「这次不响」，首页不能还写着明天那一趟：「" + after + "」",
+                after.contains("明天 09:00"));
+        assertTrue("跳过明天，下次就该是后天：「" + after + "」", after.contains("后天 09:00"));
     }
 }

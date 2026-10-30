@@ -679,9 +679,12 @@ public class MainActivity extends AppCompatActivity {
         LocalDateTime now = LocalDateTime.now();
         // v0.37.1：喂上面刚重读的 alarms，而不是让 nextRing 再去读一遍 Prefs。
         // 两处各读一次就会各读各的，改完闹钟回来必然对不上。
+        // v0.91.6：这里当时调的是不带 skipOnce 的重载，于是「这次不响」点了之后
+        // 通知没了、设置页的统计少了一个，倒计时却还指着今天——用户以为按钮没生效。
+        // 那个重载已删，参数漏不掉。
         ScheduleManager.NextAlarm next = ScheduleManager.nextRing(alarms, rule,
                 Prefs.getVacationDates(this), Prefs.getOvertimeDates(this),
-                now, Prefs.getHorizonDays(this));
+                Prefs.getSkipOnce(this), now, Prefs.getHorizonDays(this));
         nextRingAt = next != null ? next.when : null;
         tickDay = today;
 

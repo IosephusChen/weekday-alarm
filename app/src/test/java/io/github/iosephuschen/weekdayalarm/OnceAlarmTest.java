@@ -196,6 +196,7 @@ public class OnceAlarmTest {
         ScheduleManager.NextAlarm next = ScheduleManager.nextRing(
                 java.util.Collections.singletonList(a), null,
                 java.util.Collections.singleton(day), java.util.Collections.emptySet(),
+                java.util.Collections.emptySet(),
                 LocalDate.now().atStartOfDay(), 7);
         assertNotNull("请假那天的一次性闹钟也该排上", next);
         assertEquals(java.time.LocalDateTime.of(day, java.time.LocalTime.of(6, 30)), next.when);
@@ -211,6 +212,7 @@ public class OnceAlarmTest {
         assertNull("请假那天普通闹钟不该排",
                 ScheduleManager.nextRing(java.util.Collections.singletonList(daily), null,
                         java.util.Collections.singleton(today), java.util.Collections.emptySet(),
+                        java.util.Collections.emptySet(),
                         today.atStartOfDay(), 1));
     }
 

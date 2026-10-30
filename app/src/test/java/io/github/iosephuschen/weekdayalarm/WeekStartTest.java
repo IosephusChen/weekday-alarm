@@ -151,7 +151,7 @@ public class WeekStartTest {
                                                   WeekSchedule.Rule rule,
                                                   LocalDateTime from) {
         return ScheduleManager.nextRing(list, rule, Collections.emptySet(),
-                Collections.emptySet(), from, 30);
+                Collections.emptySet(), Collections.emptySet(), from, 30);
     }
 
     /** 早上那趟响过之后，下午还有午休，下一次必须是 13:40（v0.28.0 修的老问题）。 */
@@ -216,7 +216,8 @@ public class WeekStartTest {
         Set<LocalDate> vac = new HashSet<>();
         vac.add(LocalDate.of(2026, 10, 21));
         ScheduleManager.NextAlarm next = ScheduleManager.nextRing(alarms(), DOUBLE_REST,
-                vac, Collections.emptySet(), LocalDateTime.of(2026, 10, 20, 14, 0), 30);
+                vac, Collections.emptySet(), Collections.emptySet(),
+                LocalDateTime.of(2026, 10, 20, 14, 0), 30);
         assertEquals(LocalDate.of(2026, 10, 22), next.when.toLocalDate());
     }
 
@@ -226,7 +227,8 @@ public class WeekStartTest {
         Set<LocalDate> ot = new HashSet<>();
         ot.add(LocalDate.of(2026, 10, 24));
         ScheduleManager.NextAlarm next = ScheduleManager.nextRing(alarms(), DOUBLE_REST,
-                Collections.emptySet(), ot, LocalDateTime.of(2026, 10, 24, 6, 0), 30);
+                Collections.emptySet(), ot, Collections.emptySet(),
+                LocalDateTime.of(2026, 10, 24, 6, 0), 30);
         assertEquals(LocalDate.of(2026, 10, 24), next.when.toLocalDate());
         assertEquals(7, next.when.getHour());
     }

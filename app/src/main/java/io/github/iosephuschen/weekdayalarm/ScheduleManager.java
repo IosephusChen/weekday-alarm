@@ -855,23 +855,22 @@ public final class ScheduleManager {
     /**
      * 见 {@link #nextRing(Context, LocalDateTime)}。抽成静态是为了单测能固定「现在」。
      *
-     * <p>只按「闹钟启用 + 规则命中 + 当天没请假」筛选，不看分钟级以下的
+     * <p>只按「闹钟启用 + 规则命中 + 当天没请假 + 当天没被跳过」筛选，不看分钟级以下的
      * 偏移：闹钟在 hh:mm:00 触发，{@code from} 正好等于该时刻时算已过（返回下一个）。
-     */
-    static NextAlarm nextRing(List<Alarm> alarms, WeekSchedule.Rule rule,
-                              Set<LocalDate> vacations, Set<LocalDate> overtimes,
-                              LocalDateTime from, int days) {
-        return nextRing(alarms, rule, vacations, overtimes, java.util.Collections.emptySet(),
-                from, days);
-    }
-
-    /**
-     * v0.91.4 加了 {@code skipOnce}：用户点过「这次不响」的那一天不算「下次响铃」。
+     *
+     * <p>v0.91.4 加了 {@code skipOnce}：用户点过「这次不响」的那一天不算「下次响铃」。
      *
      * <p>漏掉它的时候，首页倒计时和桌面小组件会照旧写着「明天 07:30」——用户点完
      * 「这次不响」的用意就是「明天别叫我」，看着那行字他会以为按钮没生效，
      * 第二天没响又会怀疑 App 是不是漏了。同样的口径也用在
      * {@link #countCandidates}，两处一起改才不会再漂。
+     *
+     * <p><b>v0.91.6：删掉了不带 skipOnce 的重载。</b>0.91.4 就是被它坑的——首页
+     * （MainActivity）和桌面部件（NextAlarmWidget）调的都是那个六参数版本，它在内部
+     * 塞 {@code emptySet()}，于是「跳过」只在设置页的统计里生效：真机上点完
+     * 「这次不响」，通知没了、数字少了一个，首页倒计时和小组件却照旧指着今天。
+     * 单测直接调带 skipOnce 的版本，一路绿到底，谁也没发现 UI 走的是另一条路。
+     * 现在只留这一个签名，漏传就编译不过，比任何测试都可靠。
      */
     static NextAlarm nextRing(List<Alarm> alarms, WeekSchedule.Rule rule,
                               Set<LocalDate> vacations, Set<LocalDate> overtimes,

@@ -53,9 +53,12 @@ public class NextAlarmWidget extends AppWidgetProvider {
      * 那次 IPC 探测省掉了。
      */
     static WidgetModel computeModel(Context ctx) {
+        // v0.91.6：补上 skipOnce。之前这里和首页一样调的是六参数重载，
+        // 点完「这次不响」部件照旧显示今天那一趟，和首页一起错。
         return computeModel(ctx, ScheduleManager.nextRing(
                 Prefs.getAlarms(ctx), Prefs.getRule(ctx),
                 Prefs.getVacationDates(ctx), Prefs.getOvertimeDates(ctx),
+                Prefs.getSkipOnce(ctx),
                 LocalDateTime.now(), Prefs.getHorizonDays(ctx)));
     }
 

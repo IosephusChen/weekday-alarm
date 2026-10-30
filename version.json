@@ -1,14 +1,14 @@
 {
-  "versionCode": 230,
-  "versionName": "0.91.5",
+  "versionCode": 231,
+  "versionName": "0.91.6",
   "published": "2026-10-30",
-  "title": "把说错的几句话改回来",
+  "title": "「这次不响」现在真的会跳到下一天",
   "notes": [
-    "响铃前提醒不再写「会弹窗」，锁屏上其实只是一张通知卡",
-    "导入配置的说明删掉了「音量」——它跟着设备走，不在备份里",
-    "铃声列表的「系统默认」带上具体名字，并说明智慧铃声读不到",
-    "试听那行小字把「渐响进度」和音量分开，不再两个百分比并排"
+    "上一版只改了设置页的数字，首页和小组件走的是另一个入口",
+    "点完「这次不响」，倒计时和小组件立刻指向下一天",
+    "铃声列表的说明压成两行，不再把首项往下挤",
+    "首页翻月按钮和「设置」入口放大一点，好点"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.5/weekday-alarm-0.91.5.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.5"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.6/weekday-alarm-0.91.6.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.6"
 }

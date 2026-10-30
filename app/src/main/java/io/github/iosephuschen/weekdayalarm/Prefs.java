@@ -375,6 +375,28 @@ public final class Prefs {
     }
 
     /**
+     * 这条闹钟在 {@code d} 那天是不是被「这次不响」跳过（v0.91.8）。
+     *
+     * <p>给列表用：点完通知里那个按钮，行上得留个痕迹，否则用户会怀疑按钮没生效。
+     */
+    public static boolean isSkippedOn(Context c, int alarmId, LocalDate d) {
+        return getSkipOnce(c).contains(alarmId + ":" + d);
+    }
+
+    /**
+     * 只作废「那一天」的跳过标记（v0.91.8）。
+     *
+     * <p>和 {@link #clearSkipOnce} 的区别是粒度：那个按闹钟清全部（改时间、开关切换时用），
+     * 这个只清一天——列表里点「今天不响」四个字撤销时用，明天的标记不该被一起抹掉。
+     */
+    public static void removeSkipOnce(Context c, int alarmId, LocalDate d) {
+        Set<String> s = getSkipOnce(c);
+        if (s.remove(alarmId + ":" + d)) {
+            sp(c).edit().putStringSet(KEY_SKIP_ONCE, new HashSet<>(s)).apply();
+        }
+    }
+
+    /**
      * 作废某条闹钟的跳过标记（v0.87.6）。
      *
      * <p>两种情形要调它，共同点是「用户重新表达了意图，今天该响」：

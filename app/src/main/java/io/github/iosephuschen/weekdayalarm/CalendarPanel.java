@@ -178,28 +178,10 @@ final class CalendarPanel {
                     textColorRes = R.color.day_overtime_text;
                     label = "加班";
                 } else {
-                    // 法定节假日优先显示节日名（「国庆」而不是笼统的「假」），其次农历节日，
-                    // 最后才是「班/休/假」。都是 2 字，正好占同一格；底色仍表达上班/休息。
-                    // 调休补班日一律不覆盖——「补」比节日名更要紧，用户得知道那天要上班。
-                    String legal = (type == WeekSchedule.DayType.HOLIDAY)
-                            ? HolidayData.holidayName(d) : null;
-                    String fest = (lunar && type != WeekSchedule.DayType.MAKEUP_WORK)
-                            ? LunarCalendar.festival(d) : null;
-                    String term = (solarTerms && type != WeekSchedule.DayType.MAKEUP_WORK)
-                            ? SolarTerm.termOf(d) : null;
-                    String christ = (christian && type != WeekSchedule.DayType.MAKEUP_WORK)
-                            ? ChristianCalendar.festival(d) : null;
-                    if (legal != null) {
-                        label = legal;
-                    } else if (fest != null) {
-                        label = fest;
-                    } else if (term != null) {
-                        label = term;
-                    } else if (christ != null) {
-                        label = christ;
-                    } else {
-                        label = type.label;
-                    }
+                    // 节日 / 节气 / 班休的优先级只在 DayTag 里判一次（v0.91.8）：
+                    // 这段原来在这里和 MonthWidgetRender 各写一份，然后两边漂了——
+                    // 小部件少了节气、最后一级也没用 type.label，法定假变成「休」。
+                    label = DayTag.of(d, type, lunar, solarTerms, christian);
                     switch (type) {
                         case MAKEUP_WORK:
                             bgRes = R.drawable.bg_day_makeup;

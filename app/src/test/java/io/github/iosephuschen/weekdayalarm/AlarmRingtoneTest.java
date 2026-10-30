@@ -126,9 +126,13 @@ public class AlarmRingtoneTest {
     }
 
     @Test
-    public void rowText_followShowsSettingName() {
+    public void rowText_followIsFixedLabel() {
         Prefs.setRingtoneUri(ctx(), null);
-        assertEquals("跟随设置（系统默认）", AlarmEditor.ringtoneRowText(ctx(), null, false));
+        assertEquals("跟随全局设置", AlarmEditor.ringtoneRowText(ctx(), null, false));
+        // 全局选了具体铃声时也不许把名字拼进来：那一行只表达「交给设置」，
+        // 拼上名字会让人以为这条被单独设成了那个铃声
+        Prefs.setRingtoneUri(ctx(), Uri.parse(SOUND_B));
+        assertEquals("跟随全局设置", AlarmEditor.ringtoneRowText(ctx(), null, false));
     }
 
     @Test

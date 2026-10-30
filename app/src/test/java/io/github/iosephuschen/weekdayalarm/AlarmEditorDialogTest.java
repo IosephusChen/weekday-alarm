@@ -213,8 +213,10 @@ public class AlarmEditorDialogTest {
         AlertDialog d = openEditor(a, null, new ArrayList<>());
         TextView row = d.findViewById(R.id.tv_alarm_ringtone);
         assertNotNull("铃声行应在", row);
-        assertTrue("默认应显示跟随设置，实际：" + row.getText(),
-                row.getText().toString().startsWith("跟随设置"));
+        // v0.91.8：固定写「跟随全局设置」，不再拼接当前铃声名——
+        // 拼上「系统默认」之后和下面那一项一模一样，用户分不出两种状态
+        assertEquals("默认应显示跟随全局设置，实际：" + row.getText(),
+                "跟随全局设置", row.getText().toString());
     }
 
     /** 新建时不把当时的默认铃声抄成快照——否则以后改默认，这条不跟着变。 */

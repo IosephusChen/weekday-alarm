@@ -62,7 +62,9 @@
             android:paddingBottom="14dp">
 
             <!-- 三项：图 + 名字 + 用途。三张图宽高比不同（1.52 / 1.25 / 1.0），
-                 统一塞进 144×96dp 的框里 fitCenter，左边缘与文字起点因此对齐。 -->
+                 统一塞进 144×96dp 的框里 fitCenter，左边缘与文字起点因此对齐；
+                 v0.91.8 起框本身画了底板（bg_widget_preview），右边缘看着也不齐的问题
+                 就变成了「图在框里居中」，而不是「三张图大小不一」。 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -73,7 +75,9 @@
                 <ImageView
                     android:layout_width="144dp"
                     android:layout_height="96dp"
+                    android:background="@drawable/bg_widget_preview"
                     android:contentDescription="下次响铃预览"
+                    android:padding="6dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/widget_next_alarm_preview" />
 
@@ -113,7 +117,9 @@
                 <ImageView
                     android:layout_width="144dp"
                     android:layout_height="96dp"
+                    android:background="@drawable/bg_widget_preview"
                     android:contentDescription="整月班表预览"
+                    android:padding="6dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/widget_week_schedule_month_preview" />
 
@@ -153,7 +159,9 @@
                 <ImageView
                     android:layout_width="144dp"
                     android:layout_height="96dp"
+                    android:background="@drawable/bg_widget_preview"
                     android:contentDescription="紧凑月历预览"
+                    android:padding="6dp"
                     android:scaleType="fitCenter"
                     android:src="@drawable/widget_month_minimal_preview" />
 
@@ -177,7 +185,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
                         android:lineSpacingExtra="2dp"
-                        android:text="同一个月班表，格子更宽松，不占地方"
+                        android:text="同一个月班表，去掉底部统计行，更省桌面高度"
                         android:textColor="@color/sub"
                         android:textSize="11sp" />
                 </LinearLayout>

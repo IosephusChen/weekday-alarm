@@ -14,6 +14,7 @@ import android.widget.TextView;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,6 +44,14 @@ final class AlarmRowRenderer {
 
         /** 拨动右侧开关。 */
         void onToggle(Alarm a, boolean checked);
+
+        /**
+         * 点行里「今天不响」四个字：撤销这一天的跳过（v0.91.8）。
+         *
+         * <p>撤销入口原来只有「关掉再打开」和「改时间」两条，都绕。用户 2026-10-30
+         * 选了就地点击这一种。
+         */
+        void onUnskip(Alarm a, LocalDate day);
     }
 
     private final Activity activity;
@@ -137,13 +146,26 @@ final class AlarmRowRenderer {
             int titleColor = ContextCompat.getColor(activity,
                     a.enabled ? R.color.ink : R.color.sub);
 
+            // 被「这次不响」跳过的那一天（v0.91.8）。只认今天和明天——
+            // 更远的跳过还看不见摸不着，提前在列表里挂一句只会让人以为闹钟坏了。
+            final LocalDate today = LocalDate.now();
+            LocalDate skipDay = null;
+            if (a.enabled) {
+                if (Prefs.isSkippedOn(activity, a.id, today)) skipDay = today;
+                else if (Prefs.isSkippedOn(activity, a.id, today.plusDays(1))) skipDay = today.plusDays(1);
+            }
+
             // 左侧：时间大字，是这一行的主视觉。
             // 用 sans-serif-medium 而不是 BOLD：粗体在小字号上糊成一团，中等字重反而更清晰。
             TextView time = new TextView(activity);
             time.setText(a.timeText());
             // v0.74.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
             // 「灰不灰」这一个维度表达有没有开就够了
-            time.setTextColor(titleColor);
+            //
+            // v0.91.8：跳过的那一天也降成灰的。这一行的「不响」是临时的，
+            // 时间灰掉正好表达「这次弱化」，而名称仍是深色——整行不塌成灰色。
+            time.setTextColor(skipDay != null
+                    ? ContextCompat.getColor(activity, R.color.sub) : titleColor);
             time.setTextSize(26);
             time.setTypeface(TYPEFACE_MEDIUM);
             // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准
@@ -202,7 +224,37 @@ final class AlarmRowRenderer {
             rule.setPadding(0, (int) (1 * density), 0, 0);
 
             mid.addView(name);
-            mid.addView(rule);
+            // 被「这次不响」跳过的行要留下痕迹（v0.91.8）。
+            // 原来点完通知里那个按钮，列表里那条闹钟一点变化都没有——用户会怀疑
+            // 按钮是不是没生效，第二天没响又会觉得 App 漏了。
+            // 参照澎湃系统闹钟的做法取两条：时间大字变灰、规则后面接一句说明；
+            // 开关<b>不动</b>——我们的开关是长期开关，画成关会让人以为整条被关了。
+            if (skipDay != null) {
+                final LocalDate unskipDay = skipDay;
+                LinearLayout ruleLine = new LinearLayout(activity);
+                ruleLine.setOrientation(LinearLayout.HORIZONTAL);
+                ruleLine.setGravity(Gravity.CENTER_VERTICAL);
+                ruleLine.addView(rule);
+                TextView sep = new TextView(activity);
+                sep.setText(" · ");
+                sep.setTextColor(ContextCompat.getColor(activity, R.color.sub));
+                sep.setTextSize(12);
+                ruleLine.addView(sep);
+                TextView unskip = new TextView(activity);
+                unskip.setText(skipDay.equals(today) ? "今天不响" : "明天不响");
+                unskip.setTextColor(ContextCompat.getColor(activity, R.color.indigo));
+                unskip.setTextSize(12);
+                unskip.setTypeface(TYPEFACE_MEDIUM);
+                unskip.setIncludeFontPadding(false);
+                unskip.setPadding(0, (int) (2 * density), 0, (int) (4 * density));
+                unskip.setBackgroundResource(ripple.resourceId);
+                unskip.setClickable(true);
+                unskip.setOnClickListener(v -> host.onUnskip(a, unskipDay));
+                ruleLine.addView(unskip);
+                mid.addView(ruleLine);
+            } else {
+                mid.addView(rule);
+            }
 
             // 右侧：该闹钟的独立开关。
             // 注意：开关必须可点击（clickable=true）——Android 事件分发中，可点击子 View

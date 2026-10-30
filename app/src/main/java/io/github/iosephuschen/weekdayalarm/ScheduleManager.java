@@ -158,6 +158,28 @@ public final class ScheduleManager {
     }
 
     /**
+     * 作废这条闹钟所有还没兑现的小睡（v0.91.8）。
+     *
+     * <p>起因是真机上的一次复现：A 设 12:36 → 响铃 → 点「稍后提醒」（排下 12:41）→
+     * 把 A 改成 12:38。结果通知栏同时挂着「12:41 再次响铃」和「即将响铃 12:38」，
+     * 12:38 响的时候全屏页还写着「还能睡 2 次」（沿用上一轮的计数）。
+     *
+     * <p>讲到底就一句：<b>用户重新安排了时间，上一轮作废</b>。小睡、计数、那条告知性的
+     * 通知都是「上一轮」的残留，留着任何一个，用户看到的都和他刚做的决定矛盾。
+     *
+     * <p>清今天和明天两天：小睡可能跨零点（23:58 按「稍后提醒」排到 00:03）。
+     * 不碰别的东西——主闹钟与提前提醒由 {@link #rescheduleAll} 负责重排。
+     */
+    public static void dropSnooze(Context ctx, int alarmId) {
+        LocalDate today = LocalDate.now();
+        cancelSnooze(ctx, alarmId, today);
+        cancelSnooze(ctx, alarmId, today.plusDays(1));
+        Prefs.clearSnoozeCount(ctx, alarmId, today);
+        Prefs.clearSnoozeCount(ctx, alarmId, today.plusDays(1));
+        SnoozeNotice.cancel(ctx, alarmId);
+    }
+
+    /**
      * 是否还能再「稍后提醒」：次数不限（{@link Prefs#SNOOZE_UNLIMITED}）或当前已用次数 <
      * 上限时返回 true。通知栏小睡按钮与 AlarmService 共用此判断，避免两处逻辑漂移（v0.17.1）。
      */

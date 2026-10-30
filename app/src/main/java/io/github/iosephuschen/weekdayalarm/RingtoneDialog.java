@@ -315,7 +315,19 @@ public final class RingtoneDialog {
         dialog.show();
     }
 
-    /** 试听：先把上一个停掉，再播新的。 */
+    /**
+     * 试听：先把上一个停掉，再播新的。
+     *
+     * <p><b>走闹钟流</b>（v0.91.8）：{@code Ringtone.play()} 不带 AudioAttributes 时
+     * 落在 {@code STREAM_RING}，而正式响铃（{@link AlarmService}）和系统铃声选择器
+     * 都在 {@code STREAM_ALARM}。两条流各有各的音量档位，同一首铃声听起来一大一小，
+     * 更麻烦的是<b>试听听到的音量代表不了真正响起来时的大小</b>——用户照试听调到
+     * 合适，第二天早上可能被震醒，或者根本听不见。指定 USAGE_ALARM 之后三处一致，
+     * 调闹钟音量就能统一影响它们。
+     *
+     * <p>试听<b>不加渐响</b>：30 秒的曲线放进三秒的点击试听里只能听到开头的 1%，
+     * 等于没声音。渐响只在引导页那张「试听响铃」卡片里做，那张模拟的是一次完整响铃。
+     */
     private static void preview(Activity activity, Uri uri, Ringtone[] playing,
                                 int[] playingIdx, int idx, View[] rows) {
         stop(playing[0]);
@@ -324,10 +336,14 @@ public final class RingtoneDialog {
             // 把上一个的「试听中…」擦掉
             DialogKit.setOptionSub(rows[playingIdx[0]], null);
         }
-        if (uri == null) return;    // 「跟随设置」没有自己的声音可试听
+        if (uri == null) return;    // 「跟随全局设置」没有自己的声音可试听
         try {
             Ringtone r = RingtoneManager.getRingtone(activity, uri);
             if (r == null) return;
+            r.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
             r.play();
             playing[0] = r;
             playingIdx[0] = idx;

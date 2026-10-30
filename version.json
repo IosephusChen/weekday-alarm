@@ -1,14 +1,14 @@
 {
-  "versionCode": 232,
-  "versionName": "0.91.7",
+  "versionCode": 233,
+  "versionName": "0.91.8",
   "published": "2026-10-30",
-  "title": "铃声列表不再滚丢标题，小部件有了去处",
+  "title": "桌面小部件和日历页终于说同一句话",
   "notes": [
-    "铃声列表的标题钉在顶上，滚到底也看得见自己在选什么",
-    "列表中间多一行「内置铃声 · N 个」，不用猜底下还有几条",
-    "末尾可以走系统选择器，把自己手机里的音乐设成闹钟",
-    "引导末页和设置页都能看到三个桌面小部件长什么样"
+    "小部件里法定假写「假」、补班写「补」，节气也跟着日历页显示",
+    "改闹钟时间会把上一轮的「稍后提醒」一并作废，不再同时挂两条通知",
+    "点过「这次不响」的那一行会写出来，点一下就能撤销",
+    "试听走闹钟音量，和真正响起来时大小一致"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.7/weekday-alarm-0.91.7.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.7"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v0.91.8/weekday-alarm-0.91.8.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v0.91.8"
 }

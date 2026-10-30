@@ -1,6 +1,7 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -238,9 +239,13 @@ public class NotifCardTest {
      * 点「5 分钟后再响」之后，通知栏必须留一条「稍后再响」。
      *
      * <p>原来服务一停、通知一撤，栏里就空了：用户看不到它到底还响不响、什么时候响。
+     *
+     * <p>v0.91.8 起副标题只写绝对时刻，那个紫色倒计时也不画了：
+     * 「5 分钟后」从发出去那一刻就开始过期，而刷新它要挂每分钟一次的 AlarmManager，
+     * 为半小时的窗口不划算；倒计时的位置则由「12:36 再次响铃」这句担起来。
      */
     @Test
-    public void snooze_leavesNoticeWithCountdown() {
+    public void snooze_leavesNoticeWithAbsoluteTime() {
         enableDailyAlarm();
         Prefs.setSnoozeMinutes(ctx(), 5);
         Robolectric.buildService(AlarmService.class,
@@ -256,12 +261,12 @@ public class NotifCardTest {
         View root = card(n);
         assertTrue("标题应说清是谁、要再响", text(root, R.id.nc_title).contains("稍后再响"));
         assertEquals("应有一个「取消」", "取消", text(root, R.id.nc_action2));
-        assertEquals("要有倒计时", View.VISIBLE, root.findViewById(R.id.nc_chrono).getVisibility());
 
-        long remaining = ((android.widget.Chronometer) root.findViewById(R.id.nc_chrono)).getBase()
-                - SystemClock.elapsedRealtime();
-        assertTrue("倒计时应在 5 分钟左右，实际 " + remaining / 1000 + " 秒",
-                remaining > 3 * 60_000L && remaining < 6 * 60_000L);
+        String line = text(root, R.id.nc_text);
+        assertTrue("副标题应写绝对时刻，实际：" + line, line.matches("\\d{1,2}:\\d{2} 再次响铃"));
+        assertFalse("「N 分钟后」会过时，不许回来：" + line, line.contains("分钟后"));
+        assertEquals("倒计时圈不再画", View.GONE,
+                root.findViewById(R.id.nc_chrono).getVisibility());
     }
 
     /** 真的响起来时，那条预告要撤掉，否则栏里两条同时在。 */

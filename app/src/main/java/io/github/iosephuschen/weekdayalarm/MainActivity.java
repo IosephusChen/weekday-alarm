@@ -90,6 +90,16 @@ public class MainActivity extends AppCompatActivity {
             public void onToggle(Alarm a, boolean checked) {
                 toggleAlarm(a, checked);
             }
+
+            @Override
+            public void onUnskip(Alarm a, LocalDate day) {
+                // v0.91.8：点「今天不响」四个字撤销那一天。
+                // 只清这一天，不动别的日期——用户反悔的是「这一次」。
+                Prefs.removeSkipOnce(MainActivity.this, a.id, day);
+                applyAlarmChange();
+                String when = day.equals(LocalDate.now()) ? "今天" : "明天";
+                Toast.makeText(MainActivity.this, when + "恢复响铃", Toast.LENGTH_SHORT).show();
+            }
         });
 
         // v0.48.1：日历回到首页、默认展开。面板自己找容器里的子 View，主界面只提供

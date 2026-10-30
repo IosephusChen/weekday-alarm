@@ -72,10 +72,16 @@ final class SnoozeNotice {
 
         long triggerAt = at.atZone(java.time.ZoneId.systemDefault())
                 .toInstant().toEpochMilli();
+        // 副标题只写绝对时刻（v0.91.8）。原来写「5 分钟后 · 12:36 再次响铃」，
+        // 而「5 分钟后」从发出去那一刻就开始过期：用户点完过三分钟再看，它还写着
+        // 「5 分钟后」，像卡住了。刷新它要挂一个每分钟触发的 AlarmManager——
+        // 小睡最多半小时，为这半小时每分钟唤醒一次不划算，国产 ROM 还会限流。
+        // 12:36 这个绝对时刻永远准确，两个信息并排时用户读的本来也是它。
+        String line = clock + " 再次响铃";
         Notification.Builder nb = new Notification.Builder(ctx, App.CHANNEL_SNOOZE)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(name + " 稍后再响")
-                .setContentText(mins + " 分钟后 · " + clock + " 再次响铃")
+                .setContentText(line)
                 .setContentIntent(openPi)
                 // v0.89.6：恢复 setColor，理由同另外三条——染色交给系统，
                 // 自绘底只能铺满内容区，外围那圈会露出系统卡片色
@@ -89,8 +95,11 @@ final class SnoozeNotice {
                 .setOnlyAlertOnce(true)
                 .setWhen(triggerAt)
                 .setShowWhen(true)
-                .setCustomContentView(NotifCard.build(ctx, name + " 稍后再响",
-                        mins + " 分钟后 · " + clock + " 再次响铃", triggerAt, openPi,
+                // 第 4 个参数是倒计时终点，传 0 = 不画那个紫色圈（v0.91.8）。
+                // 它占着一块位置显示「04:00」，而标题和副标题已经把「几点再响」
+                // 说清楚了；澎湃的系统闹钟在这条通知上也不带倒计时。
+                // setWhen 保留：自定义视图下不显示，但它决定这条通知在通知栏里的排序。
+                .setCustomContentView(NotifCard.build(ctx, name + " 稍后再响", line, 0, openPi,
                         NotifCard.Button.secondary("取消", cancelPi)));
         try {
             NotificationManagerCompat.from(ctx).notify(id(alarmId), nb.build());

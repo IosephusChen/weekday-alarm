@@ -98,11 +98,22 @@ public final class SystemRingtonePicker {
      * <p>用 {@code openAssetFileDescriptor} 而不是 {@code openInputStream}：
      * 前者对需要定位的音频（播放器要 seek）同样成立，且能直接拿到长度。
      * 在线资源在这里必然失败，而那正是要拦下的那类。
+     *
+     * <p><b>别名要另眼看待</b>（v0.91.8）：系统选择器返回「默认闹钟铃声」时给的是
+     * {@code content://settings/system/alarm_alert}，这是 SettingsProvider 里的一条
+     * 设置值，不是文件，没有文件句柄——照上面那套试开必然抛异常。可它又能真的播：
+     * 播放链会先把别名解析成真正的铃声文件（0.91.3 处理过同一件事）。
+     * 所以 {@code settings} 这个 authority 直接放行，让播放链自己去解析。
+     * 判据只认 authority，不认具体路径——用户机器上那条别名指向哪个文件，只有
+     * 播放的时候才知道。
      */
     private static boolean readable(Context c, Uri uri) {
         if ("http".equalsIgnoreCase(uri.getScheme())
                 || "https".equalsIgnoreCase(uri.getScheme())) {
             return false;
+        }
+        if ("settings".equals(uri.getAuthority())) {
+            return true;
         }
         AssetFileDescriptor fd = null;
         try {

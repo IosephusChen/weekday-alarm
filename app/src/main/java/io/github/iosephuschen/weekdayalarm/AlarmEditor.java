@@ -77,7 +77,11 @@ final class AlarmEditor {
         // 静音是叠加在原铃声之上的状态（v0.90.0）：选了静音不清掉原来的 Uri，
         // 取消静音就能回到上次那条铃声，而不是被扔回「跟随设置」
         final boolean[] silent = {target != null && target.silent};
-        final String followLabel = "跟随设置（" + settingRingtoneName(activity) + "）";
+        // v0.91.8：固定写「跟随全局设置」，不再拼接当前铃声名。
+        // 拼接时设置页选的若是「系统默认」，这里会长成「跟随设置（系统默认）」，
+        // 而列表下一项就叫「系统默认」——两行看着一模一样，用户没法分辨
+        // 「跟着设置变」和「固定用系统默认」的区别。
+        final String followLabel = "跟随全局设置";
         tvRingtone.setText(ringtoneRowText(activity, ring[0], silent[0]));
         tvRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], silent[0],
                 followLabel, (uri, kind) -> {
@@ -203,8 +207,24 @@ final class AlarmEditor {
                         // 铃声不属于「改完就开」那套业务规则，直接写字段即可
                         target.ringtone = ringtoneString(ring[0]);
                         target.silent = silent[0];
+                        // v0.91.8：改了时间就把这一轮的小睡、计数、那条「N 分钟后再次响铃」
+                        // 通知一起作废。原来一样都不清，于是真机上出现了：通知栏同时挂着
+                        // 「12:41 再次响铃」和「即将响铃 12:38」，12:38 响的时候全屏页
+                        // 还显示「还能睡 2 次」（沿用上一轮用掉的那一格）。
+                        // 用户刚说完「我要 12:38 响」，上一轮的残留全都在跟他唱反调。
+                        //
+                        // 只在真正改了「什么时候响」时清：只换铃声不该顺手掐掉正在等的小睡。
+                        int oldHour = target.hour;
+                        int oldMinute = target.minute;
+                        Alarm.Mode oldMode = target.mode;
+                        String oldOnce = target.onceDate;
                         String tip = applyEdit(activity, target, hour[0], minute[0],
                                 label, mode, onceStr);
+                        if (oldHour != target.hour || oldMinute != target.minute
+                                || oldMode != target.mode
+                                || !java.util.Objects.equals(oldOnce, target.onceDate)) {
+                            ScheduleManager.dropSnooze(activity, target.id);
+                        }
                         if (tip != null) {
                             Toast.makeText(activity, tip, Toast.LENGTH_LONG).show();
                         }
@@ -278,25 +298,23 @@ final class AlarmEditor {
         return uri == null ? null : uri.toString();
     }
 
-    /** 设置页那套默认铃声的名字；没设就是「系统默认」。 */
-    static String settingRingtoneName(android.content.Context ctx) {
-        Uri u = Prefs.getRingtoneUri(ctx);
-        return u == null ? "系统默认" : ringtoneName(ctx, u);
-    }
-
     /**
      * 编辑器里「铃声」那一行显示什么。
      *
-     * <p>四种情况：静音 / 跟随设置 / 正常铃声 / 原铃声已不可用。最后一种必须说出来——
+     * <p>四种情况：静音 / 跟随全局 / 正常铃声 / 原铃声已不可用。最后一种必须说出来——
      * 换设备后 URI 对不上是最常见的，播放会回落默认，但用户如果只看到
      * 「已选铃声」会以为自己的设置还生效着。
      *
      * <p>静音优先于其余三种（v0.90.0）：静音的闹钟可能还留着上次选的 Uri，
      * 但此刻它不会响，写成铃声名是在骗人。
+     *
+     * <p>「跟随全局」不再带括号里的名字（v0.91.8）：拼接时若全局正选着「系统默认」，
+     * 这一行会写成「跟随设置（系统默认）」，和对话框里那个真正的「系统默认」项
+     * 几乎一模一样。全局是哪个，设置页看得见，这里不重复。
      */
     static String ringtoneRowText(android.content.Context ctx, Uri per, boolean silent) {
         if (silent) return "静音";
-        if (per == null) return "跟随设置（" + settingRingtoneName(ctx) + "）";
+        if (per == null) return "跟随全局设置";
         if (!ringtoneAvailable(ctx, per)) return "原铃声不可用，将用默认";
         return ringtoneName(ctx, per);
     }

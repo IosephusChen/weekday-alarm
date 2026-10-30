@@ -81,7 +81,39 @@ public class MonthWidgetTest {
         MonthWidgetRender.Model m = oct2026();
         assertEquals("1", m.nums[3]);
         assertEquals("国庆", m.tags[3]);
-        assertEquals("国庆那天仍按休息着色", 0xFFC9C4FF, m.colors[3]);
+        assertEquals("国庆那天仍按休息着色", 0xFFA9A1E6, m.colors[3]);
+    }
+
+    /**
+     * 没有具体名字的法定假，格子里必须写「假」而不是「休」（v0.91.8）。
+     *
+     * <p>这是用户 2026-10-30 对着桌面小部件截图报的问题：10/2 到 10/7 全写「休」，
+     * 和 10/11、10/18 那些普通周末长得一模一样，扫一眼桌面会以为这个月只有 1 号特殊。
+     *
+     * <p>根因是这里少走了一步：原来只有「有节日名」时才换字，没名字就落到
+     * {@code work ? "班" : "休"}，而 {@link WeekSchedule.DayType#HOLIDAY} 自带的
+     * 「假」从来没被用过。现在两边一起走 {@link DayTag}。
+     */
+    @Test
+    public void holidayWithoutName_writesHolidayNotRest() {
+        MonthWidgetRender.Model m = oct2026();
+        assertEquals("2", m.nums[4]);
+        assertEquals("法定假没有名字时也该写「假」", "假", m.tags[4]);
+        assertEquals("3", m.nums[5]);
+        assertEquals("假", m.tags[5]);
+    }
+
+    /**
+     * 调休补班要写「补」，不是「班」（v0.91.8）。
+     *
+     * <p>2026-10-10 是补班日。原来小部件写「班」，和普通工作日没差别——
+     * 用户看不出「这天本来该休，是被调过来上班的」。
+     */
+    @Test
+    public void makeupWorkDay_writesMakeupNotWork() {
+        MonthWidgetRender.Model m = oct2026();
+        assertEquals("10", m.nums[12]);
+        assertEquals("补班日应写「补」", "补", m.tags[12]);
     }
 
     /**

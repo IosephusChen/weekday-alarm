@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -160,5 +161,54 @@ public class SkipOnceDisplayTest {
         assertFalse("点完「这次不响」，首页不能还写着明天那一趟：「" + after + "」",
                 after.contains("明天 09:00"));
         assertTrue("跳过明天，下次就该是后天：「" + after + "」", after.contains("后天 09:00"));
+    }
+
+    /**
+     * 被跳过的那一行要留下痕迹，点那四个字能撤销（v0.91.8）。
+     *
+     * <p>用户 2026-10-30：点完通知里的「这次不响」，列表里那条闹钟<b>一点变化都没有</b>
+     * （原话「文案上没有任何变化」），会怀疑按钮没生效。功能是对的，只是界面没回声。
+     *
+     * <p>撤销入口原来只有「关掉再打开」和「改时间」两条，都绕。现在点「明天不响」即可，
+     * 而且只清那一天——明天的标记不该顺手把后天的也抹了。
+     */
+    @Test
+    public void row_showsSkippedHintAndTapRestores() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        Alarm a = new Alarm(1, 9, 0, "起床", Alarm.Mode.DAILY, true);
+        Prefs.setAlarms(ctx(), Collections.singletonList(a));
+
+        ActivityController<MainActivity> c = Robolectric.buildActivity(MainActivity.class).setup();
+        MainActivity act = c.get();
+        assertNull("前提：没跳过的行不该出现这句",
+                findText(act.findViewById(R.id.alarm_list), "明天不响"));
+
+        Prefs.addSkipOnce(ctx(), 1, tomorrow);
+        c.pause().resume();
+
+        TextView chip = findText(act.findViewById(R.id.alarm_list), "明天不响");
+        assertNotNull("跳过的行必须写明「明天不响」，否则用户看不出按钮生效没有", chip);
+
+        chip.performClick();
+        org.robolectric.shadows.ShadowLooper.idleMainLooper();
+
+        assertFalse("点一下就恢复，标记该没了",
+                Prefs.isSkippedOn(ctx(), 1, tomorrow));
+    }
+
+    /** 在整棵树里找文字正好是 {@code want} 的 TextView。 */
+    private static TextView findText(android.view.View root, String want) {
+        if (root instanceof TextView) {
+            CharSequence t = ((TextView) root).getText();
+            if (t != null && want.contentEquals(t)) return (TextView) root;
+        }
+        if (root instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                TextView hit = findText(g.getChildAt(i), want);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
     }
 }

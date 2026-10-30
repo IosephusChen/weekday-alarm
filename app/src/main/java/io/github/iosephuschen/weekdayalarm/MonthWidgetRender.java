@@ -72,7 +72,14 @@ final class MonthWidgetRender {
      * 在深色模式下会亮一档，搬过来反而不对。
      */
     private static final int C_WORK = 0xFFFFFFFF;
-    private static final int C_REST = 0xFFC9C4FF;
+    /**
+     * 休息日的字色（v0.91.8 从 {@code C9C4FF} 压暗到 {@code A9A1E6}）。
+     *
+     * <p>节气和小部件统一之后（见 {@link DayTag}），节气日不再写「班/休」，
+     * 上班与否只剩文字色这一个标识。原来的浅紫和纯白在 8.5sp 下差别太弱，
+     * 早上扫一眼分不出哪列是周末。压暗一档后仍能读，但与工作日拉开了距离。
+     */
+    private static final int C_REST = 0xFFA9A1E6;
     private static final int C_LEAVE = 0xFFFFD166;
     private static final int C_OT = 0xFF7DD3A8;
 
@@ -124,6 +131,10 @@ final class MonthWidgetRender {
         int len = ym.lengthOfMonth();
 
         int workDays = 0;
+        // 三个节日开关每次渲染读一次，别放进 42 个格子的循环里
+        boolean lunarOn = Prefs.isLunarFestivals(ctx);
+        boolean termsOn = Prefs.isSolarTerms(ctx);
+        boolean christOn = Prefs.isChristianFestivals(ctx);
         for (int i = 0; i < CELLS; i++) {
             int day = i - lead + 1;
             if (day < 1 || day > len) {
@@ -158,22 +169,11 @@ final class MonthWidgetRender {
                 m.tags[i] = "加";
                 m.colors[i] = C_OT;
             } else {
-                String legal = type == WeekSchedule.DayType.HOLIDAY
-                        ? HolidayData.holidayName(d) : null;
-                String lunar = (Prefs.isLunarFestivals(ctx) && type != WeekSchedule.DayType.MAKEUP_WORK)
-                        ? LunarCalendar.festival(d) : null;
-                // 节气不进小部件格子（v0.73.0）。
-                // 原来它排在农历节日之后、基督教之前，于是「霜降」会顶掉「班 / 休」——
-                // 格子上看不出那天上不上班，只能靠颜色猜。节气是知识性信息、一整天都不着急看，
-                // 上班与否是决策性信息，两者不该抢同一个位置。
-                // 节气仍在 App 内日历（CalendarPanel）和首页今日信息里显示。
-                String christian = (Prefs.isChristianFestivals(ctx)
-                        && type != WeekSchedule.DayType.MAKEUP_WORK)
-                        ? ChristianCalendar.festival(d) : null;
-                if (legal != null) m.tags[i] = legal;
-                else if (lunar != null) m.tags[i] = lunar;
-                else if (christian != null) m.tags[i] = christian;
-                else m.tags[i] = work ? "班" : "休";
+                // 与日历页共用同一个判断（v0.91.8）。之前这里少了两层：
+                // ① 没节气；② 最后一级自己写 work ? "班" : "休"，没走 DayType.label——
+                // 于是法定假「假」变成了「休」，和普通周末看不出区别，
+                // 补班日「补」变成「班」。用户 2026-10-30 对着桌面截图问了这件事。
+                m.tags[i] = DayTag.of(d, type, lunarOn, termsOn, christOn);
             }
             m.today[i] = d.equals(today);
         }

@@ -195,6 +195,14 @@ public class AlarmService extends Service {
         // v0.53.1：真的响了，那条「N 分钟后再次响铃」的预告就该撤——留着会变成
         // 两条同时在栏里，用户分不清哪条是现在响的
         SnoozeNotice.cancel(this, currentAlarmId);
+        // v0.91.8：响了就说明这一轮结束了，之前排下的那趟小睡不该再补一次。
+        // 真机上出现过「改时间后旧小睡还挂着」的场景，而这里原来一处清理都没有——
+        // 它没响只是 ROM 恰好压住了，不能靠运气。
+        // 只取消排程，<b>不动计数</b>：这次响铃本身可能就是小睡触发的，
+        // 清计数等于把用掉的次数还回去，用户可以无限续睡。
+        LocalDate ringDay = LocalDate.now();
+        ScheduleManager.cancelSnooze(this, currentAlarmId, ringDay);
+        ScheduleManager.cancelSnooze(this, currentAlarmId, ringDay.plusDays(1));
         // v0.58.8：响铃＝这一夜结束，昨晚那条「明天 07:30 起床」已经兑现，留着就是废话
         BedtimeReminder.cancelNotice(this);
         ringDate = parseDate(dateStr);

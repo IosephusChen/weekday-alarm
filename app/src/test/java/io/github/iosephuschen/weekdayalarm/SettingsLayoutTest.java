@@ -293,7 +293,8 @@ public class SettingsLayoutTest {
         MoreSettingsActivity a = ctl.get();
 
         String all = collectText(a.getWindow().getDecorView());
-        assertTrue("应有「排班与显示」", all.contains("排班与显示"));
+        assertTrue("应有「日历与范围」——v1.0.0 从「排班与显示」改来，那一组三项里只有提醒范围沾排班",
+                all.contains("日历与范围"));
         assertTrue("应有「帮助与关于」", all.contains("帮助与关于"));
         assertTrue("应有「数据与桌面」", all.contains("数据与桌面"));
         assertFalse("「检查与帮助」只剩两项对得上，v0.82.0 已改", all.contains("检查与帮助"));
@@ -310,7 +311,7 @@ public class SettingsLayoutTest {
     /**
      * 主页四个分组名（v0.82.0 起，v0.82.1 定稿）。
      *
-     * <p>定稿：「响铃 / 排班与节假日 / 提醒 / 更多」。只改了两处口径——
+     * <p>定稿：「响铃 / 周休与节假日 / 提醒 / 更多」。只改了两处口径——
      * 「闹钟」这一组装的都是响铃时的样子（音量 / 铃声 / 时长），不是「闹钟」这个对象；
      * 「其他」里只有一项，等于没分类。
      *
@@ -323,7 +324,8 @@ public class SettingsLayoutTest {
         String all = collectText(ctl.get().getWindow().getDecorView());
 
         assertTrue("应有「响铃」组", all.contains("\n响铃\n"));
-        assertTrue("应有「排班与节假日」组", all.contains("\n排班与节假日\n"));
+        assertTrue("应有「周休与节假日」组——v1.0.0 从「排班与节假日」改来，两个子项正好是周休制度与节假日",
+                all.contains("\n周休与节假日\n"));
         assertTrue("应有「提醒」组", all.contains("\n提醒\n"));
         assertFalse("「闹钟」这一组装的是响铃时的样子，已改名", all.contains("\n闹钟\n"));
         assertFalse("「其他」等于没分类，已改成「更多」", all.contains("\n其他\n"));

@@ -39,7 +39,11 @@ public class MoreSettingsActivity extends SettingsActivity {
         boolean ring = SECTION_RING.equals(getIntent().getStringExtra(EXTRA_SECTION));
         findViewById(R.id.sec_ring).setVisibility(ring ? View.VISIBLE : View.GONE);
         findViewById(R.id.sec_all).setVisibility(ring ? View.GONE : View.VISIBLE);
-        ((TextView) findViewById(R.id.tv_title)).setText(ring ? "更多响铃设置" : "更多设置");
+        // v1.0.0：标题改成读字符串资源，不再硬编码。原来两处写死「更多响铃设置」
+        // 「更多设置」，改主页门牌时这两处最容易被漏掉——漏了就变成一个页面两个名字。
+        ((TextView) findViewById(R.id.tv_title)).setText(ring
+                ? getString(R.string.settings_more_ring_title)
+                : getString(R.string.settings_more_title));
         // v0.85.5：这里原来会往「更新日志」行右侧写「v当前版本」。删了——
         // 主页最底部已有「版本 x.y.z (versionCode)」，同一屏出现两次同一串数字，
         // 第二次不增加任何信息；而且那一行是动作入口，右侧该写「查看」。

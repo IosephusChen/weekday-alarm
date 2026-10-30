@@ -63,7 +63,7 @@
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/space_8"
+            android:layout_marginBottom="@dimen/space_6"
             android:text="@string/settings_section_alarm" />
 
         <LinearLayout
@@ -219,8 +219,8 @@
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_10"
-            android:layout_marginBottom="@dimen/space_8"
+            android:layout_marginTop="@dimen/space_16"
+            android:layout_marginBottom="@dimen/space_6"
             android:text="@string/settings_section_schedule" />
 
         <LinearLayout
@@ -300,8 +300,6 @@
 
                             <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
-
-                        <View style="@style/SettingsDivider" />
         </LinearLayout>
 
         <!-- ===== 提醒 ===== -->
@@ -309,8 +307,8 @@
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_10"
-            android:layout_marginBottom="@dimen/space_8"
+            android:layout_marginTop="@dimen/space_16"
+            android:layout_marginBottom="@dimen/space_6"
             android:text="@string/settings_section_remind" />
 
         <LinearLayout
@@ -463,8 +461,8 @@
             style="@style/SectionTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_10"
-            android:layout_marginBottom="@dimen/space_8"
+            android:layout_marginTop="@dimen/space_16"
+            android:layout_marginBottom="@dimen/space_6"
             android:text="@string/settings_section_other" />
 
         <LinearLayout
@@ -496,12 +494,6 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/settings_more_title" />
-
-                <TextView
-                    style="@style/SettingsSummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_more_summary" />
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>

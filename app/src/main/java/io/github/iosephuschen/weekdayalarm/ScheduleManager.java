@@ -49,6 +49,23 @@ public final class ScheduleManager {
 
     private static final int REQUEST_BASE = 100000;   // 每个闹钟占 10 万个 requestCode 位
 
+    /**
+     * alarmId 的安全上限（v1.0.0）：21474 是 int 能装下的最大乘积。
+     *
+     * <p>{@code alarmId * REQUEST_BASE + 段偏移 + 日偏移} 全在 int 里算，段与日偏移
+     * 最大 98999，所以 alarmId 越过这条线就会溢出成<b>负数</b>。负数同样是合法的
+     * requestCode，会与别的实例撞上：取消 A 的时候连 B 一起取消，症状是「某天的闹钟
+     * 莫名不响」，事后极难查——它不报错、不崩，只是少了一次。
+     *
+     * <p>触发条件是「累计建过两万多个闹钟」：id 只增不减，删掉的也不回收。正常使用
+     * 到不了，但这是算得出来的边界，不该靠「到不了」兜着。
+     *
+     * <p><b>为什么不换个编码</b>：PendingIntent 靠 requestCode 匹配，用户设备上已经
+     * 排进系统的闹钟是用旧编码登记的。改编码等于升级后一律取消不掉，旧闹钟会和新闹钟
+     * 一起响——修一个问题换来一个更难查的问题。
+     */
+    private static final int MAX_SAFE_ALARM_ID = (Integer.MAX_VALUE - REQUEST_BASE) / REQUEST_BASE;
+
     /** 主闹钟广播的 action。单独提出来，因为升级清理时要按同一个字符串重建 PendingIntent。 */
     static final String ACTION_ALARM = "io.github.iosephuschen.weekdayalarm.ALARM";
 
@@ -78,6 +95,26 @@ public final class ScheduleManager {
     private static final int SEG_AUTOSTOP = 90000;
 
     private ScheduleManager() {
+    }
+
+    /**
+     * 一个待排程的响铃实例：哪条闹钟、哪一刻响（v1.0.0）。
+     *
+     * <p>原来是 {@code Object[]{Alarm, LocalDateTime}}，取值全靠 {@code (Alarm) c[0]}。
+     * 那种写法把两个不相关类型塞进同一个容器，编译器一句话都不说：下标写反、强转写错、
+     * 往列表里塞别的东西，全要等运行到那一行才知道，而且往往只在「某个特定闹钟 + 某个
+     * 特定日期」时才会走到。改成字段之后，写错就编译不过。
+     *
+     * <p>字段不可变：这个列表排好序就只读，没有任何一处就地改某个实例。
+     */
+    private static final class Instance {
+        final Alarm alarm;
+        final LocalDateTime when;
+
+        Instance(Alarm alarm, LocalDateTime when) {
+            this.alarm = alarm;
+            this.when = when;
+        }
     }
 
     /**
@@ -118,7 +155,13 @@ public final class ScheduleManager {
         return requestCode(alarmId, d, SEG_MAIN);
     }
 
-    private static int requestCode(int alarmId, LocalDate d, int segment) {
+    /** 包内可见是为了让测试能直接喂越界的 alarmId（v1.0.0），别的地方用带默认段的重载。 */
+    static int requestCode(int alarmId, LocalDate d, int segment) {
+        // 折回而不是抛异常：真要撞号，正数区间至少能靠「哪两个闹钟同号」倒查；
+        // 溢出的负数会和系统里别人的 requestCode 混在一起，查都没法查。
+        if (alarmId < 0 || alarmId > MAX_SAFE_ALARM_ID) {
+            alarmId = Math.floorMod(alarmId, MAX_SAFE_ALARM_ID);
+        }
         return alarmId * REQUEST_BASE + segment + dateSlot(d);
     }
 
@@ -655,7 +698,7 @@ public final class ScheduleManager {
         Set<LocalDate> overtimes = Prefs.getOvertimeDates(ctx);
 
         // 收集候选：[0]=Alarm [1]=触发时刻；按时间排序保证最近的优先注册
-        List<Object[]> candidates = new ArrayList<>();
+        List<Instance> candidates = new ArrayList<>();
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
@@ -671,10 +714,10 @@ public final class ScheduleManager {
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 LocalDateTime when = LocalDateTime.of(d, alarmTime);
                 if (!when.isAfter(now)) continue;   // 今天已过点就跳过
-                candidates.add(new Object[]{a, when});
+                candidates.add(new Instance(a, when));
             }
         }
-        candidates.sort((x, y) -> ((LocalDateTime) x[1]).compareTo((LocalDateTime) y[1]));
+        candidates.sort((x, y) -> x.when.compareTo(y.when));
 
         Set<String> scheduled = new HashSet<>();
         // 每个响铃实例占 1 个系统闹钟；开启提前通知时再多占 1 个，故主闹钟上限减半，
@@ -684,8 +727,8 @@ public final class ScheduleManager {
                 preNotice > 0 ? MAX_REGISTERED_ALARMS / 2 : MAX_REGISTERED_ALARMS);
         LocalDateTime now2 = LocalDateTime.now();
         for (int i = 0; i < limit; i++) {
-            Alarm a = (Alarm) candidates.get(i)[0];
-            LocalDateTime when = (LocalDateTime) candidates.get(i)[1];
+            Alarm a = candidates.get(i).alarm;
+            LocalDateTime when = candidates.get(i).when;
             setAlarm(ctx, when, a.id, a.label);
             scheduled.add(a.id + ":" + when.toLocalDate());
             if (preNotice > 0) {
@@ -705,25 +748,24 @@ public final class ScheduleManager {
         // 通知栏对账——把「挂着但已经不该提醒」的撤掉。之前单个闹钟关掉后，
         // 通知栏里那条「即将响铃」会一直留着，点进去是个已停用的闹钟。
         // candidates 按响铃时刻升序，pre 也升序，所以 pre 一旦还在未来就可以停。
-        List<Object[]> due = new ArrayList<>();
+        List<Instance> due = new ArrayList<>();
         if (preNotice > 0) {
-            for (Object[] c : candidates) {
-                LocalDateTime when = (LocalDateTime) c[1];
-                if (when.minusMinutes(preNotice).isAfter(now2)) break;
+            for (Instance c : candidates) {
+                if (c.when.minusMinutes(preNotice).isAfter(now2)) break;
                 due.add(c);
             }
         }
         Set<Integer> keep = new HashSet<>();
-        for (Object[] c : due) {
-            keep.add(PreNoticeReceiver.NOTIF_ID_BASE + ((Alarm) c[0]).id);
+        for (Instance c : due) {
+            keep.add(PreNoticeReceiver.NOTIF_ID_BASE + c.alarm.id);
         }
         // 撤掉不再需要的（关掉的闹钟、已响过的、提前提醒被关掉的）
         dropPreNoticesExcept(ctx, keep);
         // 该提醒的重新发一遍：同 id 覆盖更新，配合 setOnlyAlertOnce 不会重复弹横幅，
         // 但能把旧版本留下的样式（没有按钮的那种）换成新版
-        for (Object[] c : due) {
-            Alarm a = (Alarm) c[0];
-            LocalDateTime when = (LocalDateTime) c[1];
+        for (Instance c : due) {
+            Alarm a = c.alarm;
+            LocalDateTime when = c.when;
             // post() 内部会再确认「这个闹钟还在系统里登记着」，已停用的不会因此复活
             PreNoticeReceiver.post(ctx, a.id, a.label, when.toLocalDate(), preNotice,
                     TimeText.clock(when.getHour(), when.getMinute()));
@@ -880,7 +922,7 @@ public final class ScheduleManager {
         Set<LocalDate> vacations = Prefs.getVacationDates(ctx);
         Set<LocalDate> overtimes = Prefs.getOvertimeDates(ctx);
 
-        List<Object[]> candidates = new ArrayList<>();
+        List<Instance> candidates = new ArrayList<>();
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
             LocalTime alarmTime = LocalTime.of(a.hour, a.minute);
@@ -890,13 +932,13 @@ public final class ScheduleManager {
                 if (!when.isAfter(now)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;   // 请假：跳过
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
-                candidates.add(new Object[]{a, when});
+                candidates.add(new Instance(a, when));
             }
         }
-        candidates.sort((x, y) -> ((LocalDateTime) x[1]).compareTo((LocalDateTime) y[1]));
-        for (Object[] c : candidates) {
-            Alarm a = (Alarm) c[0];
-            LocalDateTime when = (LocalDateTime) c[1];
+        candidates.sort((x, y) -> x.when.compareTo(y.when));
+        for (Instance c : candidates) {
+            Alarm a = c.alarm;
+            LocalDateTime when = c.when;
             if (isAlarmRegistered(ctx, a.id, when.toLocalDate())) {
                 return new NextAlarm(when, a.label, a.id);
             }

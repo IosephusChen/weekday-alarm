@@ -1,12 +1,13 @@
 {
-  "versionCode": 237,
+  "versionCode": 238,
   "versionName": "1.0.0",
   "published": "2026-10-31",
   "title": "第一个正式版",
   "notes": [
-    "功能和上一版完全一样，没有为了凑整数字改任何东西",
-    "从这版起签名固定，以后覆盖安装就能升级，不用卸载",
-    "排班规则和数据结构也就此定下，不再随手换算法"
+    "设置页重新分组：两个都叫「更多」的入口改成「响铃方式」和「其他设置」",
+    "隔几版才更新时，更新日志会把中间每一版都列出来，不再只看得到最后一版",
+    "查到新版本时主页出现一条提示，不用再自己摸到关于页去翻",
+    "从这版起签名固定，以后覆盖安装就能升级，不用卸载"
   ],
   "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.0/weekday-alarm-1.0.0.apk",
   "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.0"

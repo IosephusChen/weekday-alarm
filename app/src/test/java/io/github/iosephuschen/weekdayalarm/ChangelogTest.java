@@ -192,6 +192,55 @@ public class ChangelogTest {
         assertNull(Changelog.byCode(9999));
     }
 
+    /**
+     * 跨版本取日志（v1.0.0）。
+     *
+     * <p>原来弹窗用 {@code byCode} 精确匹配当前版本，用户隔几版才更新时中间全看不到。
+     * 这几条钉住新的取法：含中间每一版、新的在前、当前版本必须在里面。
+     */
+    @Test
+    public void between_coversEveryVersionInTheGap() {
+        List<Changelog.Entry> gap = Changelog.between(56, 58);
+        assertEquals("56 → 58 应含 57 和 58 两条", 2, gap.size());
+        assertEquals("新的在前，弹窗从上往下读才对", 58, gap.get(0).code);
+        assertEquals(57, gap.get(1).code);
+    }
+
+    @Test
+    public void between_singleStep_returnsJustTheNewOne() {
+        List<Changelog.Entry> one = Changelog.between(installedCode() - 1, installedCode());
+        assertEquals("相邻两版只该有一条", 1, one.size());
+        assertEquals(installedCode(), one.get(0).code);
+    }
+
+    @Test
+    public void between_withoutCurrentEntry_isEmpty() {
+        assertTrue("当前版本忘了写日志就什么都不弹——宁可静默，也不要标题和内容对不上",
+                Changelog.between(installedCode() - 1, 9999).isEmpty());
+    }
+
+    @Test
+    public void between_downgrade_isEmpty() {
+        assertTrue("降级安装不该弹「更新到 v0.90.0」", Changelog.between(58, 57).isEmpty());
+        assertTrue("同一版本也不弹", Changelog.between(58, 58).isEmpty());
+    }
+
+    /** 跨多版时标题得说清跨度，不能还写「更新到 vX」——卡片里明明有好几版。 */
+    @Test
+    public void upgradeAcrossVersions_titleSaysHowMany() {
+        seed(installedCode() - 3);
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+
+        Dialog d = awaitDialog(2000);
+        assertNotNull("跨三版升级也应弹出", d);
+        int n = Changelog.between(installedCode() - 3, installedCode()).size();
+        assertTrue("标题应写「跨 " + n + " 个版本的更新」",
+                containsText(d.getWindow().getDecorView(), "跨 " + n + " 个版本"));
+        ctl.pause().stop().destroy();
+    }
+
     /** 每版都标日期，格式统一 yyyy/MM/dd，方便一眼看出新旧。 */
     @Test
     public void everyEntry_hasIsoLikeDate() {

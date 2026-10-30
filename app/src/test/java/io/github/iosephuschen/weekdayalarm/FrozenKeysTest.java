@@ -70,6 +70,7 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_UPDATE_LAST_FAILED", "update_last_failed");
         PREFS_KEYS.put("KEY_UPDATE_KNOWN_CODE", "update_known_code");
         PREFS_KEYS.put("KEY_UPDATE_KNOWN_NAME", "update_known_name");
+        PREFS_KEYS.put("KEY_UPDATE_DISMISSED_CODE", "update_dismissed_code");
         PREFS_KEYS.put("KEY_BEDTIME_MINUTES", "bedtime_minutes");
         PREFS_KEYS.put("KEY_BEDTIME_WORKDAY_ONLY", "bedtime_workday_only");
         PREFS_KEYS.put("KEY_LUNAR_FESTIVALS", "lunar_festivals");

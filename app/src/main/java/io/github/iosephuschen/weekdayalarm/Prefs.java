@@ -63,6 +63,14 @@ public final class Prefs {
     public static final String KEY_UPDATE_LAST_FAILED = "update_last_failed";
     public static final String KEY_UPDATE_KNOWN_CODE = "update_known_code";
     public static final String KEY_UPDATE_KNOWN_NAME = "update_known_name";
+
+    /**
+     * 主页提示条被关掉的那一版（v1.0.0）。
+     *
+     * <p>为什么按 code 记而不是记个布尔：新版本出现时 code 会变大，提示自然重新出现；
+     * 用布尔开关就得在每次查到新版时手动复位，漏一处就再也不会提示第二次。
+     */
+    public static final String KEY_UPDATE_DISMISSED_CODE = "update_dismissed_code";
     public static final String KEY_BEDTIME_MINUTES = "bedtime_minutes";   // 睡前提醒时刻（当日分钟数），-1 = 关闭（v0.24.0）
     public static final String KEY_BEDTIME_WORKDAY_ONLY = "bedtime_workday_only"; // 睡前提醒只在明天要上班时发（v0.24.0）
     public static final String KEY_LUNAR_FESTIVALS = "lunar_festivals";    // 日历显示农历节日（v0.24.0）
@@ -894,5 +902,19 @@ public final class Prefs {
                 .remove(KEY_UPDATE_KNOWN_CODE)
                 .remove(KEY_UPDATE_KNOWN_NAME)
                 .apply();
+    }
+
+    /**
+     * 主页那条「有新版本」被关掉时记下的版本（v1.0.0）。
+     *
+     * <p>0 表示没关过。主页据此判断要不要显示提示条——已知新版的 code 大于已关掉的
+     * code 时才显示，所以关掉 v1.0.1 之后，v1.0.2 出现时它会自己重新冒出来。
+     */
+    public static int updateDismissedCode(Context c) {
+        return sp(c).getInt(KEY_UPDATE_DISMISSED_CODE, 0);
+    }
+
+    public static void setUpdateDismissed(Context c, int code) {
+        sp(c).edit().putInt(KEY_UPDATE_DISMISSED_CODE, code).apply();
     }
 }

@@ -130,8 +130,8 @@ public class DocsConsistencyTest {
     }
 
     @Test
-    public void handoffStatusMatchesBuildGradle() throws Exception {
-        String doc = read(new File(docs(), "交接-给下一个会话.md"));
+    public void projectStatusMatchesBuildGradle() throws Exception {
+        String doc = read(new File(docs(), "项目状态.md"));
         assertTrue("交接文档的现状表没跟上：应为 v" + gradleVersionName()
                         + " / " + gradleVersionCode(),
                 doc.contains("**v" + gradleVersionName() + " / versionCode "

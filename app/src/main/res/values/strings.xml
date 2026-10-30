@@ -16,8 +16,8 @@
     <string name="settings_volume_default">—</string>
     <string name="settings_ringtone_title">铃声</string>
     <string name="settings_ringtone_default">系统默认</string>
-    <string name="settings_more_ring_title">更多响铃设置</string>
-    <string name="settings_section_schedule">排班与节假日</string>
+    <string name="settings_more_ring_title">响铃方式</string>
+    <string name="settings_section_schedule">周休与节假日</string>
     <string name="settings_week_mode_title">周休制度</string>
     <string name="settings_week_mode_default">大小周</string>
     <string name="settings_holiday_data_title">节假日数据</string>
@@ -31,8 +31,7 @@
     <string name="settings_pre_notice_title">响铃前提醒</string>
     <string name="settings_pre_notice_summary">响铃前先在通知栏提醒一次</string>
     <string name="settings_section_other">更多</string>
-    <string name="settings_more_title">更多设置</string>
-    <string name="settings_more_summary">排班 · 桌面 · 帮助 · 备份</string>
+    <string name="settings_more_title">其他设置</string>
     <string name="more_back">‹ 返回</string>
     <string name="more_page_title">更多</string>
     <string name="more_section_ring">响铃</string>
@@ -47,7 +46,7 @@
     <string name="more_snooze_default">5 分钟 × 3 次</string>
     <string name="more_keys_title">按键设置</string>
     <string name="more_keys_default">音量键 · 无\n电源键 · 无</string>
-    <string name="more_section_all">排班与显示</string>
+    <string name="more_section_all">日历与范围</string>
     <string name="more_week_start_title">一周开始日</string>
     <string name="more_week_start_default">周一</string>
     <string name="more_horizon_title">闹钟排到多远</string>
@@ -112,7 +111,7 @@
     <string name="help_s5_b2">被系统杀后台漏响：允许自启动、加入电池优化白名单、最近任务里锁定本应用</string>
     <string name="help_s5_b3">日历想清爽点：「节日与节气」里关掉农历节日 / 节气 / 基督教节日</string>
 
-    <string name="help_jump_settings">这些都在「设置 → 更多设置」里</string>
+    <string name="help_jump_settings">这些都在「设置 → 其他设置」里</string>
     <string name="help_jump_settings_action">打开设置 ›</string>
     <string name="help_jump_guide">想重看新手引导或检查权限</string>
     <string name="help_jump_guide_action">去查看 ›</string>

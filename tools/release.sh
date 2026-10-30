@@ -43,7 +43,7 @@ need docs/更新日志.md "### v$NAME（versionCode $CODE）" "更新日志.md �
 need docs/打工人闹钟-使用说明.md "当前版本：**v$NAME**" "使用说明版本头"
 need docs/打工人闹钟-使用说明.md "打工人闹钟-v$NAME.apk" "使用说明安装包名"
 need docs/打工人闹钟-使用说明.md "versionCode $CODE）" "使用说明 versionCode"
-need docs/交接-给下一个会话.md "**v$NAME / versionCode $CODE**" "交接现状表"
+need docs/项目状态.md "**v$NAME / versionCode $CODE**" "项目状态表"
 # v0.91.4：README 的「下载」节也会过时，而且是最容易被外人看到的一处。
 # 0.91.3 那次就漏了——检查全绿，README 还停在 v0.89.0。文档一致性不该挑文件。
 # v1.0.0：不再有「候选版」这个说法，检查改成只要 README 里出现当前版本号即可
@@ -131,14 +131,14 @@ echo "  $SIZE 字节  MD5 $MD5"
 
 # v0.91.4：这一段以前是「请手工把 MD5 抄进交接文档」。抄错一个字符就是
 # 「文档说的包」和「手上的包」对不上，而校验它的人正是照着文档核的人。
-echo "-- 回填交接文档的包信息 --"
+echo "-- 回填项目状态文档的包信息 --"
 python3 - "$NAME" "$SIZE" "$MD5" <<'PY'
 import pathlib, re, sys
 name, size, md5 = sys.argv[1], sys.argv[2], sys.argv[3]
-p = pathlib.Path("docs/交接-给下一个会话.md")
+p = pathlib.Path("docs/项目状态.md")
 s = p.read_text(encoding="utf-8")
 # 只认「安装包 |」那一行，别误伤别的版本记录
-pat = re.compile(r"(`/workspace/打工人闹钟-v)[\d.]+(\.apk`（)(?:[\d,]+ 字节 / MD5 `[0-9a-f]{32}`|__SIZE__ 字节 / MD5 `__MD5__`)")
+pat = re.compile(r"(`打工人闹钟-v)[\d.]+(\.apk`（)(?:[\d,]+ 字节 / MD5 `[0-9a-f]{32}`|__SIZE__ 字节 / MD5 `__MD5__`)")
 new = "{:,} 字节 / MD5 `{}`".format(int(size), md5)
 s2, n = pat.subn(lambda m: m.group(1) + name + m.group(2) + new, s, count=1)
 if n == 0:

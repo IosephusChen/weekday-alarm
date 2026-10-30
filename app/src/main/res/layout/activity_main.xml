@@ -291,6 +291,53 @@
 
         </LinearLayout>
 
+        <!-- 有新版本（v1.0.0）：
+             这个 App 不上应用商店，检查更新查到新版本也无处可去——原来只把结果写进
+             Prefs，等用户自己钻进「设置 → 其他设置 → 关于」才看得见。那条路四级深，
+             等于没有。这里给一条可关闭的轻量提示：只在真有新版时出现，关掉后同版本
+             不再打扰，下一个版本出现时自己回来。
+             位置在今日卡之后、闹钟之前：主页从上往下是「今天 → 闹钟 → 日历」，提示
+             属于临时状态，插在「今天」之后不打断这个顺序；放页面底部则要滚动才看得见。 -->
+        <LinearLayout
+            android:id="@+id/row_update"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:background="@drawable/bg_card"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="44dp"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/space_16"
+            android:paddingEnd="@dimen/space_6"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_update"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/ink"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btn_update_close"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="不再提示"
+                android:focusable="true"
+                android:gravity="center"
+                android:minHeight="40dp"
+                android:text="×"
+                android:textColor="@color/sub"
+                android:textSize="18sp" />
+        </LinearLayout>
+
         <!-- ===== ② 闹钟（v0.56.3 上移到日历之前）=====
              它是这个 App 的主功能，名字就叫闹钟。v0.56.2 为了把日历整月塞进第一屏，
              把闹钟列表压到了日历下面，用起来变成「想看闹钟得先滚过一整张日历」。

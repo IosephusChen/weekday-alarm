@@ -120,8 +120,14 @@ App 备案库，查不到就弹这个提示——它自己不也说了「可能�
 作者：**追寻的风**（[IosephusChen](https://github.com/IosephusChen)）
 
 我不是程序员，没学过编程语言。这个 App 是我用 AI 辅助一行行做出来的：近三百次提交、
-一万六千多行 Java、七百七十多条自动化测试。正因为看不懂代码，每改一处都得先让测试跑一遍，
-红了就退回去重来——这些测试是我唯一能确认「没改坏」的办法。
+一万六千多行 Java、八百多条自动化测试。工具是 [WorkBuddy](https://www.workbuddy.cn)，
+主力模型 DeepSeek-V4.1 Flash；早期试过 Hy4 preview、Hy3、Step-5-Preview、GLM-5.3 Flash、
+DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎么读这个仓库：`docs/` 里那些
+逐条记着「为什么这么改」的日志、`AGENTS.md` 里「动代码前先拿许可」这类规矩，都是一个看不懂
+代码的人为了管住 AI 而立的。
+
+正因为看不懂代码，每改一处都得先让测试跑一遍，红了就退回去重来——这些测试是我唯一能确认
+「没改坏」的办法。
 
 它开源，所以上面的每个数字你都能自己核：代码可以读，测试可以跑，网络请求只有两处
 （节假日数据、版本号），都在源码里写着。
@@ -219,6 +225,11 @@ snooze, each configurable. Three home-screen widgets (next alarm, full month, co
 **Facts**: single-module Java, no third-party runtime dependencies, no account, no ads,
 no analytics, all data stays on device, MIT licensed. Android 8.0+ (API 26).
 The only network calls are holiday data and one static version file for the update check.
+
+Built with AI assistance — [WorkBuddy](https://www.workbuddy.cn) driving DeepSeek-V4.1 Flash,
+with a few other models tried early on and since dropped. The author doesn't read Java; the
+test suite is how every change gets checked. That's why the commit log explains *why* rather
+than just *what*.
 
 **Interface is Chinese only** — deliberately. The concepts it models (大小周, 调休补班) don't
 translate cleanly into English, and a half-translated UI reads worse than an honest one.

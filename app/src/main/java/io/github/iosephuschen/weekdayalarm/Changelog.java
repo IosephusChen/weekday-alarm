@@ -57,10 +57,11 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
-            new Entry(237, "1.0.0", "2026/10/31", "第一个正式版",
-                    "功能和上一版完全一样，没有为了凑整数字改任何东西",
-                    "从这版起签名固定，以后覆盖安装就能升级，不用卸载",
-                    "排班规则和数据结构也就此定下，不再随手换算法"),
+            new Entry(238, "1.0.0", "2026/10/31", "第一个正式版",
+                    "设置页重新分组：两个都叫「更多」的入口改成「响铃方式」和「其他设置」",
+                    "隔几版才更新时，更新日志会把中间每一版都列出来，不再只看得到最后一版",
+                    "查到新版本时主页出现一条提示，不用再自己摸到关于页去翻",
+                    "从这版起签名固定，以后覆盖安装就能升级，不用卸载"),
             new Entry(236, "0.92.1", "2026/10/31", "字调大了也不会被切掉",
                     "引导页和日历页的按钮不再把字截成上下两半",
                     "引导页选大小周时，能顺手定下小周休周六还是周日",
@@ -1038,6 +1039,33 @@ public final class Changelog {
             if (e.code == code) return e;
         }
         return null;
+    }
+
+    /**
+     * 取「从 {@code afterCode} 之后，到 {@code upToCode} 为止」的所有版本，新的在前。
+     *
+     * <p>升级弹窗原来用 {@link #byCode} 精确匹配当前版本，只显示最后一条。用户隔几版
+     * 才更新时，中间那些改动就永远看不到——1.0.0 之前检查更新是 7 天一次、用户普遍
+     * 跟着版本走，所以这个缺陷一直没暴露；发布变稀疏后就会显形。
+     *
+     * <p><b>当前版本那条必须在里面</b>，否则返回空。这是沿用 {@code byCode} 的老规矩：
+     * 忘了补日志就什么都不弹，宁可静默也不要弹一个标题和内容对不上的框。
+     *
+     * <p>降级安装（{@code upToCode < afterCode}）返回空——v0.92.1 退 0.90.0 时不该
+     * 弹「更新到 v0.90.0」。
+     */
+    public static List<Entry> between(int afterCode, int upToCode) {
+        if (upToCode <= afterCode) return Collections.emptyList();
+        List<Entry> out = new ArrayList<>();
+        boolean hasCurrent = false;
+        // ENTRIES 本身是新的在前，顺序天然满足 renderInto 的期望
+        for (Entry e : ENTRIES) {
+            if (e.code > afterCode && e.code <= upToCode) {
+                out.add(e);
+                if (e.code == upToCode) hasCurrent = true;
+            }
+        }
+        return hasCurrent ? out : Collections.emptyList();
     }
 
     /**

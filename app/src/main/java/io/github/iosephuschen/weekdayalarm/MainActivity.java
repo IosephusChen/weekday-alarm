@@ -126,6 +126,16 @@ public class MainActivity extends AppCompatActivity {
         btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
         btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
 
+        // v1.0.0：查到新版本时的入口。整条点进「关于」——那里有检查更新、Release 链接
+        // 和版本说明，是唯一能继续往下的地方，不需要另开一个弹窗。
+        rowUpdate = findViewById(R.id.row_update);
+        rowUpdate.setOnClickListener(v -> startActivity(new Intent(this, AboutActivity.class)));
+        findViewById(R.id.btn_update_close).setOnClickListener(v -> {
+            // 记下被关掉的那一版：同版本不再出现，下一个版本照常提示。
+            Prefs.setUpdateDismissed(this, Prefs.knownUpdateCode(this));
+            rowUpdate.setVisibility(View.GONE);
+        });
+
         // v0.56.3：闹钟总开关已删除。每条闹钟自己的开关就是唯一开关——
         // 总开关只是多一层「关了却没提醒」的静默失败，还要靠今日卡、小组件、
         // 睡前提醒、编辑弹窗四处补一句「总开关还关着」，不如不要。
@@ -176,6 +186,9 @@ public class MainActivity extends AppCompatActivity {
      */
     /** 响铃中的「停止」入口（v0.58.0）：不依赖通知与悬浮窗权限。 */
     private View rowRinging;
+
+    /** 「有新版本」提示条（v1.0.0）：不上商店，这是唯一能让用户知道该更新的地方。 */
+    private View rowUpdate;
 
     private final BroadcastReceiver refreshReceiver = new BroadcastReceiver() {
         @Override
@@ -229,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
             // BedtimeReceiver / BootReceiver 三个入口早就 goAsync 了，只剩这里漏了。
             // 更新日志弹窗回主线程——Dialog 只能在 UI 线程建。
             final boolean showChangelog = upgraded;
+            final int versionFrom = last;
             final int version = current;
             final Context app = getApplicationContext();
             new Thread(() -> {
@@ -241,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                     // 顺手划掉）。原样回到主线程 show() 就是 BadTokenException。
                     runOnUiThread(() -> {
                         if (isFinishing() || isDestroyed()) return;
-                        maybeShowChangelog(version);
+                        maybeShowChangelog(versionFrom, version);
                     });
                 }
             }, "upgrade-reschedule").start();
@@ -351,15 +365,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 升级后弹「本次更新」（v0.29.0）。
+     * 升级后弹「本次更新」（v0.29.0；v1.0.0 起支持跨版本）。
      *
      * <p>只在「上次运行过的版本号非 0 且与当前不同」时调用，所以首次安装不弹、
-     * 同一版本只弹一次。内容取 {@link Changelog} 里与 versionCode 完全一致的那条；
-     * 万一忘了补日志，就什么都不弹，不会出现空白框。
+     * 同一版本只弹一次。
+     *
+     * <p>v1.0.0：内容从「精确匹配当前版本那一条」改成 {@link Changelog#between} 取
+     * {@code fromCode} 之后的所有版本。原来隔几版才更新的用户只看到最后一条，
+     * 中间改了什么无人知晓；降级安装还会弹一个「更新到 v0.92.1」——现在这两件事
+     * 一起没了：{@code between} 在当前版本没收录、或 fromCode 不小于当前版本时返回空。
      */
-    private void maybeShowChangelog(int code) {
-        final Changelog.Entry entry = Changelog.byCode(code);
-        if (entry == null) return;
+    private void maybeShowChangelog(int fromCode, int code) {
+        final List<Changelog.Entry> entries = Changelog.between(fromCode, code);
+        if (entries.isEmpty()) return;
+        final boolean single = entries.size() == 1;
 
         float d = getResources().getDisplayMetrics().density;
         int pad = Math.round(16 * d);
@@ -367,15 +386,19 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(pad, pad, pad, 0);
-        // v0.76.6：紧凑模式——弹窗标题已经说着「更新到 v0.76.5」，卡片里再放
-        // 版本徽章、「当前版本」徽章就是同一件事说三遍（用户反馈「看着怪怪的」）
-        Changelog.renderInto(this, box, Collections.singletonList(entry), entry.code, true);
+        // v0.76.6：紧凑模式——单条时弹窗标题已经说着「更新到 v0.76.5」，卡片里再放
+        // 版本徽章、「当前版本」徽章就是同一件事说三遍（用户反馈「看着怪怪的」）。
+        // v1.0.0：多条时反过来必须用完整卡——标题不再写具体版本，卡片不标版本就分不清
+        // 哪张是哪一版。
+        Changelog.renderInto(this, box, entries, code, single);
 
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
 
         AlertDialog dlg = new RoundedDialog.Builder(this)
-                .setTitle("更新到 v" + entry.version)
+                .setTitle(single
+                        ? "更新到 v" + entries.get(0).version
+                        : "跨 " + entries.size() + " 个版本的更新")
                 .setView(sv)
                 .setPositiveButton("知道了", null)
                 .setNeutralButton("全部日志", (dd, w) ->
@@ -601,6 +624,30 @@ public class MainActivity extends AppCompatActivity {
         // v0.48.1：日历回到首页，全局刷新时一起重画（跨天、改设置、标完标记都要重算）
         calendarPanel.refresh();
         updateDayOffButton();
+        updateUpdateRow();
+    }
+
+    /**
+     * 主页那条「有新版本」（v1.0.0）。
+     *
+     * <p>为什么需要它：这个 App 不上应用商店，检查更新查到新版也无处可去——结果只写进
+     * Prefs，等用户自己钻进「设置 → 其他设置 → 关于」才看得见，而那条路四级深，等于没有。
+     *
+     * <p>判断直接用 {@link UpdateChecker#knownUpdateToShow}，不自己比 code：那个方法已经
+     * 把「没查到、查到的比当前旧、名字为空」三种情况都归成空串。两处各写一套迟早会出现
+     * 关于页说有新版、主页却没提示。
+     *
+     * <p>再叠一条「关过就不显示」：按 code 记，所以下一个版本出现时会自己回来。
+     */
+    private void updateUpdateRow() {
+        String name = UpdateChecker.knownUpdateToShow(this);
+        boolean show = !name.isEmpty()
+                && Prefs.knownUpdateCode(this) > Prefs.updateDismissedCode(this);
+        rowUpdate.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) {
+            ((TextView) findViewById(R.id.tv_update))
+                    .setText("新版本 v" + name + " 可用，点此查看");
+        }
     }
 
     /**

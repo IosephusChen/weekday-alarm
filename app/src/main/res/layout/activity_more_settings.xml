@@ -61,13 +61,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <TextView
-                style="@style/SectionTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/space_8"
-                android:text="@string/more_section_ring" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -232,8 +225,6 @@
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
-
-                            <View style="@style/SettingsDivider" />
             </LinearLayout>
         </LinearLayout>
 
@@ -249,7 +240,7 @@
                 style="@style/SectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/space_8"
+                android:layout_marginBottom="@dimen/space_6"
                 android:text="@string/more_section_all" />
 
             <LinearLayout
@@ -364,8 +355,8 @@
                 style="@style/SectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="@dimen/space_8"
+                android:layout_marginTop="@dimen/space_16"
+                android:layout_marginBottom="@dimen/space_6"
                 android:text="@string/more_section_check" />
 
             <LinearLayout
@@ -553,8 +544,8 @@
                 style="@style/SectionTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="@dimen/space_8"
+                android:layout_marginTop="@dimen/space_16"
+                android:layout_marginBottom="@dimen/space_6"
                 android:text="@string/more_section_widget" />
 
             <LinearLayout

@@ -105,14 +105,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:gravity="center"
-        android:textColor="#CFCBFF"
+        android:textColor="#FFFFFF"
         android:textSize="12sp" />
 
     <!-- v0.91.1：试听模式的播放诊断。只有 test == true 时才由 AlarmActivity 显示，
          正式响铃页一直是 GONE——早上半醒的人不需要看系统音量是百分之几。
          写这一行的目的是：万一还是不响，用户截一张图就能定位断在哪一环，
          不必再来一轮「改了还是没声音」的盲猜。 -->
-    <!-- v1.1.0：与上面那行提示同一个规格（12sp / #CFCBFF），只差 4dp 间距。
+    <!-- v1.1.0：与上面那行提示同一个规格（12sp / 纯白），只差 4dp 间距。
          原来是 11sp / #8E88B8——在 #753CEB 的紫底上只有 1.8:1，等于没写。
          这行的用途恰恰是「试听没声时截一张图就能定位」，看不清就失去了存在理由。 -->
     <TextView
@@ -121,7 +121,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:gravity="center"
-        android:textColor="#CFCBFF"
+        android:textColor="#FFFFFF"
         android:textSize="12sp"
         android:visibility="gone" />
 </LinearLayout>

@@ -46,6 +46,9 @@ public class GuideActivity extends AppCompatActivity {
     /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
     private static final int PAGE_PERMISSIONS = 2;
 
+    /** 重建时把页码带过去（v1.0.3）。 */
+    private static final String STATE_PAGE = "state_page";
+
     /**
      * 「还要再点一层」的统一说法（v0.89.5）。
      *
@@ -143,10 +146,34 @@ public class GuideActivity extends AppCompatActivity {
 
         }
 
+        // v1.0.3：接着上次那一页。原因见 {@link Prefs#KEY_GUIDE_PAGE}——这一页是叠在
+        // MainActivity 上的第二层，从通知 / 桌面图标再进来时会被销毁重开；页码只放在
+        // 成员变量里，用户看到的就永远是第 1 页。
+        if (savedInstanceState != null) {
+            index = savedInstanceState.getInt(STATE_PAGE, index);
+        } else if (!Prefs.isOnboardDone(this)) {
+            // 只在「引导还没走完」时恢复：从设置里重看引导，应该从第 1 页看起
+            index = Math.min(Prefs.getGuidePage(this), PAGES - 1);
+        }
+        flipper.setDisplayedChild(index);
+
         syncModeUi();
         updateTimeText();
         renderDots();
         updateChrome();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_PAGE, index);
+    }
+
+    /** 点通知回来时走 SINGLE_TOP 复用同一个实例（页码本来就对），只需换掉 intent。 */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
     }
 
     @Override
@@ -516,8 +543,15 @@ public class GuideActivity extends AppCompatActivity {
             Toast.makeText(this, "通知权限还没开，先回上一页点「通知权限」", Toast.LENGTH_LONG).show();
             return;
         }
-        Intent open = new Intent(this, MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // v1.0.3：点开这条通知要回到「刚才那一页」。原来固定指 MainActivity，等于从桌面
+        // 图标重进一次——系统先重建根 Activity，叠在它上面的引导页被销毁重开，用户看到的
+        // 就是又回到第 1 页（用户实测 1.0.2）。引导没走完就指回 GuideActivity 自己：
+        // CLEAR_TOP + SINGLE_TOP 直接复用已有的那个实例，连重建都不会发生。
+        Intent open = new Intent(this,
+                Prefs.isOnboardDone(this) ? MainActivity.class : GuideActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         android.app.PendingIntent pi = android.app.PendingIntent.getActivity(this, 91, open,
                 android.app.PendingIntent.FLAG_UPDATE_CURRENT
                         | android.app.PendingIntent.FLAG_IMMUTABLE);
@@ -698,6 +732,8 @@ public class GuideActivity extends AppCompatActivity {
         flipper.setOutAnimation(this, forward ? R.anim.guide_out_left : R.anim.guide_out_right);
         flipper.setDisplayedChild(target);
         index = target;
+        // 每翻一页就落盘：进程随时可能被杀，等 onPause 再写就晚了
+        Prefs.setGuidePage(this, target);
         updateChrome();
     }
 
@@ -785,6 +821,8 @@ public class GuideActivity extends AppCompatActivity {
         boolean firstRun = !Prefs.isOnboardDone(this);
         ensureAlarm();
         Prefs.setOnboardDone(this, true);
+        // 引导走完就把页码清掉：下次从设置里重看，从第 1 页看起
+        Prefs.setGuidePage(this, 0);
         final String tip = firstRun
                 ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";

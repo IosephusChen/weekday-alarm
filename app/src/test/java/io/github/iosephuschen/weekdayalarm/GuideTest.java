@@ -934,4 +934,73 @@ public class GuideTest {
         assertEquals("权限页的按钮仍是「下一步」", "下一步",
                 ((TextView) a.findViewById(R.id.btn_next)).getText().toString());
     }
+
+    // ================= 页码：从通知点回来不能回到第 1 页（v1.0.3）=================
+
+    private static int flipperIndex(GuideActivity a) {
+        return ((ViewFlipper) a.findViewById(R.id.flipper)).getDisplayedChild();
+    }
+
+    /**
+     * 用户实测 1.0.2：在引导第 3 页点「测试通知」，再点开那条通知，回到的是第 1 页。
+     *
+     * <p>根因是这一页叠在 MainActivity 之上，而通知的 intent 指向 MainActivity——
+     * 相当于从桌面图标重进一次：系统重建根 Activity，这一页被销毁重开，页码只存在
+     * 成员变量里就必然归零。修法两半，这条测「重开后接着上次那页」。
+     */
+    @Test
+    public void pageResumesWhereUserLeft() {
+        wipe();
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class).setup();
+        GuideActivity a = ctl.get();
+        tap(a, R.id.btn_next);
+        tap(a, R.id.btn_next);
+        assertEquals("先走到第 3 页", 2, flipperIndex(a));
+
+        // 中途退出：返回键不写 onboard_done，栈里留着 MainActivity → GuideActivity
+        ctl.pause().stop().destroy();
+
+        GuideActivity again = Robolectric.buildActivity(GuideActivity.class).setup().get();
+        assertEquals("重开要接着第 3 页，不能回到第 1 页", 2, flipperIndex(again));
+        assertEquals("按钮文案也要跟着页走", "下一步", text(again, R.id.btn_next));
+    }
+
+    /** 另一半修法：引导没走完时，通知直接指回 GuideActivity 自己（复用实例，连重建都不会发生）。 */
+    @Test
+    public void notifyTest_pointsBackToGuideWhileOnboarding() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf((Application) ctx()).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        shadowOf(nm).setNotificationsEnabled(true);
+
+        GuideActivity a = fresh();
+        tap(a, R.id.btn_notify_try);
+
+        Notification n = shadowOf(nm).getNotification(9401);
+        assertNotNull(n);
+        Intent open = shadowOf(n.contentIntent).getSavedIntent();
+        assertEquals("引导没走完时不该指回 MainActivity（会把这一页重建掉）",
+                GuideActivity.class.getName(), open.getComponent().getClassName());
+        assertTrue("缺 CLEAR_TOP 就会把上面那层清掉再建一份",
+                (open.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0);
+    }
+
+    /** 引导已经走完（重看引导的场景）：通知仍该回主界面，别指回已经完成使命的引导页。 */
+    @Test
+    public void notifyTest_opensMainAfterOnboarding() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf((Application) ctx()).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        shadowOf(nm).setNotificationsEnabled(true);
+
+        GuideActivity a = fresh();
+        Prefs.setOnboardDone(ctx(), true);
+        tap(a, R.id.btn_notify_try);
+
+        Notification n = shadowOf(nm).getNotification(9401);
+        assertNotNull(n);
+        assertEquals(MainActivity.class.getName(),
+                shadowOf(n.contentIntent).getSavedIntent().getComponent().getClassName());
+    }
 }

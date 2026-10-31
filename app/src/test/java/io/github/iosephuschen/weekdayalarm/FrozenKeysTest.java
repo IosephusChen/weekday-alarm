@@ -60,6 +60,9 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_PRE_NOTICE_LAST", "pre_notice_last_minutes");
         PREFS_KEYS.put("KEY_GUIDE_SEEN", "guide_seen");
         PREFS_KEYS.put("KEY_ONBOARD_DONE", "onboard_done");
+        // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
+        // 改名等于让升级的人回到第 1 页重填一遍。
+        PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");
         PREFS_KEYS.put("KEY_LEGACY_ALARMS_CLEANED", "legacy_alarms_cleaned");
         PREFS_KEYS.put("KEY_LEGACY_SCHEME_CLEANED", "legacy_scheme_cleaned");
         PREFS_KEYS.put("KEY_SKIP_ONCE", "skip_once");

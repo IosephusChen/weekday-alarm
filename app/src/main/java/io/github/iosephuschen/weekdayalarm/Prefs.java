@@ -644,6 +644,25 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_ONBOARD_DONE, v).apply();
     }
 
+    /**
+     * 引导页停在哪一页（v1.0.3）。
+     *
+     * <p>GuideActivity 是叠在 MainActivity 之上的第二层，只有点「开始使用 / 跳过」才写
+     * {@link #KEY_ONBOARD_DONE}。所以中途退出的人，任务栈里留着
+     * {@code MainActivity → GuideActivity}；此时从通知或桌面图标再进来，系统会重建根
+     * Activity、把上面这层销毁重开，页码只存在成员变量里就必然回到第 1 页——
+     * 用户填过的周休制度看着像白填了。页码落盘，重开时接着上次那页。
+     */
+    public static final String KEY_GUIDE_PAGE = "guide_page";
+
+    public static int getGuidePage(Context c) {
+        return Math.max(0, sp(c).getInt(KEY_GUIDE_PAGE, 0));
+    }
+
+    public static void setGuidePage(Context c, int page) {
+        sp(c).edit().putInt(KEY_GUIDE_PAGE, Math.max(0, page)).apply();
+    }
+
     // ================= 睡前提醒与农历（v0.24.0）=================
 
     /**

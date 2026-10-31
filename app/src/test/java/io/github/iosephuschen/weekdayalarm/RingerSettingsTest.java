@@ -190,9 +190,13 @@ public class RingerSettingsTest {
         assertTrue("应说「关闭这次响铃」", labels.contains("关闭这次响铃"));
         assertFalse("不该再说「关闭闹钟」", labels.contains("关闭闹钟"));
 
+        // v1.0.4：「无」的括注从主文案挪到副标题——同一行里「无（按系统默认调音量）」
+        // 把解释和选项写成一个字重，读起来像半截话
         assertEquals("「无」的括注两个键各说各的",
-                "无（按系统默认调音量）", SettingsReminderSection.KEY_ITEMS_VOL[0]);
-        assertEquals("无（按系统默认息屏）", SettingsReminderSection.KEY_ITEMS_POWER[0]);
+                "无", SettingsReminderSection.KEY_ITEMS_VOL[0]);
+        assertEquals("按系统默认调音量", SettingsReminderSection.KEY_ITEMS_VOL_SUBS[0]);
+        assertEquals("无", SettingsReminderSection.KEY_ITEMS_POWER[0]);
+        assertEquals("按系统默认息屏", SettingsReminderSection.KEY_ITEMS_POWER_SUBS[0]);
         assertEquals(Prefs.KEY_ACTION_NONE, SettingsReminderSection.KEY_ACTION_VALUES[0]);
         assertEquals(Prefs.KEY_ACTION_SNOOZE, SettingsReminderSection.KEY_ACTION_VALUES[1]);
         assertEquals(Prefs.KEY_ACTION_STOP, SettingsReminderSection.KEY_ACTION_VALUES[2]);

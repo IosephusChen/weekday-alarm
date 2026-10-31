@@ -77,7 +77,11 @@ final class SettingsReminderSection {
 
     /** 响铃时长选项（v0.76.4 起与 Prefs 值的映射留在代码里，布局已删）。 */
     private static final String[] RING_DURATION_ITEMS = {
-            "不限（一直响到手动停止）", "1 分钟", "3 分钟", "5 分钟", "10 分钟"};
+            "不限", "1 分钟", "3 分钟", "5 分钟", "10 分钟"};
+    /** 只有「不限」需要解释：「不限（一直响到手动停止）」把两句话压进一行，
+     *  框里那半句解释和选项本身一样重，读起来是个半截话（v1.0.4 拆出来）。 */
+    private static final String[] RING_DURATION_SUBS = {
+            "一直响到手动停止", null, null, null, null};
     private static final int[] RING_DURATION_VALUES = {0, 1, 3, 5, 10};
     private static final String RING_DURATION_TIP =
             "提示：到点自动停止响铃与震动，并撤下通知。设为「不限」则一直响到手动停止或稍后提醒。";
@@ -110,11 +114,13 @@ final class SettingsReminderSection {
                 }
             }
         }
-        DialogKit.showGroupPick(host,
+        DialogKit.showGroupPickWithTip(host,
                 host.getString(R.string.dialog_ring_duration_title),
-                host.getString(R.string.dialog_ring_duration_message) + "\n" + RING_DURATION_TIP,
+                host.getString(R.string.dialog_ring_duration_message),
+                RING_DURATION_TIP,
                 new DialogKit.Group[]{
-                        new DialogKit.Group(null, RING_DURATION_ITEMS, checked)},
+                        new DialogKit.Group(null, RING_DURATION_ITEMS,
+                                RING_DURATION_SUBS, checked)},
                 picked -> {
                     Prefs.setRingMinutes(host, RING_DURATION_VALUES[picked[0]]);
                     updateRingDurationText();
@@ -125,9 +131,14 @@ final class SettingsReminderSection {
 
     /** 按键选项（v0.76.4 起与 Prefs 值的映射留在代码里，布局已删）。 */
     static final String[] KEY_ITEMS_VOL = {
-            "无（按系统默认调音量）", "稍后提醒", "关闭这次响铃"};
+            "无", "稍后提醒", "关闭这次响铃"};
+    /** 「无」在两种键上说的是两件事，所以副标题各一份（v1.0.4 从主文案里拆出）。 */
+    static final String[] KEY_ITEMS_VOL_SUBS = {
+            "按系统默认调音量", null, null};
     static final String[] KEY_ITEMS_POWER = {
-            "无（按系统默认息屏）", "稍后提醒", "关闭这次响铃"};
+            "无", "稍后提醒", "关闭这次响铃"};
+    static final String[] KEY_ITEMS_POWER_SUBS = {
+            "按系统默认息屏", null, null};
     static final int[] KEY_ACTION_VALUES = {
             Prefs.KEY_ACTION_NONE, Prefs.KEY_ACTION_SNOOZE, Prefs.KEY_ACTION_STOP};
     private static final String KEYS_TIP =
@@ -152,14 +163,15 @@ final class SettingsReminderSection {
      * （音量键调音量 / 电源键息屏），所以两组 items 不共用。
      */
     private void showKeysDialog() {
-        DialogKit.showGroupPick(host,
+        DialogKit.showGroupPickWithTip(host,
                 host.getString(R.string.dialog_keys_title),
-                host.getString(R.string.dialog_keys_message) + "\n" + KEYS_TIP,
+                host.getString(R.string.dialog_keys_message),
+                KEYS_TIP,
                 new DialogKit.Group[]{
                         new DialogKit.Group("音量键（响铃时按）", KEY_ITEMS_VOL,
-                                keyActionIndex(Prefs.getVolKeyAction(host))),
+                                KEY_ITEMS_VOL_SUBS, keyActionIndex(Prefs.getVolKeyAction(host))),
                         new DialogKit.Group("电源键（响铃时按）", KEY_ITEMS_POWER,
-                                keyActionIndex(Prefs.getPowerKeyAction(host))),
+                                KEY_ITEMS_POWER_SUBS, keyActionIndex(Prefs.getPowerKeyAction(host))),
                 },
                 picked -> {
                     Prefs.setVolKeyAction(host, KEY_ACTION_VALUES[picked[0]]);

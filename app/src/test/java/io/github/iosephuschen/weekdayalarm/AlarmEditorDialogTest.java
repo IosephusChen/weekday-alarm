@@ -7,8 +7,10 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -114,8 +116,10 @@ public class AlarmEditorDialogTest {
         }
         assertEquals("新建时不该显示「哪一天」",
                 View.GONE, d.findViewById(R.id.row_once_date).getVisibility());
-        assertEquals("新建时没有可删的闹钟",
-                View.GONE, d.findViewById(R.id.btn_alarm_delete).getVisibility());
+        // 未设置的中性按钮 AlertController 仍会创建（button3），只是 GONE
+        Button del0 = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+        assertTrue("新建时没有可删的闹钟",
+                del0 == null || del0.getVisibility() != View.VISIBLE);
     }
 
     /** 点「仅一次」：选中态挪过去、日期行出现；再点回「每天」，日期行收起。 */
@@ -152,8 +156,11 @@ public class AlarmEditorDialogTest {
         LinearLayout box = modes(d);
         assertTrue("「每天」应预选", box.getChildAt(1).isSelected());
         assertFalse("「仅上班日」不该选中", box.getChildAt(0).isSelected());
-        assertEquals("编辑已有闹钟应有删除入口",
-                View.VISIBLE, d.findViewById(R.id.btn_alarm_delete).getVisibility());
+        // v1.0.4：删除从整宽淡红卡挪到按钮栏最左的中性位，与「保存」隔着一个「取消」
+        Button del = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+        assertNotNull("编辑已有闹钟应有删除入口", del);
+        assertEquals("编辑已有闹钟应有删除入口", View.VISIBLE, del.getVisibility());
+        assertEquals("删除", del.getText().toString());
     }
 
     /** 卡片下标 → 模式值：错了会静默存成别的模式，界面上看不出来。 */

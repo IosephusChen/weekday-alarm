@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:lineSpacingMultiplier="1.2"
+            android:lineSpacingMultiplier="1.35"
             android:text="决定哪天要上班、哪天休息，日历和闹钟都按它推算。改错会整天算错班。"
             android:textColor="@color/sub"
             android:textSize="12sp" />
@@ -155,9 +155,8 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="88dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="本周是"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
@@ -177,6 +176,7 @@
                         android:focusable="true"
                         android:gravity="center"
                         android:minHeight="34dp"
+                        android:minWidth="76dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:text="大周"
@@ -193,6 +193,7 @@
                         android:focusable="true"
                         android:gravity="center"
                         android:minHeight="34dp"
+                        android:minWidth="76dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:text="小周"
@@ -209,9 +210,8 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="88dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="小周休哪天"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
@@ -231,6 +231,7 @@
                         android:focusable="true"
                         android:gravity="center"
                         android:minHeight="34dp"
+                        android:minWidth="76dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:text="周日休"
@@ -247,6 +248,7 @@
                         android:focusable="true"
                         android:gravity="center"
                         android:minHeight="34dp"
+                        android:minWidth="76dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:text="周六休"
@@ -267,9 +269,8 @@
             android:visibility="gone">
 
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="88dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:text="休哪天"
                 android:textColor="@color/sub"
                 android:textSize="13sp" />
@@ -289,6 +290,7 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:minHeight="34dp"
+                    android:minWidth="76dp"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:text="周日休"
@@ -305,6 +307,7 @@
                     android:focusable="true"
                     android:gravity="center"
                     android:minHeight="34dp"
+                    android:minWidth="76dp"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:text="周六休"

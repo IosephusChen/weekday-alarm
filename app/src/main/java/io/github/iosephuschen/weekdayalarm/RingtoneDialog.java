@@ -275,12 +275,22 @@ public final class RingtoneDialog {
         // 厂商整合进来的在线铃声都不在其中。这条路把选择范围交回系统。
         // 选完会当场验一次能不能打开，打不开的当场拒掉（见 SystemRingtonePicker）。
         final androidx.appcompat.app.AlertDialog[] holder = {null};
+        // v1.0.4：这一项原来孤零零挂在列表末尾，没有分组标题，读起来像列表的最后一条铃声，
+        // 而不是「换一个地方挑」。加一行组标题，与上面「内置铃声 · N 个」同一规格。
+        TextView moreHeader = DialogKit.groupHeader(activity, "更多");
+        LinearLayout.LayoutParams moreLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        moreLp.topMargin = Math.round(18 * activity.getResources().getDisplayMetrics().density);
+        moreLp.bottomMargin = Math.round(2 * activity.getResources().getDisplayMetrics().density);
+        list.addView(moreHeader, moreLp);
+
         View sysRow = DialogKit.optionView(activity, "从系统铃声选择器挑…",
                 "能用手机里的音乐，各机型界面不一样");
         LinearLayout.LayoutParams sysLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        sysLp.topMargin = Math.round(18 * activity.getResources().getDisplayMetrics().density);
+        sysLp.topMargin = Math.round(10 * activity.getResources().getDisplayMetrics().density);
         sysRow.setOnClickListener(v -> {
             if (holder[0] != null) holder[0].dismiss();
             SystemRingtonePicker.open(activity, current, uri -> {
@@ -350,6 +360,7 @@ public final class RingtoneDialog {
         if (playingIdx[0] >= 0 && playingIdx[0] < rows.length) {
             // 把上一个的「试听中…」擦掉
             DialogKit.setOptionSub(rows[playingIdx[0]], null);
+            DialogKit.markPlaying(rows[playingIdx[0]], false);
         }
         if (uri == null) return;    // 「跟随全局设置」没有自己的声音可试听
         try {
@@ -363,6 +374,7 @@ public final class RingtoneDialog {
             playing[0] = r;
             playingIdx[0] = idx;
             DialogKit.setOptionSub(rows[idx], "试听中…");
+            DialogKit.markPlaying(rows[idx], true);
         } catch (Exception ignore) {
             // 媒体库里的条目可能已经没了：试听失败不该让对话框崩掉
         }

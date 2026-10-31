@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 闹钟编辑对话框：名称 + 时间 + 重复规则 + 删除。
+<!-- 闹钟编辑对话框：标题 + 名称 + 时间 + 重复规则 + 铃声。
      v0.77.0：重复规则从系统单选圈改成卡片（DialogKit.optionView），
-     与设置页、引导页同一套卡片语言；时间做成大字主信息；删除改淡红卡片。 -->
+     与设置页、引导页同一套卡片语言；时间做成大字主信息。 -->
 <!-- v0.41.1：外面套一层 ScrollView。加了第四个模式与「哪一天」行之后，
-     内容在小屏上会超出对话框高度——而对话框本身不会滚，底部的「删除 / 取消 / 保存」
+     内容在小屏上会超出对话框高度——而对话框本身不会滚，底部的「取消 / 保存」
      会被顶出屏幕，等于没保存按钮。ScrollView 让内容自己滚，按钮始终在。 -->
+<!-- v1.0.4：
+     · 标题从 setTitle() 改成自绘。系统标题是 20sp 常规，而其它四个弹窗
+       （铃声 / 睡前 / 周休 / 列表选择）都是 17sp 粗体——同一批弹窗两个规格，
+       放一起一眼看出不是一套。
+     · 「删除这个闹钟」从整宽淡红卡挪到按钮栏最左（neutral）。原来它紧贴在
+       「保存」上方，手指从保存往上滑一点就落到删除上；现在中间隔着一个「取消」。
+     · 四处字段格从 bg_time_outline（页面底色 / 灰格）换成 bg_field_outline
+       （卡片底 + 细边）。原来同一列里灰格与白卡交替，像两种控件；
+       现在与重复规则卡同底同描边，一个弹窗里只有一种「可点区块」。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -17,9 +26,18 @@
     android:padding="20dp">
 
     <TextView
+        android:id="@+id/tv_alarm_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/ink"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
         style="@style/FieldLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
         android:text="名称" />
 
     <EditText
@@ -27,7 +45,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:background="@drawable/bg_time_outline"
+        android:background="@drawable/bg_field_outline"
         android:importantForAutofill="no"
         android:inputType="text"
         android:maxLength="12"
@@ -36,8 +54,7 @@
         android:hint="可不填，默认叫「闹钟」"
         android:textColorHint="@color/sub"
         android:textColor="@color/ink"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:textSize="15sp" />
 
     <TextView
         style="@style/FieldLabel"
@@ -54,7 +71,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:background="@drawable/bg_time_outline"
+        android:background="@drawable/bg_field_outline"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
@@ -88,7 +105,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:background="@drawable/bg_time_outline"
+        android:background="@drawable/bg_field_outline"
         android:clickable="true"
         android:focusable="true"
         android:orientation="vertical"
@@ -125,7 +142,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:background="@drawable/bg_time_outline"
+        android:background="@drawable/bg_field_outline"
         android:clickable="true"
         android:ellipsize="end"
         android:focusable="true"
@@ -133,21 +150,6 @@
         android:padding="11dp"
         android:textColor="@color/ink"
         android:textSize="15sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/btn_alarm_delete"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:background="@drawable/bg_danger_soft"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:padding="12dp"
-        android:text="删除这个闹钟"
-        android:textColor="@color/danger"
-        android:textSize="14sp"
         android:textStyle="bold" />
 </LinearLayout>
 

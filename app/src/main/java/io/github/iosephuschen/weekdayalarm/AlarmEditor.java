@@ -1,6 +1,7 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
@@ -66,7 +67,6 @@ final class AlarmEditor {
         EditText etLabel = view.findViewById(R.id.et_alarm_label);
         TextView tvTime = view.findViewById(R.id.tv_alarm_pick_time);
         LinearLayout modeList = view.findViewById(R.id.ll_alarm_modes);
-        TextView btnDelete = view.findViewById(R.id.btn_alarm_delete);
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
         TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
@@ -118,9 +118,6 @@ final class AlarmEditor {
                 minute[0] = primary.minute;
             }
         }
-        if (target == null) {
-            btnDelete.setVisibility(View.GONE);
-        }
         tvTime.setText(TimeText.clock(hour[0], minute[0]));
         // 自绘「时 / 分」双列滚轮选择器：澎湃 OS 会无视框架 TimePicker 的 spinner
         // 主题设置、强制渲染成表盘拨轮，因此不再依赖 TimePickerDialog
@@ -168,11 +165,16 @@ final class AlarmEditor {
         }));
 
         final boolean[] handled = {false};
-        AlertDialog dialog = new RoundedDialog.Builder(activity)
-                .setView(view)
-                .setTitle(target == null ? "添加闹钟" : "编辑闹钟")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("保存", (d, w) -> {
+        ((TextView) view.findViewById(R.id.tv_alarm_title))
+                .setText(target == null ? "添加闹钟" : "编辑闹钟");
+        RoundedDialog.Builder builder = new RoundedDialog.Builder(activity);
+        // 分步调：Builder 的 setView / setNeutralButton 返回的是父类型
+        // AlertDialog.Builder，链下去就把 RoundedDialog 那层丢了
+        builder.setView(view);
+        // 「删除」只给已有闹钟：新建的还没落盘，没有可删的东西
+        if (target != null) builder.setNeutralButton("删除", null);
+        builder.setNegativeButton("取消", null);
+        builder.setPositiveButton("保存", (d, w) -> {
                     if (handled[0]) return;
                     handled[0] = true;
                     // 先关对话框再执行业务逻辑（与其它对话框回调时序保持一致）
@@ -231,26 +233,31 @@ final class AlarmEditor {
                     }
                     Prefs.setAlarms(activity, alarms);
                     onChanged.run();
-                })
-                .create();
+                });
+        AlertDialog dialog = builder.create();
 
-        btnDelete.setOnClickListener(v -> {
-            if (handled[0]) return;
-            handled[0] = true;
-            DialogKit.showMessage(activity, "删除「" + target.label + "」？",
-                    "删除后该闹钟不再提醒，已排程的实例会一并取消。",
-                    "删除", (d2, w2) -> {
-                        // v0.91.9：和首页的删除同一条道理——先把待触发的小睡作废再删。
-                        // 编辑框里删掉之后，列表里已经没有它，applyAlarmChange 的两条
-                        // 重排路径都清不到它的 SNOOZE 段。
-                        ScheduleManager.dropSnooze(activity, target.id);
-                        alarms.remove(target);
-                        Prefs.setAlarms(activity, alarms);
-                        onChanged.run();
-                    }, "取消", null);
-            dialog.dismiss();
-        });
         dialog.show();
+        if (target != null) {
+            // 中性按钮的监听在 show 之后挂：AlertDialog 的按钮要等 show() 才进窗口，
+            // create() 时 getButton 还是 null。点击不会自动关窗（系统的默认 handler
+            // 已被这份监听覆盖），所以下面自己 dismiss。
+            dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                if (handled[0]) return;
+                handled[0] = true;
+                DialogKit.showMessage(activity, "删除「" + target.label + "」？",
+                        "删除后该闹钟不再提醒，已排程的实例会一并取消。",
+                        "删除", (d2, w2) -> {
+                            // v0.91.9：和首页的删除同一条道理——先把待触发的小睡作废再删。
+                            // 编辑框里删掉之后，列表里已经没有它，applyAlarmChange 的两条
+                            // 重排路径都清不到它的 SNOOZE 段。
+                            ScheduleManager.dropSnooze(activity, target.id);
+                            alarms.remove(target);
+                            Prefs.setAlarms(activity, alarms);
+                            onChanged.run();
+                        }, "取消", null);
+                dialog.dismiss();
+            });
+        }
     }
 
     /**

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 弹窗里的字段格（v1.0.4）：名称输入、时间、哪一天、铃声四处用它。
+
+     与 bg_time_outline 只差底色：那个用 @color/bg（页面底），放在白弹窗上是「凹下去」
+     的灰块；而同一列的重复规则卡是 bg_guide_option（card 底 + 细边），一列里灰格白卡
+     交替，看着像两种控件。这里改成 card 底，与选项卡同底、同描边、同 radius_row。
+
+     为什么不直接改 bg_time_outline：它还用在首页三处、设置页、更新日志、使用说明、
+     关于页——那些位置底下就是页面底色，灰格才对。只在弹窗里换。 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1F4F46E5">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card" />
+            <corners android:radius="@dimen/radius_row" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/line" />
+        </shape>
+    </item>
+</ripple>

@@ -3,7 +3,9 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -12,11 +14,14 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
+import androidx.core.content.ContextCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -449,15 +454,20 @@ public class GuideTest {
     public void ringDetails_collapsedByDefault_andToggles() {
         GuideActivity a = fresh();
         View detail = a.findViewById(R.id.ring_detail);
+        View chevron = a.findViewById(R.id.iv_ring_chevron);
         assertEquals("默认应收起", View.GONE, detail.getVisibility());
-        assertEquals("说清「想调再点开」", "展开 ›", text(a, R.id.tv_ring_arrow));
+        assertEquals("说清「想调再点开」", "展开", text(a, R.id.tv_ring_arrow));
+        // v1.0.4：箭头单独一个 View，收起时转 90° 指下
+        assertEquals("收起时箭头应指下", 90f, chevron.getRotation(), 0.1f);
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("点一下应展开", View.VISIBLE, detail.getVisibility());
-        assertEquals("收起 ›", text(a, R.id.tv_ring_arrow));
+        assertEquals("展开后写「收起」", "收起", text(a, R.id.tv_ring_arrow));
+        assertEquals("展开后箭头应指上", -90f, chevron.getRotation(), 0.1f);
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("再点一下收回", View.GONE, detail.getVisibility());
+        assertEquals("收回后箭头转回指下", 90f, chevron.getRotation(), 0.1f);
         // 收起来时那四行仍在布局里，只是不可见——值照常刷新，不会丢
         assertNotNull(a.findViewById(R.id.tv_snooze));
     }
@@ -493,6 +503,82 @@ public class GuideTest {
         a.onResume(); // 从系统设置回来
         ShadowLooper.idleMainLooper();
         assertEquals("开了之后回来自动变「已开启」", "已开启", text(a, R.id.st_notif));
+    }
+
+    /**
+     * 权限清单拆成两张卡（v1.0.4，G1）。
+     *
+     * <p>前三项的开关系统读得到、开了会打勾；后两项不在 AOSP 权限体系里，
+     * 状态只能自己进系统设置看。五项平铺在同一张卡里，看着像同一类检查，
+     * 用户会以为「这里还有两项没成功」。v0.83.0 只加了一条说明行，
+     * 说明行和五项一起滚，等于没说。
+     */
+    @Test
+    public void permissionRows_splitIntoTwoCards() {
+        GuideActivity a = fresh();
+        ViewGroup main = (ViewGroup) a.findViewById(R.id.perm_notif).getParent();
+        assertSame("前两项与「后台弹出界面」同一张卡",
+                main, a.findViewById(R.id.perm_overlay).getParent());
+        assertNotSame("自启动要另起一张卡",
+                main, a.findViewById(R.id.perm_autostart).getParent());
+        assertSame("自启动与锁屏显示同一张卡",
+                a.findViewById(R.id.perm_autostart).getParent(),
+                a.findViewById(R.id.perm_lock).getParent());
+    }
+
+    /**
+     * 状态行前面那枚勾（v1.0.4，G2 + G3）。
+     *
+     * <p>两个要求各管一半：勾只有开着才挂，但**位置一直留着**（未开启挂空 vector），
+     * 否则四行的文字左边缘会错开半个勾；绿色用 {@code success_text}，
+     * 日间白卡上 {@code success}(#16A34A) 只有 3.3:1，12sp 差 AA 一截。
+     */
+    @Test
+    public void permissionState_hasCheckMarkAndReadableGreen() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf(nm).setNotificationsEnabled(false);
+
+        GuideActivity a = fresh();
+        TextView st = a.findViewById(R.id.st_notif);
+        Drawable off = st.getCompoundDrawablesRelative()[0];
+        assertNotNull("未开启也要占住勾的位置", off);
+
+        shadowOf(nm).setNotificationsEnabled(true);
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        Drawable on = st.getCompoundDrawablesRelative()[0];
+        assertNotNull("开了要挂勾", on);
+        assertEquals("占位与勾要一样宽，四行文字才对得齐",
+                off.getIntrinsicWidth(), on.getIntrinsicWidth());
+        assertNotSame("两态挂的不能是同一枚资源，否则勾永远画不出来",
+                off.getConstantState(), on.getConstantState());
+        assertEquals("绿色要用为白底调过的 success_text",
+                ContextCompat.getColor(ctx(), R.color.success_text), st.getCurrentTextColor());
+    }
+
+    /** 「改时间」的可点区要够 44dp（v1.0.4，G5）：14sp 字配 6dp 上下 padding 只有 32dp。 */
+    @Test
+    public void pickTime_touchTargetIsAtLeast48dp() {
+        GuideActivity a = fresh();
+        View v = a.findViewById(R.id.btn_pick_time);
+        float density = ctx().getResources().getDisplayMetrics().density;
+        assertTrue("可点区不足 44dp，手指偏一点就点空，实际：" + v.getMinimumHeight(),
+                v.getMinimumHeight() >= 44 * density - 1);
+    }
+
+    /** 单休 / 大小周的选项要等宽（v1.0.4，G7）：三行按钮组右对齐后左边缘才成一条线。 */
+    @Test
+    public void restDayOptions_shareSameWidth() {
+        GuideActivity a = fresh();
+        float density = ctx().getResources().getDisplayMetrics().density;
+        int[] ids = {R.id.opt_big, R.id.opt_small, R.id.opt_smallrest_sun,
+                R.id.opt_smallrest_sat, R.id.opt_rest_sun, R.id.opt_rest_sat};
+        for (int id : ids) {
+            View v = a.findViewById(id);
+            assertTrue("选项宽度该有下限，实际：" + v.getMinimumWidth(),
+                    v.getMinimumWidth() >= 76 * density - 1);
+        }
     }
 
     // ================= 第四页：当场验一下 =================

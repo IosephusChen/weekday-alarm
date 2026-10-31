@@ -95,7 +95,7 @@ public class GuideActivity extends AppCompatActivity {
     private VolumeWatcher volumeWatcher;
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
-    private TextView tvRingHint, tvRingArrow;
+    private TextView tvRingHint, tvRingArrow, ivRingChevron;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
 
@@ -138,7 +138,9 @@ public class GuideActivity extends AppCompatActivity {
         ringDetail = findViewById(R.id.ring_detail);
         tvRingHint = findViewById(R.id.tv_ring_hint);
         tvRingArrow = findViewById(R.id.tv_ring_arrow);
+        ivRingChevron = findViewById(R.id.iv_ring_chevron);
         findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
+        syncRingArrow(false);   // 默认收起：箭头先指下
 
         bindModeCards();
         bindTime();
@@ -697,18 +699,18 @@ public class GuideActivity extends AppCompatActivity {
         int r = Prefs.getLockProbeResult(this);
         if (r == Prefs.LOCK_PROBE_PASS) {
             stLock.setText("已通过 · 锁屏上能显示");
-            stLock.setTextColor(ContextCompat.getColor(this, R.color.success));
+            setStateText(stLock, true, R.color.success_text);
         } else if (r == Prefs.LOCK_PROBE_UNLOCKED) {
             stLock.setText("当时没锁屏，再测一次");
-            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+            setStateText(stLock, false, R.color.indigo);
         } else if (LockProbe.isTimedOut(this)) {
             // 真机 2×2 实测：后台弹出界面与锁屏显示缺一个锁屏都不弹，两个都要查。
             // 但这只是「可能」，不是判决——所以用中性色，不标红。
             stLock.setText("系统读不到 · 两个开关都要开");
-            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+            setStateText(stLock, false, R.color.indigo);
         } else {
             stLock.setText(HINT_OTHER_PERMS);
-            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+            setStateText(stLock, false, R.color.indigo);
         }
     }
 
@@ -716,7 +718,34 @@ public class GuideActivity extends AppCompatActivity {
         if (tv == null) return;
         tv.setText(ok ? "已开启" : "去开启");
         // v0.43.0：改读资源，深色模式下用更亮的绿（写死 #16A34A 在深卡片上只有 3:1）
-        tv.setTextColor(ContextCompat.getColor(this, ok ? R.color.success : R.color.indigo));
+        // v1.0.4：日间也换成 success_text。白卡上 #16A34A 只有 3.3:1，12sp 不算大字号，
+        // 差 AA 的 4.5；success_text(#166534) 就是为白底调过的那一档，夜间另有同值亮绿。
+        setStateText(tv, ok, ok ? R.color.success_text : R.color.indigo);
+    }
+
+    /**
+     * 写状态行：文字 + 前面那枚勾（v1.0.4）。
+     *
+     * <p>勾只有「已开启」才挂，但**位置一直留着**——未开启的行挂 {@code ic_check_slot}，
+     * 一枚同样 12dp、什么都不画的空 vector。只给开着的行加勾，四行的文字会错开
+     * 半个勾的宽度；这个清单要的是一眼扫完，不是四句各说各的。
+     *
+     * <p>用两枚资源而不是 {@code Drawable.setAlpha(0)}：alpha 在 Robolectric 的
+     * vector 实现里读不回来，守门测试就只剩一句「有 drawable」可断言，
+     * 到底挂的是勾还是空位测不出来。换成两枚资源，测试能直接比对。
+     */
+    private void setStateText(TextView tv, boolean checked, int colorRes) {
+        if (tv == null) return;
+        int color = ContextCompat.getColor(this, colorRes);
+        tv.setTextColor(color);
+        android.graphics.drawable.Drawable d = ContextCompat.getDrawable(this,
+                checked ? R.drawable.ic_check_mini : R.drawable.ic_check_slot);
+        if (d == null) return;
+        d = d.mutate();
+        androidx.core.graphics.drawable.DrawableCompat.setTint(d, color);
+        tv.setCompoundDrawablePadding(Math.round(
+                4 * getResources().getDisplayMetrics().density));
+        tv.setCompoundDrawablesRelativeWithIntrinsicBounds(d, null, null, null);
     }
 
 
@@ -842,7 +871,20 @@ public class GuideActivity extends AppCompatActivity {
         boolean open = ringDetail.getVisibility() != View.VISIBLE;
         ringDetail.setVisibility(open ? View.VISIBLE : View.GONE);
         if (tvRingHint != null) tvRingHint.setVisibility(open ? View.VISIBLE : View.GONE);
-        if (tvRingArrow != null) tvRingArrow.setText(open ? "收起 ›" : "展开 ›");
+        syncRingArrow(open);
+    }
+
+    /**
+     * 「展开 / 收起」右侧那枚箭头（v1.0.4）。
+     *
+     * <p>原来箭头写在文字里、永远指右：展开之后那一栏写着「收起 ›」，
+     * 箭头还在往右指，读不出「已经打开」。现在箭头单独一个 View，
+     * 收起时转 90° 指下（还能展开），展开时转 -90° 指上（可以收起来）。
+     * 用同一个「›」字形旋转，不依赖字体里有没有上/下箭头。
+     */
+    private void syncRingArrow(boolean open) {
+        if (tvRingArrow != null) tvRingArrow.setText(open ? "收起" : "展开");
+        if (ivRingChevron != null) ivRingChevron.setRotation(open ? -90f : 90f);
     }
 
     /**

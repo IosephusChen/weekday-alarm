@@ -1,14 +1,14 @@
 {
-  "versionCode": 240,
-  "versionName": "1.0.2",
+  "versionCode": 241,
+  "versionName": "1.0.3",
   "published": "2026-10-31",
-  "title": "每页的字和间距都过了一遍",
+  "title": "修掉线上崩溃，对齐几处不一致",
   "notes": [
-    "升级后不再弹更新日志，想看就在关于页点「检查更新」",
-    "音量条最左写「最小 7%」，最低是 0 时直接写「静音」",
-    "首页倒计时改成「1 天 21 小时」，跨天时不用再盯秒数",
-    "开关统一成紫底白点；各页字号行距重排，弹窗正文不再挤在一起"
+    "「更多设置」页按音量键会崩，已修（1.0.2 线上崩溃）",
+    "桌面小部件不那么吵了，今天那格换成实心胶囊",
+    "试听页与响铃页的按钮、诊断行统一成一套",
+    "引导页点测试通知不再回到第 1 页；锁屏自测页重排"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.2/weekday-alarm-1.0.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.3/weekday-alarm-1.0.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.3"
 }

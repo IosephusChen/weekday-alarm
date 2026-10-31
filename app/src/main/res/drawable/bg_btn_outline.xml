@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 次要动作的描边按钮。除了设置页的「恢复默认」之类，v1.1.0 起也是
+     所有弹窗主按钮的底（见 RoundedDialog.styleButtons：淡底在白卡上几乎
+     看不见边界，描边才说得清「这是一颗按钮」）。 -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
     android:color="#1F4F46E5">
     <item>

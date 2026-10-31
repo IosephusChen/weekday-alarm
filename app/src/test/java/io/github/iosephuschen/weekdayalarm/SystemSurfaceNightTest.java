@@ -60,21 +60,39 @@ public class SystemSurfaceNightTest {
 
     @Test
     @Config(qualifiers = "notnight")
-    public void day_iconBackgroundIsDeepIndigo() {
+    public void day_iconBackgroundIsDeepIndigo() throws Exception {
         assertEquals("日间 indigo 就是深靛蓝", 0xFF4F46E5,
                 ContextCompat.getColor(ctx, R.color.indigo));
-        assertEquals(0xFF4F46E5, ContextCompat.getColor(ctx, R.color.ic_launcher_bg));
+        assertIconBgIsLiteral();
     }
 
     @Test
     @Config(qualifiers = "night")
-    public void night_iconColorStaysWhileAppPaletteBrightens() {
+    public void night_iconColorStaysWhileAppPaletteBrightens() throws Exception {
         // 先证明夜间配置真的在生效：indigo 被 values-night 提亮成浅紫。
         // 没有这一句，下面「图标色没变」可能是测试根本没跑在夜间配置上。
         assertEquals("夜间 indigo 被提亮（App 内界面要用）", 0xFF818CF8,
                 ContextCompat.getColor(ctx, R.color.indigo));
-        // 图标专用色没有夜间版，日夜同色——桌面图标不再发白。
-        assertEquals(0xFF4F46E5, ContextCompat.getColor(ctx, R.color.ic_launcher_bg));
+        // v1.0.5 起图标底色是 drawable 里的渐变，不再是一个 color token。
+        // 守的东西没变：它必须写死字面值，不能引用会随夜间切换的 @color。
+        assertIconBgIsLiteral();
+    }
+
+    /**
+     * 图标底色必须写死，不能引用 {@code @color/}（v1.0.5 把 color 换成渐变 drawable 后改的判据）。
+     *
+     * <p>原来这条钉的是「{@code R.color.ic_launcher_bg} 没有夜间版」。现在底色是个
+     * {@code <shape>} 渐变，颜色以字面值写在里面——判据换成「里面不许出现 @color 引用」：
+     * 一旦有人图省事改成 {@code android:startColor="@color/indigo"}，
+     * 夜间就会重演 v0.76.1 那次「图标发白」。
+     */
+    private void assertIconBgIsLiteral() throws Exception {
+        String xml = read(iconFile("src/main/res/drawable/ic_launcher_bg.xml"));
+        // 只看标签本身：注释里提到 @color/indigo 是在解释「为什么不能用」，不算违规
+        String body = xml.replaceAll("(?s)<!--.*?-->", "");
+        assertFalse("图标底色不能引用 @color（夜间会被提亮，v0.76.1 用户反馈「像变透明了」）",
+                body.contains("@color/"));
+        assertTrue("渐变两个端点要写死在文件里", body.contains("#6459F2") && body.contains("#4C42D9"));
     }
 
     /** 两类系统 surface 的配置文件都必须引用无夜间版的固定 token。 */
@@ -82,7 +100,7 @@ public class SystemSurfaceNightTest {
     public void systemSurfaceFiles_useNightlessTokens() {
         for (String path : ICON_XMLS) {
             String xml = read(iconFile(path));
-            assertTrue(path + " 应引用 ic_launcher_bg", xml.contains("@color/ic_launcher_bg"));
+            assertTrue(path + " 应引用 ic_launcher_bg", xml.contains("@drawable/ic_launcher_bg"));
             assertFalse(path + " 不能再引用随夜间切换的 @color/indigo",
                     xml.contains("@color/indigo\""));
         }

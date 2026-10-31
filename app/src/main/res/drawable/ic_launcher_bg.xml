@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 桌面图标底色（v1.0.5）：原来是纯色 #4F46E5，是一块死板的靛蓝。
+     改成同色系的纵向渐变，顶部略亮、底部略深——变化很小，只为了在大尺寸
+     （应用信息页、应用商店）下不至于像一块色卡，小尺寸下几乎看不出来。
+
+     **颜色必须写死，不能引用 @color/indigo**：v0.76.1 踩过这个坑——启动器
+     是系统 surface，资源解析走夜间配置，而 indigo 在 values-night 里被提亮成
+     #818CF8，深夜壁纸上整个图标发白，用户反馈「像变透明了」。
+     App 内界面该提亮提亮，图标这块必须日夜一个色，所以这里直接落字面值。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="90"
+        android:endColor="#4C42D9"
+        android:startColor="#6459F2" />
+</shape>

@@ -46,10 +46,11 @@ public class ColorTokenTest {
      *       在此之前它们引用 {@code indigo / violet / indigo_dark}，这三个色有夜间版，
      *       深色模式下三张卡（两个小部件根背景 + 首页「今日状态」卡）一起变成淡粉紫。
      *       详见 {@code values/colors.xml} 里同名字段的注释。</li>
-     *   <li>{@code ic_launcher_bg}：v0.76.1 桌面图标专用底色。启动器是系统 surface，
-     *       资源解析走**启动器的**配置——系统深色模式下 values-night 会作用到图标上。
-     *       早先图标背景引用 {@code indigo}（有夜间版），深夜色壁纸上整个图标发白，
-     *       用户反馈「夜间变得有些透明」。这个色必须日夜同值，故不设夜间版。</li>
+     *   <li>{@code ic_launcher_bg}：v0.76.1 起是桌面图标专用底色，v1.0.5 从 color
+     *       换成了 {@code drawable/ic_launcher_bg.xml} 里的渐变（原因同上：启动器是
+     *       系统 surface，values-night 会作用到图标上，深夜壁纸上整个图标发白，
+     *       用户反馈「夜间变得有些透明」）。所以这个名字已经不在 colors.xml 里，
+     *       也不再需要登记——守门改由 {@code SystemSurfaceNightTest} 直接检查那个文件。</li>
      * </ul>
      */
     private static final Set<String> NIGHTLESS = new LinkedHashSet<>();
@@ -64,7 +65,6 @@ public class ColorTokenTest {
         NIGHTLESS.add("hero_start");
         NIGHTLESS.add("hero_end");
         NIGHTLESS.add("hero_text");
-        NIGHTLESS.add("ic_launcher_bg");
         // v0.92.0：响铃悬浮横幅。整条横幅的底是固定深紫渐变（float_card_bg_start/end），
         // 本来就不跟夜间模式变——它只在响铃那一刻出现，那一刻要的是「被叫醒」。
         // 压在这个底上的四个色也必须日夜同值，否则夜里会换一档紫，和底对不上。

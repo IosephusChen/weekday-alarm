@@ -1,14 +1,14 @@
 {
-  "versionCode": 241,
-  "versionName": "1.0.3",
-  "published": "2026-10-31",
-  "title": "修掉线上崩溃，对齐几处不一致",
+  "versionCode": 242,
+  "versionName": "1.0.4",
+  "published": "2026-11-01",
+  "title": "弹窗和引导页重排，图标也换了",
   "notes": [
-    "「更多设置」页按音量键会崩，已修（1.0.2 线上崩溃）",
-    "桌面小部件不那么吵了，今天那格换成实心胶囊",
-    "试听页与响铃页的按钮、诊断行统一成一套",
-    "引导页点测试通知不再回到第 1 页；锁屏自测页重排"
+    "列表弹窗标题下那句说明一直没显示出来，已修",
+    "睡前提醒改成选完点「完成」，关掉时那行开关仍看得见",
+    "引导页权限清单拆成两张卡，已开的打勾；点通知不再回首页",
+    "桌面图标换成带刻度的表盘；节日与节气三项各补了举例"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.3/weekday-alarm-1.0.3.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.3"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.4/weekday-alarm-1.0.4.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.4"
 }

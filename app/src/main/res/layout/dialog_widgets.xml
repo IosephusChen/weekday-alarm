@@ -9,12 +9,14 @@
      唯一入口，多数人翻不到「全部应用」就放弃了。写错路径比不写更让人挫败。
   2. 三个组件只有一句话描述，用户得先加一个才知道长什么样。
 
-  v1.1.0 四处调整：
+  v1.1.0 五处调整：
   · 三行套进 section_bg 淡底卡——原来「图 + 字」中间只有 12dp 空白，
     读起来是「三张图各配一段字」，不是「三个可选的小部件」；
-  · 图框 144×96 → 120×80，去掉 bg_widget_preview 底板（卡片本身就是底），
-    fitCenter 改 fitStart：三张图比例不同（1.52 / 1.25 / 1.0），居中会让
-    第二张两边都留白、看起来缩进了一截，左上对齐则左边缘始终是一条线；
+  · 图框 144×96 → 120×80，去掉 bg_widget_preview 底板（卡片本身就是底）；
+  · 缩放仍是 fitCenter。一度改过 fitStart（想让三张图左边缘对齐），渲图后发现
+    FIT_START 的定义是「缩放到不小于视图」，1.0 的那张会撑成 240×240、
+    纵向溢出 80px 顶出卡片内边距，三张卡因此高矮不一。图例统一装进
+    120×80 的框居中，卡片等高比左边缘齐更要紧；
   · 说明 11sp → 12sp、行距 1.4 —— 原来是全 App 最小的正文；
   · 路径从主色改成正文色：主色在这个 App 里等于「可点」，而这句点不动。
     真正需要看见的是「安卓小部件」那一层，用加粗而不是用颜色（见 WidgetGuide）。
@@ -81,7 +83,7 @@
                     android:layout_width="120dp"
                     android:layout_height="80dp"
                     android:contentDescription="下次响铃预览"
-                    android:scaleType="fitStart"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/widget_next_alarm_preview" />
 
                 <LinearLayout
@@ -124,7 +126,7 @@
                     android:layout_width="120dp"
                     android:layout_height="80dp"
                     android:contentDescription="整月班表预览"
-                    android:scaleType="fitStart"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/widget_week_schedule_month_preview" />
 
                 <LinearLayout
@@ -167,7 +169,7 @@
                     android:layout_width="120dp"
                     android:layout_height="80dp"
                     android:contentDescription="紧凑月历预览"
-                    android:scaleType="fitStart"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/widget_month_minimal_preview" />
 
                 <LinearLayout

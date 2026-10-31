@@ -43,12 +43,20 @@ public final class RoundedDialog {
      * 换掉它要自绘一整个按钮容器，会把时间滚轮、周休制度、铃声选择这些无关弹窗
      * 一起卷进去。换 background 是两行改动的中间态——结构仍是系统的，看起来是 App 的。
      *
+     * <p><b>{@code setBackgroundTintList(null)} 是必需的，不是保险。</b>系统按钮在
+     * Material 主题下是 MaterialButton，它会把后设的 background 包进自己的
+     * MaterialShapeDrawable 并刷上 {@code backgroundTint}（默认 colorPrimary）。结果是
+     * 淡紫底没出来、整块被染成主色，而字也是主色——按钮变成一块没有字的紫疙瘩。
+     * 这个坑是渲图才发现的：编译通过、测试全绿、代码读起来毫无破绽。
+     *
      * <p>按钮可能不存在（只有一个按钮、或者只有视图没有按钮的弹窗），两处都判空。
      */
     private static void styleButtons(AlertDialog dialog) {
         Context c = dialog.getContext();
         Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (positive != null) {
+            // 先清 tint 再换背景，见上面注释；顺序反了等于白清
+            positive.setBackgroundTintList(null);
             positive.setBackgroundResource(R.drawable.bg_btn_dialog_primary);
             positive.setTextColor(ContextCompat.getColor(c, R.color.indigo));
             // 系统默认把按钮文字转全大写（英文按钮会变 OK / CANCEL）。中文没影响，

@@ -32,6 +32,12 @@ public final class RoundedDialog {
         if (w == null) return;
         w.setBackgroundDrawableResource(R.drawable.bg_dialog);
         styleButtons(dialog);
+        // 幂等兜底：Builder.create() 走的是 create 分支，那时 AlertController 还没把按钮
+        // 装进窗口（要等 show() 才 addView），getButton 三个全是 null，样式静默跳过——
+        // 1.0.3 及之前所有走 .create() 的弹窗（编辑闹钟、选择铃声、睡前提醒）
+        // 因此一直是系统蓝紫文字，而走 .show() 的另外十二个是描边块。
+        // 挂在 onShow 上再设一次；styleButtons 内部用绝对值写边距，重复调用不会叠加。
+        dialog.setOnShowListener(d -> styleButtons(dialog));
     }
 
     /**
@@ -85,10 +91,11 @@ public final class RoundedDialog {
             // 右边距补到与正文的 20dp 对齐（系统给的是 12dp），见上面注释。
             // ButtonBarLayout 里的按钮是 LinearLayout.LayoutParams，但不同 ROM 的主题
             // 可能换成别的容器，所以按 MarginLayoutParams 判断而不是强转。
+            // 写绝对值而不是 +=：styleButtons 会从 create 和 onShow 各调一次。
             ViewGroup.LayoutParams lp = positive.getLayoutParams();
             if (lp instanceof ViewGroup.MarginLayoutParams) {
                 ViewGroup.MarginLayoutParams m = (ViewGroup.MarginLayoutParams) lp;
-                m.setMarginEnd(m.getMarginEnd() + dp(c, 8));
+                m.setMarginEnd(dp(c, 20));
                 positive.setLayoutParams(m);
             }
         }
@@ -96,6 +103,28 @@ public final class RoundedDialog {
         if (negative != null) {
             negative.setTextColor(ContextCompat.getColor(c, R.color.sub));
             negative.setAllCaps(false);
+        }
+        // 中性位（v1.0.4）：编辑闹钟的「删除这个闹钟」原来是一整条淡红卡，
+        // 紧贴在「保存」上面——手指从保存往上滑一点就落到删除上。挪到按钮栏最左
+        // 之后它与主按钮隔着一个「取消」，误触成本回到正常；弹窗本身也短了 54dp。
+        Button neutral = dialog.getButton(DialogInterface.BUTTON_NEUTRAL);
+        if (neutral != null) {
+            neutral.setBackgroundTintList(null);
+            neutral.setBackground(null);
+            neutral.setTextColor(ContextCompat.getColor(c, R.color.danger));
+            neutral.setAllCaps(false);
+            neutral.setMinWidth(0);
+            neutral.setMinimumWidth(0);
+            neutral.setMinHeight(0);
+            neutral.setMinimumHeight(0);
+            neutral.setPadding(dp(c, 8), dp(c, 9), dp(c, 8), dp(c, 9));
+            // 与正文的 20dp 左边界对齐（系统给 12dp），和主按钮的右边距对称
+            ViewGroup.LayoutParams nlp = neutral.getLayoutParams();
+            if (nlp instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams nm = (ViewGroup.MarginLayoutParams) nlp;
+                nm.setMarginStart(dp(c, 20));
+                neutral.setLayoutParams(nm);
+            }
         }
     }
 

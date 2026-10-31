@@ -175,21 +175,31 @@ public final class DialogKit {
      */
     public static void showPick(Context c, String title, String sub, String[] items,
                                 String[] subs, int checked, OnPick onPick) {
+        showPickWithTip(c, title, sub, null, items, subs, checked, onPick);
+    }
+
+    /**
+     * 带尾部补充说明的列表选择（v1.0.4）。
+     *
+     * <p>为什么要有 {@code tip} 这一路：{@code dialog_pre_notice} 这一族的说明文字
+     * 分两种——{@code *_message} 是「这个选项是什么意思」，看一两行就得知道；
+     * {@code *_TIP} 是「用起来会遇到什么」，比如「次数用完只剩滑动停止」、
+     * 「电源键可能被系统接管」。以前两者用 {@code "\n"} 拼成一个字符串塞进副标题，
+     * 副标题又因为下面那个 bug 一直没显示过，所以没人发现它们叠在一起有多长
+     * （响铃前提醒那条拼起来 170 多字，按 12sp 排下去要八行，能把选项挤出弹窗）。
+     *
+     * <p>现在副标题只放 message，tip 挂到列表末尾，跟着列表一起滚：短列表多几行
+     * 不影响，长列表不额外吃高度，读不到的人也确实不需要它。
+     */
+    public static void showPickWithTip(Context c, String title, String sub, String tip,
+                                       String[] items, String[] subs, int checked,
+                                       OnPick onPick) {
         View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
         TextView tvTitle = view.findViewById(R.id.tv_pick_title);
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
         LinearLayout list = view.findViewById(R.id.dlg_pick_list);
 
-        if (title == null || title.isEmpty()) {
-            tvTitle.setVisibility(View.GONE);
-        } else {
-            tvTitle.setText(title);
-        }
-        if (sub == null || sub.isEmpty()) {
-            tvSub.setVisibility(View.GONE);
-        } else {
-            tvSub.setText(sub);
-        }
+        fillHeader(tvTitle, tvSub, title, sub);
 
         // 先 show 拿到对话框实例，点击回调里连它一起关。用数组持有是因为 Java 的
         // lambda 只能抓 effectively final——这里的对话框是在这些回调挂上去之后才存在的
@@ -212,6 +222,7 @@ public final class DialogKit {
             list.addView(row);
         }
 
+        addTip(c, list, tip);
         capListHeight(view);
         dlg[0] = new RoundedDialog.Builder(c).setView(view).show();
     }
@@ -235,16 +246,7 @@ public final class DialogKit {
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
         LinearLayout list = view.findViewById(R.id.dlg_pick_list);
 
-        if (title == null || title.isEmpty()) {
-            tvTitle.setVisibility(View.GONE);
-        } else {
-            tvTitle.setText(title);
-        }
-        if (sub == null || sub.isEmpty()) {
-            tvSub.setVisibility(View.GONE);
-        } else {
-            tvSub.setText(sub);
-        }
+        fillHeader(tvTitle, tvSub, title, sub);
 
         for (int i = 0; i < items.length; i++) {
             final int which = i;
@@ -295,21 +297,18 @@ public final class DialogKit {
      */
     public static void showGroupPick(Context c, String title, String sub,
                                      Group[] groups, OnGroupPick onDone) {
+        showGroupPickWithTip(c, title, sub, null, groups, onDone);
+    }
+
+    /** 带尾部补充说明的分组单选，{@code tip} 的取舍见 {@link #showPickWithTip}。 */
+    public static void showGroupPickWithTip(Context c, String title, String sub, String tip,
+                                            Group[] groups, OnGroupPick onDone) {
         View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
         TextView tvTitle = view.findViewById(R.id.tv_pick_title);
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
         LinearLayout list = view.findViewById(R.id.dlg_pick_list);
 
-        if (title == null || title.isEmpty()) {
-            tvTitle.setVisibility(View.GONE);
-        } else {
-            tvTitle.setText(title);
-        }
-        if (sub == null || sub.isEmpty()) {
-            tvSub.setVisibility(View.GONE);
-        } else {
-            tvSub.setText(sub);
-        }
+        fillHeader(tvTitle, tvSub, title, sub);
 
         final int[] checked = new int[groups.length];
         final View[][] cards = new View[groups.length][];
@@ -317,6 +316,16 @@ public final class DialogKit {
             Group grp = groups[g];
             checked[g] = grp.checked;
             if (grp.title != null && !grp.title.isEmpty()) {
+                // 组与组之间拉一条细线（v1.0.4）：两组各有一个勾、各一排卡片，
+                // 只隔 16dp 时整列看下来像六项连在一起，用户会以为勾可以跨组移动。
+                if (g > 0) {
+                    View hr = new View(c);
+                    hr.setBackgroundColor(ContextCompat.getColor(c, R.color.line));
+                    LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, dp(c, 1));
+                    hlp.topMargin = dp(c, 20);
+                    list.addView(hr, hlp);
+                }
                 TextView gt = new TextView(c);
                 gt.setText(grp.title);
                 gt.setTextColor(ContextCompat.getColor(c, R.color.sub));
@@ -324,7 +333,7 @@ public final class DialogKit {
                 LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);
-                glp.topMargin = dp(c, 16);
+                glp.topMargin = dp(c, g == 0 ? 16 : 10);
                 list.addView(gt, glp);
             }
             cards[g] = new View[grp.items.length];
@@ -355,6 +364,7 @@ public final class DialogKit {
             }
         }
 
+        addTip(c, list, tip);
         capListHeight(view);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
         b.setView(view);
@@ -405,6 +415,20 @@ public final class DialogKit {
             ((TextView) t).setText(sub);
             t.setVisibility(View.VISIBLE);
         }
+    }
+
+    /**
+     * 标记「正在试听」（v1.0.4）：副标题转主色。
+     *
+     * <p>不用 {@code setSelected(true)} 表达试听中——那个状态已经被「当前选中」占了，
+     * 两项同时变紫之后，用户会以为试听就等于选中了。改颜色既能一眼扫到在响的是哪条，
+     * 又和「选中」的淡紫底不撞。
+     */
+    static void markPlaying(View card, boolean playing) {
+        View t = card.findViewWithTag(TAG_SUB);
+        if (!(t instanceof TextView)) return;
+        ((TextView) t).setTextColor(ContextCompat.getColor(t.getContext(),
+                playing ? R.color.indigo : R.color.sub));
     }
 
     /** 选项卡里右侧那个勾的 tag。 */
@@ -497,6 +521,52 @@ public final class DialogKit {
      * 按钮区约 56dp、上下留白约 60dp，还剩 600dp。压到 440dp 之后，铃声列表一屏
      * 能看到 7 张卡，剩下的交给常显滚动条提示。
      */
+    /**
+     * 填 {@code dialog_pick} 的标题与副标题。
+     *
+     * <p><b>{@code setVisibility(VISIBLE)} 是 1.0.4 补的 bug 修复。</b>
+     * {@code dialog_pick} 里 {@code tv_pick_sub} 的 XML 默认是 {@code gone}
+     * （短标题时不想留一行空白），而三个方法都只 {@code setText}、没让它可见——
+     * 于是从 v0.74.0 起，这些弹窗的副标题一次都没显示过：提醒范围那段一百字的解释、
+     * 响铃前提醒那句「可以提前把这一个闹钟关掉」、稍后提醒的「按音量键会推迟多久」，
+     * 用户从来没见过。铃声明明单独补过同一句修复（见 {@code RingtoneDialog} 的注释），
+     * 三个通用方法反倒漏了——「只修看得见的那一处」是这类 bug 最常见的形态。
+     */
+    private static void fillHeader(TextView tvTitle, TextView tvSub, String title, String sub) {
+        if (title == null || title.isEmpty()) {
+            tvTitle.setVisibility(View.GONE);
+        } else {
+            tvTitle.setText(title);
+            tvTitle.setVisibility(View.VISIBLE);
+        }
+        if (sub == null || sub.isEmpty()) {
+            tvSub.setVisibility(View.GONE);
+        } else {
+            tvSub.setText(sub);
+            tvSub.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * 列表末尾的补充说明。
+     *
+     * <p>挂在列表里而不是标题下方：说明往往比选项还长，钉在标题下面会把选项挤下去；
+     * 跟着列表滚则短列表多几行、长列表不多占高度，滚到底才看见也不碍事。
+     */
+    private static void addTip(Context c, LinearLayout list, String tip) {
+        if (tip == null || tip.isEmpty()) return;
+        TextView t = new TextView(c);
+        t.setText(tip);
+        t.setTextColor(ContextCompat.getColor(c, R.color.sub));
+        t.setTextSize(12);
+        t.setLineSpacing(dp(c, 2), 1f);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(c, 14);
+        list.addView(t, lp);
+    }
+
     static void capListHeight(View root) {
         capScrollHeight(root.findViewById(R.id.dlg_pick_scroll), 0.55f);
     }

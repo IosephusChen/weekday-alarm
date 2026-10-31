@@ -69,9 +69,10 @@ public final class PrefDialogs {
      * @param onChanged 确定后的回调，调用方用来刷新自己那一行文案
      */
     public static void showSnooze(Context c, Runnable onChanged) {
-        DialogKit.showGroupPick(c,
+        DialogKit.showGroupPickWithTip(c,
                 c.getString(R.string.dialog_snooze_title),
-                c.getString(R.string.dialog_snooze_message) + "\n" + SNOOZE_TIP,
+                c.getString(R.string.dialog_snooze_message),
+                SNOOZE_TIP,
                 new DialogKit.Group[]{
                         new DialogKit.Group("间隔", SNOOZE_MINUTE_ITEMS,
                                 snoozeIndex(SNOOZE_MINUTE_VALUES, Prefs.getSnoozeMinutes(c), 4)),
@@ -137,10 +138,11 @@ public final class PrefDialogs {
             }
         }
         if (cur > 60) checked = PRE_NOTICE_ITEMS.length - 1;
-        DialogKit.showPick(c,
+        DialogKit.showPickWithTip(c,
                 c.getString(R.string.dialog_pre_notice_title),
-                c.getString(R.string.dialog_pre_notice_message) + "\n" + PRE_NOTICE_TIP,
-                PRE_NOTICE_ITEMS, checked,
+                c.getString(R.string.dialog_pre_notice_message),
+                PRE_NOTICE_TIP,
+                PRE_NOTICE_ITEMS, null, checked,
                 picked -> {
                     Prefs.setPreNoticeMinutes(c, PRE_NOTICE_VALUES[picked]);
                     Reschedule.run(c, onChanged);

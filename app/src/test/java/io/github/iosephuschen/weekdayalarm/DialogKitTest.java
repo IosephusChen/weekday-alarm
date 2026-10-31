@@ -108,7 +108,12 @@ public class DialogKitTest {
 
         AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
         LinearLayout list = listOf(d);
-        assertEquals("两个组标题", 2, list.getChildCount() - cardsOf(list).size());
+        // v1.0.4 组与组之间加了一条分隔线（纯 View），所以不能再用「子视图数 - 卡片数」数标题
+        int headers = 0;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            if (list.getChildAt(i) instanceof TextView) headers++;
+        }
+        assertEquals("两个组标题（分隔线不算）", 2, headers);
         assertEquals("音量键（响铃时按）", String.valueOf(((TextView) list.getChildAt(0)).getText()));
 
         java.util.List<View> cards = cardsOf(list);
@@ -429,5 +434,53 @@ public class DialogKitTest {
         assertTrue(Prefs.isLunarFestivals(ctx()));
         assertFalse("二十四节气应被取消", Prefs.isSolarTerms(ctx()));
         assertTrue("基督教节日应被勾上", Prefs.isChristianFestivals(ctx()));
+    }
+
+    /**
+     * 副标题必须真的可见，补充说明挂在列表末尾（v1.0.4 回归）。
+     *
+     * <p>{@code dialog_pick} 里 {@code tv_pick_sub} 的 XML 默认是 {@code gone}，
+     * 而 {@code showPick} / {@code showMultiPick} / {@code showGroupPick} 三个方法
+     * 都只 {@code setText}、忘了 {@code setVisibility(VISIBLE)}——从 v0.74.0 到 1.0.3，
+     * 所有列表选择弹窗的说明文字一次都没显示过。这条只钉两件事：
+     * 传了 sub 就得看得见；tip 挂在列表最后一项，不跟副标题挤在一起。
+     */
+    @Test
+    public void showPickWithTip_subIsVisible_tipSitsAtListEnd() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        DialogKit.showPickWithTip(a, "响铃前提醒", "响铃前先在通知栏提醒一次",
+                "提示：到点前会提醒一次，不响铃也不点亮屏幕",
+                new String[]{"关闭", "提前 5 分钟"}, null, 0, which -> {
+                });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        TextView sub = d.findViewById(R.id.tv_pick_sub);
+        assertEquals("副标题应可见（1.0.3 及之前这里是 gone）",
+                View.VISIBLE, sub.getVisibility());
+        assertEquals("响铃前先在通知栏提醒一次", sub.getText().toString());
+
+        LinearLayout list = listOf(d);
+        View last = list.getChildAt(list.getChildCount() - 1);
+        assertTrue("列表最后一项应是补充说明", last instanceof TextView);
+        assertEquals("提示：到点前会提醒一次，不响铃也不点亮屏幕",
+                ((TextView) last).getText().toString());
+    }
+
+    /** 没有 sub 时不占位——短标题的弹窗不该凭空多出一行空白。 */
+    @Test
+    public void showPick_withoutSub_keepsSubGone() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        DialogKit.showPick(a, "周休制度", null, new String[]{"大小周"}, -1, which -> {
+        });
+
+        TextView sub = ((AlertDialog) ShadowAlertDialog.getLatestDialog())
+                .findViewById(R.id.tv_pick_sub);
+        assertEquals(View.GONE, sub.getVisibility());
     }
 }

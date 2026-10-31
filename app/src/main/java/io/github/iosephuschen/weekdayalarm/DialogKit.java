@@ -344,7 +344,10 @@ public final class DialogKit {
                 TextView gt = new TextView(c);
                 gt.setText(grp.title);
                 gt.setTextColor(ContextCompat.getColor(c, R.color.sub));
-                gt.setTextSize(12);
+                // v1.0.4：12sp 与正文说明同级，读起来像又一句解释而不是标签。
+                // 退到 11sp 并把字距略开（中文 0.06em ≈ 0.7dp/字），才像小标题。
+                gt.setTextSize(11);
+                gt.setLetterSpacing(0.06f);
                 LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);

@@ -76,7 +76,10 @@ public final class PrefDialogs {
                 new DialogKit.Group[]{
                         new DialogKit.Group("间隔", SNOOZE_MINUTE_ITEMS,
                                 snoozeIndex(SNOOZE_MINUTE_VALUES, Prefs.getSnoozeMinutes(c), 4)),
-                        new DialogKit.Group("最多几次（每次响铃分别计数）", SNOOZE_TIMES_ITEMS,
+                        // v1.0.4：原来标题写「最多几次（每次响铃分别计数）」，把口径塞进主文案。
+                        // 这句话末尾的 TIP 已经说了一遍（「计数按「闹钟 × 日期」分别统计」），
+                        // 同一个规则讲两次，还把标题撑成两行。组名只留问句。
+                        new DialogKit.Group("最多几次", SNOOZE_TIMES_ITEMS,
                                 snoozeIndex(SNOOZE_TIMES_VALUES, Prefs.getSnoozeTimes(c), 3)),
                 },
                 picked -> {

@@ -483,4 +483,44 @@ public class DialogKitTest {
                 .findViewById(R.id.tv_pick_sub);
         assertEquals(View.GONE, sub.getVisibility());
     }
+
+    /**
+     * 分组小标题是标签，不是又一句解释（v1.0.4，D7）。
+     *
+     * <p>原来 12sp，和正文副标题（12sp）同级，一眼看过去整列都是「说明文字」，
+     * 分组就白分了。退到 11sp 再把字距略开，才读得出「这是一栏的名字」。
+     */
+    @Test
+    public void showGroupPick_groupTitleIsLabelNotParagraph() {
+        resetPrefs();
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        ShadowAlertDialog.reset();
+
+        DialogKit.showGroupPick(a, "按键设置", "响铃时按分别会做什么",
+                new DialogKit.Group[]{
+                        new DialogKit.Group("间隔", new String[]{"3 分钟"}, 0),
+                        new DialogKit.Group("最多几次", new String[]{"1 次"}, 0)},
+                checked -> {
+                });
+
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        LinearLayout list = listOf(d);
+        TextView title = null;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View v = list.getChildAt(i);
+            if (v instanceof TextView) {
+                title = (TextView) v;
+                break;
+            }
+        }
+        assertNotNull("应有一枚组标题", title);
+        assertEquals("组标题 11sp", 11f, title.getTextSize(), 0.01f);
+        assertTrue("字距要略开，否则还是像正文", title.getLetterSpacing() > 0.02f);
+        // 选项主文案是 15sp：组标题必须明显小一档，否则「分组」立不住
+        View first = cardsOf(list).get(0);
+        TextView optionTitle = (TextView) ((ViewGroup) ((ViewGroup) first).getChildAt(0))
+                .getChildAt(0);
+        assertTrue("组标题要比选项主文案小一档",
+                title.getTextSize() < optionTitle.getTextSize());
+    }
 }

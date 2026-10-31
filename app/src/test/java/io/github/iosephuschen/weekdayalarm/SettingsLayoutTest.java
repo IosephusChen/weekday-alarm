@@ -309,6 +309,34 @@ public class SettingsLayoutTest {
     }
 
     /**
+     * 提醒范围三个选项的主文案里不许再有括注（v1.0.4，D5）。
+     *
+     * <p>原来写「90 天（默认）」「365 天（一整年）」——括注挤在主文案里，
+     * 一行放不下就折两行，三个选项被推到底部。现在括注拆成副标题，
+     * 主文案只留天数，扫一眼就能选。
+     */
+    @Test
+    public void horizonOptions_noteMovedToSubtitle() {
+        android.content.Context c = ApplicationProvider.getApplicationContext();
+        int[] ids = {R.string.dialog_horizon_90, R.string.dialog_horizon_180,
+                R.string.dialog_horizon_365};
+        for (int id : ids) {
+            String s = c.getString(id);
+            assertFalse("选项主文案不该带括注：" + s, s.contains("（") || s.contains("("));
+        }
+        assertEquals("「默认」应挂在 90 天下面", "默认",
+                c.getString(R.string.dialog_horizon_90_sub));
+        assertEquals("「一整年」应挂在 365 天下面", "一整年",
+                c.getString(R.string.dialog_horizon_365_sub));
+        // 副标题只讲「范围是什么意思」，两行内读完；数据来源与以后怎么办挪到 TIP
+        String sub = c.getString(R.string.dialog_horizon_message);
+        assertTrue("副标题要短到两行内，实际 " + sub.length() + " 字", sub.length() <= 40);
+        assertFalse("数据来源那段该在 TIP 里，不该挤在副标题", sub.contains("2027"));
+        assertTrue("TIP 要讲清数据覆盖到哪年",
+                c.getString(R.string.dialog_horizon_tip).contains("2026"));
+    }
+
+    /**
      * 主页四个分组名（v0.82.0 起，v0.82.1 定稿）。
      *
      * <p>定稿：「响铃 / 周休与节假日 / 提醒 / 更多」。只改了两处口径——

@@ -476,13 +476,21 @@ public class SettingsActivity extends AppCompatActivity {
      */
     private void showHorizonDialog() {
         int cur = Prefs.getHorizonDays(this);
-        DialogKit.showPick(this,
+        // v1.0.4：说明拆两处。「多少天内有效」写进副标题（两行内读完），
+        // 「数据从哪来、以后怎么办」挪到列表末尾的 TIP——原来那 100 字全堆在副标题上，
+        // 排四行，把三个选项顶到弹窗底部，用户得先读完一段说明才够得着要选的东西。
+        DialogKit.showPickWithTip(this,
                 getString(R.string.dialog_horizon_title),
                 getString(R.string.dialog_horizon_message),
+                getString(R.string.dialog_horizon_tip),
                 new String[]{
                         getString(R.string.dialog_horizon_90),
                         getString(R.string.dialog_horizon_180),
                         getString(R.string.dialog_horizon_365)},
+                new String[]{
+                        getString(R.string.dialog_horizon_90_sub),
+                        null,
+                        getString(R.string.dialog_horizon_365_sub)},
                 cur == 180 ? 1 : cur == 365 ? 2 : 0,
                 which -> {
                     int days = which == 1 ? 180 : which == 2 ? 365 : 90;

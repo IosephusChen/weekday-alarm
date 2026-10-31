@@ -216,10 +216,15 @@
 
     <!-- ===== 设置页对话框布局（v0.73.7 从内联迁入）===== -->
     <string name="dialog_horizon_title">提醒范围</string>
-    <string name="dialog_horizon_message">节假日安排目前内置到 2026 年底。选择更长范围时，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖），2027 年安排公布后 App 更新数据即可自动生效，无需改设置。</string>
-    <string name="dialog_horizon_90">90 天（默认）</string>
+    <!-- v1.0.4：说明拆两段。副标题只说「这个范围是什么意思」，两行内读完；
+         「数据从哪来、以后怎么办」挂到列表末尾的 TIP。 -->
+    <string name="dialog_horizon_message">往后排多少天的提醒。排得越远，占用的排程越多。</string>
+    <string name="dialog_horizon_tip">节假日安排目前内置到 2026 年底，超出部分按当前周休制度推算（法定放假与调休补班不会自动覆盖）；2027 年安排公布后更新 App 即可自动生效，无需改设置。</string>
+    <string name="dialog_horizon_90">90 天</string>
+    <string name="dialog_horizon_90_sub">默认</string>
     <string name="dialog_horizon_180">180 天</string>
-    <string name="dialog_horizon_365">365 天（一整年）</string>
+    <string name="dialog_horizon_365">365 天</string>
+    <string name="dialog_horizon_365_sub">一整年</string>
     <string name="dialog_calendar_content_title">节日与节气</string>
     <string name="dialog_calendar_content_message">日历格子里除了「班 / 休」，还可以显示这些名字。挑想看的，不影响闹钟排班。</string>
     <string name="dialog_calendar_content_lunar">农历节日</string>

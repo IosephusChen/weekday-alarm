@@ -14,6 +14,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Looper;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
@@ -24,6 +25,7 @@ import androidx.test.core.app.ApplicationProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.Shadows;
 import org.robolectric.annotation.Config;
@@ -289,5 +291,46 @@ public class BugfixRegressionTest {
         // 1583 起恢复正常（2026 年复活节是 4 月 5 日）
         assertEquals("复活", ChristianCalendar.festival(LocalDate.of(2026, 4, 5)));
         assertNull("不是节日仍是 null", ChristianCalendar.festival(LocalDate.of(2026, 7, 1)));
+    }
+
+    // ---------- 7. 二级设置页：音量轮询不能在没音量行的页面上崩 ----------
+
+    /**
+     * 「响铃方式 / 更多设置」是 {@link MoreSettingsActivity}——继承 {@link SettingsActivity}
+     * 只换布局，代码是同一份。那份布局里没有音量行，所以 {@code tvVolume} 是 null。
+     *
+     * <p>{@code onResume} 与 {@code refreshAll} 早就各自判了空，唯独
+     * {@link VolumeWatcher} 的回调直接调 {@code updateVolumeText()}：「在这一页按一下
+     * 音量键」就崩在 {@code tvVolume.setText}。1.0.2 用户实测崩的就是这条
+     * （日志 2026-10-31 13:00，栈是 VolumeWatcher.run → lambda → SettingsActivity）。
+     *
+     * <p>两处都修了：方法自己判空兜底，源头也干脆不在没有音量行的页面启动轮询。
+     */
+    @Test
+    public void moreSettings_volumeWatcherDoesNotCrash() throws Exception {
+        MoreSettingsActivity a = Robolectric.buildActivity(MoreSettingsActivity.class,
+                MoreSettingsActivity.intent(ctx(), false)).setup().get();
+        assertNull("二级页没有音量行，tvVolume 为 null 才让这个 bug 成立",
+                a.findViewById(R.id.tv_volume));
+
+        // 1) 兜底：方法自己被直接调用也得跳过，不能靠调用方小心
+        java.lang.reflect.Method m =
+                SettingsActivity.class.getDeclaredMethod("updateVolumeText");
+        m.setAccessible(true);
+        try {
+            m.invoke(a);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            throw new AssertionError("没有音量行的页面上 updateVolumeText 必须自己跳过",
+                    e.getCause());
+        }
+
+        // 2) 源头：这一页不启动轮询，音量变了也只该安静地什么都不做
+        AlarmVolume.setLevel(a, AlarmVolume.min(a));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(
+                java.time.Duration.ofMillis(VolumeWatcher.INTERVAL_MS * 2));
+        AlarmVolume.setLevel(a, AlarmVolume.max(a));
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(
+                java.time.Duration.ofMillis(VolumeWatcher.INTERVAL_MS * 3));
+        assertFalse("页面还活着，不该被一次音量变化送走", a.isFinishing());
     }
 }

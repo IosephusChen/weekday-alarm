@@ -221,7 +221,9 @@ public class SettingsActivity extends AppCompatActivity {
         refreshAll();
         // v0.91.1：音量是设备状态，用户随时可能在系统音量条上按一下。
         // 只靠 onResume 读一次，页面开着的时候数字就是死的。
-        if (volumeWatcher == null) {
+        // v1.0.3：二级页没有音量行（tvVolume == null），那一页不必轮询——
+        // 每 400ms 一次 binder 读一个没人显示的 int，纯浪费。
+        if (volumeWatcher == null && tvVolume != null) {
             volumeWatcher = VolumeWatcher.start(this, () -> {
                 // 手指还按在滑块上时不要抢位置：拖到一半被轮询拽回去，手感会很怪
                 if (!volumeTracking) updateVolumeText();
@@ -777,8 +779,14 @@ public class SettingsActivity extends AppCompatActivity {
      * <p>滑块量程是系统的档位数，不是固定 0~90：机型不同，最大档有 7 档也有 15 档。
      * 这里同时设 max 和 progress，所以 {@code onResume} 走进来时会自动同步——
      * 用户在系统里按音量键调过「闹钟」，切回来滑块就在新位置。
+     *
+     * <p><b>第一行必须判空</b>（v1.0.3）：二级设置页也是这个类（{@link MoreSettingsActivity}
+     * 换布局、不换代码），那一页没有音量行。{@code onResume} 和 {@code refreshAll} 早就
+     * 各自判了空，唯独 {@link VolumeWatcher} 的回调直接调进来——于是「在响铃方式页按音量键」
+     * 会崩在 {@code tvVolume.setText}。1.0.2 用户实测崩的就是这条。
      */
     private void updateVolumeText() {
+        if (tvVolume == null) return;
         int min = AlarmVolume.min(this);
         tvVolume.setText(AlarmVolume.percent(this) + "%");
         if (sbVolume != null) {

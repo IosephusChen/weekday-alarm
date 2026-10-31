@@ -685,16 +685,28 @@ public class GuideTest {
                 + uses + " 次", uses >= 3);
     }
 
-    /** 测过并且没测到：两个开关都要查（真机 2×2：缺一个锁屏都不弹）。 */
+    /**
+     * 测过但没等出结果：只陈述「读不到」，不判红（v1.0.5）。
+     *
+     * <p>原来是「没测到 · 两个开关都要开」标红。可这一项没有任何 API 能读，
+     * 自测又依赖「6 秒内按电源键」——按慢了、锁屏后没等屏幕亮就解锁、系统拦了
+     * 后台拉起界面，都会走到这里，大半跟用户开没开关无关。标红等于让人以为
+     * 自己弄坏了什么（2026-11-01 用户看截图后提出：这一项本来就是测不到的）。
+     */
     @Test
-    public void lockRow_showsFailAfterTimeout() {
+    public void lockRow_timeoutStaysNeutral() {
         GuideActivity a = fresh();   // 先起页面（fresh 内部会清空数据）
         Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_NONE,
                 System.currentTimeMillis() - LockProbe.TIMEOUT_MS - 1000);
         a.onResume();
         ShadowLooper.idleMainLooper();
-        assertTrue("没测到要说两个开关都要开，实际：" + text(a, R.id.st_lock),
-                text(a, R.id.st_lock).contains("两个开关都要开"));
+        String s = text(a, R.id.st_lock);
+        assertFalse("不能再判成「没测到」，实际：" + s, s.contains("没测到"));
+        assertTrue("两个开关的提醒还得留着（真机 2×2：缺一个锁屏都不弹），实际：" + s,
+                s.contains("两个开关都要开"));
+        assertEquals("这一行不该再用警示色",
+                ctx().getColor(R.color.indigo),
+                ((TextView) a.findViewById(R.id.st_lock)).getCurrentTextColor());
     }
 
     /** 测过并且通过：结果写回 Prefs，引导页 onResume 时这一行要跟着变。 */
@@ -986,21 +998,89 @@ public class GuideTest {
                 (open.getFlags() & Intent.FLAG_ACTIVITY_CLEAR_TOP) != 0);
     }
 
-    /** 引导已经走完（重看引导的场景）：通知仍该回主界面，别指回已经完成使命的引导页。 */
+    /**
+     * 重看引导（引导早就走完了）：这一页还在栈里，通知就该回这一页。
+     *
+     * <p>2026-11-01 用户实测：装好 App、引导走完，再从设置里重看一遍，在权限页点
+     * 「测试通知」，点开通知回到了首页。原因是判据用了 {@code onboard_done}——
+     * 那时它早就是 true 了，跟「用户此刻在看哪一页」完全无关。判据换成
+     * 「这一页还在不在」。
+     */
     @Test
-    public void notifyTest_opensMainAfterOnboarding() {
+    public void notifyTest_returnsToGuideWhenPageStillOpen() {
         NotificationManager nm =
                 (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
         shadowOf((Application) ctx()).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
         shadowOf(nm).setNotificationsEnabled(true);
 
         GuideActivity a = fresh();
-        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);   // 已经装好、引导也走完了，只是重看一遍
         tap(a, R.id.btn_notify_try);
 
         Notification n = shadowOf(nm).getNotification(9401);
         assertNotNull(n);
-        assertEquals(MainActivity.class.getName(),
-                shadowOf(n.contentIntent).getSavedIntent().getComponent().getClassName());
+        Intent open = shadowOf(n.contentIntent).getSavedIntent();
+        assertEquals("页还开着就该回这一页，别管引导走没走完",
+                GuideActivity.class.getName(), open.getComponent().getClassName());
+        assertTrue("缺 SINGLE_TOP 会重建一份，页码就丢了",
+                (open.getFlags() & Intent.FLAG_ACTIVITY_SINGLE_TOP) != 0);
+    }
+
+    /** 引导页已经关了（点完「开始使用」或按了返回键）：通知回首页，不再把人送回清单。 */
+    @Test
+    public void notifyTest_opensMainAfterGuideClosed() {
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class).setup();
+        GuideActivity a = ctl.get();
+        Prefs.setOnboardDone(ctx(), true);
+        assertTrue("页还开着：回引导页", a.returnToGuideOnNotify());
+
+        ctl.pause().stop().destroy();
+        assertFalse("页已经关了、引导也走完了：回首页", a.returnToGuideOnNotify());
+    }
+
+    /**
+     * 引导没走完但进程被系统回收（页已经没了）：仍要回引导页。
+     *
+     * <p>这一页从来没被「看过」，下次打开还得接着那份清单；页码存在 Prefs 里，
+     * 重建后能落回原页。这里只钉判据，重建落页由 {@code pageResumesWhereUserLeft} 管。
+     */
+    @Test
+    public void notifyTest_returnsToGuideWhileOnboardingEvenIfRecreated() {
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class).setup();
+        GuideActivity a = ctl.get();
+        Prefs.setOnboardDone(ctx(), false);
+        ctl.pause().stop().destroy();
+        assertTrue("引导没走完，页没了也要回引导页", a.returnToGuideOnNotify());
+    }
+
+    /**
+     * 进程被回收后从通知重建：要落在刚才那一页（v1.0.5）。
+     *
+     * <p>光改 PendingIntent 的目标不够——进程一死，成员变量里的页码就没了。
+     * 而这一页在「引导已走完」时默认从第 1 页起（重看引导本来就该从头看），
+     * 所以得靠 intent 里的标记区分「从通知回来」和「从设置进来」。
+     */
+    @Test
+    public void notifyRebuild_resumesThePageUserWasOn() {
+        wipe();
+        Prefs.setOnboardDone(ctx(), true);   // 装好、走完了，只是重看
+        Prefs.setGuidePage(ctx(), 2);        // 刚才翻到第 3 页
+
+        Intent intent = new Intent(ctx(), GuideActivity.class)
+                .putExtra("resume_page", true);   // EXTRA_RESUME
+        GuideActivity a = Robolectric.buildActivity(GuideActivity.class, intent).setup().get();
+        ShadowLooper.idleMainLooper();
+        assertEquals("从通知回来要接着那一页，不能甩回第 1 页", 2, flipperIndex(a));
+    }
+
+    /** 对照组：同样「引导已走完 + 上次停在第 3 页」，从设置重看则从第 1 页起。 */
+    @Test
+    public void rewatchFromSettings_startsAtFirstPage() {
+        wipe();
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setGuidePage(ctx(), 2);
+        assertEquals("重看引导本来就该从头看", 0, flipperIndex(launch()));
     }
 }

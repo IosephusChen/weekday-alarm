@@ -50,6 +50,27 @@ public class GuideActivity extends AppCompatActivity {
     private static final String STATE_PAGE = "state_page";
 
     /**
+     * 引导页此刻是否还在栈里（v1.0.5）。
+     *
+     * <p>只用来回答一个问题：「测试通知」被点开时，该回到这一页还是回首页。
+     * 用 {@code onboard_done} 判断是错的——用户装好 App、走完引导，再从设置里
+     * 重看一遍，这时 {@code onboard_done} 早就是 true，于是通知把人送回了首页，
+     * 而他刚才明明在看权限页（2026-11-01 用户实测）。判据应该是「这一页还在不在」，
+     * 不是「引导有没有走完」。
+     */
+    private static boolean sAlive;
+
+    /**
+     * 「从通知点回来」的标记（v1.0.5）。
+     *
+     * <p>平时从设置里重看引导，应该从第 1 页看起（用户是来复查的，不是接着看的）。
+     * 但从测试通知点回来不是——用户刚才在看哪一页，就得回哪一页，否则等于
+     * 又把人甩回开头。进程还活着时靠 SINGLE_TOP 复用实例，不会走到这里；
+     * 进程被回收后才靠这个标记从 Prefs 把页码读回来。
+     */
+    private static final String EXTRA_RESUME = "resume_page";
+
+    /**
      * 「还要再点一层」的统一说法（v0.89.5）。
      *
      * <p>「后台弹出界面」和「锁屏显示」点的是同一个页面——{@code ACTION_APPLICATION_DETAILS_SETTINGS}
@@ -85,6 +106,7 @@ public class GuideActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sAlive = true;
         setContentView(R.layout.activity_guide);
 
         flipper = findViewById(R.id.flipper);
@@ -149,10 +171,11 @@ public class GuideActivity extends AppCompatActivity {
         // v1.0.3：接着上次那一页。原因见 {@link Prefs#KEY_GUIDE_PAGE}——这一页是叠在
         // MainActivity 上的第二层，从通知 / 桌面图标再进来时会被销毁重开；页码只放在
         // 成员变量里，用户看到的就永远是第 1 页。
+        // v1.0.5：从测试通知点回来时，哪怕引导早就走完了，也要接着那一页（见 EXTRA_RESUME）。
         if (savedInstanceState != null) {
             index = savedInstanceState.getInt(STATE_PAGE, index);
-        } else if (!Prefs.isOnboardDone(this)) {
-            // 只在「引导还没走完」时恢复：从设置里重看引导，应该从第 1 页看起
+        } else if (getIntent().getBooleanExtra(EXTRA_RESUME, false) || !Prefs.isOnboardDone(this)) {
+            // 平时从设置里重看引导，从第 1 页看起；只有「没走完」和「从通知回来」才续页
             index = Math.min(Prefs.getGuidePage(this), PAGES - 1);
         }
         flipper.setDisplayedChild(index);
@@ -167,6 +190,13 @@ public class GuideActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(STATE_PAGE, index);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 完成引导、按返回键退出都会走到这里：这一页一关，通知就不该再把人带回来
+        sAlive = false;
+        super.onDestroy();
     }
 
     /** 点通知回来时走 SINGLE_TOP 复用同一个实例（页码本来就对），只需换掉 intent。 */
@@ -547,8 +577,12 @@ public class GuideActivity extends AppCompatActivity {
         // 图标重进一次——系统先重建根 Activity，叠在它上面的引导页被销毁重开，用户看到的
         // 就是又回到第 1 页（用户实测 1.0.2）。引导没走完就指回 GuideActivity 自己：
         // CLEAR_TOP + SINGLE_TOP 直接复用已有的那个实例，连重建都不会发生。
+        // v1.0.5：判据从「引导有没有走完」换成「这一页还在不在」。装好 App、引导走完，
+        // 再从设置里重看一遍时 onboard_done 早就是 true，于是通知把人送回了首页——
+        // 而他刚才明明在看权限页（2026-11-01 用户实测）。
         Intent open = new Intent(this,
-                Prefs.isOnboardDone(this) ? MainActivity.class : GuideActivity.class)
+                returnToGuideOnNotify() ? GuideActivity.class : MainActivity.class)
+                .putExtra(EXTRA_RESUME, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
                         | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -559,7 +593,7 @@ public class GuideActivity extends AppCompatActivity {
                 new androidx.core.app.NotificationCompat.Builder(this, App.CHANNEL_TEST)
                         .setSmallIcon(R.drawable.ic_notification)
                         .setContentTitle("测试通知")
-                        .setContentText("能看到这条，说明通知权限正常。点它可回到 App。")
+                        .setContentText("能看到这条，说明通知权限正常。点它应回到刚才那一页。")
                         .setContentIntent(pi)
                         .setColor(ContextCompat.getColor(this, R.color.indigo))
                         .setAutoCancel(true);
@@ -570,6 +604,22 @@ public class GuideActivity extends AppCompatActivity {
             // 个别 ROM 会因「通知总开关」拒绝；这里不静默吞掉，给一句人话
             Toast.makeText(this, "系统拒绝了这条通知，检查一下通知权限", Toast.LENGTH_LONG).show();
         }
+    }
+
+    /**
+     * 「测试通知」被点开时，回引导页还是回首页（v1.0.5）。
+     *
+     * <p>两种情况回引导页：
+     * <ol>
+     *   <li>这一页还在栈里——重看引导、刚发完通知都能命中，CLEAR_TOP 复用原实例，页码不丢；</li>
+     *   <li>引导没走完——进程被系统回收后这一页没了，但用户还欠着这份清单，
+     *       重建出来要接着上次那页（页码存在 {@link Prefs#KEY_GUIDE_PAGE}）。</li>
+     * </ol>
+     *
+     * <p>其余情况（引导已完成、页面也关了）回首页：这时把人送回引导页才是最怪的。
+     */
+    boolean returnToGuideOnNotify() {
+        return sAlive || !Prefs.isOnboardDone(this);
     }
 
     private void refreshPermissions() {
@@ -633,7 +683,14 @@ public class GuideActivity extends AppCompatActivity {
      * <p>v0.89.5：这句话与「后台弹出界面」那行完全一致——两者跳同一个页面，
      * 位置指引不该有两套说法。位置只在状态行说一次，副标题只讲后果。
      *
-     * <p>测过之后把探针结果写进来——通过、没锁屏、没测到各一句，不给无端指责。
+     * <p>测过之后把探针结果写进来——通过、没锁屏、没测成各一句，不给无端指责。
+     *
+     * <p><b>v1.0.5：红字去掉。</b>超时这一态原来写「没测到 · 两个开关都要开」并标红，
+     * 读起来像是用户做错了什么。可这一项本来就没有任何 API 能读（不在 AOSP 权限体系里），
+     * 自测又依赖「6 秒内按电源键」这种时机——按慢了、锁屏后没等屏幕亮就解锁、
+     * 系统拦了后台拉起界面，都会走到这里，而其中大半跟用户开没开关无关
+     * （2026-11-01 用户看截图后提出）。和上面的「自启动」一样处理：只陈述读不到，
+     * 顺带把最需要确认的两处说出来，不判红。
      */
     private void refreshLockState() {
         if (stLock == null) return;
@@ -645,9 +702,10 @@ public class GuideActivity extends AppCompatActivity {
             stLock.setText("当时没锁屏，再测一次");
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         } else if (LockProbe.isTimedOut(this)) {
-            // 真机 2×2 实测：后台弹出界面与锁屏显示缺一个锁屏都不弹，两个都要查
-            stLock.setText("没测到 · 两个开关都要开");
-            stLock.setTextColor(ContextCompat.getColor(this, R.color.danger));
+            // 真机 2×2 实测：后台弹出界面与锁屏显示缺一个锁屏都不弹，两个都要查。
+            // 但这只是「可能」，不是判决——所以用中性色，不标红。
+            stLock.setText("系统读不到 · 两个开关都要开");
+            stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         } else {
             stLock.setText(HINT_OTHER_PERMS);
             stLock.setTextColor(ContextCompat.getColor(this, R.color.indigo));
@@ -823,6 +881,9 @@ public class GuideActivity extends AppCompatActivity {
         Prefs.setOnboardDone(this, true);
         // 引导走完就把页码清掉：下次从设置里重看，从第 1 页看起
         Prefs.setGuidePage(this, 0);
+        // v1.0.5：顺手把「测试通知」撤掉。用户发了通知没点、转头点了「开始使用」，
+        // 那条「点它应回到刚才那一页」会一直挂在通知栏里——引导都做完了，它没有意义了。
+        NotificationManagerCompat.from(this).cancel(9401);
         final String tip = firstRun
                 ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";

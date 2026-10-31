@@ -74,9 +74,17 @@ public class WidgetPreviewExportTest {
 
     @Test
     public void exportNextAlarm4x2() throws IOException {
-        // 250dp × 165dp（启动器实测高度；minHeight 118dp 会把七格压扁）
+        // v1.1.0：按 provider 声明的 118dp 渲染，不再用「启动器实测 165dp」。
+        //
+        // 预览图的作用是让用户在「添加小部件」列表里认出这张卡，系统会按卡片的
+        // 实际 bounds 缩放它——图的比例必须与 minWidth:minHeight 一致（250:118），
+        // 否则缩放时上下被裁：之前 165dp 的图在 #C 那种列表里，底部七格整条被切掉，
+        // 用户看到的是一张残缺的卡。
+        //
+        // 前提是布局在 118dp 下装得下（v1.1.0 一并收紧：内边距 12→10、七格两行
+        // 关掉字体留白、字号各降一档）。118dp 才是「最矮的启动器会给的高度」。
         export(NextAlarmWidget.buildViews(ctx(), NextAlarmWidget.computeModel(ctx())),
-                "widget_next_alarm_preview.png", 165);
+                "widget_next_alarm_preview.png", 118);
     }
 
     @Test

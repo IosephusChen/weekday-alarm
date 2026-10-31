@@ -21,7 +21,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_hero"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -60,7 +60,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -89,7 +89,7 @@
             android:paddingBottom="1dp"
             android:text="—"
             android:textColor="@color/white"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
     </LinearLayout>
 
     <!-- 副信息：休息日 · 下次 明天 07:00 起床（TodayCard.subText，与首页逐字一致） -->
@@ -97,7 +97,7 @@
         android:id="@+id/widget_sub"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="1dp"
         android:ellipsize="end"
         android:maxLines="1"
         android:text="—"
@@ -109,8 +109,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:layout_weight="1"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <FrameLayout
@@ -122,16 +123,16 @@
             <FrameLayout
                 android:id="@+id/hl_0"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -140,7 +141,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_0"
@@ -148,8 +150,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -162,16 +165,16 @@
             <FrameLayout
                 android:id="@+id/hl_1"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -180,7 +183,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_1"
@@ -188,8 +192,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -202,16 +207,16 @@
             <FrameLayout
                 android:id="@+id/hl_2"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -220,7 +225,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_2"
@@ -228,8 +234,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -242,16 +249,16 @@
             <FrameLayout
                 android:id="@+id/hl_3"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -260,7 +267,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_3"
@@ -268,8 +276,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -282,16 +291,16 @@
             <FrameLayout
                 android:id="@+id/hl_4"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -300,7 +309,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_4"
@@ -308,8 +318,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -322,16 +333,16 @@
             <FrameLayout
                 android:id="@+id/hl_5"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -340,7 +351,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_5"
@@ -348,8 +360,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
 
@@ -361,16 +374,16 @@
             <FrameLayout
                 android:id="@+id/hl_6"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="2dp"
-                android:layout_marginBottom="2dp"
-                android:background="@drawable/bg_widget_today"
+                android:layout_height="34dp"
+                android:layout_gravity="center_vertical"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <TextView
@@ -379,7 +392,8 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="10sp" />
+                    android:textSize="9sp"
+                    android:includeFontPadding="false" />
 
                 <TextView
                     android:id="@+id/label_6"
@@ -387,8 +401,9 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:includeFontPadding="false" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>

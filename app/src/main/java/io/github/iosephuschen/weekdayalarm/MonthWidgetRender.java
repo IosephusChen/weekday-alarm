@@ -73,6 +73,19 @@ final class MonthWidgetRender {
      */
     private static final int C_WORK = 0xFFFFFFFF;
     /**
+     * 只写「班」的常态工作日（v1.1.0）。
+     *
+     * <p>整月 19 个工作日每格一个纯白「班」，把 12 个真正有区别的格子（休 / 假 / 补 /
+     * 节日名）全淹了——桌面上看的是「这个月哪天休」，不是「哪天班」，班是常态。
+     * 压到 30% 白之后，「班」退成一层底纹，休 / 假 / 节日跳出来。
+     *
+     * <p>写着节日名的工作日（寒露 / 霜降）不走这一档：那些格子的重点是那个名字，
+     * 不是「这天上班」。判据在 compute() 里——{@code tag} 等于「班」才压暗。
+     */
+    private static final int C_WORK_PLAIN = 0x4DFFFFFF;
+    /** 今日高亮块上的字：白底要用深色，否则「31」和「休」在白块上消失。 */
+    private static final int C_TODAY_TEXT = 0xFF3B2E9E;
+    /**
      * 休息日的字色（v0.91.8 从 {@code C9C4FF} 压暗到 {@code A9A1E6}）。
      *
      * <p>节气和小部件统一之后（见 {@link DayTag}），节气日不再写「班/休」，
@@ -176,6 +189,8 @@ final class MonthWidgetRender {
                 // 于是法定假「假」变成了「休」，和普通周末看不出区别，
                 // 补班日「补」变成「班」。用户 2026-10-30 对着桌面截图问了这件事。
                 m.tags[i] = DayTag.of(d, type, lunarOn, termsOn, christOn);
+                // v1.1.0：整月大多数格子写的是「班」，压暗它，把有信息的那几格让出来
+                if (work && "班".equals(m.tags[i])) m.colors[i] = C_WORK_PLAIN;
             }
             m.today[i] = d.equals(today);
         }
@@ -233,12 +248,19 @@ final class MonthWidgetRender {
             rv.setTextViewText(NUM_IDS[i], m.nums[i]);
             rv.setTextViewText(TAG_IDS[i], m.tags[i]);
             rv.setTextColor(TAG_IDS[i], m.colors[i]);
+            // v1.1.0：今天那格换成实心白底（见 bg_widget_today_solid），字必须跟着加深，
+            // 否则白字压在白块上等于没字。只切颜色不动背景资源——setBackgroundResource
+            // 是反射调用，部分启动器会让整次更新失败。
+            if (m.today[i]) {
+                rv.setTextColor(NUM_IDS[i], C_TODAY_TEXT);
+                rv.setTextColor(TAG_IDS[i], C_TODAY_TEXT);
+            }
             // 今天：只切高亮层的可见性，不换背景资源——setInt(..., "setBackgroundResource")
             // 是反射调用，在部分启动器上会让整次更新失败，组件停在旧内容
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
         }
 
-        bindAlarm(rv, ctx);
+        bindAlarm(rv, ctx, withFooter);
 
         if (withFooter) {
             // 一句话写完两件事。没有启用的闹钟时就只留统计，不做「右边空着」的分栏
@@ -264,9 +286,13 @@ final class MonthWidgetRender {
      * <p>两份布局现在结构一致：标题行 = 月份 + 周次 + 闹钟状态，42 格从第二行起。
      * 4×4 因此省下整整一行，格子反而更舒展。
      */
-    private static void bindAlarm(RemoteViews rv, Context ctx) {
+    private static void bindAlarm(RemoteViews rv, Context ctx, boolean visible) {
         rv.setTextViewText(R.id.widget_month_alarm, Widgets.alarmStatusText(ctx));
-        rv.setViewVisibility(R.id.widget_month_alarm, View.VISIBLE);
+        // v1.1.0：4×3 不显示这一句。200dp 高的卡上，标题 + 周次 chip + 闹钟状态
+        // 挤在同一行，「闹钟已开启」直接被推到卡片边缘外沿；而 4×3 底下本来就没有
+        // 统计行，少这一句没人会缺信息。
+        rv.setViewVisibility(R.id.widget_month_alarm,
+                visible ? View.VISIBLE : View.GONE);
         // 「小周 · 休1天」不再给闹钟让位：两者现在并排，各自都有位置
         rv.setViewVisibility(R.id.widget_month_sub, View.VISIBLE);
     }

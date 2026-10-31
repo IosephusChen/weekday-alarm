@@ -156,7 +156,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -196,7 +196,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -235,7 +235,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -274,7 +274,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -313,7 +313,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -352,7 +352,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -391,7 +391,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -438,7 +438,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -477,7 +477,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -516,7 +516,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -555,7 +555,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -594,7 +594,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -633,7 +633,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -672,7 +672,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -719,7 +719,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -758,7 +758,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -797,7 +797,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -836,7 +836,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -875,7 +875,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -914,7 +914,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -953,7 +953,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1000,7 +1000,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1039,7 +1039,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1078,7 +1078,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1117,7 +1117,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1156,7 +1156,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1195,7 +1195,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1234,7 +1234,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1281,7 +1281,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1320,7 +1320,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1359,7 +1359,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1398,7 +1398,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1437,7 +1437,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1476,7 +1476,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1515,7 +1515,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1562,7 +1562,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1601,7 +1601,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1640,7 +1640,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1679,7 +1679,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1718,7 +1718,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1757,7 +1757,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1796,7 +1796,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
-                android:background="@drawable/bg_widget_today"
+                android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
             <LinearLayout

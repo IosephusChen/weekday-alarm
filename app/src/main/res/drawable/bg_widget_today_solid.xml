@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 整月小部件的「今天」（v1.1.0）。
+
+     原来和 4×2 本周条共用 bg_widget_today（白 20%）：在 42 个格子里那块淡影太弱，
+     加上「31」和「休」本来就是浅色，今天那一格和旁边几格几乎没差别。
+     这里换成接近实心的白，字由 MonthWidgetRender 同步压成深紫（C_TODAY_TEXT）
+     ——一白一深，桌面上第一眼就落在今天。
+
+     4×2 不用这张：那张卡的七格更窄，实心白块会把「六休」两个字吃掉。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F2FFFFFF" />
+    <corners android:radius="@dimen/radius_chip" />
+</shape>

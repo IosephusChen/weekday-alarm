@@ -266,19 +266,21 @@ public class WidgetRemoteViewsTest {
     }
 
     /**
-     * 两个变体的闹钟状态行恒定显示（v0.73.4 删开关后改成这条）。
+     * 闹钟状态行：4×4 恒定显示，4×3 不显示（v1.1.0 起）。
      *
      * <p>历史：v0.69.0 加「本月班表显示闹钟」开关，为解决「闹钟占一整行把周次挤掉」；
-     * v0.70.1 起闹钟并进标题行、只报状态不报时刻，且不再把「本周 · 大周」挤掉——
-     * 开关的存在理由已经没了，用户反馈「这个开关没必要」，v0.73.4 删掉，改成恒定显示。
+     * v0.70.1 起闹钟并进标题行、只报状态不报时刻；v0.73.4 删开关，两个变体都恒定显示。
      *
-     * <p>现在钉两点：两个变体都显示闹钟状态；周次与闹钟并排，互不挤掉。
+     * <p>v1.1.0 回到「只有 4×4 显示」——不是恢复开关，是排版上放不下：4×3 的标题行
+     * 里「2026 年 10 月」13sp + 「大周 · 休2天」chip + 「闹钟已开启」10sp，
+     * 250dp 宽扣掉两侧内边距只剩 226dp，第三段被推到卡片边缘之外（用户截图里直接贴边）。
+     * 而 4×3 底下本来就没有统计行，少这一句不缺信息；4×4 有空间，保留。
      */
     @Test
-    public void monthAlarmRow_alwaysShows() {
+    public void monthAlarmRow_onlyIn4x4() {
         Context c = ctx();
         View v4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
-        assertEquals("4×4 闹钟状态该显示（开关已删，恒定显示）", View.VISIBLE,
+        assertEquals("4×4 闹钟状态该显示", View.VISIBLE,
                 v4.findViewById(R.id.widget_month_alarm).getVisibility());
         assertEquals("4×4 闹钟只报状态，不报具体时刻",
                 "闹钟已开启", text(v4, R.id.widget_month_alarm));
@@ -286,9 +288,9 @@ public class WidgetRemoteViewsTest {
                 v4.findViewById(R.id.widget_month_sub).getVisibility());
 
         View v3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
-        assertEquals("4×3 闹钟状态也该显示", View.VISIBLE,
+        assertEquals("4×3 标题行放不下第三段，v1.1.0 起不显示", View.GONE,
                 v3.findViewById(R.id.widget_month_alarm).getVisibility());
-        assertEquals("4×3 的周次不该被闹钟挤掉", View.VISIBLE,
+        assertEquals("4×3 的周次必须留着", View.VISIBLE,
                 v3.findViewById(R.id.widget_month_sub).getVisibility());
     }
 

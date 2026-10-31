@@ -169,7 +169,10 @@ public class AlarmActivity extends AppCompatActivity {
         // v0.40.2：按钮本体是 LinearLayout（图标 + 文字），文字要单独取
         View btnSnooze = findViewById(R.id.btn_snooze);
         TextView tvSnoozeLabel = findViewById(R.id.tv_snooze_label);
-        btnStop.setLabel(test ? "滑动结束测试" : "滑动停止响铃");
+        // v1.1.0：两页统一成「滑动停止」。原来正式页写「滑动停止响铃」——整页都在响铃，
+        // 这四个字里有一半是废话；测试页写「滑动结束测试」，同一颗按钮两个名字，
+        // 用户在两页之间看到的是两个不同的控件。测试身份由副标题那句说明，不靠按钮字。
+        btnStop.setLabel("滑动停止");
 
         // v0.15.0：稍后提醒可自定义间隔与次数；次数用尽后只留「停止」
         int snoozeMinutes = Math.max(1, Prefs.getSnoozeMinutes(this));
@@ -178,11 +181,11 @@ public class AlarmActivity extends AppCompatActivity {
         boolean exhausted = !test && snoozeTimes != Prefs.SNOOZE_UNLIMITED
                 && used >= snoozeTimes;
         if (test) {
-            // 测试模式不支持小睡：用透明度表达禁用态，避免禁用态文字不显示
-            btnSnooze.setAlpha(0.4f);
-            tvSnoozeLabel.setText("稍后提醒");
-            btnSnooze.setOnClickListener(v ->
-                    Toast.makeText(this, "测试模式不支持稍后提醒，请滑动结束", Toast.LENGTH_SHORT).show());
+            // v1.1.0：测试模式直接不显示这一颗，不再画一个 40% 透明度的灰按钮。
+            // 原来那样既不能按（点了弹 toast），又占着和正式页同一个位置——
+            // 用户在「添加小部件 → 试听」里看到一颗半死的按钮，第一反应是「坏了」。
+            // 测试页的底部因此只有「滑动停止 + 两行说明」，和正式页结构一致。
+            btnSnooze.setVisibility(View.GONE);
         } else if (exhausted) {
             btnSnooze.setAlpha(0.4f);
             tvSnoozeLabel.setText("稍后提醒已用完");

@@ -29,6 +29,8 @@ import java.util.Set;
 final class WeekWidgetRender {
 
     /** 「今天」的高亮底：单独一层 View，用 setViewVisibility 切换（RemoteViews 原生支持）。 */
+    /** 今日高亮块上的字：实心白底 + 深紫字，与整月部件同一套（见 MonthWidgetRender）。 */
+    private static final int C_TODAY_TEXT = 0xFF3B2E9E;
     private static final int[] HIGHLIGHT_IDS = {
             R.id.hl_0, R.id.hl_1, R.id.hl_2, R.id.hl_3,
             R.id.hl_4, R.id.hl_5, R.id.hl_6
@@ -116,42 +118,46 @@ final class WeekWidgetRender {
             DayCell c = m.days.get(i);
             rv.setTextViewText(DAY_IDS[i], c.dayLetter);
             rv.setTextViewText(LABEL_IDS[i], c.label);
-            rv.setTextColor(LABEL_IDS[i], labelColor(ctx, c));
+            rv.setTextColor(LABEL_IDS[i], c.today ? C_TODAY_TEXT : labelColor(ctx, c));
             // 今天：显示半透明白底那一层；其他天隐藏。
             // 不用 setInt(..., "setBackgroundResource", ...) —— 那是反射调用，
             // 部分启动器上会让整次 RemoteViews 应用失败，组件停在旧内容
             rv.setViewVisibility(HIGHLIGHT_IDS[i], c.today ? android.view.View.VISIBLE
                     : android.view.View.GONE);
-            rv.setTextColor(DAY_IDS[i], ContextCompat.getColor(ctx,
-                    c.today ? R.color.white : R.color.widget_dim));
+            rv.setTextColor(DAY_IDS[i], c.today
+                    ? C_TODAY_TEXT
+                    : ContextCompat.getColor(ctx, R.color.widget_dim));
         }
     }
 
-    /** 标签颜色：在紫色渐变底上取同色系的浅色，保证对比度又不刺眼。 */
+    /**
+     * 标签颜色：在紫色渐变底上取同色系的浅色，保证对比度又不刺眼。
+     *
+     * <p><b>v1.1.0 把「班」压暗、把「休」提到纯白</b>：原来七个格子里「班」是纯白、
+     * 「休」是 {@code widget_rest}（#C7D2FE），两者亮度只差一档——扫一眼分不出哪两天
+     * 是周末，七格看起来像一排同样的字。现在上班日退到 70% 白，休息日提成纯白：
+     * 一周里只有两天发亮，位置一眼可见。这也是首页日历「班」字降重的同一口径
+     * ——常态信息退后，异常信息上前。
+     */
     private static int labelColor(Context ctx, DayCell c) {
-        int res;
         if (c.vacation) {
-            res = R.color.widget_vacation;
-        } else if (c.overtime) {
-            res = R.color.widget_overtime;
-        } else {
-            switch (c.type) {
-                case MAKEUP_WORK:
-                    res = R.color.widget_makeup;
-                    break;
-                case HOLIDAY:
-                    res = R.color.widget_holiday;
-                    break;
-                case REST:
-                    res = R.color.widget_rest;
-                    break;
-                case WORK:
-                default:
-                    res = R.color.white;
-                    break;
-            }
+            return ContextCompat.getColor(ctx, R.color.widget_vacation);
         }
-        return ContextCompat.getColor(ctx, res);
+        if (c.overtime) {
+            return ContextCompat.getColor(ctx, R.color.widget_overtime);
+        }
+        switch (c.type) {
+            case MAKEUP_WORK:
+                return ContextCompat.getColor(ctx, R.color.widget_makeup);
+            case HOLIDAY:
+                return ContextCompat.getColor(ctx, R.color.widget_holiday);
+            case REST:
+                return ContextCompat.getColor(ctx, R.color.white);
+            case WORK:
+            default:
+                // 70% 白：压在白字和底色之间，既退后又不至于读不出来
+                return 0xB3FFFFFF;
+        }
     }
 
     private WeekWidgetRender() {

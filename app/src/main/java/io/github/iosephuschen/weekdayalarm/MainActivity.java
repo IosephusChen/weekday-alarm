@@ -9,11 +9,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -239,11 +237,9 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignore) {
         }
         if (current != 0 && last != current) {
-            // last == 0 表示这台机器上从没运行过（全新安装），不弹更新日志：
-            // 新用户这时还要看引导页，再叠一个「更新了什么」只会挡路。
-            boolean upgraded = last != 0;
+            // last == 0 表示这台机器上从没运行过（全新安装）：没有旧版残留通知要清。
             Prefs.setLastRunVersion(this, current);
-            if (upgraded) {
+            if (last != 0) {
                 // v0.31.3：旧版发的提前提醒通知没有 action 图标，留着也不会长出按钮；
                 // 先清掉，下面的重排才会重新发一条带图标的。
                 ScheduleManager.dropStalePreNotices(this);
@@ -253,23 +249,17 @@ public class MainActivity extends AppCompatActivity {
             // v0.73.3：重排挪后台。它是数百次跨进程 IPC（项目自述「累计可达数百毫秒
             // 到数秒」），同步跑在 onResume 上有 ANR 风险；AlarmReceiver /
             // BedtimeReceiver / BootReceiver 三个入口早就 goAsync 了，只剩这里漏了。
-            // 更新日志弹窗回主线程——Dialog 只能在 UI 线程建。
-            final boolean showChangelog = upgraded;
-            final int versionFrom = last;
-            final int version = current;
+            //
+            // v1.0.2：升级后不再弹「更新到 vX」的日志框。原先这里在重排完成后回主线程
+            // 弹一次，理由是「用户不知道这版改了什么」；但实际操作路径是——想更新的人
+            // 先在关于页点「检查更新」，那时已经看过同一份说明；不想更新的人根本装不上，
+            // 也就看不到这个框。三处同文（关于页弹窗 / Release 正文 / 这里）里，只有这
+            // 一处永远发生在「他已经看过之后」。
             final Context app = getApplicationContext();
             new Thread(() -> {
                 try {
                     ScheduleManager.rescheduleAll(app);
                 } catch (Throwable ignore) {
-                }
-                if (showChangelog) {
-                    // v0.91.9：重排可能要几秒，这期间用户完全可能已经退出（升级后首启、
-                    // 顺手划掉）。原样回到主线程 show() 就是 BadTokenException。
-                    runOnUiThread(() -> {
-                        if (isFinishing() || isDestroyed()) return;
-                        maybeShowChangelog(versionFrom, version);
-                    });
                 }
             }, "upgrade-reschedule").start();
         }
@@ -361,73 +351,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 倒计时文案：一天以内「时:分:秒」，超过一天「N 天 时:分」。
+     * 倒计时文案：一天以内「时:分:秒」，超过一天「N 天 M 小时」。
      *
-     * <p>超过一天还每秒跳秒没有意义，反而让人以为马上就要响；改成天 + 时分后，
+     * <p>超过一天还每秒跳秒没有意义，反而让人以为马上就要响；改成天 + 小时后，
      * 一秒一次的刷新不会让数字抖动。抽成静态是为了单测能直接喂秒数。
+     *
+     * <p>为什么不用「1 天 21:29」：那个冒号让它长得和时刻一模一样，而正上方刚写过
+     * 「下次闹钟 后天 07:30」，两个数字并排就会被读成两个时刻。写成「21 小时」，
+     * 数字后面跟量词、前面没有冒号，误读的路径被焊死。
+     *
+     * <p>为什么不用「45:29:15」这种时长写法：跨天时小时数会超过 23，而钟表的时量程
+     * 是 0–23，45 不在任何表盘上——读出来不是「45 小时」，是「这什么数」。
+     *
+     * <p>代价是丢掉分钟：24 小时 30 分会显示「1 天 0 小时」，看着像还有整整一天。
+     * 误差最多 59 分钟，且只出现在跨天那一小时内；真正需要掐分钟的（「还有 20 分钟」）
+     * 都在 24 小时内，那一段仍是秒级。
      */
     static String fmtCountdown(long seconds) {
         if (seconds >= 86400) {
             long days = seconds / 86400;
             long h = (seconds % 86400) / 3600;
-            long m = (seconds % 3600) / 60;
-            return days + " 天 " + TimeText.clock((int) h, (int) m);
+            return days + " 天 " + h + " 小时";
         }
         return String.format(Locale.US, "%02d:%02d:%02d",
                 seconds / 3600, (seconds % 3600) / 60, seconds % 60);
-    }
-
-    /**
-     * 升级后弹「本次更新」（v0.29.0；v1.0.0 起支持跨版本）。
-     *
-     * <p>只在「上次运行过的版本号非 0 且与当前不同」时调用，所以首次安装不弹、
-     * 同一版本只弹一次。
-     *
-     * <p>v1.0.0：内容从「精确匹配当前版本那一条」改成 {@link Changelog#between} 取
-     * {@code fromCode} 之后的所有版本。原来隔几版才更新的用户只看到最后一条，
-     * 中间改了什么无人知晓；降级安装还会弹一个「更新到 v0.92.1」——现在这两件事
-     * 一起没了：{@code between} 在当前版本没收录、或 fromCode 不小于当前版本时返回空。
-     */
-    private void maybeShowChangelog(int fromCode, int code) {
-        final List<Changelog.Entry> entries = Changelog.between(fromCode, code);
-        if (entries.isEmpty()) return;
-        final boolean single = entries.size() == 1;
-
-        float d = getResources().getDisplayMetrics().density;
-        int pad = Math.round(16 * d);
-
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(pad, pad, pad, 0);
-        // v0.76.6：紧凑模式——单条时弹窗标题已经说着「更新到 v0.76.5」，卡片里再放
-        // 版本徽章、「当前版本」徽章就是同一件事说三遍（用户反馈「看着怪怪的」）。
-        // v1.0.0：多条时反过来必须用完整卡——标题不再写具体版本，卡片不标版本就分不清
-        // 哪张是哪一版。
-        Changelog.renderInto(this, box, entries, code, single);
-
-        ScrollView sv = new ScrollView(this);
-        sv.addView(box);
-
-        AlertDialog dlg = new RoundedDialog.Builder(this)
-                .setTitle(single
-                        ? "更新到 v" + entries.get(0).version
-                        : "跨 " + entries.size() + " 个版本的更新")
-                .setView(sv)
-                .setPositiveButton("知道了", null)
-                .setNeutralButton("全部日志", (dd, w) ->
-                        startActivity(new Intent(this, ChangelogActivity.class)))
-                .create();
-        dlg.show();
-
-        // 条目多的版本可能超过一屏：超过 420dp 才限高并允许滚动，短内容不留白
-        int max = Math.round(420 * d);
-        int width = getResources().getDisplayMetrics().widthPixels - Math.round(72 * d);
-        box.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-        if (box.getMeasuredHeight() > max) {
-            sv.getLayoutParams().height = max;
-            sv.requestLayout();
-        }
     }
 
     // ================= 多闹钟（v0.11.0）=================
@@ -821,7 +768,7 @@ public class MainActivity extends AppCompatActivity {
 
         // v0.76.1：三行文案改调 TodayCard——4×2 桌面小组件改用同一套计算，
         // 首页与桌面逐字一致。逻辑本身没动（dayTag / subText 的规则见 TodayCard）。
-        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime, baseWork);
+        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
         String subText = TodayCard.subText(dayTag, next, today, work, vacation);
         tvTodaySub.setText(subText);
 

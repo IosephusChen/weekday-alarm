@@ -31,16 +31,25 @@ final class TodayCard {
     }
 
     /**
-     * 副信息里的「今天是什么日子」前缀。普通上班日不出前缀——
-     * 「下次 明天 07:00 起床」比「上班日 · 下次 明天 07:00 起床」少一层废话。
+     * 副信息里的「今天是什么日子」前缀——只给「今天有特殊身份」的日子。
+     *
+     * <p>普通上班日不出前缀：「下次 明天 07:00 起床」比「上班日 · 下次 明天 07:00 起床」
+     * 少一层废话。这条原则原本漏了休息日，而休息日在整张卡上说了三遍：
+     * 角标「大周 · 休 2 天」→ 大字「今天休息」→ 副标题「休息日 · 下次闹钟 08:00」。
+     *
+     * <p>v1.1.0 起休息日也不出前缀。剩下角标和大字两处，一个说「这周怎么排」、
+     * 一个说「今天上不上班」，各有各的活，不算重复。
+     *
+     * <p>保留这四类特殊日：请假 / 加班 / 调休补班 / 法定节假日——这些大字说不出来，
+     * 「今天上班」这四个字里没有「但今天是法定节假日」这层信息。
      */
     static String dayTagText(WeekSchedule.DayType todayType, boolean vacation,
-                             boolean overtime, boolean baseWork) {
+                             boolean overtime) {
         if (vacation) return "个人请假";
         if (overtime) return "个人加班";
         if (todayType == WeekSchedule.DayType.MAKEUP_WORK) return "调休补班";
         if (todayType == WeekSchedule.DayType.HOLIDAY) return "法定节假日";
-        return baseWork ? "" : "休息日";
+        return "";
     }
 
     /**

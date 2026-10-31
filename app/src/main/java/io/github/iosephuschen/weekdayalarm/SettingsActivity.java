@@ -117,6 +117,9 @@ public class SettingsActivity extends AppCompatActivity {
         tvVolume = findViewById(R.id.tv_volume);
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
+        // 配色（v1.1.0）：和首页闹钟行、睡前提醒那三个开关同一套，见 SwitchKit
+        SwitchKit.style(this, swFadeIn);
+        SwitchKit.style(this, swVibrate);
         sbVolume = findViewById(R.id.seek_volume_embed);
 
         // 周休制度（v0.56.2）：从首页「排班」卡搬来，放在「一周开始日」之前——
@@ -654,7 +657,8 @@ public class SettingsActivity extends AppCompatActivity {
      * <p>v0.76.5 排版改版：五件事原来挤一段 {@code "\n"} 文字，读之前先要断句
      * 才知道哪句说的是哪件事。改成{@link RowKit#kv}「标签: 值」信息行——
      * 标签固定宽、值自动换行并对齐成一列，行间发丝线分隔，像一张规格表。
-     * 「已登记」用 success 色徽章跟在下一个闹钟后面，扫一眼就知道系统里落没落。
+     * 「已登记」用 {@code success_text} 色徽章跟在下一个闹钟后面，扫一眼就知道系统里落没落
+     * （v1.1.0 值不再染绿，理由见 {@link RowKit#kv} 的重载注释）。
      */
     private void showRunStatusDialog() {
         java.util.List<Alarm> alarms = Prefs.getAlarms(this);
@@ -665,12 +669,15 @@ public class SettingsActivity extends AppCompatActivity {
         java.util.List<View> rows = new java.util.ArrayList<>();
         rows.add(RowKit.kv(this, "提醒排程", "未来 " + horizon + " 天 · " + n + " 个"));
         if (next != null) {
+            // v1.1.0：值回到 ink，状态只由徽章承担。原来整句染绿，
+            // 日期 / 班次 / 时间 / 闹钟名一起变绿，读者反倒不知道绿代表什么；
+            // 而且 success 压白底只有 3.3:1，14sp 正文要求 4.5:1
             rows.add(RowKit.kv(this, "下一个闹钟",
                     TimeText.monthDay(next.when.toLocalDate())
                             + " " + WeekSchedule.describe(Prefs.getRule(this), next.when.toLocalDate())
                             + " " + TimeText.clock(next.when.getHour(), next.when.getMinute())
                             + " " + next.label,
-                    R.color.success, "已登记"));
+                    R.color.ink, "已登记", R.color.success_text));
         } else {
             rows.add(RowKit.kv(this, "下一个闹钟",
                     "系统中暂无已登记的闹钟，请检查排班设置", R.color.danger));
@@ -702,15 +709,18 @@ public class SettingsActivity extends AppCompatActivity {
      * 不知道文件里装了什么。换成小结对话框 + 摘要信息行（导出时间 / 闹钟数 /
      * 请假加班标记数）——和导入确认框里显示的信息同一套版式、同一份数据，
      * 「导出时看到的」和「导入时看到的」对得上。
+     *
+     * <p>v1.1.0：说明句提到 13sp/{@code body}，摘要行交给 {@link RowKit#stack}
+     * ——它现在自带淡底卡，和导入确认框是同一块皮肤。
      */
     private void showExportDone(String json) {
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         TextView line = new TextView(this);
         line.setText(R.string.export_done_body);
-        line.setTextColor(ContextCompat.getColor(this, R.color.sub));
-        line.setTextSize(12);
-        line.setLineSpacing(0, 1.2f);
+        line.setTextColor(ContextCompat.getColor(this, R.color.body));
+        line.setTextSize(13);
+        line.setLineSpacing(0, 1.5f);
         body.addView(line);
 
         ConfigBackup.Summary sum = ConfigBackup.summarize(json);
@@ -745,9 +755,24 @@ public class SettingsActivity extends AppCompatActivity {
 
     // ================= 闹钟音量（v0.22.0 由主界面迁入）=================
 
-    /** 音量行文案：显示系统 STREAM_ALARM 的真实百分比，见 {@link AlarmVolume}。 */
     /**
-     * 音量行：文字与滑块都跟系统 STREAM_ALARM 走（v0.91.0）。
+     * 滑块左端的刻度文案（v1.1.0）。
+     *
+     * <p>最低档不是 0 时写「最小 7%」——带上数字是为了举证「最左边仍有声音」，
+     * 而「最小」两个字单独出现很容易被读成「静音」。
+     *
+     * <p>最低档就是 0 时（部分 ROM 允许）这个刻度就是「静音」，直说，不要写成
+     * 「最小 0%」让用户自己换算——0% 在音量语境里本来就等于没声。
+     */
+    private String volumeFloorText() {
+        int pct = AlarmVolume.minPercent(this);
+        return pct == 0
+                ? getString(R.string.settings_volume_floor_mute)
+                : getString(R.string.settings_volume_floor, pct);
+    }
+
+    /**
+     * 音量行：文字与滑块都跟系统 STREAM_ALARM 走（v0.91.0），百分比见 {@link AlarmVolume}。
      *
      * <p>滑块量程是系统的档位数，不是固定 0~90：机型不同，最大档有 7 档也有 15 档。
      * 这里同时设 max 和 progress，所以 {@code onResume} 走进来时会自动同步——
@@ -761,7 +786,7 @@ public class SettingsActivity extends AppCompatActivity {
             sbVolume.setMax(Math.max(1, max - min));
             sbVolume.setProgress(Math.max(0, AlarmVolume.level(this) - min));
             TextView floor = findViewById(R.id.tv_volume_floor);
-            if (floor != null) floor.setText(AlarmVolume.minPercent(this) + "%");
+            if (floor != null) floor.setText(volumeFloorText());
         }
     }
 
@@ -811,7 +836,7 @@ public class SettingsActivity extends AppCompatActivity {
         seek.setMax(Math.max(1, AlarmVolume.max(this) - min));
         seek.setProgress(Math.max(0, AlarmVolume.level(this) - min));
         value.setText(AlarmVolume.percent(this) + "%");
-        if (floor != null) floor.setText(AlarmVolume.minPercent(this) + "%");
+        if (floor != null) floor.setText(volumeFloorText());
         seek.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(android.widget.SeekBar sb, int progress, boolean fromUser) {

@@ -74,7 +74,7 @@ public class NextAlarmWidget extends AppWidgetProvider {
         boolean baseWork = DayOffAction.isWorkDay(todayType);
         boolean overtime = !vacation && !baseWork && Prefs.isOvertime(ctx, today);
         boolean work = (baseWork && !vacation) || overtime;
-        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime, baseWork);
+        String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
         return new WidgetModel(
                 TodayCard.statusText(vacation, overtime, work),
                 TodayCard.chipText(rule, today),

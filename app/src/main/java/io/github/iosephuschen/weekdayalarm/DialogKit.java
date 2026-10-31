@@ -20,8 +20,8 @@ import androidx.core.content.ContextCompat;
  * 引导页那一套卡片完全两个世界。用户截图反馈「太简陋」，这里把两件事各收一份。
  *
  * <p><b>消息型</b>：{@link #messageView} / {@link #showMessage}，版式与
- * {@code dialog_pick} / 引导页一致——17sp 粗体标题 + 12sp 次要色正文，段落之间用间距
- * 而不是空行。{@code "\n\n"} 拆段、段内 {@code "\n"} 保留（权限清单那种
+ * {@code dialog_pick} / 引导页一致——17sp 粗体标题 + 13sp {@code body} 正文，
+ * 段落之间用间距而不是空行。{@code "\n\n"} 拆段、段内 {@code "\n"} 保留（权限清单那种
  * 「· 通知 → 全屏通知」的罗列因此原样可读）。
  *
  * <p><b>选择型</b>：{@link #showPick}，一行一张 {@code bg_guide_option} 卡片，
@@ -96,6 +96,13 @@ public final class DialogKit {
      *
      * <p>拆出来供「消息之外还要带点别的」的场景复用（例如导出失败时附上报错码），
      * 调用方拿到 view 后可以再往 {@code message_body} 里加控件。
+     *
+     * <p>正文规格（v1.1.0 调整，影响全部 19 处消息弹窗）：
+     * 13sp / 行距 1.5 / 段间 14dp / {@code body} 色（6.6:1）。
+     * 原来是 12sp / 1.2 / 10dp / {@code sub}（4.8:1）——标题 17sp 粗体、正文 12sp 灰色，
+     * 落差 5sp；而中文 12sp 的行高只有 14.4sp，一段话读起来是一块均匀的灰。
+     * 段间 10dp 又和行距差不多，于是「段」和「行」分不开：免责声明三段读完
+     * 不知道分了段。
      */
     public static View messageView(Context c, String title, String body) {
         View view = messageShell(c, title);
@@ -108,13 +115,14 @@ public final class DialogKit {
                 if (p.isEmpty()) continue;
                 TextView t = new TextView(c);
                 t.setText(p);
-                t.setTextColor(ContextCompat.getColor(c, R.color.sub));
-                t.setTextSize(12);
-                t.setLineSpacing(0, 1.2f);
+                t.setTextColor(ContextCompat.getColor(c, R.color.body));
+                t.setTextSize(13);
+                t.setLineSpacing(0, 1.5f);
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);
-                if (box.getChildCount() > 0) lp.topMargin = dp(c, 10);
+                // 14dp：约等于一行行高的 0.55 倍，读起来才看得出「这里换段了」
+                if (box.getChildCount() > 0) lp.topMargin = dp(c, 14);
                 t.setLayoutParams(lp);
                 box.addView(t);
             }

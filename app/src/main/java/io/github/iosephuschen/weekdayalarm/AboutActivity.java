@@ -113,10 +113,35 @@ public class AboutActivity extends AppCompatActivity {
         String known = UpdateChecker.knownUpdateToShow(this);
         if (!known.isEmpty()) {
             v.setText(getString(R.string.about_check_update_available, known));
-            v.setTextColor(getColor(R.color.indigo));
+            styleUpdateValue(v, true);
         } else {
             v.setText(R.string.about_check_update_value);
+            styleUpdateValue(v, false);
+        }
+    }
+
+    /**
+     * 「检查更新」那行的值：有更新时做成实心胶囊，平时是普通灰字。
+     *
+     * <p>v1.1.0：原来两种情况只差一个字色——全页最该被看见的一行，和「源代码」
+     * 「开源许可」长得完全一样，扫过去只会看到三个右对齐的蓝字。现在有更新时
+     * 值变成深紫胶囊 + 白字，同一张卡里只有它一块实心色。
+     *
+     * <p>无更新 / 检查中要把背景和 padding 一起还原，否则胶囊消失但文字还缩在
+     * 胶囊留下的内边距里，右侧那列会突出一截。
+     */
+    private void styleUpdateValue(TextView v, boolean highlighted) {
+        float d = getResources().getDisplayMetrics().density;
+        int h = Math.round(9 * d);
+        int vpad = Math.round(4 * d);
+        if (highlighted) {
+            v.setBackgroundResource(R.drawable.bg_pill_solid);
+            v.setTextColor(getColor(R.color.white));
+            v.setPadding(h, vpad, h, vpad);
+        } else {
+            v.setBackground(null);
             v.setTextColor(getColor(R.color.sub));
+            v.setPadding(0, 0, 0, 0);
         }
     }
 
@@ -126,7 +151,8 @@ public class AboutActivity extends AppCompatActivity {
         // 关掉点击再查：连续点会起多个线程，最后一个回来的结果覆盖前一个，显示会跳
         row.setEnabled(false);
         value.setText(R.string.about_check_update_checking);
-        value.setTextColor(getColor(R.color.sub));
+        // 之前可能正高亮着（有更新），开查时先还原成普通灰字
+        styleUpdateValue(value, false);
 
         UpdateChecker.check(this, result -> {
             // v0.91.9：同 SettingsActivity 的节假日检查——回来时页面可能已经关了，

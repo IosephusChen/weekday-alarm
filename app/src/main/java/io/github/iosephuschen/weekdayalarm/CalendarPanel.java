@@ -172,6 +172,9 @@ final class CalendarPanel {
                 int bgRes;
                 int textColorRes;
                 String label;
+                // v1.1.0：只有「纯工作日」的标签才降一档色。请假 / 加班 / 假加这些
+                // 是例外状态，标签本身就是要被注意到的注记，跟着数字同色才对。
+                boolean plainWork = false;
                 if (vacation && overtime) {
                     // 底色只能选一个，请假优先——「这天没上班」比「这天还加了班」更主导
                     bgRes = R.drawable.bg_day_vacation;
@@ -202,6 +205,7 @@ final class CalendarPanel {
                         case WORK:
                             bgRes = R.drawable.bg_day_work;
                             textColorRes = R.color.day_work_text;
+                            plainWork = true;
                             break;
                         default:
                             bgRes = R.drawable.bg_day_rest;
@@ -233,16 +237,23 @@ final class CalendarPanel {
                 });
 
                 int color;
+                int labelColor;
                 if (!inMonth) {
                     cell.setBackgroundResource(R.drawable.bg_day_none);
                     color = ContextCompat.getColor(host, R.color.day_dim_text);
+                    labelColor = color;
                 } else {
                     cell.setBackgroundResource(bgRes);
                     color = ContextCompat.getColor(host, textColorRes);
+                    labelColor = plainWork
+                            ? ContextCompat.getColor(host, R.color.day_work_label)
+                            : color;
                 }
                 if (d.equals(today)) {
                     cell.setBackgroundResource(R.drawable.bg_day_today);
                     color = ContextCompat.getColor(host, R.color.day_today_text);
+                    // 今天的格子整格都是主色，标签再降重会和数字脱节
+                    labelColor = color;
                 }
                 // 无障碍：TalkBack 读到的是「17」这种光秃秃的数字，无法判断当天班休
                 cell.setContentDescription(describeDay(d, type, vacation, overtime));
@@ -258,7 +269,7 @@ final class CalendarPanel {
                 if (inMonth) {
                     lab.setVisibility(View.VISIBLE);
                     lab.setText(label);
-                    lab.setTextColor(color);
+                    lab.setTextColor(labelColor);
                 } else {
                     lab.setVisibility(View.GONE);
                     lab.setText("");

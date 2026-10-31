@@ -4,7 +4,12 @@
      没有许可、没有反馈入口。开源项目缺这些，别人想报问题都不知道去哪；而闹钟类 App
      最该写清楚的免责声明，也没有地方放。
 
-     版式沿用说明页：顶栏「‹ 返回 + 右对齐标题」、白卡分组、行内「左标题 + 右值/箭头」。
+     版式沿用**设置页**（v1.1.0 改）：顶栏「‹ 返回 + 右对齐标题」、白卡分组、
+     行内「左标题 + 右值/箭头」。
+     原来是照说明页做的（12dp 边距 / 50dp 行高 / HelpItem 14sp），于是这一页
+     比它的上级页轻一档——从设置点进来，卡片左右各外扩 2dp、字小一号、行矮 4dp。
+     单看没问题，连着上下页看是一次轻微的下沉。现在改成 SettingsTitle 15sp /
+     54dp / 14dp，和 activity_settings、activity_more_settings 完全一致。
      文案全在 strings.xml（about_*），这份只管搭壳。 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -16,9 +21,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="@dimen/space_12"
-        android:paddingTop="@dimen/space_12"
-        android:paddingEnd="@dimen/space_12"
+        android:paddingStart="14dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="14dp"
         android:paddingBottom="@dimen/space_24">
 
         <!-- 顶部栏：返回 + 标题 -->
@@ -36,9 +41,9 @@
                 android:background="@drawable/bg_time_outline"
                 android:clickable="true"
                 android:focusable="true"
-                android:paddingStart="@dimen/space_12"
+                android:paddingStart="14dp"
                 android:paddingTop="7dp"
-                android:paddingEnd="@dimen/space_12"
+                android:paddingEnd="14dp"
                 android:paddingBottom="7dp"
                 android:text="‹ 返回"
                 android:textColor="@color/ink"
@@ -117,11 +122,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -149,11 +154,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -180,11 +185,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -213,11 +218,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -244,11 +249,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -275,11 +280,11 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
-                android:minHeight="50dp"
+                android:minHeight="54dp"
                 android:orientation="horizontal">
 
                 <TextView
-                    style="@style/HelpItem"
+                    style="@style/SettingsTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"

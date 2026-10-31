@@ -49,14 +49,28 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
+        <!-- v1.1.0：一行统计拆成两行两个字号。
+             原来「共 237 个版本 · 最近更新 2026/10/31」和「1.0 之前为测试期…」
+             用 \n 挤在同一个 12sp TextView 里，一行是统计、一行是免责，长得一样。
+             现在统计 13sp（语序也换了，最近更新在前），免责 11.5sp。 -->
         <TextView
             android:id="@+id/tv_changelog_sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginTop="@dimen/space_12"
             android:textColor="@color/sub"
-            android:textSize="12sp" />
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tv_changelog_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:layout_marginBottom="@dimen/space_12"
+            android:lineSpacingMultiplier="1.3"
+            android:text="@string/changelog_test_note"
+            android:textColor="@color/sub"
+            android:textSize="11.5sp" />
 
         <LinearLayout
             android:id="@+id/ll_changelog"

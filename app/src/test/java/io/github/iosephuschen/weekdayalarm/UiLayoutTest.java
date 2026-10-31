@@ -142,30 +142,23 @@ public class UiLayoutTest {
     /** 对话框圆角：窗口背景被换成 24dp 圆角的 shape，不再是直角白块。 */
     @Test
     public void dialogs_haveRoundedBackground() {
-        Prefs.setLastRunVersion(ctx(), 54);   // 触发升级弹窗
+        // v1.0.2：原来靠「升级后弹更新日志」把对话框触发出来，那条路撤了。
+        // 改成直接建一个 RoundedDialog——测的本来就是它的样式，
+        // 不该依赖某个业务流程还在不在。
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        // 升级弹窗晚一步：MainActivity 把重排挪到后台线程（v0.73.3）后，弹窗也是那条线程
-        // runOnUiThread 过来的。单次 idleMainLooper 不保证赶在它 post 之前，慢机器上会
-        // 偶发「弹窗还没建好」——这里等它最多 2 秒，别把线程调度当成断言。
-        Dialog d = null;
-        for (int i = 0; i < 100 && d == null; i++) {
-            ShadowLooper.idleMainLooper();
-            d = ShadowAlertDialog.getLatestDialog();
-            if (d == null) {
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException ignore) {
-                }
-            }
-        }
-        assertNotNull("应弹出更新日志", d);
+        Dialog d = new RoundedDialog.Builder(ctl.get()).setTitle("测试").create();
+        d.show();
+
         Drawable bg = d.getWindow().getDecorView().getBackground();
         assertTrue("对话框背景应是圆角 shape，实际：" + bg, bg instanceof GradientDrawable);
         float radius = ((GradientDrawable) bg).getCornerRadius();
         assertTrue("圆角半径应大于 0，实际：" + radius, radius > 0);
+
+        d.dismiss();
+        ctl.pause().stop().destroy();
     }
 
     /** 倒计时从「下一次闹钟」算起：设一个 2 小时后的闹钟，数字应落在 01:59:5x ~ 02:00:00。 */

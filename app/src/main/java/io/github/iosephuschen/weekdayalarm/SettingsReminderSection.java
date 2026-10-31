@@ -318,6 +318,8 @@ final class SettingsReminderSection {
         View workdayRow = view.findViewById(R.id.bed_workday_row);
         SwitchCompat sw = view.findViewById(R.id.sw_bed_workday);
         boolean bedOn = !off;
+        // 配色（v1.1.0）：与其他开关同一套，见 SwitchKit
+        SwitchKit.style(host, sw);
         sw.setChecked(Prefs.isBedtimeWorkdayOnly(host));
         sw.setEnabled(bedOn);
         workdayRow.setAlpha(bedOn ? 1f : 0.45f);

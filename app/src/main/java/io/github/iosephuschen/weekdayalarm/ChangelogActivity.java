@@ -36,12 +36,13 @@ public class ChangelogActivity extends AppCompatActivity {
         TextView sub = findViewById(R.id.tv_changelog_sub);
         // v0.32.1：这里原本还写了一遍「当前 v0.32.0（versionCode 61）」，
         // 而下面第一条卡片本身就带「当前版本」标记，同一件事说了两遍。
-        // 副标题只留「共几版 + 最近更新时间」，当前是哪版交给卡片上的标记。
-        // v1.0.0：加第二行。197 条历史日志是测试期写的，标题里常有「先这样」这类口气，
+        // 副标题只留「最近更新 + 共几版」，当前是哪版交给卡片上的标记和左色条。
+        // v1.0.0：加第二行说明。197 条历史日志是测试期写的，标题里常有「先这样」这类口气，
         // 逐条加「测试版」标签既是改历史、也改不完；在顶上说明一句最省事，也不骗人。
-        sub.setText("共 " + Changelog.all().size() + " 个版本 · 最近更新 "
-                + Changelog.all().get(0).date
-                + "\n1.0 之前为测试期，日志按当时原文保留");
+        // v1.1.0：那行说明拆到 tv_changelog_note（独立字号、文案在 strings），
+        // 语序也换成「最近更新 … · 共 N 个版本」——有用的在前。
+        sub.setText("最近更新 " + Changelog.all().get(0).date
+                + " · 共 " + Changelog.all().size() + " 个版本");
 
         List<Changelog.Entry> all = Changelog.all();
         LinearLayout box = findViewById(R.id.ll_changelog);

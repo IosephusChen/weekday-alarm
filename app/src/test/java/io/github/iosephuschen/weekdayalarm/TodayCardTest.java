@@ -41,12 +41,16 @@ public class TodayCardTest {
 
     @Test
     public void dayTagText_priorityAndEmptyForPlainWorkday() {
-        assertEquals("个人请假", TodayCard.dayTagText(WeekSchedule.DayType.WORK, true, false, true));
-        assertEquals("个人加班", TodayCard.dayTagText(WeekSchedule.DayType.REST, false, true, false));
-        assertEquals("调休补班", TodayCard.dayTagText(WeekSchedule.DayType.MAKEUP_WORK, false, false, true));
-        assertEquals("法定节假日", TodayCard.dayTagText(WeekSchedule.DayType.HOLIDAY, false, false, false));
-        assertEquals("休息日", TodayCard.dayTagText(WeekSchedule.DayType.REST, false, false, false));
-        assertEquals("普通上班日不出前缀", "", TodayCard.dayTagText(WeekSchedule.DayType.WORK, false, false, true));
+        assertEquals("个人请假", TodayCard.dayTagText(WeekSchedule.DayType.WORK, true, false));
+        assertEquals("个人加班", TodayCard.dayTagText(WeekSchedule.DayType.REST, false, true));
+        assertEquals("调休补班", TodayCard.dayTagText(WeekSchedule.DayType.MAKEUP_WORK, false, false));
+        assertEquals("法定节假日", TodayCard.dayTagText(WeekSchedule.DayType.HOLIDAY, false, false));
+        // v1.1.0：休息日不再出前缀。角标写「休 2 天」、大字写「今天休息」，
+        // 第三遍「休息日 · 下次闹钟…」只是在重复大字，还挤掉半句副标题
+        assertEquals("休息日不出前缀", "",
+                TodayCard.dayTagText(WeekSchedule.DayType.REST, false, false));
+        assertEquals("普通上班日不出前缀", "",
+                TodayCard.dayTagText(WeekSchedule.DayType.WORK, false, false));
     }
 
     // ---------- 响铃时刻 ----------
@@ -89,7 +93,7 @@ public class TodayCardTest {
                 TodayCard.subText("", null, today, true, false));
         assertEquals("休息日只说没有启用的闹钟",
                 "没有启用的闹钟",
-                TodayCard.subText("休息日", null, today, false, false));
+                TodayCard.subText("", null, today, false, false));
     }
 
     @Test
@@ -97,9 +101,9 @@ public class TodayCardTest {
         assertEquals("当天也写「下次闹钟」，不再用没宾语的「下一个」",
                 "下次闹钟 23:59",
                 TodayCard.subText("", at(0, 23, 59), today, true, false));
-        assertEquals("明天靠相对词表达，前缀用「 · 」连接",
-                "休息日 · 下次闹钟 明天 07:00",
-                TodayCard.subText("休息日", at(1, 7, 0), today, false, false));
+        assertEquals("休息日不再带前缀：大字已经说了「今天休息」",
+                "下次闹钟 明天 07:00",
+                TodayCard.subText("", at(1, 7, 0), today, false, false));
         assertEquals("调休补班日也带前缀",
                 "调休补班 · 下次闹钟 明天 07:00",
                 TodayCard.subText("调休补班", at(1, 7, 0), today, true, false));

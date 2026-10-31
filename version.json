@@ -1,13 +1,14 @@
 {
-  "versionCode": 239,
-  "versionName": "1.0.1",
+  "versionCode": 240,
+  "versionName": "1.0.2",
   "published": "2026-10-31",
-  "title": "崩溃了会告诉你日志在哪",
+  "title": "每页的字和间距都过了一遍",
   "notes": [
-    "崩过一次之后，首页会出现一条提示，点它就能把崩溃日志导出来发给我",
-    "重装后不会再冒出一条你没设过的「午休」闹钟——以前那条是装应用时预置的",
-    "崩溃日志最多留 20 份，不再无限攒着"
+    "升级后不再弹更新日志，想看就在关于页点「检查更新」",
+    "音量条最左写「最小 7%」，最低是 0 时直接写「静音」",
+    "首页倒计时改成「1 天 21 小时」，跨天时不用再盯秒数",
+    "开关统一成紫底白点；各页字号行距重排，弹窗正文不再挤在一起"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.1/weekday-alarm-1.0.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.2/weekday-alarm-1.0.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.2"
 }

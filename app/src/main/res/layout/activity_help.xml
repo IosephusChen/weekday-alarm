@@ -53,15 +53,20 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- 目录：五枚胶囊，点一下滚到对应那节。窄屏可横滑 -->
-        <HorizontalScrollView
+        <!-- 目录：五枚胶囊，点一下滚到对应那节。
+             v1.1.0：原来是 HorizontalScrollView 一行五枚。五枚总宽约 374dp，
+             屏宽 393dp 减左右 28dp 只剩 365——溢出 9dp，第五枚「设置与备份」
+             正好被裁在字中间。切一半看起来不是「还能滑」，是「布局溢出」，
+             而且没有任何可滑的暗示，用户不会去试。
+             改成 3 + 2 两行：多 25dp 高度，但这页本来就要滚，换来五个入口一次看全。 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/space_10"
-            android:scrollbars="none">
+            android:orientation="vertical">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
@@ -79,6 +84,13 @@
                     android:id="@+id/toc_s3"
                     style="@style/HelpToc"
                     android:text="@string/help_toc_leave" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_6"
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/toc_s4"
@@ -90,7 +102,7 @@
                     style="@style/HelpToc"
                     android:text="@string/help_toc_settings" />
             </LinearLayout>
-        </HorizontalScrollView>
+        </LinearLayout>
 
         <!-- ===== 1. 排班与日历 ===== -->
         <LinearLayout
@@ -387,36 +399,12 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 可点路径（v0.83.0）：说明页第一次能反向跳到设置 / 引导。
-             路径写成死文字迟早过期（v0.82.0 就过了一次），能点就不怕它过期。 -->
-        <LinearLayout
-            android:id="@+id/help_jump_settings"
-            style="@style/HelpJump"
-            android:layout_marginTop="@dimen/space_10">
-
-            <TextView
-                style="@style/HelpJumpText"
-                android:text="@string/help_jump_settings" />
-
-            <TextView
-                style="@style/HelpJumpAction"
-                android:text="@string/help_jump_settings_action" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/help_jump_guide"
-            style="@style/HelpJump"
-            android:layout_marginTop="@dimen/space_8">
-
-            <TextView
-                style="@style/HelpJumpText"
-                android:text="@string/help_jump_guide" />
-
-            <TextView
-                style="@style/HelpJumpAction"
-                android:text="@string/help_jump_guide_action" />
-        </LinearLayout>
-
+        <!-- v1.1.0：删掉了原来底部两行「打开设置 / 去查看」的可点路径。
+             它们的职责是「回跳」，而这页的入口本来就在设置里——用户从
+             「设置 → 其他设置 → 使用说明」进来，按返回就在设置页，多一个
+             「打开设置」是原地打转；引导页同理，设置里有常驻的「重看」。
+             正文里也没有任何一条写死了「设置 → 某某」的路径，删掉不会留下
+             指不到的死文字（v0.83.0 加它是因为当时正文里写过路径）。 -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

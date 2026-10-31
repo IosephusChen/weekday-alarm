@@ -433,6 +433,10 @@
                             </LinearLayout>
 
                             <View style="@style/SettingsDivider" />
+                            <!-- v1.1.0：使用说明 / 更新日志 / 关于三行右侧的「查看」都删了，
+                                 只留箭头。箭头本来就说清了「能进」，三行同一个词只是把这一列
+                                 占满；而这一组里唯一有信息量的是下面「新手引导与权限 · 重看」
+                                 ——「重看」说的是「你之前看过」，它被三次重复淹没之后就没人读了。 -->
                             <LinearLayout
                                 android:id="@+id/row_help"
                                 android:layout_width="match_parent"
@@ -454,12 +458,6 @@
                                     android:layout_height="wrap_content"
                                     android:layout_weight="1"
                                     android:text="@string/more_help_title" />
-
-                                <TextView
-                                    style="@style/SettingsValue"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/more_help_action" />
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
@@ -490,12 +488,6 @@
                                 <!-- v0.85.5：右侧不再重复版本号。主页最底下那行「版本 x.y.z (code)」
                                      已经写全了，这里再写一遍「v0.85.4」只是同一串数字换个地方——
                                      而它属于「动作入口」（点进去看日志），不是「当前取值」。 -->
-                                <TextView
-                                    style="@style/SettingsValue"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/more_help_action" />
-
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>
 
@@ -523,12 +515,6 @@
                                     android:layout_height="wrap_content"
                                     android:layout_weight="1"
                                     android:text="@string/more_about_title" />
-
-                                <TextView
-                                    style="@style/SettingsValue"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/more_help_action" />
 
                                 <TextView style="@style/SettingsChevron" />
                             </LinearLayout>

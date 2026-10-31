@@ -57,14 +57,23 @@ public class BackupImporterTest {
         return ConfigBackup.exportJson(ctx());
     }
 
+    /**
+     * 按标签找一行 {@code kv}。
+     *
+     * <p>v1.1.0：摘要行收进了 {@link RowKit#stack} 的淡底卡里，不再是 body 的直接子节点，
+     * 所以这里改成递归下探——只遍历一层会一行都找不到。
+     */
     private static View findRow(ViewGroup box, String label) {
         for (int i = 0; i < box.getChildCount(); i++) {
             View child = box.getChildAt(i);
-            if (!(child instanceof LinearLayout)) continue;
-            View first = ((LinearLayout) child).getChildAt(0);
-            if (first instanceof TextView
-                    && label.contentEquals(((TextView) first).getText())) {
-                return child;
+            if (child instanceof ViewGroup) {
+                ViewGroup g = (ViewGroup) child;
+                if (g.getChildCount() > 0 && g.getChildAt(0) instanceof TextView
+                        && label.contentEquals(((TextView) g.getChildAt(0)).getText())) {
+                    return g;
+                }
+                View found = findRow(g, label);
+                if (found != null) return found;
             }
         }
         return null;

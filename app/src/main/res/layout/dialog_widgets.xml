@@ -1,17 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  桌面小部件说明（v0.91.7）。
+  桌面小部件说明（v0.91.7 建，v1.1.0 卡化）。
 
   原来这里是 DialogKit.showMessage 的一段纯文字（pin_guide_message）：三步路径 +
   三行尺寸说明。问题有两个——
-
   1. 路径写漏了一层。真实的澎湃是「长按桌面空白处 → 小部件 → 全部应用 →
      最底下『安卓小部件』→ 打工人闹钟」，而「安卓小部件」这一组是第三方 App 的
      唯一入口，多数人翻不到「全部应用」就放弃了。写错路径比不写更让人挫败。
-  2. 三个组件只有一句话描述，用户得先加一个才知道长什么样。三张预览图
-     （xxhdpi，本来就是配给 launcher 的）一直躺在包里没派上用场。
+  2. 三个组件只有一句话描述，用户得先加一个才知道长什么样。
 
-  现在改成图 + 名字 + 用途，路径单独放最底下说清楚。
+  v1.1.0 四处调整：
+  · 三行套进 section_bg 淡底卡——原来「图 + 字」中间只有 12dp 空白，
+    读起来是「三张图各配一段字」，不是「三个可选的小部件」；
+  · 图框 144×96 → 120×80，去掉 bg_widget_preview 底板（卡片本身就是底），
+    fitCenter 改 fitStart：三张图比例不同（1.52 / 1.25 / 1.0），居中会让
+    第二张两边都留白、看起来缩进了一截，左上对齐则左边缘始终是一条线；
+  · 说明 11sp → 12sp、行距 1.4 —— 原来是全 App 最小的正文；
+  · 路径从主色改成正文色：主色在这个 App 里等于「可点」，而这句点不动。
+    真正需要看见的是「安卓小部件」那一层，用加粗而不是用颜色（见 WidgetGuide）。
 
   标题不放进 ScrollView：内容不到一屏，但字体放大时仍要能滚，标题钉住更稳。
 -->
@@ -19,14 +25,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="20dp">
+    android:paddingTop="@dimen/space_20">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp">
+        android:paddingStart="@dimen/space_20"
+        android:paddingEnd="@dimen/space_20">
 
         <TextView
             android:layout_width="match_parent"
@@ -39,11 +45,11 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:lineSpacingMultiplier="1.2"
+            android:layout_marginTop="@dimen/space_6"
+            android:lineSpacingMultiplier="1.5"
             android:text="不用点开 App，桌面直接看下次响铃和这周班表"
-            android:textColor="@color/sub"
-            android:textSize="12sp" />
+            android:textColor="@color/body"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <ScrollView
@@ -57,34 +63,31 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
+            android:paddingStart="@dimen/space_20"
+            android:paddingEnd="@dimen/space_20"
             android:paddingBottom="14dp">
 
-            <!-- 三项：图 + 名字 + 用途。三张图宽高比不同（1.52 / 1.25 / 1.0），
-                 统一塞进 144×96dp 的框里 fitCenter，左边缘与文字起点因此对齐；
-                 v0.91.8 起框本身画了底板（bg_widget_preview），右边缘看着也不齐的问题
-                 就变成了「图在框里居中」，而不是「三张图大小不一」。 -->
+            <!-- 第一项 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
+                android:background="@drawable/bg_dialog_block"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="@dimen/space_12">
 
                 <ImageView
-                    android:layout_width="144dp"
-                    android:layout_height="96dp"
-                    android:background="@drawable/bg_widget_preview"
+                    android:layout_width="120dp"
+                    android:layout_height="80dp"
                     android:contentDescription="下次响铃预览"
-                    android:padding="6dp"
-                    android:scaleType="fitCenter"
+                    android:scaleType="fitStart"
                     android:src="@drawable/widget_next_alarm_preview" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="@dimen/space_12"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -99,34 +102,35 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:lineSpacingMultiplier="1.4"
                         android:text="今天上不上班、下次几点响、这周哪天上班"
                         android:textColor="@color/sub"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 第二项 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/space_10"
+                android:background="@drawable/bg_dialog_block"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="@dimen/space_12">
 
                 <ImageView
-                    android:layout_width="144dp"
-                    android:layout_height="96dp"
-                    android:background="@drawable/bg_widget_preview"
+                    android:layout_width="120dp"
+                    android:layout_height="80dp"
                     android:contentDescription="整月班表预览"
-                    android:padding="6dp"
-                    android:scaleType="fitCenter"
+                    android:scaleType="fitStart"
                     android:src="@drawable/widget_week_schedule_month_preview" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="@dimen/space_12"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -141,34 +145,35 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:lineSpacingMultiplier="1.4"
                         android:text="整月哪天上班、哪天休息，顶部带下一个闹钟"
                         android:textColor="@color/sub"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 第三项 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/space_10"
+                android:background="@drawable/bg_dialog_block"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:padding="@dimen/space_12">
 
                 <ImageView
-                    android:layout_width="144dp"
-                    android:layout_height="96dp"
-                    android:background="@drawable/bg_widget_preview"
+                    android:layout_width="120dp"
+                    android:layout_height="80dp"
                     android:contentDescription="紧凑月历预览"
-                    android:padding="6dp"
-                    android:scaleType="fitCenter"
+                    android:scaleType="fitStart"
                     android:src="@drawable/widget_month_minimal_preview" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="@dimen/space_12"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -183,42 +188,52 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:lineSpacingExtra="2dp"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:lineSpacingMultiplier="1.4"
                         android:text="同一个月班表，去掉底部统计行，更省桌面高度"
                         android:textColor="@color/sub"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- 分隔：上面是「有哪些」，下面是「怎么装」，两件事 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="@dimen/space_20"
+                android:background="@color/line" />
+
             <!-- 路径单独说，并且要写全。上一版漏掉「全部应用 → 安卓小部件」两层，
-                 而第三方 App 的组件恰恰只在那最后一组里。 -->
+                 而第三方 App 的组件恰恰只在那最后一组里。
+                 「安卓小部件」由 WidgetGuide 加粗——那是全程最容易漏的一环，
+                 但整句加粗会糊，只挑这四个字。 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="@dimen/space_16"
                 android:text="怎么加到桌面"
-                android:textColor="@color/sub"
-                android:textSize="11sp"
+                android:textColor="@color/ink"
+                android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tv_widget_path"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:lineSpacingExtra="3dp"
+                android:layout_marginTop="@dimen/space_6"
+                android:lineSpacingMultiplier="1.5"
                 android:text="长按桌面空白处 →「小部件」→「全部应用」→ 最底下「安卓小部件」→ 打工人闹钟"
-                android:textColor="@color/indigo"
-                android:textSize="11sp" />
+                android:textColor="@color/body"
+                android:textSize="12sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:lineSpacingExtra="2dp"
+                android:layout_marginTop="@dimen/space_8"
+                android:lineSpacingMultiplier="1.4"
                 android:text="有的桌面把「小部件」叫「添加工具」；找不到「全部应用」时，直接翻到列表最底下那一组。"
                 android:textColor="@color/sub"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

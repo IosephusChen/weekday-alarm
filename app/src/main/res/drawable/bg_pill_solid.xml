@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 实心胶囊（v1.1.0）：关于页「有更新」时那个值用它托底。
+
+     为什么不用 RowKit.pill 那套「同色 18% 底 + 同色字」：那是**标签**，说的是
+     「这条是什么」；这里要的是**行动**——有新版可下，这一行是全页最该被点的地方，
+     需要比周围的 13sp 灰字重一档。
+
+     底色取 indigo_dark 而不是 indigo：indigo 的夜间版是 #818CF8（浅紫），
+     白字压上去只有 2.9:1；indigo_dark 日夜都是深紫（#4338CA / #4F46E5），
+     白字分别是 8.0:1 和 6.3:1。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/indigo_dark" />
+    <corners android:radius="@dimen/radius_pill" />
+</shape>

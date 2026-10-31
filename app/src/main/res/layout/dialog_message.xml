@@ -5,7 +5,8 @@
   替掉 AlertDialog 的 setMessage：系统那条消息是 16sp 的正文色，在 App 的卡片上
   又大又重，多段之间只能靠 "\n\n" 挤出两个空行，段落在不同 ROM 上松紧还不一样。
   这里按 App 既有对话框的版式来（与 dialog_horizon / dialog_week_mode 同一套）：
-  标题 17sp 粗体主文字色，正文 12sp 次要文字色，段落之间用 10dp 间距而不是空行。
+  标题 17sp 粗体主文字色。正文规格在 DialogKit.messageView 里 —— v1.1.0 起是
+  13sp / 行距 1.5 / 段间 14dp / @color/body，原来是 12sp / 1.2 / 10dp / @color/sub。
 
   正文由 DialogKit.messageView 分段填入，布局里只放容器。
 -->

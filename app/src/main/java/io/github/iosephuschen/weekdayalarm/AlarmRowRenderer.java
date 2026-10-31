@@ -285,6 +285,9 @@ final class AlarmRowRenderer {
             sw.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             sw.setTag(a.id);
+            // 配色（v1.1.0）：不设 tint 时完全由 ROM 决定，MIUI 上「关」是黑拇指，
+            // 比「开」还重。详见 SwitchKit
+            SwitchKit.style(activity, sw);
             // 无障碍（v0.45.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条；
             // v0.90.0 再加「静音」——否则视障用户看不出这条闹钟到点不会响
             sw.setContentDescription(a.timeText() + " " + a.label

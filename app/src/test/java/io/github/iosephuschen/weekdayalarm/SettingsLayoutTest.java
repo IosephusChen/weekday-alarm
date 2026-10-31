@@ -388,7 +388,9 @@ public class SettingsLayoutTest {
      * <p>主页这条用 findViewById 判空，不按名字查 R.id：`tv_version` 这个 id 在
      * activity_about.xml 里还在用，资源 id 是全局的，按名字查永远非 0。
      *
-     * <p>「更新日志」行右侧仍然写动作词「查看」，与「使用说明」同一口径。
+     * <p>「更新日志」行右侧 v1.1.0 起连「查看」也不写了：动作入口只留箭头。
+     * 使用说明 / 更新日志 / 关于三行同一个词，三次重复只把这一列占满；
+     * 而同一组里唯一有信息量的「新手引导与权限 · 重看」被淹了。
      */
     @Test
     public void version_livesOnAboutPageOnly() {
@@ -408,7 +410,9 @@ public class SettingsLayoutTest {
                 ctx().getResources().getIdentifier("tv_changelog_version", "id",
                         ctx().getPackageName()));
         String all = collectText(b.getWindow().getDecorView());
-        assertTrue("那一行右侧应是「查看」，和「使用说明」一致", all.contains("查看"));
+        // v1.1.0：右侧不再写「查看」。箭头本来就说清了「能进」，而「使用说明 / 更新日志
+        // / 关于」三行同一个词，只是把这一列占满，反倒把「新手引导与权限 · 重看」淹了
+        assertFalse("动作入口只留箭头，不再写「查看」", all.contains("查看"));
         assertFalse("不该再出现 v0.85 / v0.8x 这种版本字样",
                 java.util.regex.Pattern.compile("v0\\.[0-9]").matcher(all).find());
 

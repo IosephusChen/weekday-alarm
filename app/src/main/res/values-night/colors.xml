@@ -11,6 +11,7 @@
     <color name="violet">#A78BFA</color>
     <color name="ink">#F1F3FE</color>          <!-- 主文字：近白 -->
     <color name="sub">#9AA0BE</color>          <!-- 次要文字：中灰，对比度 4.6:1+ -->
+    <color name="body">#A9B0CC</color>         <!-- 正文：对 card 7.5:1，比 sub 亮一档 -->
     <color name="card">#1C1F35</color>         <!-- 卡片：深靛蓝灰 -->
     <color name="bg">#0F1120</color>           <!-- 页面底：深靛黑 -->
     <color name="line">#2A2E47</color>         <!-- 描边/分隔线 -->
@@ -37,13 +38,23 @@
 
     <color name="danger">#F87171</color>   <!-- red-400 -->
     <color name="success">#4ADE80</color>  <!-- green-400 -->
+    <color name="success_text">#4ADE80</color>  <!-- 夜间深底上 6.3:1，和 success 同值即可 -->
     <!-- 危险操作的淡底（夜间）：比卡片底略偏红，红字压上去才立得住 -->
     <color name="danger_soft">#3A1D22</color>
+
+    <!-- ===== 开关配色（夜间）=====
+         轨道和拇指分别压在 card(#1C1F35) / line(#2A2E47) 上，所以要跟着变；
+         关状态的拇指取 #6B7194：比轨道亮、比文字暗，是「灰调」而不是「黑洞」。 -->
+    <color name="switch_track_on">#66818CF8</color>   <!-- indigo-400 40% -->
+    <color name="switch_track_off">#2A2E47</color>
+    <color name="switch_thumb_on">#818CF8</color>     <!-- indigo-400 -->
+    <color name="switch_thumb_off">#6B7194</color>
 
     <!-- ===== 日历格子与图例语义色（夜间）===== -->
     <color name="day_work_bg">#232847</color>
     <color name="day_work_stroke">#3D4470</color>
     <color name="day_work_text">#A5B4FC</color>   <!-- indigo-300 -->
+    <color name="day_work_label">#93A0C4</color>  <!-- 「班」字：比 indigo-300 灰一档，5.5:1 -->
 
     <color name="day_rest_bg">#23263C</color>
     <color name="day_rest_stroke">#3A3F58</color>

@@ -93,6 +93,22 @@ public final class RowKit {
      */
     public static View kv(Context c, String label, String value, int valueColor,
                           String pillText) {
+        return kv(c, label, value, valueColor, pillText, valueColor);
+    }
+
+    /**
+     * 信息行 + 行尾徽章，值和徽章可以不同色（v1.1.0）。
+     *
+     * <p>为什么需要拆开：「下一个闹钟 · 已登记」原来值整句和徽章都用 success，
+     * 而 success（#16A34A）压在白底上只有 3.3:1、徽章里更低到 2.9:1——14sp 正文
+     * 要 4.5:1，这是**不达标**，不是不好看。更麻烦的是绿色染了整句：日期、班次、
+     * 时间、闹钟名一起变绿，读者反而不知道绿代表什么。
+     *
+     * <p>现在值回到 ink、状态只由徽章承担，徽章文字色换成更深的一档
+     * （{@code success_text}，日间 #166534）。
+     */
+    public static View kv(Context c, String label, String value, int valueColor,
+                          String pillText, int pillColor) {
         LinearLayout row = new LinearLayout(c);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.TOP);
@@ -109,7 +125,7 @@ public final class RowKit {
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         if (pillText != null && !pillText.isEmpty()) {
-            TextView p = pill(c, pillText, valueColor);
+            TextView p = pill(c, pillText, pillColor);
             LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -137,6 +153,12 @@ public final class RowKit {
     public static LinearLayout stack(Context c, View... rows) {
         LinearLayout box = new LinearLayout(c);
         box.setOrientation(LinearLayout.VERTICAL);
+        // v1.1.0：整摞收进一块淡底卡。原来这几行和上面的说明句字号、颜色、
+        // 左边距完全一样，「会覆盖当前配置」和「导出时间 10-27 20:14」看着是同一种东西。
+        // 现在数据归数据、话归话，中间隔 14dp 和一条边界
+        box.setBackgroundResource(R.drawable.bg_dialog_block);
+        int boxPad = dp(c, 12);
+        box.setPadding(boxPad, boxPad, boxPad, boxPad);
         int pad = dp(c, 7);
         for (int i = 0; i < rows.length; i++) {
             View row = rows[i];
@@ -190,7 +212,9 @@ public final class RowKit {
         t.setText(text);
         t.setTextColor(ContextCompat.getColor(c, R.color.ink));
         t.setTextSize(textSizeSp);
-        t.setLineSpacing(0, 1.25f);
+        // 行距 1.4（v1.1.0，原 1.25）：1.25 是英文正文的舒适值，中文字形没有升部
+        // 那种向上伸展，行与行贴得更紧；1.4 下 13sp 的行高约 26dp，读一段才不塞牙
+        t.setLineSpacing(0, 1.4f);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         t.setLayoutParams(lp);

@@ -14,6 +14,10 @@
     <color name="violet">#7C3AED</color>
     <color name="ink">#1E2235</color>
     <color name="sub">#6B7189</color>
+    <!-- 正文第三档（v1.1.0）：介于 ink 与 sub 之间，给「要读一段」的弹窗正文用。
+         sub 在白底上是 4.8:1，配 12sp 只是勉强过线（中文小字实际读感更差）；
+         ink 是 15:1，整段读下来像一屏标题。这个色 6.6:1，是中段最舒服的位置。 -->
+    <color name="body">#565C72</color>
     <color name="card">#FFFFFF</color>
     <color name="bg">#F4F5FB</color>
     <color name="line">#E7E9F3</color>
@@ -52,8 +56,28 @@
          深色模式下 #DC2626 / #16A34A 压在 #1C1F35 卡片上对比度只有 3:1 左右。 -->
     <color name="danger">#DC2626</color>
     <color name="success">#16A34A</color>
+    <!-- 小字用的深一档绿（v1.1.0）：「已登记」这类 11sp 徽章。
+         success(#16A34A) 压在白底上只有 3.3:1，做徽章（淡绿底 + 同色字）更低到 2.9:1，
+         而 11sp 不算大字号，要求 4.5:1。这个色对同款 18% 底是 5.8:1。
+         正文里的大字仍然用 success——那里够。 -->
+    <color name="success_text">#166534</color>
     <!-- 危险操作的淡底（v0.77.0）：删除按钮用它托底，不再是白底红字 -->
     <color name="danger_soft">#FDF1F1</color>
+
+    <!-- ===== 开关配色（v1.1.0）=====
+         AlarmRowRenderer 和设置页那几个 SwitchCompat，从创建到销毁没设过任何 tint，
+         于是长什么样完全由 ROM 决定：MIUI 上「关」是黑拇指 + 深灰轨道、「开」是紫拇指。
+         结果是整张闹钟卡里最黑的元素是个「已关闭」的开关，扫一眼先看到午休，
+         而不是还在生效的起床。
+
+         配色规则：开 = 紫调（淡紫轨 + 紫拇指），关 = 灰调（浅灰轨 + 中灰拇指）。
+         用「色相」而不是「明度」区分开关，关掉的那条就不会因为拇指太黑反而更重。
+
+         四个色都有夜间版：轨道和拇指分别压在 card / line 上，那两个色会随明暗变。 -->
+    <color name="switch_track_on">#5C4F46E5</color>   <!-- indigo 36%，浅到白拇指压得住 -->
+    <color name="switch_track_off">#E1E4F0</color>
+    <color name="switch_thumb_on">#4F46E5</color>
+    <color name="switch_thumb_off">#B9BFD4</color>
 
     <!-- ===== 日历格子与图例语义色（日间）=====
          底色与 bg_day_*.xml 的 solid 一致；描边为同色系淡边（今天为 indigo 主色）。
@@ -61,6 +85,12 @@
     <color name="day_work_bg">#EEF2FF</color>
     <color name="day_work_stroke">#C7D2FE</color>
     <color name="day_work_text">#4338CA</color>
+    <!-- 「班」字专用（v1.1.0）：日期数字继续用 day_work_text，标签单独降一档。
+         同色时一个工作日格子里有两个一样重的元素，19 个格子并排就是 19 对
+         分不出「几号」和「上不上班」。这个字不能删——只靠底色表达班休，
+         蓝灰色弱的用户读不出来（WCAG 1.4.1），所以只能降重不能去掉。
+         #5B6480 对 #EEF2FF 是 5.2:1，退后但仍在大字号门槛之上。 -->
+    <color name="day_work_label">#5B6480</color>
 
     <color name="day_rest_bg">#F1F5F9</color>
     <color name="day_rest_stroke">#CBD5E1</color>

@@ -26,16 +26,16 @@ import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * 更新日志（v0.29.0）：数据自检 + 升级弹窗的三种情形。
+ * 更新日志：数据自检 + 「升级后不再弹窗」的钉子。
  *
- * <p>弹窗只在「上次运行过的版本号非 0 且与当前不同」时出现，
- * 所以这里分别模拟：老版本升级、全新安装、同一版本再打开。
+ * <p>v0.29.0 起，升级后首启会弹一次本次更新；v1.0.2 把它撤了——同一份内容在关于页
+ * 「检查更新」已经看过一遍，更新后再弹一次，用户唯一能做的就是点「知道了」。
+ * 下面三条钉住现状：升级、全新安装、同版本重开，主页都不出现日志弹窗。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -180,67 +180,6 @@ public class ChangelogTest {
                 installedCode(), Changelog.all().get(0).code);
     }
 
-    @Test
-    public void byCode_hitsKnownAndMissesUnknown() {
-        // v0.32.1：改成跟安装包走，发版不用再来改这里
-        assertNotNull(Changelog.byCode(installedCode()));
-        assertEquals(Changelog.all().get(0).version, Changelog.byCode(installedCode()).version);
-        assertEquals("0.31.1", Changelog.byCode(58).version);
-        assertEquals("0.31.0", Changelog.byCode(57).version);
-        assertEquals("0.30.0", Changelog.byCode(56).version);
-        assertNotNull("上一版也要留在列表里", Changelog.byCode(54));
-        assertNull(Changelog.byCode(9999));
-    }
-
-    /**
-     * 跨版本取日志（v1.0.0）。
-     *
-     * <p>原来弹窗用 {@code byCode} 精确匹配当前版本，用户隔几版才更新时中间全看不到。
-     * 这几条钉住新的取法：含中间每一版、新的在前、当前版本必须在里面。
-     */
-    @Test
-    public void between_coversEveryVersionInTheGap() {
-        List<Changelog.Entry> gap = Changelog.between(56, 58);
-        assertEquals("56 → 58 应含 57 和 58 两条", 2, gap.size());
-        assertEquals("新的在前，弹窗从上往下读才对", 58, gap.get(0).code);
-        assertEquals(57, gap.get(1).code);
-    }
-
-    @Test
-    public void between_singleStep_returnsJustTheNewOne() {
-        List<Changelog.Entry> one = Changelog.between(installedCode() - 1, installedCode());
-        assertEquals("相邻两版只该有一条", 1, one.size());
-        assertEquals(installedCode(), one.get(0).code);
-    }
-
-    @Test
-    public void between_withoutCurrentEntry_isEmpty() {
-        assertTrue("当前版本忘了写日志就什么都不弹——宁可静默，也不要标题和内容对不上",
-                Changelog.between(installedCode() - 1, 9999).isEmpty());
-    }
-
-    @Test
-    public void between_downgrade_isEmpty() {
-        assertTrue("降级安装不该弹「更新到 v0.90.0」", Changelog.between(58, 57).isEmpty());
-        assertTrue("同一版本也不弹", Changelog.between(58, 58).isEmpty());
-    }
-
-    /** 跨多版时标题得说清跨度，不能还写「更新到 vX」——卡片里明明有好几版。 */
-    @Test
-    public void upgradeAcrossVersions_titleSaysHowMany() {
-        seed(installedCode() - 3);
-        ActivityController<MainActivity> ctl =
-                Robolectric.buildActivity(MainActivity.class).setup();
-        ShadowLooper.idleMainLooper();
-
-        Dialog d = awaitDialog(2000);
-        assertNotNull("跨三版升级也应弹出", d);
-        int n = Changelog.between(installedCode() - 3, installedCode()).size();
-        assertTrue("标题应写「跨 " + n + " 个版本的更新」",
-                containsText(d.getWindow().getDecorView(), "跨 " + n + " 个版本"));
-        ctl.pause().stop().destroy();
-    }
-
     /** 每版都标日期，格式统一 yyyy/MM/dd，方便一眼看出新旧。 */
     @Test
     public void everyEntry_hasIsoLikeDate() {
@@ -250,17 +189,23 @@ public class ChangelogTest {
         }
     }
 
+    /**
+     * v1.0.2：升级后不再弹更新日志。
+     *
+     * <p>这条钉的是「撤掉」本身——把 MainActivity 里那段 show 加回去，它立刻变红。
+     * 同时确认升级检测还在：last_run_version 必须写成当前版本，否则每次启动都会
+     * 当成一次升级，把重排和清通知再跑一遍。
+     */
     @Test
-    public void upgrade_showsDialogWithThisVersion() {
+    public void upgrade_doesNotShowChangelog() {
         seed(installedCode() - 1);   // 上一版，模拟升级
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
 
-        Dialog d = awaitDialog(2000);
-        assertNotNull("升级后应弹出本次更新日志", d);
-        assertTrue("弹窗里应写着本版版本号",
-                containsText(d.getWindow().getDecorView(), Changelog.all().get(0).version));
+        assertNull("升级后不该再弹更新日志", awaitDialog(2000));
+        assertEquals("升级检测本身要留着：上次运行版本应更新为当前",
+                installedCode(), Prefs.getLastRunVersion(ctx()));
         ctl.pause().stop().destroy();
     }
 
@@ -283,27 +228,6 @@ public class ChangelogTest {
         ShadowLooper.idleMainLooper();
 
         assertNull("同一版本再次打开不该重复弹", awaitDialog(400));
-        ctl.pause().stop().destroy();
-    }
-
-    /** 升级弹过一次后，last_run_version 被写成当前版本，回前台不再弹。 */
-    @Test
-    public void upgrade_showsOnlyOnce() {
-        seed(installedCode() - 1);
-        ActivityController<MainActivity> ctl =
-                Robolectric.buildActivity(MainActivity.class).setup();
-        ShadowLooper.idleMainLooper();
-        Dialog first = awaitDialog(2000);
-        assertNotNull(first);
-        assertEquals(installedCode(), Prefs.getLastRunVersion(ctx()));
-
-        // 模拟关闭弹窗后切后台再回来
-        first.dismiss();
-        ShadowAlertDialog.reset();
-        ctl.pause().resume();
-        // Robolectric 的 shadow 会留着上一个对话框的引用，这里看「是否还在显示」
-        Dialog again = awaitDialog(400);
-        assertTrue("看过一次后不该再弹", again == null || !again.isShowing());
         ctl.pause().stop().destroy();
     }
 
@@ -395,36 +319,6 @@ public class ChangelogTest {
             assertEquals("只有当前版本卡带「当前版本」徽章：v" + e.version,
                     e.code == code, leaves.contains("当前版本"));
         }
-    }
-
-    /**
-     * v0.76.6：紧凑模式（升级弹窗）不画版本徽章与「当前版本」徽章。
-     *
-     * <p>弹窗标题已经写着「更新到 v0.76.5」，卡片里再放版本徽章、再跟一个
-     * 「当前版本」徽章，等于同一件事说三遍（用户反馈「看着怪怪的」）。
-     * 紧凑卡只留标题 + meta + 条目；列表页仍然要徽章（扫一页找「现在第几版」靠它），
-     * 那条由 {@link #cards_carryVersionPill_andOnlyCurrentHasBadge()} 钉着。
-     */
-    @Test
-    public void compactCard_dropsVersionPillAndCurrentBadge() {
-        List<Changelog.Entry> all = Changelog.all();
-        Changelog.Entry e = all.get(0);
-        // 当前版本卡在列表模式下是带「当前版本」徽章的，紧凑模式必须没有——
-        // 这样这条断言才对「compact 参数有没有生效」敏感
-        assertEquals("取的是当前版本", installedCode(), e.code);
-
-        LinearLayout box = new LinearLayout(ctx());
-        Changelog.renderInto(ctx(), box, Collections.singletonList(e), e.code, true);
-
-        assertEquals(1, box.getChildCount());
-        View card = box.getChildAt(0);
-        List<String> leaves = textLeaves(card);
-        assertTrue("标题应在", leaves.contains(e.title));
-        assertTrue("meta 应留着 versionCode", containsText(card, "versionCode"));
-        // 徽章按整段文案钉：要点里可能出现「v0.76.6」「当前版本」这样的子串
-        // （v0.76.6 的要点就写着「『当前版本』徽章都不画」），只有徽章是整段相等
-        assertFalse("紧凑卡不该有版本徽章", leaves.contains("v" + e.version));
-        assertFalse("紧凑卡不该有「当前版本」徽章", leaves.contains("当前版本"));
     }
 
     /**

@@ -1,9 +1,12 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.Window;
+import android.widget.Button;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 
 /**
  * 圆角对话框（v0.29.1）。
@@ -21,12 +24,54 @@ public final class RoundedDialog {
     private RoundedDialog() {
     }
 
-    /** 给已有对话框套上圆角底（24dp，与卡片同色）。 */
+    /** 给已有对话框套上圆角底（24dp，与卡片同色），顺带把底部按钮换成 App 的样式。 */
     public static void round(AlertDialog dialog) {
         if (dialog == null) return;
         Window w = dialog.getWindow();
         if (w == null) return;
         w.setBackgroundDrawableResource(R.drawable.bg_dialog);
+        styleButtons(dialog);
+    }
+
+    /**
+     * 底部按钮（v1.1.0）：主按钮淡紫胶囊 + 主色字，次按钮灰色字。
+     *
+     * <p>原来两个按钮都是右对齐的系统蓝紫文字，是这 15 个弹窗里最不像本 App 的一处
+     * ——App 里所有按钮都是圆角填充或描边。
+     *
+     * <p>为什么只换背景不重做布局：AlertDialog 的按钮在 AlertController 的私有布局里，
+     * 换掉它要自绘一整个按钮容器，会把时间滚轮、周休制度、铃声选择这些无关弹窗
+     * 一起卷进去。换 background 是两行改动的中间态——结构仍是系统的，看起来是 App 的。
+     *
+     * <p>按钮可能不存在（只有一个按钮、或者只有视图没有按钮的弹窗），两处都判空。
+     */
+    private static void styleButtons(AlertDialog dialog) {
+        Context c = dialog.getContext();
+        Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (positive != null) {
+            positive.setBackgroundResource(R.drawable.bg_btn_dialog_primary);
+            positive.setTextColor(ContextCompat.getColor(c, R.color.indigo));
+            // 系统默认把按钮文字转全大写（英文按钮会变 OK / CANCEL）。中文没影响，
+            // 但哪天某个按钮放了英文就会突兀，这里统一次掉
+            positive.setAllCaps(false);
+            int h = dp(c, 16);
+            int v = dp(c, 7);
+            positive.setPadding(h, v, h, v);
+            // 系统按钮的 minWidth 是 88dp、minHeight 48dp，套上胶囊底会拉成一条长条
+            positive.setMinWidth(0);
+            positive.setMinimumWidth(0);
+            positive.setMinHeight(0);
+            positive.setMinimumHeight(0);
+        }
+        Button negative = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        if (negative != null) {
+            negative.setTextColor(ContextCompat.getColor(c, R.color.sub));
+            negative.setAllCaps(false);
+        }
+    }
+
+    private static int dp(Context c, int value) {
+        return Math.round(value * c.getResources().getDisplayMetrics().density);
     }
 
     public static final class Builder extends AlertDialog.Builder {

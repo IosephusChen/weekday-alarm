@@ -46,6 +46,8 @@ public class MoreSettingsActivity extends SettingsActivity {
                 : getString(R.string.settings_more_title));
         // v0.85.5：这里原来会往「更新日志」行右侧写「v当前版本」。删了——
         // 主页最底部已有「版本 x.y.z (versionCode)」，同一屏出现两次同一串数字，
-        // 第二次不增加任何信息；而且那一行是动作入口，右侧该写「查看」。
+        // 第二次不增加任何信息。
+        // v1.1.0：连当时换上的「查看」也删了——「使用说明 / 更新日志 / 关于」三行
+        // 右侧同一个词，箭头已经说明能进，三遍重复只把这一列占满。
     }
 }

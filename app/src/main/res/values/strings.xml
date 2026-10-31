@@ -14,6 +14,18 @@
     <string name="settings_section_alarm">响铃</string>
     <string name="settings_volume_label">闹钟音量</string>
     <string name="settings_volume_default">—</string>
+    <!-- 滑块左端的量程下限（v1.1.0）。
+         为什么不说「最小」两个字：这个刻度原来的职责不是标量程，是**举证「最左边不是 0」**，
+         而「最小」在音量语境里很容易被读成「静音」——这个 App 最怕的就是
+         「以为设了音量，到点却没响」。带上真实百分比，「最小 7%」就把「还有声音」
+         一起说完了。
+         也不能只写「7%」：当前音量正好在最低档时（很常见），右上角也是 7%，
+         一行两个同样的数字会被当成 bug。 -->
+    <string name="settings_volume_floor">最小 %1$d%%</string>
+    <!-- 系统闹钟流的最低档就是 0（部分 ROM 允许）时用它。
+         这时「最小 0%」等于「静音」，而这个 App 的全部音量设计都在防「以为会响却没响」，
+         所以直接说「静音」，别让用户自己去推 0% 是什么意思。 -->
+    <string name="settings_volume_floor_mute">静音</string>
     <string name="settings_ringtone_title">铃声</string>
     <string name="settings_ringtone_default">系统默认</string>
     <string name="settings_more_ring_title">响铃方式</string>
@@ -59,8 +71,13 @@
     <string name="more_onboard_title">新手引导与权限</string>
     <string name="more_onboard_action">重看</string>
     <string name="more_help_title">使用说明</string>
-    <string name="more_help_action">查看</string>
+    <!-- v1.1.0：more_help_action（「查看」）删了——三个动作入口只留箭头。 -->
     <string name="more_changelog_title">更新日志</string>
+    <!-- 更新日志页头第二行（v1.1.0 从 ChangelogActivity 的字符串拼接里搬出来，
+         原来是和统计行用 \n 挤在同一个 TextView 里、同一档字号）。
+         197 条历史日志是测试期写的，标题里常有「先这样」这类口气，逐条加
+         「测试版」标签既是改历史、也改不完；在顶上说明一句最省事，也不骗人。 -->
+    <string name="changelog_test_note">1.0 之前为测试期，日志按当时原文保留</string>
     <string name="more_about_title">关于</string>
     <string name="more_section_widget">数据与桌面</string>
     <string name="more_pin_widget_title">添加到桌面</string>
@@ -111,10 +128,7 @@
     <string name="help_s5_b2">被系统杀后台漏响：允许自启动、加入电池优化白名单、最近任务里锁定本应用</string>
     <string name="help_s5_b3">日历想清爽点：「节日与节气」里关掉农历节日 / 节气 / 基督教节日</string>
 
-    <string name="help_jump_settings">这些都在「设置 → 其他设置」里</string>
-    <string name="help_jump_settings_action">打开设置 ›</string>
-    <string name="help_jump_guide">想重看新手引导或检查权限</string>
-    <string name="help_jump_guide_action">去查看 ›</string>
+    <!-- v1.1.0：删掉了 4 条 help_jump_*（页尾「打开设置 / 去查看」两行路径）。 -->
     <string name="help_footer">说明随版本更新 · 有不清楚的地方，去设置里逐项看一遍比翻说明快</string>
 
 

@@ -244,10 +244,20 @@ public class WeekStartTest {
         assertEquals("23:59:59", MainActivity.fmtCountdown(86399));
     }
 
-    /** 超过一天改写成「N 天 时:分」：每秒跳秒没有意义，还会让人以为马上要响。 */
+    /**
+     * 超过一天改写成「N 天 M 小时」：每秒跳秒没有意义，还会让人以为马上要响。
+     *
+     * <p>不用「3 天 04:05」是因为冒号让它和时刻长得一样——上一行刚写「下次闹钟
+     * 后天 07:30」，并排两个数字会被读成两个时刻。不用「76:05:00」是因为小时数
+     * 超过 23 不在任何表盘上。
+     */
     @Test
     public void countdown_overOneDay_showsDays() {
-        assertEquals("1 天 00:00", MainActivity.fmtCountdown(86400));
-        assertEquals("3 天 04:05", MainActivity.fmtCountdown(3 * 86400 + 4 * 3600 + 5 * 60 + 59));
+        assertEquals("1 天 0 小时", MainActivity.fmtCountdown(86400));
+        assertEquals("3 天 4 小时", MainActivity.fmtCountdown(3 * 86400 + 4 * 3600 + 5 * 60 + 59));
+        // 丢分钟的代价：24 小时 59 分也只说「1 天 0 小时」。误差最多 59 分钟，
+        // 且只存在于跨天那一小时内，换来的是一条不会每秒抖动的倒计时
+        assertEquals("1 天 0 小时", MainActivity.fmtCountdown(86400 + 59 * 60));
+        assertEquals("2 天 23 小时", MainActivity.fmtCountdown(3 * 86400 - 1));
     }
 }

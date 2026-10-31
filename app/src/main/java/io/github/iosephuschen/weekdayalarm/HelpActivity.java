@@ -1,6 +1,5 @@
 package io.github.iosephuschen.weekdayalarm;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ScrollView;
@@ -19,6 +18,10 @@ import androidx.appcompat.app.AppCompatActivity;
  * 那句文案是「第一次用？」，可第一次用的人启动时就被自动带进引导，根本走不到这里；
  * 而设置页里本来就有常驻入口，两个按钮通向同一页纯属重复。
  * 现在分工是：<b>引导只在设置页</b>（「新手引导与权限」），本页只做随时查的手册。
+ *
+ * <p>v1.1.0：v0.83.0 加在页尾的两行可点路径（「打开设置」/「去查看」）也删了，
+ * 理由和 v0.54.1 那次一样——这页的入口就在设置里，按返回就回去了；
+ * v0.83.0 加它的动机是「正文里写死的路径会过期」，而现在正文里一条路径都没有。
  *
  * <p>内容按主题分成 5 节而不是 9 条流水号：用户是带着问题来的（「请假在哪标」「组件怎么加」），
  * 分节才能一眼扫到目标。文案随版本更新，改动功能时记得回来改这里。
@@ -42,14 +45,6 @@ public class HelpActivity extends AppCompatActivity {
             final int target = SECTIONS[i];
             findViewById(TOC[i]).setOnClickListener(v -> scrollTo(target));
         }
-
-        // v0.83.0：路径不再只是文字，点一下直接跳。说明页第一次能反向回到设置——
-        // 原来写「设置 → 更多设置 → 使用说明」，改版就过期（v0.82.0 已经过了一次）。
-        findViewById(R.id.help_jump_settings)
-                .setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
-        // 引导只在设置页里有常驻入口，这里给的是同一条路：重看 = 再走一遍那 4 页
-        findViewById(R.id.help_jump_guide)
-                .setOnClickListener(v -> startActivity(new Intent(this, GuideActivity.class)));
     }
 
     /** 滚到某一节。小节都是内容容器的直接子节点，getTop 就是滚动目标。 */

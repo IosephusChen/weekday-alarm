@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 弹窗里的「数据块」（v1.1.0）：把几行摘要收进一块淡底，和正文分开。
+
+     原来摘要行直接铺在弹窗正文里，字号、颜色、左边距和上面那句说明完全一样，
+     于是「会覆盖当前配置」和「导出时间 10-27 20:14」看起来是同一种东西——
+     一句警告，三条数据，四行一样重。
+
+     section_bg 是比卡片底略亮一档的靛蓝灰（日间 #F7F8FD / 夜间 #242840），
+     在弹窗白卡上刚好能看出「这是一块」，又不抢正文。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/section_bg" />
+    <corners android:radius="@dimen/radius_row" />
+</shape>

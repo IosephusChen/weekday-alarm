@@ -85,29 +85,17 @@ public class HelpActivityTest {
      * 路径本身可点。区别在于：这条是**通道**，不是**推销**。
      */
     @Test
-    public void helpPage_noGuidePitch_butHasJumpRows() {
+    public void helpPage_noGuidePitch_andNoJumpRows() {
         HelpActivity a = launch();
         String all = allText(a);
 
         assertTrue("不该再出现「第一次用」这种会误导的文案", !all.contains("第一次用"));
-        assertNotNull("应有一条跳到设置的路径行", a.findViewById(R.id.help_jump_settings));
-        assertNotNull("应有一条跳到引导的路径行", a.findViewById(R.id.help_jump_guide));
-    }
-
-    /** 路径行点了要真跳（v0.83.0）：说明页第一次能反向回到设置页。 */
-    @Test
-    public void helpPage_jumpRowsOpenSettingsAndGuide() {
-        HelpActivity a = launch();
-        a.findViewById(R.id.help_jump_settings).performClick();
-        Intent toSettings = Shadows.shadowOf(a).getNextStartedActivity();
-        assertNotNull("点「打开设置」应启动一个页面", toSettings);
-        assertEquals(SettingsActivity.class.getName(), toSettings.getComponent().getClassName());
-
-        a.findViewById(R.id.help_jump_guide).performClick();
-        Intent toGuide = Shadows.shadowOf(a).getNextStartedActivity();
-        assertNotNull("点「去查看」应启动一个页面", toGuide);
-        assertEquals("重看引导应进引导页，别再指回说明页",
-                GuideActivity.class.getName(), toGuide.getComponent().getClassName());
+        // v1.1.0：页尾两行可点路径删了。这页的入口就在设置里，按返回即可；
+        // 设置页还有常驻的「重看」，两个按钮通向同一页纯属重复（同 v0.54.1 那次）。
+        // 按文案断言而不是 findViewById：控件连 id 都删了，R.id 里已经取不到，
+        // 这样写同时钉住「布局里不会有人再加回来」。
+        assertFalse("不该再有「这些都在『设置 → 其他设置』里」", all.contains("这些都在"));
+        assertFalse("不该再有「想重看新手引导或检查权限」", all.contains("想重看新手引导"));
     }
 
     /** 目录胶囊点了要滚到对应那节（不跳页，只滚）。 */

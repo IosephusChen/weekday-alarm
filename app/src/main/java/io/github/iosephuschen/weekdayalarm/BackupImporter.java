@@ -78,12 +78,15 @@ public final class BackupImporter {
     }
 
     /**
-     * 导入确认框的正文（v0.76.5 结构化）。
+     * 导入确认框的正文（v0.76.5 结构化，v1.1.0 分块）。
      *
      * <p>原来是一大段文字：覆盖范围、引导页附加句、文件摘要、警告全拼在一个字符串里，
-     * 四五行走完用户还没找到「这个文件是什么时候导的」。改成三段：
-     * 一句说明（会覆盖什么）→ 摘要信息行（导出时间 / 闹钟 / 请假加班标记）→
-     * 一句警告（danger 色）。文件解析不出摘要时只留说明和警告，不显示空行。
+     * 四五行走完用户还没找到「这个文件是什么时候导的」。v0.76.5 改成三段：
+     * 一句说明（会覆盖什么）→ 摘要信息行 → 一句警告。
+     *
+     * <p>v1.1.0 再分一次：摘要单独收进一块淡底卡、行间加发丝线，警告从「一行红字」
+     * 变成一块淡红条。原来三段的字号、颜色、左边距完全一样，四行看着一样重——
+     * 而这四行里，「覆盖后无法撤销」是唯一一件不可逆的事。
      */
     static View confirmBody(Context activity, String json, boolean fromGuide) {
         LinearLayout body = new LinearLayout(activity);
@@ -92,41 +95,46 @@ public final class BackupImporter {
         TextView intro = new TextView(activity);
         intro.setText(activity.getString(R.string.import_confirm_body)
                 + (fromGuide ? "\n" + activity.getString(R.string.import_confirm_guide_extra) : ""));
-        intro.setTextColor(ContextCompat.getColor(activity, R.color.sub));
-        intro.setTextSize(12);
-        intro.setLineSpacing(0, 1.2f);
+        intro.setTextColor(ContextCompat.getColor(activity, R.color.body));
+        intro.setTextSize(13);
+        intro.setLineSpacing(0, 1.5f);
         body.addView(intro);
 
         ConfigBackup.Summary sum = ConfigBackup.summarize(json);
         if (sum != null) {
-            body.addView(RowKit.kv(activity,
-                            activity.getString(R.string.summary_exported_at), sum.exportedAt),
-                    RowKit.rowLp(activity, 12));
-            body.addView(RowKit.kv(activity,
-                            activity.getString(R.string.summary_alarms), sum.alarmCount + " 个"),
-                    RowKit.rowLp(activity, 7));
+            java.util.List<View> rows = new java.util.ArrayList<>();
+            rows.add(RowKit.kv(activity,
+                    activity.getString(R.string.summary_exported_at), sum.exportedAt));
+            rows.add(RowKit.kv(activity,
+                    activity.getString(R.string.summary_alarms), sum.alarmCount + " 个"));
             if (sum.vacationDays > 0) {
-                body.addView(RowKit.kv(activity,
-                                activity.getString(R.string.summary_vacation),
-                                sum.vacationDays + " 天"),
-                        RowKit.rowLp(activity, 7));
+                rows.add(RowKit.kv(activity, activity.getString(R.string.summary_vacation),
+                        sum.vacationDays + " 天"));
             }
             if (sum.overtimeDays > 0) {
-                body.addView(RowKit.kv(activity,
-                                activity.getString(R.string.summary_overtime),
-                                sum.overtimeDays + " 天"),
-                        RowKit.rowLp(activity, 7));
+                rows.add(RowKit.kv(activity, activity.getString(R.string.summary_overtime),
+                        sum.overtimeDays + " 天"));
             }
+            // v1.1.0：RowKit.stack 现在自带淡底卡和发丝线，和「已导出」用同一块皮肤
+            body.addView(RowKit.stack(activity, rows.toArray(new View[0])),
+                    RowKit.rowLp(activity, 14));
         }
 
         TextView warn = new TextView(activity);
         warn.setText(R.string.import_confirm_warning);
         warn.setTextColor(ContextCompat.getColor(activity, R.color.danger));
-        warn.setTextSize(12);
-        warn.setLineSpacing(0, 1.2f);
-        warn.setLayoutParams(RowKit.rowLp(activity, 7));
+        warn.setTextSize(13);
+        warn.setLineSpacing(0, 1.4f);
+        warn.setBackgroundResource(R.drawable.bg_danger_soft);
+        int wp = dp(activity, 12);
+        warn.setPadding(wp, dp(activity, 10), wp, dp(activity, 10));
+        warn.setLayoutParams(RowKit.rowLp(activity, 12));
         body.addView(warn);
         return body;
+    }
+
+    private static int dp(Context c, int value) {
+        return Math.round(value * c.getResources().getDisplayMetrics().density);
     }
 
     /**

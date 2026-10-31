@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「你现在用的这一版」卡片（v1.1.0）：白卡 + 左边 4dp 主色条。
+
+     为什么不用整卡淡紫底：卡片里所有文字（标题 ink、meta sub、「当前版本」徽章
+     的 18% 紫底）本来就压在白色上配色，换一块淡紫底会把它们的对比度一起往下拉
+     ——比如那枚徽章会从 4.8:1 掉到 4.3:1。左边一条色条只占 4dp，一个像素都不碰文字。
+
+     为什么色条要跟卡片一起做进 layer-list：画在卡片内部会被 18dp 的圆角切掉两头，
+     看起来像贴歪了；这里把色条自己的左侧圆角也设成 radius_card，让它顺着卡片的弧走。
+
+     这套语言在关于页的「检查更新」也在用：左边一条色条 = 这一条要你看。 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/card" />
+            <corners android:radius="@dimen/radius_card" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/line" />
+        </shape>
+    </item>
+
+    <!-- 上下各缩 14dp（v1.1.0 实测修正）：色条只有 4dp 宽，左右圆角会被系统压到
+         2dp，等于没有；贴满整高的结果是在卡片上下两个圆角处各戳出一个直角小尖，
+         放大看像贴歪了。往里缩到直边区域，两头就落在圆角之内。 -->
+    <item
+        android:width="4dp"
+        android:bottom="14dp"
+        android:gravity="left"
+        android:top="14dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/indigo" />
+            <corners android:radius="@dimen/radius_chip" />
+        </shape>
+    </item>
+</layer-list>

@@ -193,38 +193,8 @@
         <item name="android:paddingBottom">@dimen/space_12</item>
     </style>
 
-
-
-
-
-    <style name="HelpJump">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:background">@drawable/bg_guide_perm</item>
-        <item name="android:clickable">true</item>
-        <item name="android:focusable">true</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:minHeight">44dp</item>
-        <item name="android:orientation">horizontal</item>
-        <item name="android:paddingStart">@dimen/space_12</item>
-        <item name="android:paddingEnd">@dimen/space_12</item>
-    </style>
-
-    <style name="HelpJumpText">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">11.5sp</item>
-    </style>
-
-    <style name="HelpJumpAction">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/indigo</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
+    <!-- v1.1.0：HelpJump / HelpJumpText / HelpJumpAction 三个样式随说明页那两行
+         可点路径一起删掉了（见 activity_help.xml 末尾的注释）。 -->
 
     <!-- 响铃横幅的出入场动画（v0.54.1）：贴顶滑入 / 滑出。
          挂在 WindowManager.LayoutParams.windowAnimations 上，见 FloatingAlarm。 -->

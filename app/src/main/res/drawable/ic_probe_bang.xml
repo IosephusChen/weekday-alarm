@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锁屏自测页「没测到」的感叹号（v1.0.3）。与对勾同源：同一套 viewport 与线宽，
+     两个状态切换时视觉重量一致，不会一个轻一个重。
+     点的位置比字符「!」略高一点：字符的下点会甩到基线以下，在圆盘里看着往下坠。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="44dp"
+    android:height="44dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:pathData="M12,6.1 L12,13.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round" />
+    <!-- 下面这一点用「零长度 + 圆头」画成圆：直接画 dot 需要额外 path，这样最省 -->
+    <path
+        android:pathData="M12,17.3 L12,17.4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round" />
+</vector>

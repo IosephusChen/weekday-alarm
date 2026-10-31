@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 锁屏显示自测页（v0.55.3）。
+<!-- 锁屏显示自测页（v0.55.3；v1.0.3 重排版式）。
 
-     它只在锁屏上出现两三秒，作用是「证明自己来过」。所以做得极简：
-     一个符号 + 一句话，不需要任何操作。
+     它只在锁屏上出现两三秒，作用是「证明自己来过」。所以版式的目标是
+     **一眼看完**：一个状态符号 + 一句结论 + 一句解释，其余全是陪衬。
+
+     v1.0.3 改了什么，以及为什么：
+     1. 64sp 的 ✓ 换成「88dp 淡色圆盘 + 40dp 矢量图标」。裸字符最大的问题是
+        各 ROM 字体不同、粗细基线全不一样，有的还会被 emoji 字体接走；
+        圆盘给了符号一个「落点」，视觉上从「一行大字」变成「一个状态」。
+     2. 标题与说明之间拉开层次：22sp 粗白 → 14sp #C3C8DA（10.0:1）。原来说明是
+        70% 白，压在这块深底上约 8.6:1，也够，但和标题的落差不够明显。
+     3. 底部加了「一根 2.4 秒走完的细线 + 一句『马上自动关闭』」。
+        这页会自己消失，而消失这件事此前毫无预告——用户正读着字，页面没了。
+        细线不是装饰，是「还剩多久」的答案。
+     4. 补一句「锁屏显示自测」：锁屏上突然亮起一页，用户未必记得是自己点的。
 
      颜色写死不跟随主题：它要盖在任何壁纸、任何锁屏上，固定深底白字最稳；
      跟着日间主题变成浅底，浅色壁纸上就看不见了。 -->
@@ -10,39 +21,90 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F21B1D2B"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:paddingStart="32dp"
-    android:paddingEnd="32dp">
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/lp_mark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="✓"
-        android:textColor="#4ADE80"
-        android:textSize="64sp" />
-
-    <TextView
-        android:id="@+id/lp_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+    <!-- 主体：垂直居中。留 weight=1 让它吃掉除底部提示外的全部高度 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:gravity="center"
-        android:text="锁屏显示是开着的"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp">
 
-    <TextView
-        android:id="@+id/lp_sub"
+        <FrameLayout
+            android:id="@+id/lp_badge"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:background="@drawable/bg_probe_badge">
+
+            <ImageView
+                android:id="@+id/lp_mark"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_probe_check" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/lp_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:gravity="center"
+            android:text="锁屏显示是开着的"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/lp_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:text="这一页能出现在锁屏上，说明闹钟响时也能。"
+            android:textColor="#C3C8DA"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- 底部：倒计时细线 + 一句交代。离底 40dp，躲开手势条 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:gravity="center"
-        android:lineSpacingExtra="3dp"
-        android:text="这一页能出现在锁屏上，说明闹钟响时也能。"
-        android:textColor="#B3FFFFFF"
-        android:textSize="14sp" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingBottom="40dp">
+
+        <FrameLayout
+            android:layout_width="120dp"
+            android:layout_height="3dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_probe_track" />
+
+            <View
+                android:id="@+id/lp_progress"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_probe_bar"
+                android:transformPivotX="0dp"
+                android:transformPivotY="1.5dp" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/lp_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:text="锁屏显示自测 · 马上自动关闭"
+            android:textColor="#8A90A8"
+            android:textSize="12sp" />
+    </LinearLayout>
 
 </LinearLayout>

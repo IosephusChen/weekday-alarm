@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锁屏自测页的状态圆盘：没测到（v1.0.3）。与 bg_probe_badge 同形同透明度，
+     只换色相——两个状态的区别应该一眼看出来，而不是靠读字。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+
+    <solid android:color="#2EFBBF24" />
+    <stroke
+        android:width="1dp"
+        android:color="#4DFBBF24" />
+</shape>

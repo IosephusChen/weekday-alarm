@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锁屏自测页「通过」的对勾（v1.0.3）。
+     用矢量而不是 ✓ 字符：字符在不同 ROM 的字体里粗细、基线、字形都不同，
+     有的还会被 emoji 字体接走渲染成彩色符号；矢量画出来每台机器都一个样。
+     颜色由 LockProbeActivity 用 setColorFilter 换（绿 / 琥珀），这里只画形状。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="44dp"
+    android:height="44dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:pathData="M6.4,12.5 L10.2,16.3 L17.7,7.7"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 锁屏自测页底部倒计时条的轨道（v1.0.3）。
+     20% 白压在 #1B1D2B 上约 #4A4C58，只是「这里有一根线」的程度——
+     它不该抢注意力，用户看的是上面那三个字。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <solid android:color="#33FFFFFF" />
+    <corners android:radius="@dimen/radius_hairline" />
+</shape>

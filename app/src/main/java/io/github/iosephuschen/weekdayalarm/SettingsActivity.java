@@ -535,6 +535,11 @@ public class SettingsActivity extends AppCompatActivity {
                         getString(R.string.dialog_calendar_content_solar),
                         getString(R.string.dialog_calendar_content_christian)
                 },
+                new String[]{
+                        getString(R.string.dialog_calendar_content_lunar_sub),
+                        getString(R.string.dialog_calendar_content_solar_sub),
+                        getString(R.string.dialog_calendar_content_christian_sub)
+                },
                 checked,
                 result -> {
                     boolean solarChanged = result[1] != Prefs.isSolarTerms(this);

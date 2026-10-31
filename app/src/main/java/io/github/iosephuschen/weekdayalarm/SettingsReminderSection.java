@@ -4,7 +4,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 
 /**
@@ -248,13 +247,21 @@ final class SettingsReminderSection {
      * 睡前提醒：关闭 / 21:30 / 22:00 / 22:30 / 23:00 / 其他时间（滚轮）。
      *
      * <p>v0.78.0 卡片化：六个选项从系统单选圈换成 {@link DialogKit#optionView} 卡片，
-     * 裸 {@code CheckBox} 换成开关行卡片。点一项即保存并关窗（选择本身就是一步操作，
-     * 再问一次是多余的），开关勾选即时生效、不关窗（它只影响「发不发」，
-     * 用户可能还想接着改时刻）。
+     * 裸 {@code CheckBox} 换成开关行卡片。
      *
-     * <p>v0.79.0 收了三处别扭：底部「取消」→「完成」（原来那张取消取消不了任何东西）；
-     * 「其他时间」不再先关弹窗再弹滚轮（取消滚轮会连弹窗一起丢掉）；
+     * <p>v0.79.0 收了三处别扭：底部「取消」→「完成」（当时点卡片就落盘，那张取消
+     * 取消不了任何东西）；「其他时间」不再先关弹窗再弹滚轮（取消滚轮会连弹窗一起丢掉）；
      * 入口从设置页的开关改成「值 + 箭头」，用户才看得出这里能设置。
+     *
+     * <p><b>v1.0.4 改成「选完再确认」</b>：0.78 起是「点一项即保存并关窗」。
+     * 那个交互把六张卡变成六个一按就消失的按钮——底下那行「仅在明天上班时提醒」
+     * 只在弹窗存在的那几秒里可见，用户点完时刻就再也看不到它了（真机反馈：
+     * 不知道有这个选择）。现在点卡片只移动选中态：「完成」才落盘并关窗，
+     * 「取消」整次丢弃。与 {@code showMultiPick} / {@code showGroupPick} 同一套语义，
+     * 睡前提醒是最后一个例外。
+     *
+     * <p>开关也跟着等「完成」：它和时刻是同一个决策的两半，分开落盘会出现
+     * 「取消改时刻、开关却已经生效」这种半截状态。
      *
      * <p>原来用自绘 {@code RadioGroup} 是因为 {@code setSingleChoiceItems} 在
      * MIUI / 澎湃上只显示标题不显示选项（已实测）。换卡片积木后这个问题自然消失。
@@ -265,9 +272,9 @@ final class SettingsReminderSection {
         int cur = Prefs.getBedtimeMinutes(host);
         boolean off = cur == Prefs.BEDTIME_OFF;
 
-        // 下标与取值一一对应；最后一项「其他时间」没有固定值，走滚轮（占位 -2 不会被读到）
+        // 下标与取值一一对应；最后一项「其他时间」没有固定值，走滚轮（占位 -1 不会被读到）
         final int[] values = {Prefs.BEDTIME_OFF, 21 * 60 + 30, 22 * 60, 22 * 60 + 30,
-                23 * 60, -2};
+                23 * 60, -1};
         final String[] titles = {
                 host.getString(R.string.dialog_bedtime_off),
                 host.getString(R.string.dialog_bedtime_2130),
@@ -275,99 +282,136 @@ final class SettingsReminderSection {
                 host.getString(R.string.dialog_bedtime_2230),
                 host.getString(R.string.dialog_bedtime_2300),
                 host.getString(R.string.dialog_bedtime_custom)};
+        final int LAST = titles.length - 1;
 
         // 当前值落在哪个下标；不是预设值就落在「其他时间」
         int checked = 0;
         if (!off) {
-            checked = titles.length - 1;
-            for (int i = 1; i < titles.length - 1; i++) {
+            checked = LAST;
+            for (int i = 1; i < LAST; i++) {
                 if (cur == values[i]) checked = i;
             }
         }
-        // 「其他时间」选中时把具体时刻写进标题：只写「其他时间…」用户看不出自己设的是几点
-        if (checked == titles.length - 1 && !off) {
-            titles[checked] = host.getString(R.string.dialog_bedtime_custom)
-                    + " · " + BedtimeReminder.timeText(cur);
+
+        // 弹窗内的暂存状态：点卡片只动这三样，点「完成」才写 Prefs。
+        // custom 是「其他时间」选定的分钟数，-1 表示还没选过（关闭状态进来时）。
+        final int[] pick = {checked};
+        final int[] custom = {off ? -1 : cur};
+        final boolean[] workday = {Prefs.isBedtimeWorkdayOnly(host)};
+
+        // 「其他时间」选中时把具体时刻写进标题：只写「其他时间…」用户看不出自己设的是几点。
+        // 没选中时保留省略号——点了确实会再弹一层滚轮。
+        if (pick[0] == LAST && custom[0] >= 0) {
+            titles[LAST] = host.getString(R.string.dialog_bedtime_custom_set,
+                    BedtimeReminder.timeText(custom[0]));
         }
 
-        final AlertDialog[] dialog = new AlertDialog[1];
-        final boolean[] done = {false};
-        final int gap = Math.round(6 * host.getResources().getDisplayMetrics().density);
+        // v0.73.7：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框——
+        // 它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
+        //
+        // v1.0.4：不再是「进弹窗时判一次」的整体 alpha——整行压到 45% 会把标题糊成
+        // 一片灰，开关却还亮着紫。改成确认制之后，用户完全可能在弹窗里从 22:00
+        // 改选「关闭」，这一行得跟着当前选中项实时变。
+        TextView tvWorkdayTitle = view.findViewById(R.id.tv_bed_workday_title);
+        TextView tvWorkdayHint = view.findViewById(R.id.tv_bed_workday_hint);
+        SwitchCompat sw = view.findViewById(R.id.sw_bed_workday);
+        // 配色（v1.1.0）：与其他开关同一套，见 SwitchKit
+        SwitchKit.style(host, sw);
+        sw.setChecked(workday[0]);
+        // 不再即时落盘：它和上面的时刻是同一个决策的两半，一起等「完成」。
+        // 点「取消」时这份改动连同卡片的选择一起丢掉。
+        sw.setOnCheckedChangeListener((b, isChecked) -> workday[0] = isChecked);
+
+        final View[] cards = new View[titles.length];
+        final Runnable[] refresh = new Runnable[1];
+        refresh[0] = () -> {
+            for (int i = 0; i < cards.length; i++) {
+                cards[i].setSelected(i == pick[0]);
+                DialogKit.showCheck(cards[i], i == pick[0]);
+            }
+            // 选中「关闭」时这行用不上：压暗文字、禁用开关。
+            // 只管文字与开关，不给整行 alpha——那样标题会糊成一团看不清的灰。
+            //
+            // 文字只压到 0.6（不是 0.45）：这一行是全 App 唯一能改这个开关的地方，
+            // 压得太淡等于变相隐藏——用户反馈的正是「别人都不知道有这个选择」。
+            // 开关压得更低（0.4），由它承担「现在按不动」的表达。
+            boolean timed = pick[0] != 0;
+            tvWorkdayTitle.setAlpha(timed ? 1f : 0.6f);
+            tvWorkdayHint.setAlpha(timed ? 1f : 0.6f);
+            sw.setEnabled(timed);
+            sw.setAlpha(timed ? 1f : 0.4f);
+        };
+
+        // 卡片间距 6dp 是全 App 唯一一处，其它列表都是 10dp；统一到 10dp，
+        // 六张卡一共高 20dp，弹窗仍在一屏内。
+        final int gap = Math.round(10 * host.getResources().getDisplayMetrics().density);
         for (int i = 0; i < titles.length; i++) {
             View card = DialogKit.optionView(host, titles[i], null, true);
-            card.setSelected(i == checked);
-            DialogKit.showCheck(card, i == checked);
             final int idx = i;
             card.setOnClickListener(v -> {
-                // 卡片点了就关窗，但 View 还在——快速双击会进来第二次，把刚存的值再写一遍
-                if (done[0]) return;
-                if (idx == titles.length - 1) {
-                    // v0.79.0：不再先关主弹窗。原来点「其他时间」会先把整个弹窗关掉再弹滚轮，
-                    // 滚轮上按返回就回到设置页，弹窗没了、什么都没改——像误触。
-                    // 现在滚轮叠在上面，取消就退回原弹窗接着选。
-                    pickCustomBedtime(cur, () -> {
-                        done[0] = true;
-                        if (dialog[0] != null) dialog[0].dismiss();
+                if (idx == LAST) {
+                    // v0.79.0：不先关主弹窗，滚轮叠在上面，取消就退回原弹窗接着选。
+                    // v1.0.4：滚轮只负责「给一个值」，同样不落盘。
+                    pickCustomBedtime(custom[0] >= 0 ? custom[0] : 22 * 60, mins -> {
+                        custom[0] = mins;
+                        DialogKit.setOptionTitle(cards[LAST],
+                                host.getString(R.string.dialog_bedtime_custom_set,
+                                        BedtimeReminder.timeText(mins)));
+                        pick[0] = LAST;
+                        refresh[0].run();
                     });
                     return;
                 }
-                done[0] = true;
-                if (dialog[0] != null) dialog[0].dismiss();
-                Prefs.setBedtimeMinutes(host, values[idx]);
-                applyBedtime();
+                pick[0] = idx;
+                refresh[0].run();
             });
+            cards[i] = card;
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
             if (i > 0) lp.topMargin = gap;
             list.addView(card, lp);
         }
+        refresh[0].run();
 
-        // v0.73.7：「仅在明天上班时提醒」从更多设置的独立开关行并进本对话框——
-        // 它管的是睡前提醒发不发，和时刻是同一个决策的两半，分居两处要理解两遍。
-        // 睡前提醒关着时压暗禁用：没有提醒可发，这个条件无从谈起，
-        // 不禁用会让人以为改了它就会开始提醒。
-        View workdayRow = view.findViewById(R.id.bed_workday_row);
-        SwitchCompat sw = view.findViewById(R.id.sw_bed_workday);
-        boolean bedOn = !off;
-        // 配色（v1.1.0）：与其他开关同一套，见 SwitchKit
-        SwitchKit.style(host, sw);
-        sw.setChecked(Prefs.isBedtimeWorkdayOnly(host));
-        sw.setEnabled(bedOn);
-        workdayRow.setAlpha(bedOn ? 1f : 0.45f);
-        // 先 setChecked 再挂监听：反过来的话初始化这一次就会写一次 Prefs、重排一次闹钟
-        sw.setOnCheckedChangeListener((b, isChecked) -> {
-            Prefs.setBedtimeWorkdayOnly(host, isChecked);
-            // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
-            BedtimeReminder.reschedule(host);
-            // 主页那行的副标题要跟着变（「仅明天上班」/「每天提醒」）
-            updateBedtimeText();
-        });
-
-        // v0.79.0：底部按钮从「取消」改成「完成」。
-        // 原来那张「取消」在说谎——点任意一张卡都已经即时存下并关窗了，没有任何东西可取消。
-        // 现在它只在「只切了开关、没点卡片」时用到：开关即时生效不关窗，用户需要一个出口，
-        // 「完成」就是「我改完了，关掉吧」，名副其实。
-        dialog[0] = new RoundedDialog.Builder(host)
+        // v1.0.4：底部回到「取消 + 完成」两个按钮。
+        // v0.79.0 把「取消」换成「完成」，是因为当时点卡片就落盘，那张「取消」在说谎；
+        // 现在改成确认制，两个都名副其实——取消丢弃本次改动（含开关），完成才写 Prefs。
+        new RoundedDialog.Builder(host)
                 .setView(view)
-                .setPositiveButton("完成", null)
-                .create();
-        dialog[0].show();
+                .setNegativeButton("取消", null)
+                .setPositiveButton("完成", (d, w) -> {
+                    int target;
+                    if (pick[0] == 0) {
+                        target = Prefs.BEDTIME_OFF;
+                    } else if (pick[0] == LAST) {
+                        target = custom[0] >= 0 ? custom[0] : cur;   // 选中它必有值，这里只是兜底
+                    } else {
+                        target = values[pick[0]];
+                    }
+                    boolean workdayChanged = workday[0] != Prefs.isBedtimeWorkdayOnly(host);
+                    if (workdayChanged) Prefs.setBedtimeWorkdayOnly(host, workday[0]);
+                    if (target != cur) Prefs.setBedtimeMinutes(host, target);
+                    // 只影响「发不发」，不影响触发时刻，但重排一次最省心（幂等、只占 1 个名额）
+                    if (target != cur || workdayChanged) applyBedtime();
+                })
+                .show();
     }
 
     /**
-     * 「其他时间…」选完接滚轮；初始值取当前设置，关着时从 22:00 起。
+     * 「其他时间…」接滚轮。
      *
-     * @param onSaved 滚轮确认并落盘后回调（调用方用来关掉底下的主弹窗）；
-     *                滚轮上按「取消」不会回调，主弹窗原样留着
+     * <p>v1.0.4：只回调选中的分钟数，<b>不落盘</b>——主弹窗改成确认制之后，
+     * 滚轮确认只相当于「把这张卡的标题补上一个时刻」，真正写 Prefs 要等「完成」。
+     *
+     * @param base     滚轮初始值（分钟数）；关着进来时调用方传 22:00
+     * @param onPicked 确认后回调；滚轮上按「取消」不会回调，主弹窗原样留着
      */
-    private void pickCustomBedtime(int cur, Runnable onSaved) {
-        int h = cur == Prefs.BEDTIME_OFF ? 22 : cur / 60;
-        int m = cur == Prefs.BEDTIME_OFF ? 0 : cur % 60;
+    private void pickCustomBedtime(int base, java.util.function.IntConsumer onPicked) {
+        int h = base / 60;
+        int m = base % 60;
         TimeWheelDialog.show(host, "睡前提醒时间", h, m, (hh, mm) -> {
-            Prefs.setBedtimeMinutes(host, hh * 60 + mm);
-            applyBedtime();
-            if (onSaved != null) onSaved.run();
+            if (onPicked != null) onPicked.accept(hh * 60 + mm);
         });
     }
 

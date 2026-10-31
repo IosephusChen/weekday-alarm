@@ -128,7 +128,7 @@ public class BedtimeDialogTest {
 
         View last = list.getChildAt(EXPECTED.length - 1);
         assertTrue("最后一张应选中", last.isSelected());
-        assertEquals("标题要带上具体时刻", "其他时间… · 21:47", titleOf(last));
+        assertEquals("标题要带上具体时刻", "其他时间 · 21:47", titleOf(last));
         ctl.pause().stop().destroy();
     }
 
@@ -145,9 +145,15 @@ public class BedtimeDialogTest {
         ctl.pause().stop().destroy();
     }
 
-    /** 点「22:30」→ 当场存下并收起对话框（没有确定按钮）。 */
+    /**
+     * 点卡片只移动选中态，不落盘、不关窗（v1.0.4）。
+     *
+     * <p>1.0.3 及之前是「点一下即保存并关窗」。那个交互把六张卡变成六个一按就消失的
+     * 按钮，底下那行「仅在明天上班时提醒」几乎没人发现——用户根本没机会看到它。
+     * 现在和「节日与节气」「响铃时长」一样：选完再点「完成」。
+     */
     @Test
-    public void tapCard_savesAndDismisses() {
+    public void tapCard_onlyMovesSelection() {
         Prefs.setBedtimeMinutes(ctx(), 22 * 60);
         ActivityController<SettingsActivity> ctl = openHome();
         AlertDialog d = openDialog(ctl);
@@ -155,40 +161,60 @@ public class BedtimeDialogTest {
         list(d).getChildAt(3).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals("应存下 22:30", 22 * 60 + 30, Prefs.getBedtimeMinutes(ctx()));
-        assertFalse("点完应关窗", d.isShowing());
+        assertEquals("点卡片不落盘", 22 * 60, Prefs.getBedtimeMinutes(ctx()));
+        assertTrue("弹窗留着等确认", d.isShowing());
+        assertTrue("22:30 应选中", list(d).getChildAt(3).isSelected());
+        assertFalse("原来的 22:00 应取消选中", list(d).getChildAt(2).isSelected());
         ctl.pause().stop().destroy();
     }
 
-    /** 点「关闭」→ 存成 BEDTIME_OFF。 */
+    /** 点「关闭」再点「完成」→ 存成 BEDTIME_OFF 并关窗。 */
     @Test
-    public void tapOff_savesOff() {
-        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
-        ActivityController<SettingsActivity> ctl = openHome();
-        list(openDialog(ctl)).getChildAt(0).performClick();
-        ShadowLooper.idleMainLooper();
-
-        assertEquals("应存成关闭", Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));
-        ctl.pause().stop().destroy();
-    }
-
-    /**
-     * 底部只有一个「完成」，没有「取消」（v0.79.0）。
-     *
-     * <p>原来那张「取消」在说谎：点任意一张卡都已经即时存下并关窗了，
-     * 没有任何东西可取消。现在它只在「只切了开关、没点卡片」时用到——
-     * 开关即时生效不关窗，用户需要一个出口。
-     */
-    @Test
-    public void bottomButton_isDoneNotCancel() {
+    public void done_persistsSelection() {
         Prefs.setBedtimeMinutes(ctx(), 22 * 60);
         ActivityController<SettingsActivity> ctl = openHome();
         AlertDialog d = openDialog(ctl);
 
-        // appcompat 会把三个按钮都 inflate 出来，没设文案的那个只是 GONE，
-        // 所以判「有没有取消」要看可见性，不是看 getButton 是否为 null
+        list(d).getChildAt(0).performClick();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("应存成关闭", Prefs.BEDTIME_OFF, Prefs.getBedtimeMinutes(ctx()));
+        assertFalse("完成后关窗", d.isShowing());
+        ctl.pause().stop().destroy();
+    }
+
+    /** 「取消」丢弃整次改动——时刻与开关一起回滚。 */
+    @Test
+    public void cancel_discardsEverything() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        Prefs.setBedtimeWorkdayOnly(ctx(), false);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog d = openDialog(ctl);
+
+        list(d).getChildAt(3).performClick();
+        SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
+        sw.performClick();
+        d.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("取消不存时刻", 22 * 60, Prefs.getBedtimeMinutes(ctx()));
+        assertFalse("取消不存开关", Prefs.isBedtimeWorkdayOnly(ctx()));
+        ctl.pause().stop().destroy();
+    }
+
+    /** 底部「取消」+「完成」两个都在（v1.0.4 回到确认制）。 */
+    @Test
+    public void bottomButtons_areCancelAndDone() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog d = openDialog(ctl);
+
         View cancel = d.getButton(AlertDialog.BUTTON_NEGATIVE);
-        assertTrue("不该再有「取消」", cancel == null || cancel.getVisibility() != View.VISIBLE);
+        assertNotNull("应有「取消」", cancel);
+        assertEquals("取消", ((TextView) cancel).getText().toString());
+        assertEquals("「取消」应可见", View.VISIBLE, cancel.getVisibility());
+
         View done = d.getButton(AlertDialog.BUTTON_POSITIVE);
         assertNotNull("应有一个「完成」", done);
         assertEquals("完成", ((TextView) done).getText().toString());
@@ -217,11 +243,13 @@ public class BedtimeDialogTest {
     }
 
     /**
-     * 「仅在明天上班时提醒」是开关不是选项：切换即时生效，但**不关窗**
-     * （用户可能还想接着改时刻）。
+     * 「仅在明天上班时提醒」也等「完成」才落盘（v1.0.4）。
+     *
+     * <p>它和时刻是同一个决策的两半，分开落盘就会出现「取消改时刻、开关却已经生效」
+     * 这种半截状态。点「取消」时一起回滚，见 {@link #cancel_discardsEverything}。
      */
     @Test
-    public void workdaySwitch_appliesWithoutDismiss() {
+    public void workdaySwitch_waitsForDone() {
         Prefs.setBedtimeMinutes(ctx(), 22 * 60);
         Prefs.setBedtimeWorkdayOnly(ctx(), false);
         ActivityController<SettingsActivity> ctl = openHome();
@@ -234,8 +262,36 @@ public class BedtimeDialogTest {
         sw.performClick();
         ShadowLooper.idleMainLooper();
 
-        assertTrue("切换即时生效", Prefs.isBedtimeWorkdayOnly(ctx()));
-        assertTrue("开关不关窗", d.isShowing());
+        assertTrue("开关自己切过去了", sw.isChecked());
+        assertFalse("但不落盘", Prefs.isBedtimeWorkdayOnly(ctx()));
+        assertTrue("也不关窗", d.isShowing());
+
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue("点完成才落盘", Prefs.isBedtimeWorkdayOnly(ctx()));
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 选中「关闭」时，下面那行开关压暗并禁用（v1.0.4）。
+     *
+     * <p>1.0.3 只在打开弹窗那一刻判一次；改成确认制之后，用户完全可能在弹窗里
+     * 从 22:00 改选「关闭」，这一行得实时跟着变。
+     */
+    @Test
+    public void selectingOff_disablesWorkdaySwitch() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog d = openDialog(ctl);
+
+        SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
+        assertTrue("当前是时刻，开关可用", sw.isEnabled());
+
+        list(d).getChildAt(0).performClick();
+        assertFalse("选「关闭」后禁用", sw.isEnabled());
+
+        list(d).getChildAt(2).performClick();
+        assertTrue("选回时刻又可用", sw.isEnabled());
         ctl.pause().stop().destroy();
     }
 }

@@ -241,6 +241,20 @@ public final class DialogKit {
      */
     public static void showMultiPick(Context c, String title, String sub, String[] items,
                                      boolean[] checked, OnMultiPick onDone) {
+        showMultiPick(c, title, sub, items, null, checked, onDone);
+    }
+
+    /**
+     * 带每项副标题的多选（v1.0.4）。
+     *
+     * <p>加这一路是因为「节日与节气」三项都只有四个字，一张卡里就一行字，卡片显得空；
+     * 更要紧的是「基督教节日」这种笼统的名字——不举例，用户不知道勾了会看到哪些日子，
+     * 只敢保持默认。副标题写一句「圣诞、复活节、诸圣…」，勾选后果自明。
+     *
+     * @param subs 每项副标题，可与 {@code items} 等长；{@code null} 或越界项按没有处理
+     */
+    public static void showMultiPick(Context c, String title, String sub, String[] items,
+                                     String[] subs, boolean[] checked, OnMultiPick onDone) {
         View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
         TextView tvTitle = view.findViewById(R.id.tv_pick_title);
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
@@ -250,7 +264,8 @@ public final class DialogKit {
 
         for (int i = 0; i < items.length; i++) {
             final int which = i;
-            View row = optionView(c, items[i], null);
+            View row = optionView(c, items[i],
+                    subs != null && i < subs.length ? subs[i] : null);
             row.setSelected(checked[i]);
             showCheck(row, checked[i]);
             row.setOnClickListener(v -> {
@@ -417,6 +432,12 @@ public final class DialogKit {
         }
     }
 
+    /** 改选项卡的主文案——睡前提醒把「其他时间…」补成「其他时间 · 23:40」用它。 */
+    static void setOptionTitle(View card, String title) {
+        View t = card.findViewWithTag(TAG_TITLE);
+        if (t instanceof TextView && title != null) ((TextView) t).setText(title);
+    }
+
     /**
      * 标记「正在试听」（v1.0.4）：副标题转主色。
      *
@@ -436,6 +457,9 @@ public final class DialogKit {
 
     /** 选项卡里副标题的 tag。 */
     private static final String TAG_SUB = "dlg_sub";
+
+    /** 选项卡里主文案的 tag（v1.0.4：睡前提醒「其他时间」选完要回头改这一行）。 */
+    private static final String TAG_TITLE = "dlg_title";
 
     /**
      * 一张选项卡：左文字（主文案 + 可选副文案），右勾。
@@ -471,6 +495,7 @@ public final class DialogKit {
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView tv = new TextView(c);
+        tv.setTag(TAG_TITLE);
         tv.setText(title);
         tv.setTextColor(ContextCompat.getColor(c, R.color.ink));
         tv.setTextSize(15);

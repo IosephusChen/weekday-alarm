@@ -221,7 +221,7 @@ public class PastMarkTest {
 
         assertTrue("请假还在", Prefs.isVacation(ctx(), past));
         assertTrue("加班也补上了", Prefs.isOvertime(ctx(), past));
-        assertTrue("格子上应出现「假加」", hasLabel(a, "假加"));
+        assertTrue("格子上应出现「假加」", hasLabelNear(a, "假加"));
     }
 
     // ---------- 今天及以后：照旧 ----------
@@ -334,7 +334,7 @@ public class PastMarkTest {
 
         MainActivity a = launch();
 
-        assertTrue("格子上应出现「假加」", hasLabel(a, "假加"));
+        assertTrue("格子上应出现「假加」", hasLabelNear(a, "假加"));
     }
 
     /**
@@ -389,6 +389,22 @@ public class PastMarkTest {
     }
 
     /** 遍历日历格子，看有没有某个标签文本。 */
+    /**
+     * 在相邻几个月的格子里找标签。
+     *
+     * <p>{@link #dayOf}(true, true) 是「今天往前数最近的上班日」；今天若是月初，
+     * 那个日子落在上个月，而面板默认显示本月——格子不在视图里，{@link #hasLabel}
+     * 自然找不到（2026-11-01 早上跑全量时红的就是这一条）。
+     */
+    private boolean hasLabelNear(MainActivity a, String label) {
+        if (hasLabel(a, label)) return true;
+        for (int i = 0; i < 3; i++) {
+            a.findViewById(R.id.btn_prev).performClick();
+            if (hasLabel(a, label)) return true;
+        }
+        return false;
+    }
+
     private boolean hasLabel(MainActivity a, String label) {
         LinearLayout rows = a.findViewById(R.id.cal_rows);
         for (int r = 0; r < rows.getChildCount(); r++) {

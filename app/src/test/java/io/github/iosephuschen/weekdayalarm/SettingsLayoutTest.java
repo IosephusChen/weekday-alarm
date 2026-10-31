@@ -466,7 +466,12 @@ public class SettingsLayoutTest {
         assertTrue("回显当前值（开着）", sw.isChecked());
 
         sw.performClick();
-        assertFalse("切换即时生效", Prefs.isBedtimeWorkdayOnly(ctx()));
+        assertFalse("开关自己切过去了", sw.isChecked());
+        assertTrue("v1.0.4 起不再即时落盘，等「完成」", Prefs.isBedtimeWorkdayOnly(ctx()));
+
+        d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertFalse("点完成才落盘", Prefs.isBedtimeWorkdayOnly(ctx()));
 
         ctl.pause().stop().destroy();
     }
@@ -489,8 +494,12 @@ public class SettingsLayoutTest {
         SwitchCompat sw = d.findViewById(R.id.sw_bed_workday);
         assertNotNull(sw);
         assertFalse("关闭态下开关应禁用", sw.isEnabled());
-        View row = d.findViewById(R.id.bed_workday_row);
-        assertTrue("整行应压暗", row.getAlpha() < 1f);
+        // v1.0.4：不再给整行 alpha（标题会糊成一片灰），改成文字与开关各自压暗，
+        // 开关压得更低——由它表达「现在按不动」。
+        assertTrue("开关应压暗", sw.getAlpha() < 1f);
+        View title = d.findViewById(R.id.tv_bed_workday_title);
+        assertNotNull("应有开关行标题", title);
+        assertTrue("标题也淡下去，但仍可读", title.getAlpha() < 1f && title.getAlpha() >= 0.5f);
 
         ctl.pause().stop().destroy();
     }

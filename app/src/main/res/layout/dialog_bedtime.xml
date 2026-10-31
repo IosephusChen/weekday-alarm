@@ -64,6 +64,7 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/tv_bed_workday_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/dialog_bedtime_workday_only"
@@ -71,6 +72,7 @@
                 android:textSize="15sp" />
 
             <TextView
+                android:id="@+id/tv_bed_workday_hint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"

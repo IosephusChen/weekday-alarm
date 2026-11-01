@@ -1,11 +1,12 @@
 {
-  "versionCode": 246,
-  "versionName": "1.0.8",
+  "versionCode": 247,
+  "versionName": "1.0.9",
   "published": "2026-11-01",
-  "title": "桌面图标改成 App 内那副",
+  "title": "通知栏那枚小图标也换成折线针",
   "notes": [
-    "桌面图标改成 App 内那副：针收细，底色换成同一对紫"
+    "通知栏、横幅、小部件头部那枚小图标，改成和 logo 一样的一笔画",
+    "旧版两根分开的针在 18dp 下各 1.8px，中间夹缝，像落了两个白点"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.8/weekday-alarm-1.0.8.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.8"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.9/weekday-alarm-1.0.9.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.9"
 }

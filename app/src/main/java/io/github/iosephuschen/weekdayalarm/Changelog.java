@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(247, "1.0.9", "2026/11/01", "通知栏那枚小图标也换成折线针",
+                    "通知栏、横幅、小部件头部那枚小图标，改成和 logo 一样的一笔画",
+                    "旧版两根分开的针在 18dp 下各 1.8px，中间夹缝，像落了两个白点"),
             new Entry(246, "1.0.8", "2026/11/01", "桌面图标改成 App 内那副",
                     "桌面图标改成 App 内那副：针收细，底色换成同一对紫"),
             new Entry(245, "1.0.7", "2026/11/01", "logo 回到宽环，小部件预览重出",

@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(245, "1.0.7", "2026/11/01", "logo 回到宽环，小部件预览重出",
+                    "首页那枚 logo 去掉刻度和轴点，回到宽环 + 指针，小尺寸下不再糊",
+                    "「添加小部件」的预览图还是调亮之前的旧配色，已按现在的样子重出"),
             new Entry(244, "1.0.6", "2026/11/01", "引导页不再数错响铃有几项",
                     "「响铃细节」展开时那句「这四项」实际是五行，已改成不写数字"),
             new Entry(243, "1.0.5", "2026/11/01", "小部件的班休、logo、响铃细节",

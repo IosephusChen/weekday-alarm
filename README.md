@@ -44,7 +44,7 @@
 
 ## 下载
 
-**v1.0.10（2026-11-01）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.10/weekday-alarm-1.0.10.apk)
+**v1.0.11（2026-11-01）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.11/weekday-alarm-1.0.11.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。

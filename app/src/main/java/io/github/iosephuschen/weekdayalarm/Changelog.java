@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(249, "1.0.11", "2026/11/01", "小部件缩略图的图标补上了",
+                    "系统「添加小部件」里的 4×2 缩略图，小图标还是旧的两针版",
+                    "1.0.9 换折线针时漏了这张位图，这次补上"),
             new Entry(248, "1.0.10", "2026/11/01", "悬浮横幅那枚闹钟也统一了",
                     "横幅左侧那枚带铃铛角的闹钟，换成 logo 的宽环 + 一笔折线针",
                     "铃铛角是 v0.55.2 为跟右侧钟面区分加的，右侧换成三个 Z 后就没用了"),

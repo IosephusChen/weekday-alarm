@@ -1,56 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  横幅左侧的大图标（v0.55.2）：闹钟，不是时钟。
+  横幅左侧的大图标（v0.55.2 建，v1.0.10 改回时钟）。
 
-  之前这里用的是 ic_notification（圆环 + 两根指针的钟面），而右侧「稍后提醒」
-  按钮用的是 ic_notif_snooze（同样是圆环 + 两根指针）——两个图标肉眼几乎一样，
-  用户报「悬浮窗的 logo 和稍后提醒的图标一模一样」。
+  演变：
+  - v0.55.2：从 ic_notification（圆环 + 两根指针）改成「加两个铃铛角的闹钟」。
+    当时右侧「稍后提醒」也还是钟面（ic_notif_snooze），两个图标画出来一模一样，
+    用户报「悬浮窗的 logo 和稍后提醒的图标一模一样」。那一版两边都动了：
+    左边加铃铛角、右边换成三个 Z。
+  - v1.0.10：铃铛角失去理由。右侧早就是三个 Z，撞脸风险没了；而铃铛角让这枚
+    成了全项目唯一一个既不跟 logo 一致、也不属于功能图标的形状。用户 2026-11-01
+    要求整体统一，几何改成与 ic_clock_white 逐字相同。
 
-  这里照系统闹钟的画法加两个铃铛角：铃铛是「闹钟」和「时钟」唯一可靠的区分点，
-  光靠指针形状区分不了。风格仍与 ic_notification 一致（线性描边、圆头），
-  不混用 Material 那种实心图标，否则一张卡里两种笔触。
+  不再另写一套比例：首页 42dp、桌面图标、这枚 24dp 共用一套几何，改形状只改一处。
+  「铃铛是闹钟和时钟唯一可靠的区分点」这句话没错，但它成立的前提是右边还有一枚
+  钟面——前提已经不存在了。
 
-  铃铛放在 10 点 / 2 点方向、圆环外侧，不与圆环相交；描边 2.2 比表盘的 2.2 相同，
-  小尺寸下不会糊成一片。
+  44dp 的容器、10dp 内边距，图形区 24dp；环外径 17.6/24（73%），比原来那版
+  （15.7，65%）略大一点，视觉上更饱满，也不会顶着内边距。
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- 表盘：圆心下移 2.2、半径收到 6.8，给顶部两个铃铛让出空间。
-         半径再大铃铛就会被圆环压住，看起来像猫耳朵而不是闹钟。 -->
+
+    <!-- 宽环：外 8.8 / 内 6.1，evenOdd 挖空。与 ic_clock_white 逐字相同 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,12 m-8.8,0 a8.8,8.8 0 1,0 17.6,0 a8.8,8.8 0 1,0 -17.6,0 M12,12 m-6.1,0 a6.1,6.1 0 1,0 12.2,0 a6.1,6.1 0 1,0 -12.2,0" />
+
+    <!-- 指针：一笔画，12 点下来到圆心，再斜向 4 点半。
+         join 用 round 是这枚独有的：24dp 下折角若是死尖，会被抗锯齿削出缺口，
+         而首页那枚显示 42dp，看不出来。 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M12,14.2 m-6.8,0 a6.8,6.8 0 1,0 13.6,0 a6.8,6.8 0 1,0 -13.6,0"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.1" />
-    <!-- 左铃：从圆环左上外侧往外挑 2.8，长度要够，短了就是个角 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M6.8,8.8 L4.7,6.7"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.1" />
-    <!-- 右铃：与左铃对称 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M17.2,8.8 L19.3,6.7"
+        android:pathData="M12,6.8 L12,12 L14.8,14"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="2.1" />
-    <!-- 分针：指向 12 点 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M12,14.2 L12,10.4"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.1" />
-    <!-- 时针：指向右下 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M12,14.2 L14.7,15.9"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.1" />
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.8" />
 </vector>

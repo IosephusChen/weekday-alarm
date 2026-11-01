@@ -1,14 +1,11 @@
 {
-  "versionCode": 243,
-  "versionName": "1.0.5",
+  "versionCode": 244,
+  "versionName": "1.0.6",
   "published": "2026-11-01",
-  "title": "小部件的班休、logo、响铃细节",
+  "title": "引导页不再数错响铃有几项",
   "notes": [
-    "小部件「班」「休」重新读得出来；表头和底部那行也提亮了",
-    "首页 logo 换成新表盘，和桌面图标同一款",
-    "引导页「响铃细节」合成一张卡，展开后副标题改成讲四项的适用范围",
-    "「响铃前提醒」的提示压到两行，不再被裁在弹窗外"
+    "「响铃细节」展开时那句「这四项」实际是五行，已改成不写数字"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.5/weekday-alarm-1.0.5.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.5"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.6/weekday-alarm-1.0.6.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.6"
 }

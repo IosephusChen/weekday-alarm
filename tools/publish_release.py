@@ -20,6 +20,8 @@ Release 正文取 version.json 的 title 与 notes，和 App 内更新日志同�
 import argparse
 import json
 import os
+import re
+import subprocess
 import sys
 
 import requests
@@ -35,11 +37,38 @@ def need(name):
     return v
 
 
+def git(*args):
+    """跑一条 git 命令，失败就返回空串——脚本在非仓库目录里也要能给出可读的报错。"""
+    try:
+        return subprocess.run(["git"] + list(args), capture_output=True,
+                              text=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+
+
+def repo_from_origin():
+    """从 origin 解析 owner/repo。恢复包 clone 出来的 origin 是本地 bundle，
+    这时解析失败，由调用方回落到默认仓库。"""
+    m = re.search(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?$", git("remote", "get-url", "origin"))
+    return (m.group(1), m.group(2)) if m else None
+
+
+def default_apk(version):
+    """APK 放在仓库上一级（与 weekday-alarm/ 同级，release.sh 就复制到这里）。
+
+    以前写死 /workspace，只在「仓库正好是 /workspace/weekday-alarm」时成立；
+    解压到 /workspace/迁移包-xxx/ 下时那个路径就是空的。
+    """
+    top = git("rev-parse", "--show-toplevel")
+    parent = os.path.dirname(top) if top else "/workspace"
+    return os.path.join(parent, "打工人闹钟-v%s.apk" % version)
+
+
 def main():
     ap = argparse.ArgumentParser(description="建 Release 并上传资产")
     ap.add_argument("--repo", help="owner/repo，默认从 origin 解析")
     ap.add_argument("--version-file", default="version.json")
-    ap.add_argument("--apk", help="APK 路径，默认 /workspace/打工人闹钟-v<版本>.apk")
+    ap.add_argument("--apk", help="APK 路径，默认仓库上一级的 打工人闹钟-v<版本>.apk")
     ap.add_argument("--mapping", action="store_true", help="顺带传 mapping.txt")
     ap.add_argument("--force", action="store_true", help="同名资产已存在时删掉重传")
     ap.add_argument("--dry-run", action="store_true")
@@ -51,8 +80,9 @@ def main():
 
     version, code = ver["versionName"], ver["versionCode"]
     tag = "v" + version
-    owner, repo = (args.repo.split("/", 1) if args.repo else ("IosephusChen", "weekday-alarm"))
-    apk = args.apk or "/workspace/打工人闹钟-v%s.apk" % version
+    owner, repo = (args.repo.split("/", 1) if args.repo
+                   else (repo_from_origin() or ("IosephusChen", "weekday-alarm")))
+    apk = args.apk or default_apk(version)
     asset_name = "weekday-alarm-%s.apk" % version
 
     if not os.path.isfile(apk):

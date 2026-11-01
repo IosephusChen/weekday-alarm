@@ -14,7 +14,7 @@
 #   2. 校验五处文档是否已跟上（不等 Gradle 跑完才报错）
 #   3. 跑全量测试，按 XML 汇总条数（不信 Gradle 的终端输出）
 #   4. 跑 lint，要求 0 errors
-#   5. assembleRelease，复制到 /workspace，算 MD5 与字节数
+#   5. assembleRelease，复制到仓库上一级（与 weekday-alarm/ 同级），算 MD5 与字节数
 #   6. 打印还要手工回填的地方
 set -euo pipefail
 
@@ -129,9 +129,10 @@ fi
 
 echo "-- 出包 --"
 ./gradlew assembleRelease --console=plain -q
-OUT="/workspace/打工人闹钟-v$NAME.apk"
+OUT_DIR="$(cd .. && pwd)"          # 仓库上一级；不写死 /workspace，换目录解压也能用
+OUT="$OUT_DIR/打工人闹钟-v$NAME.apk"
 cp app/build/outputs/apk/release/app-release.apk "$OUT"
-cp app/build/outputs/mapping/release/mapping.txt "/workspace/mapping-v$NAME.txt"
+cp app/build/outputs/mapping/release/mapping.txt "$OUT_DIR/mapping-v$NAME.txt"
 SIZE=$(stat -c %s "$OUT")
 MD5=$(md5sum "$OUT" | cut -d' ' -f1)
 

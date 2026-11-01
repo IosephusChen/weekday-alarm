@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 桌面图标前景（v1.0.5 重画）。
-     原来是一个粗线条的空表盘：白描边圆 + 两根指向 12 点和 4 点的粗针。
-     在桌面 48dp 下就是一块白圈，跟系统自带的「时钟」几乎分不出来，
-     也看不出这是个闹钟。
+<!-- 桌面图标前景。
+     与 App 内 ic_clock_white 同一副形状：一圈白环 + 一笔折线针（12 点下来到圆心，
+     再斜向 4 点半）。两处只差粗细与尺寸，别的地方不再分叉。
 
-     现在换成带刻度的表盘：12 个刻度（3/6/9/12 四个略粗略长）把「钟」
-     的语义立住，指针改 10:10 —— 两根针一长一短、开口向上，是钟表行业
-     通行的展示时间，也是视觉上最平衡的一个角度。
+     走过的路记一笔：
+     · v1.0.5 之前就是这个形状（描边环 + 两根粗针）。
+     · v1.0.5 为了「更像钟」，换成 12 个刻度的表盘 + 10:10 双针 + 轴点。
+       单看还行，但和 App 内那枚 34dp 的小 logo 摆在一起，一繁一简，像两个 App。
+       用户 2026-11-01 先嫌 App 内那版碎，接着发现桌面还是另一副——于是两处一起退回。
+     · v1.0.7 只退了 App 内那枚，桌面漏了；v1.0.8 补上。
 
-     所有元素都在 66dp 安全区（半径 33）内：环外缘 26.25，刻度外端 18.9。
+     为什么不再加刻度：48dp 时整个图形只有 20dp 出头，12 个刻度落到像素上是
+     一圈毛刺，读起来不是「表盘」而是「环上沾了灰」。
+
+     所有元素都在 66dp 安全区内：环外缘半径 23。
      monochrome 层复用同一份图形，所以这里只能是纯白，不能带渐变；
      底色渐变放在 background 层。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -17,105 +22,24 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 表盘环：圆心 (54,54)，中线半径 23.5，线宽 5.5 -->
+    <!-- 表盘环：圆心 (54,54)，中线半径 19.5，描边 7（外缘 23，内缘 16） -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M54,54 m-24.6,0 a24.6,24.6 0 1,0 49.2,0 a24.6,24.6 0 1,0 -49.2,0"
+        android:pathData="M54,54 m-19.5,0 a19.5,19.5 0 1,0 39,0 a19.5,19.5 0 1,0 -39,0"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5.5" />
+        android:strokeWidth="7" />
 
-    <!-- 12 个刻度：3/6/9/12 四个（主位）更粗更长 -->
+    <!-- 指针：一笔画，与 ic_clock_white 里那条同形 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M54,34.8 L54,38.5"
+        android:pathData="M54,54 L54,40.4"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="2.4" />
+        android:strokeWidth="7" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M63.6,37.37 L62.65,39.02"
+        android:pathData="M54,54 L61.3,59.2"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M70.63,44.4 L68.98,45.35"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M73.2,54 L69.5,54"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.4" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M70.63,63.6 L68.98,62.65"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M63.6,70.63 L62.65,68.98"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M54,73.2 L54,69.5"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.4" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M44.4,70.63 L45.35,68.98"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M37.37,63.6 L39.02,62.65"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M34.8,54 L38.5,54"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="2.4" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M37.37,44.4 L39.02,45.35"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M44.4,37.37 L45.35,39.02"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="1.35" />
-
-    <!-- 时针（10 点过一点）与分针（2 点），一长一短 -->
-    <!-- 时针：短、粗、带过轴的一小段尾巴 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M55.97,55.38 L44.74,47.52"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="3.7" />
-    <!-- 分针：长、细 -->
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M51.4,55.5 L67.77,46.05"
-        android:strokeColor="#FFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="3.05" />
-
-    <!-- 中心轴点：两针交于一点，补一个小圆让根部收干净 -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,54 m-2.3,0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0" />
+        android:strokeWidth="7" />
 </vector>

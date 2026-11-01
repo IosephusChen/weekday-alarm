@@ -43,6 +43,17 @@ need docs/更新日志.md "### v$NAME（versionCode $CODE）" "更新日志.md �
 need docs/打工人闹钟-使用说明.md "当前版本：**v$NAME**" "使用说明版本头"
 need docs/打工人闹钟-使用说明.md "打工人闹钟-v$NAME.apk" "使用说明安装包名"
 need docs/打工人闹钟-使用说明.md "versionCode $CODE）" "使用说明 versionCode"
+# v1.0.11：上面第 44 行只问「新名字在不在」，不问「旧名字还在不在」。
+# 1.0.10 那次头部三行都改了，第 28 行「把 xxx.apk 传到手机」还写着旧包名，
+# 检查照样全绿——用户在安装步骤里看到的是上一版的文件名。所以补一条反向检查。
+stale=$(grep -o "打工人闹钟-v[0-9][0-9.]*\.apk" docs/打工人闹钟-使用说明.md \
+        | grep -vF "v$NAME.apk" | sort -u || true)
+if [ -n "$stale" ]; then
+    echo "  FAIL 使用说明里还留着旧安装包名：$stale"
+    fail=1
+else
+    echo "  ok   使用说明无旧安装包名"
+fi
 need docs/项目状态.md "**v$NAME / versionCode $CODE**" "项目状态表"
 # v0.91.4：README 的「下载」节也会过时，而且是最容易被外人看到的一处。
 # 0.91.3 那次就漏了——检查全绿，README 还停在 v0.89.0。文档一致性不该挑文件。

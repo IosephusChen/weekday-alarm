@@ -137,8 +137,11 @@ import pathlib, re, sys
 name, size, md5 = sys.argv[1], sys.argv[2], sys.argv[3]
 p = pathlib.Path("docs/项目状态.md")
 s = p.read_text(encoding="utf-8")
-# 只认「安装包 |」那一行，别误伤别的版本记录
-pat = re.compile(r"(`打工人闹钟-v)[\d.]+(\.apk`（)(?:[\d,]+ 字节 / MD5 `[0-9a-f]{32}`|__SIZE__ 字节 / MD5 `__MD5__`)")
+# 只认「安装包 |」那一行，别误伤别的版本记录。
+# v1.0.10：原来只匹配「N 字节 / MD5 `…`」或占位符两种写法，一旦这里被手改成
+# 「大小与 MD5 见下方出包记录」就匹配不上，只能手工回填。改成「括号里到第一个
+# 分号为止」，写的是什么都覆盖得到。
+pat = re.compile(r"(`打工人闹钟-v)[\d.]+(\.apk`（)([^；]*)")
 new = "{:,} 字节 / MD5 `{}`".format(int(size), md5)
 s2, n = pat.subn(lambda m: m.group(1) + name + m.group(2) + new, s, count=1)
 if n == 0:
@@ -151,6 +154,15 @@ else:
 PY
 
 echo
-echo "还要做两件事："
+# v1.0.10：这里原来只写「还要做两件事：commit / 灾备包不动」。
+# 1.0.2 ~ 1.0.9 攒下八个没发布的版本，根子就在这句——推 main、打 tag、建 Release
+# 一件都没提，跑完这个脚本就以为发完了。远端四步现在写全。
+echo "本地产出到此为止，远端一步都没走。接着做："
 echo "  1. git add -A && git commit"
-echo "  2. 灾备包不动（只在正式发布前刷）"
+echo "  2. tools/push_via_api.py --branch main                    # 推 main"
+echo "  3. git tag -a v$NAME -m \"<标题 + 要点>\" && tools/push_via_api.py --tag v$NAME"
+echo "  4. tools/publish_release.py --mapping --dry-run           # 先看一眼"
+echo "     去掉 --dry-run 真发（幂等，重跑不会重复建）"
+echo "  5. 验：releases/latest 是 v$NAME、资产 MD5 对得上、raw 与 jsDelivr 的 version.json 是新版"
+echo
+echo "  （灾备包不动，只在正式发布前刷）"

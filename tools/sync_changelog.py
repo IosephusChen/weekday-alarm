@@ -1,21 +1,30 @@
 #!/usr/bin/env python3
-"""把 `docs/更新日志.md` 的标题行同步成 `Changelog.java` 的样子。
+"""检查 `docs/更新日志.md` 的版本行与 `Changelog.java` 是否对得上。
 
-为什么要有这个：两边内容基本重复——`Changelog.java` 是 App 内看的（要点短），
-`更新日志.md` 是仓库里看的（正文长）。但**标题行必须逐字一致**（版本号 + versionCode
-+ 主题），`DocsConsistencyTest` 就是靠这个守门的。以前每次发版要在两个文件里各写一遍
-标题，写完还得跑 40 秒测试才知道有没有对齐。
+## 比什么、不比什么
 
-现在只写 `Changelog.java`，跑一次这个脚本，md 的标题行自动跟上；正文照旧手写（可选）。
+**比**：条目数、顺序、每条行的 `vX.Y.Z` 与 `versionCode`。
+**不比**：破折号后面那段标题文字。
 
-用法：
-    python3 tools/sync_changelog.py          # 只检查，不一致就列出来（退出码 1）
-    python3 tools/sync_changelog.py --write  # 直接改 md
+两边标题本来就不该一样：
 
-它做三件事：
-    1. 按 `### vX（versionCode N）` 抓 md 里的条目，按出现顺序与 Changelog 对齐
-    2. 标题行重写成 `### v{version}（versionCode {code}）— {title}`
-    3. md 里多出 / 少了条目，直接报错（顺序错位也要报，否则会悄悄改错行）
+- `Changelog.java` 是 App 内显示的，受 18 字上限（`ChangelogTest.latestEntries_stayShort`
+  守着），只能写成短句；
+- `更新日志.md` 是仓库里看的，没有长度限制，标题写得详细才有用。
+
+这条脚本原来要求「标题行逐字一致」，理由是「`DocsConsistencyTest` 靠这个守门」。可那条
+测试实际只比 `版本号@code`，不比标题——于是 17 条 md 标题悄悄走偏成了「不一致」，
+而它带来的唯一后果，是每次跑脚本都看到一屏假告警。
+
+2026-11-01 清这条债时核对过：247 条里**版本号与 code 一处都没错**，17 处全是标题措辞。
+而且两边各有各好——md 写「深色锁屏上，通知标题不再消失」比 App 内的
+「深色锁屏上标题不再消失」清楚；App 内写「换签名证书，这一版要卸载重装」又比 md 的
+「换签名证书」信息全。强行对齐到任一边都是净损失，所以改的是规则，不是文字。
+
+## 用法
+
+    python3 tools/sync_changelog.py          # 只检查（不一致退出码 1）
+    python3 tools/sync_changelog.py --write  # 把版本号 / code 改对，标题文字原样保留
 """
 import re
 import sys
@@ -26,6 +35,7 @@ JAVA = ROOT / 'app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.j
 MD = ROOT / 'docs/更新日志.md'
 
 ENTRY = re.compile(r'new Entry\((\d+),\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)"')
+# 第 1 组版本、第 2 组 code、第 3 组「— 标题」剩下的部分（原样保留）
 HEAD = re.compile(r'^### v([\d.]+)（versionCode (\d+)）(.*)$', re.M)
 
 
@@ -34,6 +44,7 @@ def read_entries():
     rows = ENTRY.findall(src)
     if not rows:
         sys.exit('Changelog.java 里没解析到条目，正则过期了？')
+    # (code, version, date, title)，Changelog 里是从新到旧
     return [(int(c), v, d, t) for c, v, d, t in rows]
 
 
@@ -46,37 +57,47 @@ def main():
     if len(heads) != len(entries):
         sys.exit(f'条目数不一致：Changelog {len(entries)} 条，更新日志.md {len(heads)} 条')
 
-    diffs = []
-    for i, (m, (code, ver, _date, title)) in enumerate(zip(heads, entries)):
-        want = f'### v{ver}（versionCode {code}）— {title}'
-        got = m.group(0).strip()
-        # md 的标题偶尔不带「— 主题」（早期简版），也算不一致，补上
-        if got != want:
-            diffs.append((i, got, want))
+    diffs = []   # 版本号 / code 写错的
+    untitled = []  # 破折号后是空的（早期简版可能这样）
+    for i, (m, (code, ver, _date, _title)) in enumerate(zip(heads, entries)):
+        if m.group(1) != ver or int(m.group(2)) != code:
+            fixed = f'### v{ver}（versionCode {code}）{m.group(3)}'
+            diffs.append((i, m.group(0).strip(), fixed))
+        elif not m.group(3).strip(' —-'):
+            untitled.append((i, ver))
 
-    if not diffs:
-        print(f'一致：{len(entries)} 条标题行都对得上')
+    if not diffs and not untitled:
+        print(f'一致：{len(entries)} 条的版本号与 versionCode 都对得上（标题文字不比对）')
         return
 
-    print(f'不一致 {len(diffs)} 处：')
-    for i, got, want in diffs[:10]:
-        print(f'  第 {i + 1} 条\n    现：{got}\n    应：{want}')
-    if len(diffs) > 10:
-        print(f'  ……还有 {len(diffs) - 10} 处')
+    if diffs:
+        print(f'版本号 / code 不一致 {len(diffs)} 处：')
+        for i, got, want in diffs:
+            print(f'  第 {i + 1} 条\n    现：{got}\n    应：{want}')
+
+    if untitled:
+        print(f'缺标题 {len(untitled)} 处：')
+        for i, ver in untitled:
+            print(f'  第 {i + 1} 条（v{ver}）破折号后面是空的，补一句主题')
 
     if not write:
-        print('\n加 --write 直接改（改完记得看一眼 diff）')
+        print('\n加 --write 把版本号 / code 改对（标题文字不会被动）')
+        sys.exit(1)
+
+    if not diffs:
+        print('\n只有缺标题的问题，这个得人写，脚本不改')
         sys.exit(1)
 
     out = []
     pos = 0
-    for m, (code, ver, _d, title) in zip(heads, entries):
+    for m, (code, ver, _d, _t) in zip(heads, entries):
         out.append(text[pos:m.start()])
-        out.append(f'### v{ver}（versionCode {code}）— {title}')
+        # 只重写「### vX（versionCode N）」这段前缀，破折号后面原样留着
+        out.append(f'### v{ver}（versionCode {code}）{m.group(3)}')
         pos = m.end()
     out.append(text[pos:])
     MD.write_text(''.join(out), encoding='utf-8')
-    print(f'\n已写入 {MD.relative_to(ROOT)}（{len(diffs)} 处）')
+    print(f'\n已写入 {MD.relative_to(ROOT)}（改了 {len(diffs)} 处，标题文字未动）')
 
 
 if __name__ == '__main__':

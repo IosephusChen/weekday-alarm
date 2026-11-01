@@ -31,7 +31,7 @@
 不点开 App，桌面上就能看见「今天上不上班」和「下次几点响」。
 
 <p align="center">
-  <img src="docs/screenshots/5-widget-home.jpg" width="240" alt="桌面 4×2 小组件：今天上班、下次闹钟、本周七天班休">
+  <img src="docs/screenshots/5-widget-home.jpg" width="240" alt="桌面 4×2 小组件：今天上不上班、下次闹钟、本周七天班休">
   <img src="docs/screenshots/4-widget-month.jpg" width="240" alt="本月班表小组件：4×4 带底部统计行、4×3 极简">
 </p>
 

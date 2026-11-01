@@ -865,7 +865,7 @@ public class GuideActivity extends AppCompatActivity {
     /**
      * 展开 / 收起「响铃细节」（v0.83.0）。
      *
-     * <p>四项一设好基本不动，摆在第一次打开的人面前等于先做四次选择——默认收起，
+     * <p>这几项一设好基本不动，摆在第一次打开的人面前等于先做五次选择——默认收起，
      * 只留一行「按默认就好」。想调的人点开，不想调的人连看都不用看。
      */
     private void toggleRingDetail() {
@@ -887,15 +887,20 @@ public class GuideActivity extends AppCompatActivity {
      * 用同一个「›」字形旋转，不依赖字体里有没有上/下箭头。
      *
      * <p>副标题也跟着换（v1.0.5）：收起时那句「按默认就好，想调再点开」是在劝人别点，
-     * 展开之后这四项就摊在下面，再说「想调再点开」等于让用户再点一次。展开态换成
-     * 「这四项对所有闹钟都生效」——这是用户点开时真正会问的那件事（只改这一个还是全部）。
+     * 展开之后这些行就摊在下面，再说「想调再点开」等于让用户再点一次。展开态换成
+     * 「这些设置对所有闹钟都生效」——这是用户点开时真正会问的那件事（只改这一个还是全部）。
      * 用的是替换而不是隐藏：头卡高度不变，来回切换时下半个卡片不会上下跳。
+     *
+     * <p>为什么不写「这五项」（v1.0.6）：这组设置是会长的——v0.40.0 把「稍后提醒」
+     * 和「响铃前提醒」搬进来，行数从三变五，而副标题一直写着「四项」，直到装上真机
+     * 被人数出来。写死数字就等于每次加行都得回来改一句话，而这句话不会报错、不会崩、
+     * 只在用户眼前错。改成不依赖计数的说法，行数怎么变都不用动。
      */
     private void syncRingArrow(boolean open) {
         if (tvRingArrow != null) tvRingArrow.setText(open ? "收起" : "展开");
         if (ivRingChevron != null) ivRingChevron.setRotation(open ? -90f : 90f);
         if (tvRingSummary != null) {
-            tvRingSummary.setText(open ? "这四项对所有闹钟都生效" : "按默认就好，想调再点开");
+            tvRingSummary.setText(open ? "这些设置对所有闹钟都生效" : "按默认就好，想调再点开");
         }
     }
 

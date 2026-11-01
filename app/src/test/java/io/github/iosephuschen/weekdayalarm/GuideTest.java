@@ -39,6 +39,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 新手引导（v0.35.0：从「看三页说明」改成「顺手把配置做完」）。
@@ -478,12 +480,13 @@ public class GuideTest {
     /**
      * 展开之后那句副标题要跟着换（v1.0.5）。
      *
-     * <p>收起时写「按默认就好，想调再点开」，是在劝人别点；展开之后这四项已经
+     * <p>收起时写「按默认就好，想调再点开」，是在劝人别点；展开之后这几行已经
      * 摊在下面，同一句话就变成「再点一次」，自相矛盾。用户 2026-11-01 截图问
      * 「这个效果是不是你想要的」，指的就是这里。
      *
-     * <p>展开态换成「这四项对所有闹钟都生效」——点开的人真正会问的是「只改这一个
-     * 还是全部」，这几行的值读的确实是全局 Prefs。
+     * <p>展开态换成「这些设置对所有闹钟都生效」——点开的人真正会问的是「只改这一个
+     * 还是全部」，这几行的值读的确实是全局 Prefs。措辞里刻意不带计数，理由见
+     * {@link #ringSummary_neverMiscountsTheRows()}。
      */
     @Test
     public void ringSummary_changesWhenOpened() {
@@ -491,11 +494,52 @@ public class GuideTest {
         assertEquals("按默认就好，想调再点开", text(a, R.id.tv_ring_summary));
 
         a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("这四项对所有闹钟都生效", text(a, R.id.tv_ring_summary));
+        assertEquals("这些设置对所有闹钟都生效", text(a, R.id.tv_ring_summary));
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("收回去要复原", "按默认就好，想调再点开",
                 text(a, R.id.tv_ring_summary));
+    }
+
+    /**
+     * 副标题里要是写了「这 N 项」，N 必须等于卡片里真正有几行（v1.0.6）。
+     *
+     * <p>起因：v1.0.5 的副标题写着「这四项」，而卡片里是五行——响铃音量、渐响、
+     * 响铃时震动、稍后提醒、响铃前提醒。v0.40.0 把后两行搬进来时，行数从三变五，
+     * 这句话没跟着改，错了两个版本没人发现，最后是用户数出来的。
+     *
+     * <p>这类错最麻烦的地方在于它不会崩、不会报编译错误、肉眼也不觉得别扭，
+     * 只能靠真的人去数。所以这里既不禁止写数字，也不要求写数字：写中性说法就通过，
+     * 一旦想写「这 N 项」，就把 N 拿去和实际行数对一遍。
+     */
+    @Test
+    public void ringSummary_neverMiscountsTheRows() {
+        GuideActivity a = fresh();
+        a.findViewById(R.id.ring_toggle).performClick();
+        String summary = text(a, R.id.tv_ring_summary);
+
+        ViewGroup detail = a.findViewById(R.id.ring_detail);
+        int rows = 0;
+        for (int i = 0; i < detail.getChildCount(); i++) {
+            if (detail.getChildAt(i).isClickable()) rows++;
+        }
+        assertTrue("卡片里应有若干可点的行，数出 " + rows, rows >= 3);
+
+        Matcher m = Pattern.compile("这([一二三四五六七八九十]+)项").matcher(summary);
+        if (m.find()) {
+            assertEquals("副标题写「这" + m.group(1) + "项」，实际有 " + rows + " 行",
+                    rows, cnToInt(m.group(1)));
+        }
+    }
+
+    /** 「三」「五」「十二」这类中文计数转整数，只覆盖十位以内够用的写法。 */
+    private static int cnToInt(String s) {
+        String digits = "一二三四五六七八九";
+        if (!s.contains("十")) return digits.indexOf(s.charAt(0)) + 1;
+        int idx = s.indexOf('十');
+        int tens = idx == 0 ? 1 : digits.indexOf(s.charAt(0)) + 1;
+        int ones = idx == s.length() - 1 ? 0 : digits.indexOf(s.charAt(idx + 1)) + 1;
+        return tens * 10 + ones;
     }
 
     /**

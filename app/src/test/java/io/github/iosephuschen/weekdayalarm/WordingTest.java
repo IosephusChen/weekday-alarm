@@ -146,6 +146,35 @@ public class WordingTest {
     }
 
     /**
+     * 列表弹窗末尾那条提示不许再长回去（v1.0.5）。
+     *
+     * <p>「响铃前提醒」这个弹窗有六个选项、每张卡 68dp 上下，标题 + 副标题 + 六张卡
+     * 已经用掉大半屏。v0.91.5 那条提示写了 137 字：到点前怎样、锁屏什么样、
+     * 顺不顺手关、占不占系统闹钟名额、上限减半到多少……用户 2026-11-01 的截图里，
+     * 最后一行被裁在弹窗外面——看得见半句，读不到结论。
+     *
+     * <p>60 字是量出来的：12sp、360dp 宽、弹窗内边距 20dp，一行约 22 字，两行半封顶。
+     * 超过就得想想是不是又在讲实现细节（「上限减半到 200」那段就是），
+     * 那种话属于使用说明，不属于「选哪个」这一刻。
+     */
+    @Test
+    public void preNoticeTip_fitsInsideTheDialog() {
+        String src = read("app/src/main/java/io/github/iosephuschen/weekdayalarm/PrefDialogs.java");
+        int at = src.indexOf("PRE_NOTICE_TIP =");
+        assertTrue("找不到 PRE_NOTICE_TIP", at >= 0);
+        String body = src.substring(at, src.indexOf(";", at));
+
+        Matcher m = Pattern.compile("\"([^\"]*)\"").matcher(body);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) sb.append(m.group(1));
+        String text = sb.toString();
+        assertTrue("提示 " + text.length() + " 字，六个选项的弹窗放不下：" + text,
+                text.length() <= 60);
+        // 砍长度不能把「不响铃」这条砍掉——用户最容易被吓到的是「它自己会叫」
+        assertTrue("得说清它本身不响铃", text.contains("不响铃"));
+    }
+
+    /**
      * 铃声对话框的副标题不许再长回三行（v0.91.6）。
      *
      * <p>v0.91.5 写的是「厂商的「智慧铃声」（如小爱）读不到，下面显示的是底层那条」，

@@ -455,21 +455,47 @@ public class GuideTest {
         GuideActivity a = fresh();
         View detail = a.findViewById(R.id.ring_detail);
         View chevron = a.findViewById(R.id.iv_ring_chevron);
+        View divider = a.findViewById(R.id.ring_divider);
         assertEquals("默认应收起", View.GONE, detail.getVisibility());
         assertEquals("说清「想调再点开」", "展开", text(a, R.id.tv_ring_arrow));
         // v1.0.4：箭头单独一个 View，收起时转 90° 指下
         assertEquals("收起时箭头应指下", 90f, chevron.getRotation(), 0.1f);
+        assertEquals("收着的时候不该有那条分隔线", View.GONE, divider.getVisibility());
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("点一下应展开", View.VISIBLE, detail.getVisibility());
         assertEquals("展开后写「收起」", "收起", text(a, R.id.tv_ring_arrow));
         assertEquals("展开后箭头应指上", -90f, chevron.getRotation(), 0.1f);
+        assertEquals("展开后头与内容之间要有分隔线", View.VISIBLE, divider.getVisibility());
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("再点一下收回", View.GONE, detail.getVisibility());
         assertEquals("收回后箭头转回指下", 90f, chevron.getRotation(), 0.1f);
         // 收起来时那四行仍在布局里，只是不可见——值照常刷新，不会丢
         assertNotNull(a.findViewById(R.id.tv_snooze));
+    }
+
+    /**
+     * 展开之后那句副标题要跟着换（v1.0.5）。
+     *
+     * <p>收起时写「按默认就好，想调再点开」，是在劝人别点；展开之后这四项已经
+     * 摊在下面，同一句话就变成「再点一次」，自相矛盾。用户 2026-11-01 截图问
+     * 「这个效果是不是你想要的」，指的就是这里。
+     *
+     * <p>展开态换成「这四项对所有闹钟都生效」——点开的人真正会问的是「只改这一个
+     * 还是全部」，这几行的值读的确实是全局 Prefs。
+     */
+    @Test
+    public void ringSummary_changesWhenOpened() {
+        GuideActivity a = fresh();
+        assertEquals("按默认就好，想调再点开", text(a, R.id.tv_ring_summary));
+
+        a.findViewById(R.id.ring_toggle).performClick();
+        assertEquals("这四项对所有闹钟都生效", text(a, R.id.tv_ring_summary));
+
+        a.findViewById(R.id.ring_toggle).performClick();
+        assertEquals("收回去要复原", "按默认就好，想调再点开",
+                text(a, R.id.tv_ring_summary));
     }
 
     /**

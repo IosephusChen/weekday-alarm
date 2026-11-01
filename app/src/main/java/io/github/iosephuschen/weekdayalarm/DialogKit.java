@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -595,8 +596,35 @@ public final class DialogKit {
         list.addView(t, lp);
     }
 
+    /**
+     * 列表高度封顶：既看「单块别超过屏高 55%」，也看「整张弹窗别到屏幕外」（v1.0.5）。
+     *
+     * <p>前半句是 v0.91.7 的规则，管的是<b>列表自己</b>太长。它漏掉另一半：
+     * 弹窗总高 = 标题 + 副说明 + 列表 + 按钮，几个都不长的时候，各自都不触发封顶，
+     * 加起来照样能探出屏幕——用户 2026-11-01 截图里，「响铃前提醒」底部的提示
+     * 有一整行被切在窗口外，而列表本身只有六个选项，远没到 55%。
+     *
+     * <p>所以再加一层：布局完成后量一下根视图。它比可用高度高多少，就从列表里
+     * 扣掉多少——列表是唯一该牺牲的东西，标题和按钮不能动。扣完列表就能滚，
+     * 内容一个字不少，只是需要划一下。
+     */
     static void capListHeight(View root) {
-        capScrollHeight(root.findViewById(R.id.dlg_pick_scroll), 0.55f);
+        final View scroll = root.findViewById(R.id.dlg_pick_scroll);
+        capScrollHeight(scroll, 0.55f);
+        if (scroll == null) return;
+
+        // 可用高度按屏高的 78% 估：剩下的 22% 留给状态栏、导航栏、窗口上下边距，
+        // 以及各家 ROM 自己那点装饰。估多一点点不要紧——下面只在真的超出时才动手。
+        final int avail = Math.round(root.getResources()
+                .getDisplayMetrics().heightPixels * 0.78f);
+        scroll.post(() -> {
+            int overflow = root.getHeight() - avail;
+            int h = scroll.getHeight();
+            if (overflow <= 0 || h <= 0) return;
+            ViewGroup.LayoutParams lp = scroll.getLayoutParams();
+            lp.height = Math.max(dp(scroll.getContext(), 96), h - overflow);
+            scroll.setLayoutParams(lp);
+        });
     }
 
     /**

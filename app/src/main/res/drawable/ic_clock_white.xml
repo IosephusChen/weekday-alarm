@@ -1,22 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- App 内的小 logo（v1.0.5 重画）。首页标题左边那枚 24dp 的白图形。
+
+     原来和桌面图标是同一副旧样子：一根很粗的白圆环 + 两根粗针，24dp 下就是
+     一个白圈加一道折线。桌面图标换成带刻度表盘之后，两处对不上——用户装了
+     新版，桌面是新图标，点进去首页还是个白圈（2026-11-01 反馈）。
+
+     这里是同款的缩小版：同样的环、同样的 10:10、同样的粗细关系（时针粗短、
+     分针细长、都带过轴的小尾巴），刻度从 12 个减到 4 个。先试过 8 个：42dp
+     的图标里图形只有 30dp 左右，斜位那四个刻度在真机渲染里糊成四个灰点，
+     把表盘弄脏了。只留 12/3/6/9 四个主位，读起来仍是表盘，也不抢指针。
+
+     底色不在这里：布局里用 bg_hero（紫渐变）垫在下面，图形只负责白线。 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- 外圈白圆（加粗环）：圆心 (12,12)，半径 8.8 -->
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M12,12 m-8.8,0 a8.8,8.8 0 1,0 17.6,0 a8.8,8.8 0 1,0 -17.6,0" />
-    <!-- 内圈靛蓝圆：半径 6.1，叠加形成宽 2.7 的白色圆环 -->
-    <path
-        android:fillColor="#4F46E5"
-        android:pathData="M12,12 m-6.1,0 a6.1,6.1 0 1,0 12.2,0 a6.1,6.1 0 1,0 -12.2,0" />
-    <!-- 指针 -->
+
+    <!-- 表盘环：圆心 (12,12)，中线半径 8.5，线宽 1.7 -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M12,6.8 L12,12 L14.8,14"
-        android:strokeColor="#FFFFFFFF"
+        android:pathData="M12,12 m-8.5,0 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.75" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M19.25,12 L16.9,12"
+        android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="1.8" />
+        android:strokeWidth="1.25" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,4.75 L12,7.1"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.25" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M4.75,12 L7.1,12"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.25" />
+
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,19.25 L12,16.9"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.25" />
+
+    <!-- 时针：指向 10 点，短而粗（小尺寸不留尾巴，见文件注释） -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L8.88,10.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.25" />
+
+    <!-- 分针：指向 2 点，长而细 -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M12,12 L15,6.8"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.05" />
+
+    <!-- 中心轴点 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,12 m-0.85,0 a0.85,0.85 0 1,0 1.7,0 a0.85,0.85 0 1,0 -1.7,0" />
 </vector>

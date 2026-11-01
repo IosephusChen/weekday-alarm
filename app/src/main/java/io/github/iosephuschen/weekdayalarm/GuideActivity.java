@@ -95,7 +95,7 @@ public class GuideActivity extends AppCompatActivity {
     private VolumeWatcher volumeWatcher;
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
-    private TextView tvRingHint, tvRingArrow, ivRingChevron;
+    private TextView tvRingHint, tvRingArrow, ivRingChevron, tvRingSummary;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
 
@@ -139,6 +139,7 @@ public class GuideActivity extends AppCompatActivity {
         tvRingHint = findViewById(R.id.tv_ring_hint);
         tvRingArrow = findViewById(R.id.tv_ring_arrow);
         ivRingChevron = findViewById(R.id.iv_ring_chevron);
+        tvRingSummary = findViewById(R.id.tv_ring_summary);
         findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
         syncRingArrow(false);   // 默认收起：箭头先指下
 
@@ -871,6 +872,9 @@ public class GuideActivity extends AppCompatActivity {
         boolean open = ringDetail.getVisibility() != View.VISIBLE;
         ringDetail.setVisibility(open ? View.VISIBLE : View.GONE);
         if (tvRingHint != null) tvRingHint.setVisibility(open ? View.VISIBLE : View.GONE);
+        // v1.0.5：头与内容之间的那条线跟着一起显示，否则展开后两半直接贴在一起
+        View divider = findViewById(R.id.ring_divider);
+        if (divider != null) divider.setVisibility(open ? View.VISIBLE : View.GONE);
         syncRingArrow(open);
     }
 
@@ -881,10 +885,18 @@ public class GuideActivity extends AppCompatActivity {
      * 箭头还在往右指，读不出「已经打开」。现在箭头单独一个 View，
      * 收起时转 90° 指下（还能展开），展开时转 -90° 指上（可以收起来）。
      * 用同一个「›」字形旋转，不依赖字体里有没有上/下箭头。
+     *
+     * <p>副标题也跟着换（v1.0.5）：收起时那句「按默认就好，想调再点开」是在劝人别点，
+     * 展开之后这四项就摊在下面，再说「想调再点开」等于让用户再点一次。展开态换成
+     * 「这四项对所有闹钟都生效」——这是用户点开时真正会问的那件事（只改这一个还是全部）。
+     * 用的是替换而不是隐藏：头卡高度不变，来回切换时下半个卡片不会上下跳。
      */
     private void syncRingArrow(boolean open) {
         if (tvRingArrow != null) tvRingArrow.setText(open ? "收起" : "展开");
         if (ivRingChevron != null) ivRingChevron.setRotation(open ? -90f : 90f);
+        if (tvRingSummary != null) {
+            tvRingSummary.setText(open ? "这四项对所有闹钟都生效" : "按默认就好，想调再点开");
+        }
     }
 
     /**

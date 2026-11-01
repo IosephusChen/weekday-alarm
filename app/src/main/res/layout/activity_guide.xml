@@ -476,13 +476,24 @@
 
                 <!-- 响铃细节（v0.83.0 收起来）：音量 / 渐响 / 稍后 / 响前四项，
                      一次设好基本不动。摆在第一次打开的人面前，等于还没听到闹钟响就先做四次选择——
-                     收进一行标题，想调的点开，不想调的连看都不用看。 -->
+                     收进一行标题，想调的点开，不想调的连看都不用看。
+
+                     v1.0.5：头和身子并进同一张卡。原来两段各带一个 bg_guide_perm、
+                     中间隔 8dp，展开之后看着是「一张标题卡 + 一张内容卡」两块，
+                     读不出「这四行属于上面那一行」。现在外层一张卡，头、分隔线、
+                     四行都在里面，展开就是把这张卡打开。 -->
                 <LinearLayout
-                    android:id="@+id/ring_toggle"
+                    android:id="@+id/ring_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_10"
                     android:background="@drawable/bg_guide_perm"
+                    android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/ring_toggle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
@@ -547,14 +558,23 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- 展开后头与内容之间的分隔线：有了它，上下两半才读成同一张卡的两部分 -->
+                <View
+                    android:id="@+id/ring_divider"
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="@dimen/space_16"
+                    android:layout_marginEnd="@dimen/space_16"
+                    android:background="@color/line"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/ring_detail"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:background="@drawable/bg_guide_perm"
                     android:orientation="vertical"
                     android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_4"
                     android:paddingEnd="@dimen/space_16"
                     android:visibility="gone">
 
@@ -721,6 +741,7 @@
                             android:textColor="@color/sub"
                             android:textSize="14sp" />
                     </LinearLayout>
+                </LinearLayout>
                 </LinearLayout>
 
                 <TextView
@@ -1042,6 +1063,7 @@
                     android:layout_marginTop="@dimen/space_16"
                     android:layout_marginBottom="@dimen/space_6"
                     android:paddingStart="@dimen/space_4"
+                    android:paddingEnd="@dimen/space_4"
                     android:text="这两项系统读不到，要自己确认"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />

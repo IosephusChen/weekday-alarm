@@ -257,7 +257,7 @@
     <string name="dialog_snooze_title">稍后提醒</string>
     <string name="dialog_snooze_message">响铃时按音量键（或通知上的按钮）会推迟多久再响、最多推迟几次。</string>
     <string name="dialog_pre_notice_title">响铃前提醒</string>
-    <string name="dialog_pre_notice_message">响铃前先在通知栏提醒一次，可以提前把这一个闹钟关掉。选「关闭」则只在响铃时提醒。</string>
+    <string name="dialog_pre_notice_message">响铃前先在通知栏提个醒，可以提前把这一次闹钟关掉。选「关闭」则只在响铃时提醒。</string>
     <string name="dialog_keys_title">按键设置</string>
     <string name="dialog_keys_message">响铃界面里，按音量键或电源键分别会做什么。</string>
     <string name="dialog_ring_duration_title">响铃时长</string>

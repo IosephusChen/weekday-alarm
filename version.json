@@ -1,14 +1,14 @@
 {
-  "versionCode": 242,
-  "versionName": "1.0.4",
+  "versionCode": 243,
+  "versionName": "1.0.5",
   "published": "2026-11-01",
-  "title": "弹窗和引导页重排，图标也换了",
+  "title": "小部件的班休、logo、响铃细节",
   "notes": [
-    "列表弹窗标题下那句说明一直没显示出来，已修",
-    "睡前提醒改成选完点「完成」，关掉时那行开关仍看得见",
-    "引导页权限清单拆成两张卡，已开的打勾；点通知不再回首页",
-    "桌面图标换成带刻度的表盘；节日与节气三项各补了举例"
+    "小部件「班」「休」重新读得出来；表头和底部那行也提亮了",
+    "首页 logo 换成新表盘，和桌面图标同一款",
+    "引导页「响铃细节」合成一张卡，展开后副标题改成讲四项的适用范围",
+    "「响铃前提醒」的提示压到两行，不再被裁在弹窗外"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.4/weekday-alarm-1.0.4.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.4"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.5/weekday-alarm-1.0.5.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.5"
 }

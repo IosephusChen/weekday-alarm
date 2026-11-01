@@ -73,15 +73,18 @@ public class MonthWidgetTest {
     /**
      * 法定节假日名优先于「休」（v0.65.0）。
      *
-     * <p>颜色仍然是「休」的淡紫——上班还是休息靠颜色说，字换成节日名不丢信息。
+     * <p>颜色仍然是「休」那一档——上班还是休息靠颜色说，字换成节日名不丢信息。
      * 这一点与日历页一致：那边也是底色表达班休、文字写节日。
+     *
+     * <p>v1.0.5：休息日字色从浅紫 {@code A9A1E6} 改成纯白（紫底上浅紫只有 2:1，
+     * 用户反馈「看不清班/休」），工作日退到 90% 白留出一档差。
      */
     @Test
     public void holidayNameReplacesRestLabel() {
         MonthWidgetRender.Model m = oct2026();
         assertEquals("1", m.nums[3]);
         assertEquals("国庆", m.tags[3]);
-        assertEquals("国庆那天仍按休息着色", 0xFFA9A1E6, m.colors[3]);
+        assertEquals("国庆那天仍按休息着色", 0xFFFFFFFF, m.colors[3]);
     }
 
     /**

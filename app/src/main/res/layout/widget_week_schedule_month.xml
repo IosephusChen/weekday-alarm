@@ -54,7 +54,7 @@
 
         <!-- 闹钟状态（v0.70.1）：原来单独占一行、写「10月24日 周六 07:30」，
              用户嫌信息太多。收成一句话并进标题行，和 4×2 本周班表一个样子。
-             v0.77.3 起颜色降到 #C9C4FF：它是最次要的附注，不能和周次 chip 抢。 -->
+             v0.77.3 起颜色降到 #DCD8FF：它是最次要的附注，不能和周次 chip 抢。 -->
         <TextView
             android:id="@+id/widget_month_alarm"
             android:layout_width="wrap_content"
@@ -63,7 +63,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="闹钟已开启"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="10sp"
             android:visibility="gone" />
     </LinearLayout>
@@ -83,7 +83,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="一"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_1"
@@ -92,7 +92,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="二"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_2"
@@ -101,7 +101,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="三"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_3"
@@ -110,7 +110,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="四"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_4"
@@ -119,7 +119,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="五"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_5"
@@ -128,7 +128,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="六"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
         <TextView
             android:id="@+id/m_head_6"
@@ -137,7 +137,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="日"
-            android:textColor="#C9C4FF"
+            android:textColor="#DCD8FF"
             android:textSize="8.5sp" />
     </LinearLayout>
 
@@ -183,7 +183,7 @@
                     android:layout_marginTop="1dp"
                     android:text=""
                     android:maxLines="1"
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -223,7 +223,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -263,7 +263,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -303,7 +303,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -343,7 +343,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -383,7 +383,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -423,7 +423,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -471,7 +471,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -511,7 +511,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -551,7 +551,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -591,7 +591,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -631,7 +631,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -671,7 +671,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -711,7 +711,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -759,7 +759,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -799,7 +799,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -839,7 +839,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -879,7 +879,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -919,7 +919,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -959,7 +959,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -999,7 +999,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1047,7 +1047,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1087,7 +1087,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1127,7 +1127,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1167,7 +1167,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1207,7 +1207,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1247,7 +1247,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1287,7 +1287,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1335,7 +1335,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1375,7 +1375,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1415,7 +1415,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1455,7 +1455,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1495,7 +1495,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1535,7 +1535,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1575,7 +1575,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1623,7 +1623,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1663,7 +1663,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1703,7 +1703,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1743,7 +1743,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1783,7 +1783,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1823,7 +1823,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1863,7 +1863,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text=""
-                    android:textColor="#C9C4FF"
+                    android:textColor="#DCD8FF"
                     android:textSize="8.5sp"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -1891,6 +1891,6 @@
         android:includeFontPadding="false"
         android:maxLines="1"
         android:text="本月 19 天班 · 12 天休 · 下次闹钟 明天 07:30"
-        android:textColor="#C9C4FF"
+        android:textColor="#DCD8FF"
         android:textSize="10sp" />
 </LinearLayout>

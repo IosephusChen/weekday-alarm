@@ -120,7 +120,9 @@ public class MonthWidgetLayoutTest {
         assertNotNull("周次应有 chip 背景", bg);
 
         assertEquals("周次是白字", 0xFFFFFFFF, sub.getCurrentTextColor());
-        assertEquals("闹钟状态要比周次淡", 0xFFC9C4FF, alarm.getCurrentTextColor());
+        // v1.0.5：从 C9C4FF 提到 DCD8FF——原来那个色在紫底上只有 2.8:1，
+        // 桌面上基本看不见（用户反馈「看不清」）。仍比周次的纯白弱一档。
+        assertEquals("闹钟状态要比周次淡", 0xFFDCD8FF, alarm.getCurrentTextColor());
     }
 
     /**
@@ -165,7 +167,8 @@ public class MonthWidgetLayoutTest {
 
         // 无底色：有背景就说明又画成按钮了
         assertNull("统计不该有背景", stats.getBackground());
-        assertEquals("统计字色应与「休」同灰阶", 0xFFC9C4FF, stats.getCurrentTextColor());
+        // v1.0.5：同「闹钟状态」那档，原因见 titleRow_weekIsChipAndAlarmIsFainter
+        assertEquals("统计字色应与「休」同灰阶", 0xFFDCD8FF, stats.getCurrentTextColor());
         assertTrue("统计不该是粗体",
                 stats.getTypeface() == null || !stats.getTypeface().isBold());
     }

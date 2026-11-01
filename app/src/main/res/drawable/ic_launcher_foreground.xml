@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 桌面图标前景。
      与 App 内 ic_clock_white 同一副形状：一圈白环 + 一笔折线针（12 点下来到圆心，
-     再斜向 4 点半）。两处只差粗细与尺寸，别的地方不再分叉。
+     再斜向 4 点半）。几何按 ic_clock_white 等比放大 2.614 倍（46/17.6），
+     环宽、针长、针粗三个比例都是照抄，不再各写一套。
 
      走过的路记一笔：
      · v1.0.5 之前就是这个形状（描边环 + 两根粗针）。
@@ -9,6 +10,9 @@
        单看还行，但和 App 内那枚 34dp 的小 logo 摆在一起，一繁一简，像两个 App。
        用户 2026-11-01 先嫌 App 内那版碎，接着发现桌面还是另一副——于是两处一起退回。
      · v1.0.7 只退了 App 内那枚，桌面漏了；v1.0.8 补上。
+     · 退回来的这版针和环一样粗（都是 7），摆在圆角方底上显得笨；用户 2026-11-01
+       说「原版不好看，App 内那枚挺好看」——差别就在这里：App 内的针只有环宽的
+       0.67，桌面是 1.0。现在把针收到 4.7，其余不动。
 
      为什么不再加刻度：48dp 时整个图形只有 20dp 出头，12 个刻度落到像素上是
      一圈毛刺，读起来不是「表盘」而是「环上沾了灰」。
@@ -35,11 +39,11 @@
         android:pathData="M54,54 L54,40.4"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="7" />
+        android:strokeWidth="4.7" />
     <path
         android:fillColor="#00000000"
         android:pathData="M54,54 L61.3,59.2"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="7" />
+        android:strokeWidth="4.7" />
 </vector>

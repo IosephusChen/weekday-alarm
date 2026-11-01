@@ -92,7 +92,10 @@ public class SystemSurfaceNightTest {
         String body = xml.replaceAll("(?s)<!--.*?-->", "");
         assertFalse("图标底色不能引用 @color（夜间会被提亮，v0.76.1 用户反馈「像变透明了」）",
                 body.contains("@color/"));
-        assertTrue("渐变两个端点要写死在文件里", body.contains("#6459F2") && body.contains("#4C42D9"));
+        // v1.0.8：两个端点从 #6459F2/#4C42D9 换成 bg_hero 那对 #4F46E5/#7C3AED
+        // （和 App 内 logo 摆一起时，原来那对偏深偏灰）。守的还是「写死」这件事。
+        assertTrue("渐变两个端点要写死在文件里（v1.0.8 起与 bg_hero 同色）",
+                body.contains("#4F46E5") && body.contains("#7C3AED"));
     }
 
     /** 两类系统 surface 的配置文件都必须引用无夜间版的固定 token。 */

@@ -93,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="9dp"
                 android:layout_weight="1"
-                android:text="双休 · 休2天"
+                android:text="双休"
                 android:textColor="@color/indigo"
                 android:textSize="15sp"
                 android:textStyle="bold" />

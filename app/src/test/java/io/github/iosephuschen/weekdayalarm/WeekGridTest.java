@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Application;
 import android.content.Context;
 import android.graphics.Typeface;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -111,5 +112,68 @@ public class WeekGridTest {
         int n = 0;
         while (g.headAt(n) != null) n++;
         return n;
+    }
+
+    // ================= 格子里那两行（v1.6.0，R5） =================
+
+    /**
+     * 每格下面的日号要对得上。
+     *
+     * <p>特意选 10/26（周一）这一周：格子会从 26 走到 1，跨月。
+     * 日号只写日不写月，所以跨月那一周正好是这条用例要证明的——
+     * 表头有周几，日号 30 / 31 / 1 连着读不歧义。
+     */
+    @Test
+    public void cells_showDayOfMonth() {
+        LocalDate mon = LocalDate.of(2026, 10, 26);
+        WeekGrid g = new WeekGrid(ctx());
+        g.setDays(new boolean[7], mon);
+
+        for (int i = 0; i < 7; i++) {
+            TextView date = g.dateAt(i);
+            assertNotNull("第 " + i + " 格应有日号", date);
+            assertEquals("第 " + i + " 格的日号",
+                    String.valueOf(mon.plusDays(i).getDayOfMonth()),
+                    date.getText().toString());
+        }
+        assertEquals("跨月最后一格应是 1 号", "1", g.dateAt(6).getText().toString());
+    }
+
+    /** 状态在上、日号在下：格子从单个 TextView 变成竖排两行，顺序不能反。 */
+    @Test
+    public void cells_stateAboveDate() {
+        LocalDate mon = LocalDate.of(2026, 11, 2);
+        WeekGrid g = new WeekGrid(ctx());
+        g.setDays(new boolean[]{true, true, true, true, true, false, false}, mon);
+
+        assertTrue("cellAt 现在返回的是容器", g.cellAt(0) instanceof LinearLayout);
+        assertEquals("班", g.stateAt(0).getText().toString());
+        assertEquals("休", g.stateAt(5).getText().toString());
+        assertEquals("2", g.dateAt(0).getText().toString());
+        assertEquals("7", g.dateAt(5).getText().toString());
+    }
+
+    /** 无障碍读法要带完整日期，不能只有一个「班」字。 */
+    @Test
+    public void cells_contentDescriptionCarriesFullDate() {
+        LocalDate mon = LocalDate.of(2026, 11, 2);
+        WeekGrid g = new WeekGrid(ctx());
+        g.setDays(new boolean[]{true, true, true, true, true, false, false}, mon);
+
+        assertEquals("上班：11月2日 周一", g.cellAt(0).getContentDescription());
+        assertEquals("休息：11月7日 周六", g.cellAt(5).getContentDescription());
+    }
+
+    /** 两周时第二周的日号接着往下走，不是从头再数一遍。 */
+    @Test
+    public void cells_twoWeeks_dayNumberContinues() {
+        LocalDate mon = LocalDate.of(2026, 11, 2);
+        WeekGrid g = new WeekGrid(ctx());
+        g.setDays(new boolean[14], mon);
+
+        assertEquals("第二周第一天接第 8 天", "9",
+                g.dateAt(7).getText().toString());
+        assertEquals("第二周最后一天", "15",
+                g.dateAt(13).getText().toString());
     }
 }

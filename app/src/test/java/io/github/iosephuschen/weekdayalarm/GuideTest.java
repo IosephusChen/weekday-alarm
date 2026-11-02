@@ -137,8 +137,9 @@ public class GuideTest {
         return g;
     }
 
+    /** 格子里的「班 / 休」。v1.6.0 起格子是竖排两行，第一行才是状态。 */
     private static String cellText(View v) {
-        return ((TextView) v).getText().toString();
+        return ((TextView) ((LinearLayout) v).getChildAt(0)).getText().toString();
     }
 
     /**

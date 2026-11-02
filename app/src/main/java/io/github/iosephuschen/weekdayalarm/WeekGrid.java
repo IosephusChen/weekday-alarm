@@ -21,8 +21,12 @@ import java.time.LocalDate;
  * <p><b>只管画和点，不管存</b>：点一下回调 index，调用方决定写到哪、怎么反推。
  * {@link #setReadOnly} 用于「只看不改」（比如编辑一条老闹钟时展示它的表）。
  *
- * <p>高度走 {@code minHeight} + 上下 padding，不写死——字号放大时格子里那个
- * 「班」不能被裁掉，{@code LargeFontLayoutTest} 会拦。
+ * <p>高度走 {@code minHeight} + 上下 padding，不写死——字号放大时格子里那两行
+ * 字（「班」和日号）不能被裁掉，{@code LargeFontLayoutTest} 会拦。
+ *
+ * <p>v1.6.0 起格子里多了一行日号（R5）：原来七格是七个「班」字，日期只在表头，
+ * 于是这张表能回答「哪几天上班」，却不回答「具体哪天」。现在上「班 / 休」、
+ * 下日号，格子 46 → 54dp。
  */
 public class WeekGrid extends LinearLayout {
 
@@ -32,6 +36,8 @@ public class WeekGrid extends LinearLayout {
     }
 
     private static final int GAP_DP = 4;
+    /** 格子最小高度（两行字 + 上下 padding）。46 只放得下一行，见类注释。 */
+    private static final int CELL_H_DP = 54;
 
     private final LinearLayout firstBox = new LinearLayout(getContext());
     private final TextView firstLabel = new TextView(getContext());
@@ -150,6 +156,28 @@ public class WeekGrid extends LinearLayout {
     }
 
     /**
+     * 第 index 格里的「班 / 休」那行字（v1.6.0 起格子是竖排两行）。
+     *
+     * <p>格子从单个 TextView 变成 LinearLayout 之后，{@link #cellAt} 返回的不再
+     * 能直接读文字。测试要断「这一格显示班还是休」「日号对不对」，从这里取。
+     */
+    public TextView stateAt(int index) {
+        return cellChild(index, 0);
+    }
+
+    /** 第 index 格里的日号（「2」这样的纯数字）。 */
+    public TextView dateAt(int index) {
+        return cellChild(index, 1);
+    }
+
+    private TextView cellChild(int index, int which) {
+        View cell = cellAt(index);
+        if (!(cell instanceof LinearLayout)) return null;
+        LinearLayout box = (LinearLayout) cell;
+        return box.getChildCount() > which ? (TextView) box.getChildAt(which) : null;
+    }
+
+    /**
      * 第 index 个表头（0~13），与 {@link #cellAt} 对称。
      *
      * <p>加这个是因为「今天那一列要标出来」只有表头看得见——它在
@@ -207,21 +235,48 @@ public class WeekGrid extends LinearLayout {
         for (int i = 0; i < 7; i++) {
             final int idx = offset + i;
             boolean work = idx < days.length && days[idx];
+            LocalDate day = monday.plusDays(idx);
 
-            TextView cell = new TextView(getContext());
-            cell.setText(work ? "班" : "休");
-            cell.setTextSize(14);
-            cell.setTypeface(Typeface.DEFAULT_BOLD);
+            // 格子从 TextView 改成竖排两行（v1.6.0，R5）：外层管底色与点击，
+            // 里层两行分别管字号。用 Spannable 在一行里塞两种字号也行，
+            // 但行距只能整块调，两行的分量压不准。
+            LinearLayout cell = new LinearLayout(getContext());
+            cell.setOrientation(VERTICAL);
             cell.setGravity(Gravity.CENTER);
-            cell.setMinHeight(dp(46));
-            cell.setPadding(0, dp(12), 0, dp(12));
-            // 休的字色从 sub 提到 body：底色从白换成 #E2E6F2 后，sub(#6B7189)
-            // 压上去只有 4.3:1，14sp 不该停在门槛边上。
-            cell.setTextColor(getContext().getColor(work ? R.color.white : R.color.body));
+            cell.setMinimumHeight(dp(CELL_H_DP));
+            cell.setPadding(0, dp(7), 0, dp(7));
             cell.setBackgroundResource(work
                     ? R.drawable.bg_day_cell_work : R.drawable.bg_day_cell_rest);
-            cell.setContentDescription((work ? "上班：" : "休息：")
-                    + TimeText.week(monday.plusDays(idx)));
+            cell.setContentDescription(
+                    (work ? "上班：" : "休息：") + TimeText.monthDayWeek(day));
+
+            TextView state = new TextView(getContext());
+            state.setText(work ? "班" : "休");
+            state.setTextSize(14);
+            state.setTypeface(Typeface.DEFAULT_BOLD);
+            state.setGravity(Gravity.CENTER);
+            // 休的字色从 sub 提到 body：底色从白换成 #E2E6F2 后，sub(#6B7189)
+            // 压上去只有 4.3:1，14sp 不该停在门槛边上。
+            state.setTextColor(getContext().getColor(work ? R.color.white : R.color.body));
+            cell.addView(state, new LayoutParams(
+                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+
+            // 日号：只写日，不写「11/2」——七格挤在 296dp 里，一格约 39dp，
+            // 「11/2」会折行。跨月那一周也不歧义：表头有周几，日号 30/31/1 连着读就是。
+            TextView date = new TextView(getContext());
+            date.setText(String.valueOf(day.getDayOfMonth()));
+            date.setTextSize(10);
+            date.setGravity(Gravity.CENTER);
+            date.setTextColor(getContext().getColor(work ? R.color.white : R.color.sub));
+            if (work) {
+                // 白字压紫，日号要比「班」退一档才不抢；不另立色值，
+                // 用 alpha 跟底色自洽，深浅色模式都不用再配一次。
+                date.setAlpha(0.78f);
+            }
+            LayoutParams dateLp = new LayoutParams(
+                    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            dateLp.topMargin = dp(1);
+            cell.addView(date, dateLp);
 
             LayoutParams lp = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
             if (i > 0) lp.setMarginStart(dp(GAP_DP));

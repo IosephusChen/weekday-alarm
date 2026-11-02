@@ -1,14 +1,14 @@
 {
-  "versionCode": 256,
-  "versionName": "1.5.0",
-  "published": "2026-11-02",
-  "title": "班表页看清了，紫色也退了一步",
+  "versionCode": 257,
+  "versionName": "1.6.0",
+  "published": "2026-11-03",
+  "title": "闹钟能跟着班表换时间了",
   "notes": [
-    "「休」那格不再是白白的洞，换成淡灰实心，和「班」一眼分得清",
-    "两页的结论条改成浅靛底加「现在」徽章，不再和设置项长一个样",
-    "表头标出「今天」；两周视图的「这一周」加重，不再和表头的灰字混在一起",
-    "「班」胶囊从实心紫改成浅底靛字；顺手修好节假日开关不改口的老毛病"
+    "编辑页多了「时间跟随班表」：早班 7:30、晚班 19:30，一条跟着走",
+    "列表里的时间改成当天真实时刻，规则后面标「跟班表」",
+    "班表那天休息或没填时间，退回自己的时间，不会整天不响",
+    "只有「我的班表」是轮班且填过时间，这个开关才出现"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.5.0/weekday-alarm-1.5.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.5.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.6.0/weekday-alarm-1.6.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.6.0"
 }

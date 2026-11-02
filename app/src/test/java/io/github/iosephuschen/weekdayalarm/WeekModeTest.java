@@ -146,7 +146,10 @@ public class WeekModeTest {
 
     @Test
     public void describeText() {
-        assertEquals("双休 · 休2天",
+        // R4（v1.6.0）：双休不再补「· 休2天」。「双休」本身没有歧义，
+        // 而「单休」有（休周六还是周日），所以那两条必须带哪天。
+        // 对齐的是信息量，不是「X休 · Y」这个形式。
+        assertEquals("双休",
                 WeekSchedule.describe(rule(WeekSchedule.Mode.DOUBLE_REST), SAT));
         assertEquals("单休 · 周日休",
                 WeekSchedule.describe(rule(WeekSchedule.Mode.SINGLE_REST_SUN), SAT));

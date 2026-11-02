@@ -225,9 +225,10 @@ public class WeekScheduleActivityTest {
     public void mondayOfWeek_isSameWeek() {
         LocalDate mon = WeekScheduleActivity.mondayOfWeek();
         assertEquals(DayOfWeek.MONDAY, mon.getDayOfWeek());
-        assertEquals(0, Math.abs(java.time.temporal.ChronoUnit.DAYS.between(
-                mon, LocalDate.now())));
-        assertTrue("今天必须落在本周一到周日之间",
-                !LocalDate.now().isBefore(mon) && LocalDate.now().isBefore(mon.plusDays(7)));
+        // 原来这里断言「今天与周一相差 0 天」，即只在周一跑得通——周二到周日全红。
+        // 要验的是「今天落在本周一到周日之间」，那是一个区间，不是一个点
+        long off = java.time.temporal.ChronoUnit.DAYS.between(mon, LocalDate.now());
+        assertTrue("今天应落在本周一到周日之间，实际偏移 " + off + " 天",
+                off >= 0 && off < 7);
     }
 }

@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -100,6 +101,10 @@ final class AlarmRowRenderer {
                 probe.getPaint().measureText("88:88"))) + 1;
         int timeGap = (int) (14 * density);
 
+        // v1.6.0：时间跟随班表的闹钟，每天的时刻不同，列表要按「今天实际会响的」画。
+        // 只在渲染前读一次：这是模态改动不到的东西，每行反序列化一遍浪费
+        final WeekSchedule.Rule globalRule = Prefs.getRule(activity);
+
         if (alarms.isEmpty()) {
             LinearLayout box = new LinearLayout(activity);
             box.setOrientation(LinearLayout.VERTICAL);
@@ -178,7 +183,10 @@ final class AlarmRowRenderer {
             // 左侧：时间大字，是这一行的主视觉。
             // 用 sans-serif-medium 而不是 BOLD：粗体在小字号上糊成一团，中等字重反而更清晰。
             TextView time = new TextView(activity);
-            time.setText(a.timeText());
+            // 跟随班表的按今天实际时刻画：还写着闹钟自己的 07:30 而实际 19:30 响，
+            // 是这个功能最容易让人以为「没生效」的地方
+            LocalTime when = a.timeOn(today, globalRule);
+            time.setText(TimeText.clock(when.getHour(), when.getMinute()));
             // v0.74.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
             // 「灰不灰」这一个维度表达有没有开就够了
             //
@@ -227,6 +235,18 @@ final class AlarmRowRenderer {
             // 不加图标、不占新的横向空间。停用的闹钟整行已经是灰的，那个「静音」
             // 也一起灰：本来就不响的闹钟，不值得再强调一次
             SpannableStringBuilder line = new SpannableStringBuilder(base);
+            // v1.6.0：时间跟随班表。和「静音」同一套写法——接在规则后面，不另起一行、
+            // 不加图标。写在「静音」之前：先说什么时候响，再说响不响
+            if (a.followSchedule) {
+                line.append(" · ");
+                int from = line.length();
+                line.append("跟班表");
+                if (a.enabled) {
+                    line.setSpan(new ForegroundColorSpan(
+                                    ContextCompat.getColor(activity, R.color.indigo)),
+                            from, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
             if (a.silent) {
                 line.append(" · ");
                 int from = line.length();
@@ -290,7 +310,9 @@ final class AlarmRowRenderer {
             SwitchKit.style(activity, sw);
             // 无障碍（v0.45.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条；
             // v0.90.0 再加「静音」——否则视障用户看不出这条闹钟到点不会响
-            sw.setContentDescription(a.timeText() + " " + a.label
+            sw.setContentDescription(TimeText.clock(when.getHour(), when.getMinute())
+                    + " " + a.label
+                    + (a.followSchedule ? " 跟班表" : "")
                     + (a.silent ? " 静音" : "") + " 闹钟开关");
             // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
             sw.setChecked(a.enabled);

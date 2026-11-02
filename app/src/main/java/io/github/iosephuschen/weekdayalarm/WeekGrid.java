@@ -33,6 +33,8 @@ public class WeekGrid extends LinearLayout {
 
     private static final int GAP_DP = 4;
 
+    private final LinearLayout firstBox = new LinearLayout(getContext());
+    private final TextView firstLabel = new TextView(getContext());
     private final LinearLayout firstHead = new LinearLayout(getContext());
     private final LinearLayout firstCells = new LinearLayout(getContext());
     private final LinearLayout secondBox = new LinearLayout(getContext());
@@ -61,10 +63,18 @@ public class WeekGrid extends LinearLayout {
         LayoutParams cellsLp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         cellsLp.topMargin = dp(6);
 
+        // 第一周的标题只在两周时出现：七格本来就一行，「这一周」是废话。
+        // 但十四格里第二行标着「下一周」、第一行什么都没有，上下就不成对了——
+        // 十四格存在的意义就是对照，缺了标签只能靠数。
+        firstBox.setOrientation(VERTICAL);
+        styleLabel(firstLabel, "这一周");
+        firstLabel.setVisibility(GONE);
         firstHead.setOrientation(HORIZONTAL);
         firstCells.setOrientation(HORIZONTAL);
-        addView(firstHead, headLp);
-        addView(firstCells, cellsLp);
+        firstBox.addView(firstLabel);
+        firstBox.addView(firstHead, headLp);
+        firstBox.addView(firstCells, cellsLp);
+        addView(firstBox);
 
         secondBox.setOrientation(VERTICAL);
         secondBox.setVisibility(GONE);
@@ -72,9 +82,7 @@ public class WeekGrid extends LinearLayout {
         boxLp.topMargin = dp(16);
 
         TextView label = new TextView(c);
-        label.setText("下一周");
-        label.setTextColor(c.getColor(R.color.sub));
-        label.setTextSize(11);
+        styleLabel(label, "下一周");
         secondBox.addView(label);
 
         secondHead.setOrientation(HORIZONTAL);
@@ -84,6 +92,13 @@ public class WeekGrid extends LinearLayout {
         secondBox.addView(secondHead, lp2);
         secondBox.addView(secondCells, lp2);
         addView(secondBox, boxLp);
+    }
+
+    /** 两周分组的小标题（「这一周」「下一周」），与表头同一档字号。 */
+    private void styleLabel(TextView tv, String text) {
+        tv.setText(text);
+        tv.setTextColor(getContext().getColor(R.color.sub));
+        tv.setTextSize(11);
     }
 
     /**
@@ -127,6 +142,7 @@ public class WeekGrid extends LinearLayout {
     private void render() {
         boolean twoWeeks = days.length > 7;
         secondBox.setVisibility(twoWeeks ? VISIBLE : GONE);
+        firstLabel.setVisibility(twoWeeks ? VISIBLE : GONE);
 
         fillHead(firstHead, 0);
         fillCells(firstCells, 0);

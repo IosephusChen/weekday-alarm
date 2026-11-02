@@ -60,34 +60,31 @@ public class AlarmCycleEditorTest {
     /** 7 天扩到 14 天：按「前一轮重复」补，不能补 0——补 0 就等于半张表空了。 */
     @Test
     public void resizeCycle_repeatsPreviousRound() {
-        int[] len = {7};
-        long[] mask = {0b0011111L};   // 周一到周五
+        ScheduleSheet.Seed s = new ScheduleSheet.Seed(7, MON, 0b0011111L, null, false);
 
-        AlarmCycleEditor.resizeCycle(len, mask, 14);
+        ScheduleSheet.resize(s, 14);
 
-        assertEquals(14, len[0]);
-        assertEquals("两周都要有班", 0b00111110011111L, mask[0]);
+        assertEquals(14, s.len);
+        assertEquals("两周都要有班", 0b00111110011111L, s.mask);
     }
 
     /** 缩短时保留前几天的形状，多余的直接丢掉。 */
     @Test
     public void resizeCycle_truncatesWhenShrinking() {
-        int[] len = {14};
-        long[] mask = {0b00000010011111L};   // 第 8 天也上班（跨两周）
+        ScheduleSheet.Seed s = new ScheduleSheet.Seed(14, MON, 0b00000010011111L, null, false);
 
-        AlarmCycleEditor.resizeCycle(len, mask, 4);
+        ScheduleSheet.resize(s, 4);
 
-        assertEquals(4, len[0]);
-        assertEquals("只留前四天", 0b1111L, mask[0]);
+        assertEquals(4, s.len);
+        assertEquals("只留前四天", 0b1111L, s.mask);
     }
 
     @Test
     public void resizeCycle_ignoresSameLength() {
-        int[] len = {4};
-        long[] mask = {0b0011L};
-        AlarmCycleEditor.resizeCycle(len, mask, 4);
-        assertEquals(4, len[0]);
-        assertEquals(0b0011L, mask[0]);
+        ScheduleSheet.Seed s = new ScheduleSheet.Seed(4, MON, 0b0011L, null, false);
+        ScheduleSheet.resize(s, 4);
+        assertEquals(4, s.len);
+        assertEquals(0b0011L, s.mask);
     }
 
     // ================= 新建时的初值 =================

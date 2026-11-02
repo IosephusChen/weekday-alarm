@@ -214,6 +214,36 @@ public class CycleScheduleTest {
         assertEquals("每周固定 · 休2天", WeekSchedule.describe(r, START));
     }
 
+    /**
+     * 七天全上班（v1.4.0）：说「休0天」既不通顺，也没说清后果——这张表意味着闹钟天天响。
+     * 从双休出发点两下就能到这个状态，结论条不能还装作这是种正常制度。
+     */
+    @Test
+    public void describe_allWorkSaysEveryDay() {
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(7, 0b1111111L, START, null, false);
+        assertEquals("每天都要上班", WeekSchedule.describe(r, START));
+    }
+
+    /**
+     * 十四天里两周排得一模一样，本质就是「每周固定」（v1.4.0）。
+     *
+     * <p>按存储结构说成「14 天一轮 · 上10休4」等于把自己的实现细节当成用户的班型；
+     * 而且在「我的班表」里勾一下「两周不一样」——一格都没点——结论条会当场变脸。
+     */
+    @Test
+    public void describe_repeatedHalvesCollapseToOneWeek() {
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(14, 0b00111110011111L, START, null, false);
+        assertEquals("每周固定 · 休2天", WeekSchedule.describe(r, START));
+    }
+
+    /** 两周真不一样时才该说 N 天一轮。 */
+    @Test
+    public void describe_differentHalvesStayRotation() {
+        // 第 1 周双休（上5休2），第 2 周单休（上6休1）
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(14, 0b01111110011111L, START, null, false);
+        assertEquals("14 天一轮 · 上11休3", WeekSchedule.describe(r, START));
+    }
+
     // ================= 与原有四种模式互不影响 =================
 
     @Test

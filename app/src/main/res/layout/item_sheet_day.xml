@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 循环编辑器里的一行（v1.1.1 重排）。
+<!-- 「N 天一轮」编辑表里的一行（v1.4.0）。
 
-     v1.1.0：「第 1 天 · 周一            00:00 ›」——三处同色同号的文字，
-     分不出哪行上班哪行休息，也看不出「今天」落在哪一行。
-
-     现在从左到右：状态点（有颜色 / 浅灰）→ 标题（含「今天」小标签）→ 值 → 箭头。
-     点用颜色表达班休，不靠读字；分隔线缩进到文字左边缘，与标题对齐，
-     扫视时视线不会被线头拽回最左边。 -->
+     从左到右：标题（含「今天」小标签）→ 时刻（仅全局那张有）→ 状态胶囊。
+     上一版这里是「圆点 + 标题 + 值 + ›」：圆点和值说的是同一件事，而灰圆点读起来
+     像「不可点」，可那行恰恰是唯一能点的地方。现在状态做成胶囊，颜色与引导页、
+     我的班表的格子一致（上 = indigo 实心，休 = 白底描边），点整行切换或开单日弹层。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,23 +18,17 @@
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
+        android:minHeight="50dp"
         android:orientation="horizontal"
         android:paddingStart="16dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="14dp">
-
-        <View
-            android:id="@+id/dot"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_dot_work" />
+        android:paddingTop="9dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="9dp">
 
         <TextView
             android:id="@+id/tv_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
             android:text="周一"
             android:textColor="@color/ink"
             android:textSize="14sp" />
@@ -61,28 +53,40 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
+        <!-- 只有全局那张表有：这一天几点响。空的时刻不占位，胶囊仍然贴右边。 -->
         <TextView
-            android:id="@+id/tv_value"
+            android:id="@+id/tv_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="休息"
+            android:layout_marginEnd="10dp"
+            android:text="07:30"
             android:textColor="@color/sub"
-            android:textSize="14sp" />
+            android:textSize="13sp"
+            android:visibility="gone" />
 
         <TextView
+            android:id="@+id/tv_state"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="›"
-            android:textColor="@color/sub"
-            android:textSize="16sp" />
+            android:background="@drawable/bg_day_cell_work"
+            android:gravity="center"
+            android:minWidth="40dp"
+            android:minHeight="28dp"
+            android:paddingStart="9dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="9dp"
+            android:paddingBottom="4dp"
+            android:text="班"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
     <View
         android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginStart="34dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="14dp"
         android:background="@color/line" />
 </LinearLayout>

@@ -390,13 +390,30 @@ public final class WeekSchedule {
             case SINGLE_REST_SAT:
                 return "单休 · 周六休";
             case CYCLE: {
-                int work = rule.cycleWorkDays();
-                int rest = rule.cycleLen - work;
+                // v1.4.0：前后半段完全相同的偶数周期，按半段说。
+                // 14 天里两周排得一模一样，本质上就是「每周固定」；按存储结构说成
+                // 「14 天一轮 · 上10休4」等于把自己的实现细节当成了用户的班型。
+                // 更糟的是「我的班表」里勾一下「两周不一样」——一格都没点，只是动了个
+                // 视图开关——结论条会当场从「双休」变成「14 天一轮」，用户以为班表被改了。
+                int len = Math.max(1, rule.cycleLen);
+                long mask = rule.cycleMask & Rule.maskOf(len);
+                while (len > 1 && len % 2 == 0) {
+                    int half = len / 2;
+                    long low = mask & Rule.maskOf(half);
+                    if (low != ((mask >>> half) & Rule.maskOf(half))) break;
+                    len = half;
+                    mask = low;
+                }
+                int work = Long.bitCount(mask);
+                int rest = len - work;
                 if (work == 0) return "每天都休";
+                // 七天全上班：说「休0天」既不通顺，也没说清后果（闹钟天天响）。
+                // 从双休点两下就能走到这儿，必须说人话。
+                if (rest == 0) return "每天都要上班";
                 // v1.3.0：术语收口。「自定义」「轮班」两个词从界面上退场——
                 // 前者叫「每周固定」，后者按它本来的形状叫「N 天一轮」。
-                if (rule.cycleLen == 7) return "每周固定 · 休" + rest + "天";
-                return rule.cycleLen + " 天一轮 · 上" + work + "休" + rest;
+                if (len == 7) return "每周固定 · 休" + rest + "天";
+                return len + " 天一轮 · 上" + work + "休" + rest;
             }
             case BIG_SMALL:
             default:

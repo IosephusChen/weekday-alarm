@@ -1,14 +1,14 @@
 {
-  "versionCode": 253,
-  "versionName": "1.3.0",
+  "versionCode": 255,
+  "versionName": "1.4.0",
   "published": "2026-11-02",
-  "title": "班表和闹钟都少了一道选择题",
+  "title": "两个班表合成一张，三处口误一起改",
   "notes": [
-    "设置里「周休制度」换成整页「我的班表」：进去就是你自己那张表，点格子就改",
-    "新建闹钟的重复规则从六张卡收成三张，「仅一次」「自己排一周」挪进「其他」",
-    "闹钟不再单独按 N 天一轮：那种班只在「我的班表」设一份，免得两条各说各话",
-    "术语收口：自定义改叫「每周固定」，轮班改叫「N 天一轮」"
+    "「勾哪天上班」和「按 N 天一轮」合成一张表：改一处两边都生效，不再各写一套",
+    "两张表的行距与卡片重排：七天不用滚就能看全，状态改成「班 / 休」小胶囊",
+    "七天全上班原来写「每周固定 · 休0天」，改成「每天都要上班」并补一句后果",
+    "十四格里第一行补「这一周」；勾「两周不一样」不再把结论条改成「14 天一轮」"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.3.0/weekday-alarm-1.3.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.3.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.4.0/weekday-alarm-1.4.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.4.0"
 }

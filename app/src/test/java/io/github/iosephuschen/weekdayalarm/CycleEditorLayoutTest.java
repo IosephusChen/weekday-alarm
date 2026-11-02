@@ -39,11 +39,11 @@ public class CycleEditorLayoutTest {
     @Test
     public void allCycleLayoutsInflate() {
         int[] ids = {
-                R.layout.dialog_cycle,
+                R.layout.dialog_schedule_sheet,
                 R.layout.dialog_cycle_day,
                 R.layout.dialog_pick_number,
                 R.layout.dialog_pick_date,
-                R.layout.item_cycle_day,
+                R.layout.item_sheet_day,
         };
         for (int id : ids) {
             View v = LayoutInflater.from(c).inflate(id, null);
@@ -52,11 +52,16 @@ public class CycleEditorLayoutTest {
     }
 
     @Test
-    public void dayRowHasStatusDotAndTodayTag() {
-        View row = LayoutInflater.from(c).inflate(R.layout.item_cycle_day, null);
-        assertNotNull("缺少班休状态点", row.findViewById(R.id.dot));
+    public void dayRowHasStatePillAndTodayTag() {
+        View row = LayoutInflater.from(c).inflate(R.layout.item_sheet_day, null);
+        TextView state = row.findViewById(R.id.tv_state);
+        assertNotNull("缺少班休状态胶囊", state);
+        assertTrue("胶囊要有字（班 / 休），不能是个空块", state.getText().length() > 0);
         // 默认是 GONE：只有落在今天那一行才显示
         assertNotNull(row.findViewById(R.id.tv_tag_today));
+        // 时刻列默认 GONE：一张闹钟只有一个时刻，那张表不显示这一列，
+        // 由 ScheduleSheet 按 Role.withTimes 打开
+        assertNotNull(row.findViewById(R.id.tv_time));
     }
 
     @Test

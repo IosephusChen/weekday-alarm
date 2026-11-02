@@ -78,6 +78,21 @@ public class WeekScheduleActivityTest {
         return ((SwitchCompat) a.findViewById(id)).isChecked();
     }
 
+    /** 树里有没有某个可见的文字（用来盯 WeekGrid 自己 new 出来的分组标题）。 */
+    private static boolean hasVisibleText(View root, String want) {
+        if (root == null || root.getVisibility() != View.VISIBLE) return false;
+        if (root instanceof TextView) {
+            return want.contentEquals(((TextView) root).getText());
+        }
+        if (root instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                if (hasVisibleText(g.getChildAt(i), want)) return true;
+            }
+        }
+        return false;
+    }
+
     /** 进来就该看得见自己那张表，而不是先做一道「你是哪种制度」的选择题。 */
     @Test
     public void opensWithVerdictAndSevenCells() {
@@ -89,6 +104,8 @@ public class WeekScheduleActivityTest {
                 text(a, R.id.tv_verdict).contains("双休"));
         assertEquals("默认只看一周", 7, grid(a).dayCount());
         assertEquals(View.GONE, a.findViewById(R.id.card_rotation).getVisibility());
+        // 七格只有一行，「这一周」是废话，不该出现
+        assertFalse("七格时不该有「这一周」标签", hasVisibleText(grid(a), "这一周"));
     }
 
     /** 点周三成休：不像任何具名制度，落 7 天周期，并且入口算「按周」。 */
@@ -124,6 +141,9 @@ public class WeekScheduleActivityTest {
 
         assertEquals("勾上后长成两周", 14, grid(a).dayCount());
         assertTrue("开关应保持勾选", checked(a, R.id.sw_biweekly));
+        // 十四格存在的意义是上下对照，第一行没标签就只能靠数
+        assertTrue("第一行要有「这一周」标签", hasVisibleText(grid(a), "这一周"));
+        assertTrue("第二行标签还在", hasVisibleText(grid(a), "下一周"));
     }
 
     /** 第二周周六也上班 = 标准大小周，anchor 落在本周六（与旧弹窗同一套算法）。 */

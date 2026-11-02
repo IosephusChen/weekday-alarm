@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「N 天一轮」的编辑表（v1.4.0）。
+
+     这张布局取代了 dialog_cycle.xml 与 dialog_alarm_cycle.xml 两份近重复文件：
+     全局「我的班表 → 按 N 天一轮」和一条闹钟的「自己排一周 / 轮班」本来是同一件事，
+     只是前者每天多一个时刻。版式、ID、构建逻辑现在只有一份，代码按 Role 决定藏哪几块。
+
+     与上一版的差别（对着真机截图改的）：
+     ① 周期 / 起点两行原来是两张独立白卡，各 56dp、中间还隔着 10dp；合成一张两行的卡，
+        省下 20dp——7 天的表在弹窗里本来要滚才能看到周日，就是被这些空隙挤掉的；
+     ② 统计从一行灰字（和副标题同级，看着像说明）改成一条浅底结论条，一眼能落住；
+     ③ 列表行的左侧圆点删掉：它跟右边的开关表达同一件事，且「灰点」读起来像不可点；
+     ④ 状态改用「班 / 休」小胶囊，与引导页、我的班表的格子同一套颜色，不再用 Switch——
+        一条 N 天的表本质是排班，不是一组开关。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="4dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/tv_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:lineSpacingMultiplier="1.35"
+        android:text="第 1 天定下来，往后按 N 天一轮排。"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
+    <!-- 周期 + 起点：一张卡两行。只有「轮班」露出这两行，
+         「自定义」两者都锁死（7 天、本周一），露出来反而让人以为能改。 -->
+    <LinearLayout
+        android:id="@+id/box_params"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_dialog_row"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/row_len"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="46dp"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="11dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="11dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="循环周期"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_len"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7 天"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="›"
+                android:textColor="@color/sub"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="14dp"
+            android:background="@color/line" />
+
+        <LinearLayout
+            android:id="@+id/row_start"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="46dp"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="11dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="11dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="第 1 天是"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_start"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="今天"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="›"
+                android:textColor="@color/sub"
+                android:textSize="16sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 节假日开关 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_dialog_row"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="11dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="法定节假日放假"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_holiday_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="春节、国庆会按放假跳过"
+                android:textColor="@color/sub"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- SwitchCompat 而不是 <Switch>：只有它吃得到 SwitchKit 的 tint，
+             ROM 自带的「关 = 黑拇指」才不会把这一行画成整张卡里最重的元素。 -->
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sw_holiday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- 结论条：一行字说清这张表上几天休几天。62 天的表不靠用户自己数。
+         用 section_bg 而不是白卡——弹窗本身就是白的，白压白等于没有这一条。 -->
+    <TextView
+        android:id="@+id/tv_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_sheet_summary"
+        android:letterSpacing="0.02"
+        android:paddingStart="14dp"
+        android:paddingTop="9dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="9dp"
+        android:text="共 7 天 · 上班 5 天 · 休息 2 天"
+        android:textColor="@color/ink"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <!-- 逐天列表：最多 62 行，必须能滚。
+         高度由 ScheduleSheet 按实际内容夹到 [1 行, 6 行]，7 天时不留空档。 -->
+    <ScrollView
+        android:id="@+id/scroll_days"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/list_days"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/tv_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="点某一天改时间，或者标成休息。"
+        android:textColor="@color/sub"
+        android:textSize="11sp" />
+</LinearLayout>

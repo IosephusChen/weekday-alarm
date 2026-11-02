@@ -110,12 +110,25 @@ public class WeekScheduleActivity extends AppCompatActivity {
         grid.setVisibility(View.VISIBLE);
         rowBiweekly.setVisibility(View.VISIBLE);
         rowRotation.setVisibility(View.VISIBLE);
-        tvHint.setText("点格子就改。改完立刻重排，日历、闹钟、小部件一起跟着变。");
 
         WeekSchedule.Mode mode = Prefs.getWeekMode(this);
         biweekly = mode == WeekSchedule.Mode.BIG_SMALL
                 || (mode == WeekSchedule.Mode.CYCLE && Prefs.getCycleLen(this) == 14);
         days = ScheduleInfer.expand(Prefs.getRule(this), mondayOfWeek(), biweekly ? 14 : 7);
+
+        // 七天全上班是个能点出来、后果又不小的状态（闹钟一年 365 天全响），
+        // 而它从双休出发只要点两下。结论条已经改口叫「每天都要上班」，
+        // 这行再补一句后果——提示语本来就是干这个的。
+        boolean anyRest = false;
+        for (boolean d : days) {
+            if (!d) {
+                anyRest = true;
+                break;
+            }
+        }
+        tvHint.setText(anyRest
+                ? "点格子就改。改完立刻重排，日历、闹钟、小部件一起跟着变。"
+                : "这张表没有休息日，闹钟每天都会响。点一格改成休息。");
 
         // 回填开关时别再触发一次监听，否则刚设的班表会被「重新反推」一遍
         swBiweekly.setOnCheckedChangeListener(null);

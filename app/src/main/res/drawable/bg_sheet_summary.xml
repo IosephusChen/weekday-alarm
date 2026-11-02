@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「N 天一轮」表里的结论条底色（v1.4.0）。
+
+     用 section_bg 而不是 card：这张条贴在白色弹窗里，白压白看不出边界，
+     而它要表达的是一句话结论（共 14 天 · 上班 10 天 · 休息 4 天），
+     得有底色才能从上面几张白卡里跳出来。section_bg 日夜各有一版
+     （日 #F7F8FD / 夜 #242840），不用另建 values-night。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/section_bg" />
+    <corners android:radius="@dimen/radius_row" />
+</shape>

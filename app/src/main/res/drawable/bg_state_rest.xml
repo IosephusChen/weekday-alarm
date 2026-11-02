@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「N 天一轮」表里的「休」胶囊（v1.4.0）。
+
+     为什么不直接复用 bg_day_cell_rest：那张是给格子用的——格子坐在浅灰页面
+     （@color/bg）上，白底 + 发丝边看得见。这张表坐在白色弹窗里，白压白，
+     「休」只剩一根几乎看不见的线，于是整行里五天的实心紫和一个空框并排，
+     轻重全歪。改成 line 色填充：白天是淡灰蓝、夜里是比卡片略亮一档的靛蓝灰，
+     两边都能读出「这里是关着的」，又不会抢「班」的那块实心紫。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/line" />
+    <corners android:radius="@dimen/radius_chip" />
+</shape>

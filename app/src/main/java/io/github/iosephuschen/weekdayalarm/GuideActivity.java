@@ -84,14 +84,16 @@ public class GuideActivity extends AppCompatActivity {
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
     /** 导入旧备份（v0.57.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
-    private LinearLayout rowWeekBig, rowSmallRest, rowSingleDay;
-    private TextView optBig, optSmall, optSmallRestSun, optSmallRestSat, optRestSun, optRestSat;
-    /** 自定义 / 轮班两张卡的副标题（v1.1.1）：显示当前设成什么样。 */
-    private TextView tvCycleSub;
-    private TextView tvCustomSub;
-    private final List<View> modeCards = new ArrayList<>();
-    /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
-    private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
+    private LinearLayout boxWeek, rowWeekHead, gridWeek, boxWeek2, rowWeek2Head, gridWeek2;
+    private LinearLayout cardRotation, rowBiweekly;
+    private View cbBiweekly;
+    private TextView tvWeekSub, tvRotationTitle, tvRotationSub, tvBiweeklyHint, linkRotation;
+    /** 这一周（或两周）的班：true = 上班。v1.2.0 */
+    private boolean[] weekDays;
+    /** 是否展开第二周（隔周换一次）。和 {@link #weekDays} 一起决定格子画几行。 */
+    private boolean biweekly;
+    /** 当前是不是「轮班」形态：七格表达不了 N 天一轮的表，换成一行摘要。 */
+    private boolean rotation;
 
     private TextView tvVolume, tvFade, tvVibrate, tvSnooze, tvPreNotice;
     /** 盯着系统闹钟音量（v0.91.1），见 {@link VolumeWatcher}。 */
@@ -99,6 +101,7 @@ public class GuideActivity extends AppCompatActivity {
     /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow, ivRingChevron, tvRingSummary;
+    private TextView tvRepeat;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
 
@@ -120,17 +123,6 @@ public class GuideActivity extends AppCompatActivity {
         btnImport = findViewById(R.id.btn_import);
         importLauncher = BackupImporter.register(this, this::onImportedFromBackup, true);
         tvTime = findViewById(R.id.tv_time);
-        rowWeekBig = findViewById(R.id.row_weekbig);
-        optBig = findViewById(R.id.opt_big);
-        optSmall = findViewById(R.id.opt_small);
-        rowSmallRest = findViewById(R.id.row_smallrest);
-        optSmallRestSun = findViewById(R.id.opt_smallrest_sun);
-        optSmallRestSat = findViewById(R.id.opt_smallrest_sat);
-        rowSingleDay = findViewById(R.id.row_singleday);
-        optRestSun = findViewById(R.id.opt_rest_sun);
-        tvCycleSub = findViewById(R.id.tv_cycle_sub);
-        tvCustomSub = findViewById(R.id.tv_custom_sub);
-        optRestSat = findViewById(R.id.opt_rest_sat);
 
         stNotif = findViewById(R.id.st_notif);
         stFsi = findViewById(R.id.st_fsi);
@@ -148,7 +140,6 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
         syncRingArrow(false);   // 默认收起：箭头先指下
 
-        bindModeCards();
         bindTime();
         bindRing();
         bindPermissions();
@@ -188,7 +179,18 @@ public class GuideActivity extends AppCompatActivity {
         }
         flipper.setDisplayedChild(index);
 
-        syncModeUi();
+        // v1.2.0：全新安装按双休起步。
+        //
+        // Prefs 的缺省值仍然是大小周——那是给老用户升级用的（没有这个键时必须保持
+        // 原来的排班），但新用户手里没有历史班表，而双休是最常见的形状。
+        // 让他第一眼看到一张对得上的七天表，比看到「大周 / 小周」两行省事得多。
+        // 只在从没走完引导、且模式还是缺省值时才改，不会覆盖用户点出来的结果。
+        if (!Prefs.isOnboardDone(this)
+                && Prefs.getWeekMode(this) == WeekSchedule.Mode.BIG_SMALL) {
+            Prefs.setWeekMode(this, WeekSchedule.Mode.DOUBLE_REST);
+        }
+
+        bindWeekGrid();
         updateTimeText();
         renderDots();
         updateChrome();
@@ -238,142 +240,271 @@ public class GuideActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    // ================= 第 1 页：周休制度 =================
+    // ================= 第 1 页：对班表（v1.2.0 重做） =================
 
-    private void bindModeCards() {
-        addModeCard(R.id.mode_bigsmall, WeekSchedule.Mode.BIG_SMALL);
-        addModeCard(R.id.mode_double, WeekSchedule.Mode.DOUBLE_REST);
-        // v0.39.0：周六休 / 周日休合成一张卡，休哪天交给下面的子选项。
-        // 卡本身用 SINGLE_REST_SUN 代表「单休这一组」，真正写哪个由 selectMode 决定。
-        addModeCard(R.id.mode_single, WeekSchedule.Mode.SINGLE_REST_SUN);
-        // v1.1.0：自定义 / 轮班。这张卡不直接改模式——它要先把周期和逐日班次问清楚，
-        // 所以点开编辑器，等那边「确定」再落盘（CycleEditor 里会 setWeekMode）。
-        //
-        // v1.1.1：两张卡都走编辑器，但都**不进 modeCards**——它们共用 Mode.CYCLE，
-        // 放进去会在 syncModeUi 的循环里被同一条件点亮，界面上两张卡同时选中。
-        // 选中态按 cycleKind 单独判，见下面的 syncModeUi。
-        findViewById(R.id.mode_custom).setOnClickListener(v ->
-                CycleEditor.show(this, Prefs.CYCLE_KIND_WEEK, this::syncModeUi));
-        findViewById(R.id.mode_cycle).setOnClickListener(v ->
-                CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, this::syncModeUi));
+    /**
+     * 绑定第一页。
+     *
+     * <p>v1.2.0 把「五张制度卡」换成了「七格班表」。旧版让用户在一排术语里挑一个，
+     * 而很多人答不上来自己属于哪一类——上二休二的护士看到「大小周 / 双休 / 单休 /
+     * 自定义 / 轮班」根本不知道点哪个，点「轮班」还要回答「几天一轮」。
+     * 新版只问「这一周你哪几天上班」，点完由 {@link ScheduleInfer} 反推制度。
+     */
+    private void bindWeekGrid() {
+        boxWeek = findViewById(R.id.box_week);
+        rowWeekHead = findViewById(R.id.row_week_head);
+        gridWeek = findViewById(R.id.grid_week);
+        boxWeek2 = findViewById(R.id.box_week2);
+        rowWeek2Head = findViewById(R.id.row_week2_head);
+        gridWeek2 = findViewById(R.id.grid_week2);
+        cardRotation = findViewById(R.id.card_rotation);
+        rowBiweekly = findViewById(R.id.row_biweekly);
+        cbBiweekly = findViewById(R.id.cb_biweekly);
+        tvWeekSub = findViewById(R.id.tv_week_sub);
+        tvRotationTitle = findViewById(R.id.tv_rotation_title);
+        tvRotationSub = findViewById(R.id.tv_rotation_sub);
+        tvBiweeklyHint = findViewById(R.id.tv_biweekly_hint);
+        linkRotation = findViewById(R.id.link_rotation);
 
-        optBig.setOnClickListener(v -> setWeekBig(true));
-        optSmall.setOnClickListener(v -> setWeekBig(false));
-        // v0.92.1：大小周的「小周休哪天」原来只有设置页能改，引导页漏了这一项
-        optSmallRestSun.setOnClickListener(v -> setSmallRestDay(true));
-        optSmallRestSat.setOnClickListener(v -> setSmallRestDay(false));
-        optRestSun.setOnClickListener(v -> setSingleRestDay(true));
-        optRestSat.setOnClickListener(v -> setSingleRestDay(false));
-    }
+        cardRotation.setOnClickListener(v -> openRotation());
+        rowBiweekly.setOnClickListener(v -> setBiweekly(!biweekly));
+        linkRotation.setOnClickListener(v -> {
+            if (rotation) backToWeek();
+            else openRotation();
+        });
 
-    private void addModeCard(int id, WeekSchedule.Mode mode) {
-        View card = findViewById(id);
-        modeCards.add(card);
-        cardModes.add(mode);
-        card.setOnClickListener(v -> selectMode(mode));
+        reloadWeek();
     }
 
     /**
-     * 选中一种制度。
+     * 从 Prefs 重新展开格子。
      *
-     * <p>「单休」那张卡不绑定具体休哪天：点它沿用用户已经选过的那天，
-     * 第一次点则按「休周日」起步（国内绝大多数单休如此），再在子选项里改。
-     * 若写死成某一种，重看引导的老用户会被悄悄改掉排班。
+     * <p>导入备份、从轮班切回按周、从设置页改了班表再回来，都要走它——
+     * 页面上任何一个「班表可能变了」的时机都调这个，不要在别处自己拼格子。
      */
-    private void selectMode(WeekSchedule.Mode mode) {
-        if (mode == WeekSchedule.Mode.SINGLE_REST_SUN) {
-            mode = currentSingleMode();
+    private void reloadWeek() {
+        rotation = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
+                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
+
+        // 轮班：七格表达不了 N 天一轮的表，换一行摘要 + 编辑入口
+        cardRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
+        boxWeek.setVisibility(rotation ? View.GONE : View.VISIBLE);
+        rowBiweekly.setVisibility(rotation ? View.GONE : View.VISIBLE);
+        linkRotation.setText(rotation ? "改成按周排 ›" : "我是几天一轮的班（上二休二）›");
+        if (rotation) {
+            WeekSchedule.Rule rule = Prefs.getRule(this);
+            tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
+            tvRotationSub.setText(Prefs.isCycleHoliday(this)
+                    ? "春节、国庆按放假跳过" : "春节也照上班");
+            return;
         }
-        Prefs.setWeekMode(this, mode);
-        // 首次安装选大小周：默认按「本周是大周」起步，anchor 落在本周六。
-        // 重看引导时不覆盖用户已有的 anchor，否则会把排班整体挪一周。
-        if (mode == WeekSchedule.Mode.BIG_SMALL && !Prefs.isOnboardDone(this)) {
-            Prefs.setWeekBig(this, true);
-            Prefs.setAnchor(this, WeekSchedule.saturdayOf(LocalDate.now()));
-        }
-        syncModeUi();
+
+        WeekSchedule.Mode mode = Prefs.getWeekMode(this);
+        biweekly = mode == WeekSchedule.Mode.BIG_SMALL
+                || (mode == WeekSchedule.Mode.CYCLE && Prefs.getCycleLen(this) == 14);
+        weekDays = ScheduleInfer.expand(Prefs.getRule(this), mondayOfWeek(),
+                biweekly ? 14 : 7);
+        renderWeek();
     }
 
-    /** 已经是某种单休就沿用，否则按「休周日」起步。 */
-    private WeekSchedule.Mode currentSingleMode() {
-        WeekSchedule.Mode cur = Prefs.getWeekMode(this);
-        return cur == WeekSchedule.Mode.SINGLE_REST_SAT ? cur : WeekSchedule.Mode.SINGLE_REST_SUN;
+    /** 把 {@link #weekDays} 画到格子上：表头、格子、第二行显隐、勾选态、副标题。 */
+    private void renderWeek() {
+        buildHead(rowWeekHead, 0);
+        buildCells(gridWeek, 0);
+        boxWeek2.setVisibility(biweekly ? View.VISIBLE : View.GONE);
+        if (biweekly) {
+            buildHead(rowWeek2Head, 7);
+            buildCells(gridWeek2, 7);
+        }
+        cbBiweekly.setBackgroundResource(biweekly
+                ? R.drawable.bg_guide_check_on : R.drawable.bg_guide_check_off);
+
+        LocalDate mon = mondayOfWeek();
+        String span = md(mon) + " – " + md(mon.plusDays(biweekly ? 13 : 6));
+        if (biweekly) {
+            // 填完两周才说得出「已识别成什么」，说早了是在猜
+            WeekSchedule.Mode m = Prefs.getWeekMode(this);
+            String what = m == WeekSchedule.Mode.BIG_SMALL ? "已识别：大小周"
+                    : m == WeekSchedule.Mode.CYCLE ? "已按两周排" : "两周一样，按每周固定排";
+            tvBiweeklyHint.setText(what);
+            tvWeekSub.setText(span + " · 两周不一样就分开点");
+        } else {
+            tvBiweeklyHint.setText("大小周就勾这里");
+            tvWeekSub.setText(span + " · 点一下切换班和休");
+        }
     }
 
-    /** 单休休哪天：周日休 = 周六上班，周六休 = 周日上班。 */
-    private void setSingleRestDay(boolean sunday) {
-        Prefs.setWeekMode(this, sunday ? WeekSchedule.Mode.SINGLE_REST_SUN
-                : WeekSchedule.Mode.SINGLE_REST_SAT);
-        syncModeUi();
+    /** 表头：七个星期字。日期放在副标题里，格子里只留「班 / 休」，字才够大。 */
+    private void buildHead(LinearLayout box, int offset) {
+        box.removeAllViews();
+        LocalDate base = mondayOfWeek().plusDays(offset);
+        for (int i = 0; i < 7; i++) {
+            TextView tv = new TextView(this);
+            tv.setText(TimeText.week(base.plusDays(i)));
+            tv.setTextColor(getColor(R.color.sub));
+            tv.setTextSize(11);
+            tv.setGravity(android.view.Gravity.CENTER);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) lp.setMarginStart(dp(4));
+            tv.setLayoutParams(lp);
+            box.addView(tv);
+        }
     }
 
     /**
-     * 大小周的小周休哪天（v0.92.1）。
+     * 七个格子。
      *
-     * <p>和单休的「休哪天」不是一个东西：单休那天写进 mode（SINGLE_REST_SUN / _SAT），
-     * 大小周的小周休息日写在 {@code smallRestSat} 里，两者共用同一个键——
-     * 设置页就是这么存的，这里跟着它走，不另开一份，否则两处会各记各的。
+     * <p>高度走 {@code minHeight} + 上下 padding，不写死：字号放大时格子里那个
+     * 「班」不能被裁掉——{@code LargeFontLayoutTest} 会拦。
      */
-    private void setSmallRestDay(boolean sunday) {
-        Prefs.setSmallRestSat(this, !sunday);
-        syncModeUi();
-    }
+    private void buildCells(LinearLayout box, int offset) {
+        box.removeAllViews();
+        for (int i = 0; i < 7; i++) {
+            final int idx = offset + i;
+            boolean work = weekDays != null && idx < weekDays.length && weekDays[idx];
 
-    private void setWeekBig(boolean big) {
-        Prefs.setWeekBig(this, big);
-        LocalDate sat = WeekSchedule.saturdayOf(LocalDate.now());
-        Prefs.setAnchor(this, big ? sat : sat.minusWeeks(1));
-        syncModeUi();
-    }
+            TextView cell = new TextView(this);
+            cell.setText(work ? "班" : "休");
+            cell.setTextSize(14);
+            cell.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            cell.setGravity(android.view.Gravity.CENTER);
+            cell.setMinHeight(dp(46));
+            cell.setPadding(0, dp(12), 0, dp(12));
+            cell.setTextColor(getColor(work ? R.color.white : R.color.sub));
+            cell.setBackgroundResource(work
+                    ? R.drawable.bg_day_cell_work : R.drawable.bg_day_cell_rest);
+            cell.setContentDescription((work ? "上班：" : "休息：") + TimeText.week(
+                    mondayOfWeek().plusDays(idx)));
 
-    /** 把当前设置回写到界面上：选中哪张卡、两种子选项行显不显示、副标题写什么。 */
-    private void syncModeUi() {
-        WeekSchedule.Mode current = Prefs.getWeekMode(this);
-        for (int i = 0; i < modeCards.size(); i++) {
-            WeekSchedule.Mode card = cardModes.get(i);
-            boolean on = card == current
-                    || (card == WeekSchedule.Mode.SINGLE_REST_SUN && isSingleRest(current));
-            modeCards.get(i).setSelected(on);
-        }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) lp.setMarginStart(dp(4));
+            cell.setLayoutParams(lp);
 
-        boolean bigSmall = current == WeekSchedule.Mode.BIG_SMALL;
-        rowWeekBig.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
-        rowSmallRest.setVisibility(bigSmall ? View.VISIBLE : View.GONE);
-        if (bigSmall) {
-            // v0.91.9：以前读的是 Prefs.isWeekBig（上次点击时的快照）。重进引导页时
-            // 那个值可能已经是几周前的，会把「本周大/小周」高亮错。按今天现算。
-            boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(this));
-            optBig.setSelected(big);
-            optSmall.setSelected(!big);
-            boolean restSat = Prefs.isSmallRestSat(this);
-            optSmallRestSun.setSelected(!restSat);
-            optSmallRestSat.setSelected(restSat);
-        }
-
-        // 两张 CYCLE 卡：选中态按 cycleKind 分，副标题显示当前设成什么样
-        boolean cycle = current == WeekSchedule.Mode.CYCLE;
-        boolean weekKind = Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_WEEK;
-        findViewById(R.id.mode_custom).setSelected(cycle && weekKind);
-        findViewById(R.id.mode_cycle).setSelected(cycle && !weekKind);
-        tvCustomSub.setText(cycle && weekKind
-                ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
-                : "勾周一到周日，每周固定");
-        tvCycleSub.setText(cycle && !weekKind
-                ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
-                : "几天一轮，自己标哪天上班");
-
-        boolean single = isSingleRest(current);
-        rowSingleDay.setVisibility(single ? View.VISIBLE : View.GONE);
-        if (single) {
-            boolean sun = current == WeekSchedule.Mode.SINGLE_REST_SUN;
-            optRestSun.setSelected(sun);
-            optRestSat.setSelected(!sun);
+            cell.setOnClickListener(v -> toggleDay(idx));
+            box.addView(cell);
         }
     }
 
-    private static boolean isSingleRest(WeekSchedule.Mode mode) {
-        return mode == WeekSchedule.Mode.SINGLE_REST_SUN
-                || mode == WeekSchedule.Mode.SINGLE_REST_SAT;
+    /** 点一格：翻转 → 反推 → 落盘 → 重画。反推是幂等的，连点两下正好回到原样。 */
+    private void toggleDay(int idx) {
+        if (weekDays == null || idx < 0 || idx >= weekDays.length) return;
+        weekDays[idx] = !weekDays[idx];
+        applyInferred(inferOrCycle());
+        renderWeek();
+    }
+
+    /**
+     * 勾 / 取消「隔周换一次」。
+     *
+     * <p>勾上时不立刻反推：第二周是复制来的，两周一模一样，反推会判成「双休」，
+     * 第二行当场消失——用户根本来不及填。等到真正改了某一格（{@link #toggleDay}）
+     * 或取消勾选时才算。
+     */
+    private void setBiweekly(boolean on) {
+        if (on == biweekly || weekDays == null) return;
+        biweekly = on;
+        if (on) {
+            boolean[] d = new boolean[14];
+            for (int i = 0; i < 14; i++) d[i] = weekDays[i % 7];
+            weekDays = d;
+            applyInferred(inferOrCycle());
+            renderWeek();
+        } else {
+            boolean[] d = new boolean[7];
+            System.arraycopy(weekDays, 0, d, 0, 7);
+            weekDays = d;
+            applyInferred(ScheduleInfer.infer(d, mondayOfWeek()));
+            renderWeek();
+        }
+    }
+
+    /**
+     * 反推，但保留「隔周」这个意图。
+     *
+     * <p>用户勾了隔周、两周又填成一样，反推会说「这是双休」。直接照它落盘的话，
+     * 第二行下次进来就没了，他得重新勾一遍。所以这里把结果改写成 14 天周期——
+     * 班表内容不变，只是「两周一起看」这个视图被记住了。
+     */
+    private ScheduleInfer.Result inferOrCycle() {
+        ScheduleInfer.Result r = ScheduleInfer.infer(weekDays, mondayOfWeek());
+        if (!biweekly || r.mode == WeekSchedule.Mode.BIG_SMALL
+                || r.mode == WeekSchedule.Mode.CYCLE) {
+            return r;
+        }
+        long mask = 0L;
+        for (int i = 0; i < weekDays.length && i < 14; i++) {
+            if (weekDays[i]) mask |= (1L << i);
+        }
+        return new ScheduleInfer.Result(WeekSchedule.Mode.CYCLE,
+                Math.max(7, weekDays.length), mask, mondayOfWeek(), null, false);
+    }
+
+    /**
+     * 把反推结果写进 Prefs。
+     *
+     * <p>能匹配到具名制度就存具名的——日历上那句「大周 · 休2天」、月统计里
+     * 「本月休息 X 天」都靠它；匹配不到才落 CYCLE。
+     */
+    private void applyInferred(ScheduleInfer.Result r) {
+        switch (r.mode) {
+            case DOUBLE_REST:
+            case SINGLE_REST_SUN:
+            case SINGLE_REST_SAT:
+                Prefs.setWeekMode(this, r.mode);
+                break;
+            case BIG_SMALL:
+                Prefs.setWeekMode(this, r.mode);
+                if (r.anchor != null) Prefs.setAnchor(this, r.anchor);
+                Prefs.setSmallRestSat(this, r.smallRestSat);
+                break;
+            case CYCLE:
+            default: {
+                boolean wasCycle = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE;
+                Prefs.setWeekMode(this, WeekSchedule.Mode.CYCLE);
+                // 从格子反推出来的表，入口永远算「按周看」——
+                // 存成 ROTATION 的话，下次进来这一页会被判定成轮班、格子直接消失
+                Prefs.setCycleKind(this, Prefs.CYCLE_KIND_WEEK);
+                Prefs.setCycleLen(this, r.cycleLen);
+                Prefs.setCycleMask(this, r.cycleMask);
+                Prefs.setCycleStart(this, r.cycleStart);
+                // 按周排班的人多数跟着法定节假日走。只在第一次进入 CYCLE 时给默认，
+                // 之后保留用户在设置页改过的值
+                if (!wasCycle) Prefs.setCycleHoliday(this, true);
+                break;
+            }
+        }
+    }
+
+    /** 打开轮班编辑器（N 天一轮）。保存后回到这一页重新展开。 */
+    private void openRotation() {
+        CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, this::reloadWeek);
+    }
+
+    /**
+     * 从轮班切回按周：把当前轮班的头七天摊出来当起点。
+     *
+     * <p>不清空重来——用户点了「改成按周排」多半只是想换个视图看看，
+     * 直接把他上一周的班抹掉，他得从头再点七下。
+     */
+    private void backToWeek() {
+        boolean[] d = ScheduleInfer.expand(Prefs.getRule(this), mondayOfWeek(), 7);
+        applyInferred(ScheduleInfer.infer(d, mondayOfWeek()));
+        reloadWeek();
+    }
+
+    /** 这一周的周一。{@code with(MONDAY)} 落回同一个 ISO 周，周日不会跳到下周一。 */
+    static LocalDate mondayOfWeek() {
+        return LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+    }
+
+    private String md(LocalDate d) {
+        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
+    }
+
+    private int dp(int v) {
+        return Math.round(v * getResources().getDisplayMetrics().density);
     }
 
     // ================= 第 2 页：第一个闹钟 =================
@@ -386,6 +517,101 @@ public class GuideActivity extends AppCompatActivity {
                 (h, m) -> setTime(h, m));
         tvTime.setOnClickListener(pick);
         findViewById(R.id.btn_pick_time).setOnClickListener(pick);
+
+        // v1.2.0：这一条闹钟多久响一次。原来这一页只能改时间，想设
+        // 「只在工作日响」的人得走完四页、再回主界面找到它改一遍
+        tvRepeat = findViewById(R.id.tv_repeat);
+        findViewById(R.id.row_repeat).setOnClickListener(v -> pickRepeat());
+        refreshRepeatRow();
+    }
+
+    /**
+     * 引导页能让改的五种重复规则。
+     *
+     * <p>故意没有「仅一次」：一条只在某天响的闹钟，在这里设完第二天就失效了，
+     * 而用户此刻的意图是「把常用的那个定下来」。那个选项留在主界面。
+     */
+    private static final String[] REPEAT_NAMES = {
+            "仅上班日", "每天", "仅休息日", "轮班", "自定义"
+    };
+    private static final String[] REPEAT_SUBS = {
+            "按班表走，休息日和节假日跳过",
+            "每天都响",
+            "只在这周的休息日响",
+            "几天一轮，自己标哪天上班",
+            "自己勾一周哪几天上班"
+    };
+    private static final Alarm.Mode[] REPEAT_MODES = {
+            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND,
+            Alarm.Mode.ROSTER, Alarm.Mode.CUSTOM
+    };
+
+    /** 第 2 页那一行「重复」显示什么：直接读第一个闹钟，没有则按默认。 */
+    private void refreshRepeatRow() {
+        if (tvRepeat == null) return;
+        Alarm first = firstAlarm();
+        tvRepeat.setText(first == null ? Alarm.Mode.WORKDAY.text() : first.modeTextWithDate());
+    }
+
+    private Alarm firstAlarm() {
+        List<Alarm> list = Prefs.getAlarms(this);
+        return list.isEmpty() ? null : list.get(0);
+    }
+
+    private void pickRepeat() {
+        Alarm first = firstAlarm();
+        int checked = 0;
+        if (first != null) {
+            for (int i = 0; i < REPEAT_MODES.length; i++) {
+                if (REPEAT_MODES[i] == first.mode) {
+                    checked = i;
+                    break;
+                }
+            }
+        }
+        DialogKit.showPick(this, "多久响一次？", "只改这一条闹钟，不影响到别的",
+                REPEAT_NAMES, REPEAT_SUBS, checked, which -> {
+                    Alarm.Mode mode = REPEAT_MODES[which];
+                    if (!mode.isOwnRule()) {
+                        applyRepeat(mode, null);
+                        return;
+                    }
+                    // 轮班/自定义要先有那张表。第一个闹钟已经配过就沿用，
+                    // 否则按全局那张或默认形状起步
+                    WeekSchedule.Rule initial = first != null && first.ownRule() != null
+                            ? first.ownRule()
+                            : AlarmEditor.initialOwn(this, mode);
+                    AlarmCycleEditor.show(this, mode == Alarm.Mode.CUSTOM, initial, rule ->
+                            applyRepeat(mode, rule));
+                });
+    }
+
+    /**
+     * 把重复规则写进第一个闹钟。
+     *
+     * <p>没有闹钟就顺手建一条——引导页第 2 页本来就承诺「点完会有一条会响的闹钟」，
+     * 不能因为用户先改了重复规则、再没点别的地方就落空。
+     */
+    private void applyRepeat(Alarm.Mode mode, WeekSchedule.Rule ownRule) {
+        List<Alarm> alarms = Prefs.getAlarms(this);
+        Alarm target;
+        if (alarms.isEmpty()) {
+            target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班", mode, true);
+            alarms.add(target);
+        } else {
+            target = alarms.get(0);
+            target.mode = mode;
+        }
+        target.hour = hour;
+        target.minute = minute;
+        if (mode.isOwnRule()) {
+            target.applyOwnRule(ownRule != null ? ownRule : AlarmEditor.defaultOwn(mode));
+        } else {
+            target.applyOwnRule(null);
+        }
+        Prefs.setAlarms(this, alarms);
+        Reschedule.run(this, null);
+        refreshRepeatRow();
     }
 
     /**
@@ -950,9 +1176,9 @@ public class GuideActivity extends AppCompatActivity {
             hour = alarms.get(0).hour;
             minute = alarms.get(0).minute;
             updateTimeText();
-
         }
-        syncModeUi();
+        reloadWeek();
+        refreshRepeatRow();
         // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，
         // 不是送去测试。用常量而不是 PAGES-1，免得下次再拆页又跑偏。
         goTo(PAGE_PERMISSIONS);
@@ -971,7 +1197,7 @@ public class GuideActivity extends AppCompatActivity {
         // 那条「点它应回到刚才那一页」会一直挂在通知栏里——引导都做完了，它没有意义了。
         NotificationManagerCompat.from(this).cancel(9401);
         final String tip = firstRun
-                ? "已排好班，上班日 " + TimeText.clock(hour, minute) + " 会响"
+                ? "已排好班，" + TimeText.clock(hour, minute) + " 会响"
                 : "设置已更新";
         // v0.74.3：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
         // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App

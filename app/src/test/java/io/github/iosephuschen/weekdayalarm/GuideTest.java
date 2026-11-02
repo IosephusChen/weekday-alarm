@@ -124,192 +124,111 @@ public class GuideTest {
         return WeekSchedule.saturdayOf(LocalDate.now());
     }
 
-    // ================= 第一页：周休制度 =================
+    // ================= 第一页：对班表（v1.2.0） =================
 
-    @Test
-    public void tapDoubleRest_writesMode() {
-        GuideActivity a = fresh();
-        assertEquals("默认是大小周，老用户升级不能变",
-                WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
-
-        tap(a, R.id.mode_double);
-
-        assertEquals(WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
-        assertTrue("选中的卡片要显示选中态", a.findViewById(R.id.mode_double).isSelected());
-        assertFalse(a.findViewById(R.id.mode_bigsmall).isSelected());
+    /** 第 1 页的格子：0~6 是第一周，7~13 是第二周。 */
+    private View cell(GuideActivity a, int idx) {
+        LinearLayout grid = a.findViewById(idx < 7 ? R.id.grid_week : R.id.grid_week2);
+        assertNotNull("格子容器应在", grid);
+        return grid.getChildAt(idx % 7);
     }
 
-    @Test
-    public void tapSingleRest_writesMode_andDefaultsToSunday() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_single);
-        assertEquals("第一次点单休按最常见的「休周日」起步",
-                WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
-        assertTrue(a.findViewById(R.id.mode_single).isSelected());
-    }
-
-    /** 单休：休哪天是子选项，选了才出现，别让双休 / 大小周的人也看见它。 */
-    @Test
-    public void tapSingleRest_showsRestDayRow() {
-        GuideActivity a = fresh();
-        assertEquals("默认不是单休，子选项该收着", View.GONE, visibility(a, R.id.row_singleday));
-
-        tap(a, R.id.mode_single);
-        assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
-        assertTrue(a.findViewById(R.id.opt_rest_sun).isSelected());
-        assertFalse(a.findViewById(R.id.opt_rest_sat).isSelected());
-        // v0.61.3：副标题固定说这一句，不再随选择变——下面两个胶囊已经表明选的是哪天，
-        // 再来一句「周日休 · 周六上班」是把结论重复一遍
-        assertEquals("副标题应固定", "每周固定休一天", text(a, R.id.tv_single_sub));
-    }
-
-    /** 改子选项：立刻换制度，胶囊选中态跟着换。 */
-    @Test
-    public void chooseRestSaturday_writesSingleRestSat() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_single);
-        tap(a, R.id.opt_rest_sat);
-
-        assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
-        assertTrue(a.findViewById(R.id.opt_rest_sat).isSelected());
-        assertFalse(a.findViewById(R.id.opt_rest_sun).isSelected());
-        assertEquals("副标题不跟着变", "每周固定休一天", text(a, R.id.tv_single_sub));
-        assertTrue("卡片本身仍是选中态，不能因为换了子选项就掉",
-                a.findViewById(R.id.mode_single).isSelected());
-    }
-
-    /** 已经是单休（周六休）的用户重看引导：点「单休」不能把那天改回周日。 */
-    @Test
-    public void tapSingleRest_keepsExistingRestDay() {
-        wipe();
-        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.SINGLE_REST_SAT);
-        GuideActivity a = launch();
-
-        assertEquals("重看引导要回显原来的休周六",
-                WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
-        assertTrue(a.findViewById(R.id.opt_rest_sat).isSelected());
-
-        tap(a, R.id.mode_single);
-        assertEquals("再点一次卡片不能悄悄改成休周日",
-                WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
-    }
-
-    /** 大小周：默认按「本周是大周」起步，anchor 落在本周六。 */
-    @Test
-    public void tapBigSmall_defaultsToBigWeek_andShowsWeekRow() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-
-        assertEquals(WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
-        assertTrue(Prefs.isWeekBig(ctx()));
-        assertEquals(thisSaturday(), Prefs.getAnchor(ctx()));
-        assertEquals("选了大小周才显示「本周大/小」那一行", View.VISIBLE,
-                visibility(a, R.id.row_weekbig));
-        assertTrue(a.findViewById(R.id.opt_big).isSelected());
-    }
-
-    /** 选「小周」：anchor 往前挪一周，这样「本周是小周」立刻成立。 */
-    @Test
-    public void chooseSmallWeek_movesAnchorBackOneWeek() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-        tap(a, R.id.opt_small);
-
-        assertFalse(Prefs.isWeekBig(ctx()));
-        assertEquals(thisSaturday().minusWeeks(1), Prefs.getAnchor(ctx()));
-        assertTrue(a.findViewById(R.id.opt_small).isSelected());
-        assertFalse(a.findViewById(R.id.opt_big).isSelected());
-    }
-
-    /** 选双休时，大小周那一行必须收起来，否则用户会以为还要再选一次。 */
-    @Test
-    public void chooseDoubleRest_hidesWeekRow() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-        tap(a, R.id.mode_double);
-        assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
-        assertEquals(View.GONE, visibility(a, R.id.row_singleday));
-    }
-
-    /** 两种子选项行互斥：选了单休就不该还挂着「本周大 / 小周」。 */
-    @Test
-    public void chooseSingleRest_hidesBigSmallRow() {
-        GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-        tap(a, R.id.mode_single);
-        assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
-        assertEquals(View.VISIBLE, visibility(a, R.id.row_singleday));
+    private static String cellText(View v) {
+        return ((TextView) v).getText().toString();
     }
 
     /**
-     * 大小周的「小周休哪天」（v0.92.1）。
+     * 全新安装按双休起步。
      *
-     * <p>设置页一直有这一项，引导页没有——从引导进来的人只会被按默认「小周休周日」排班。
-     * 公司若行「小周休周六」，前两周的排班就全错，而且没有任何地方提示过他们。
-     * 用户 2026-10-30 指出这处缺口。
+     * <p>Prefs 的缺省值仍是大小周（老用户升级不能变），但新用户没有历史班表，
+     * 让他第一眼看到一张对得上的七天表，比先看到「大周 / 小周」两行省事。
      */
     @Test
-    public void tapBigSmall_showsSmallRestRow() {
+    public void freshInstall_startsWithDoubleRest() {
         GuideActivity a = fresh();
-        // 全新安装默认就是大小周（老用户升级也不能变），所以这一行一进来就该在
-        assertEquals(View.VISIBLE, visibility(a, R.id.row_smallrest));
 
-        tap(a, R.id.mode_double);
-        assertEquals("双休时收起来——双休不存在「小周」", View.GONE, visibility(a, R.id.row_smallrest));
-        assertEquals(View.GONE, visibility(a, R.id.row_weekbig));
-
-        tap(a, R.id.mode_bigsmall);
-        assertEquals("选了大小周才显示「小周休哪天」", View.VISIBLE,
-                visibility(a, R.id.row_smallrest));
-        assertTrue("默认按周日休起步（国内绝大多数如此）",
-                a.findViewById(R.id.opt_smallrest_sun).isSelected());
-        assertFalse(a.findViewById(R.id.opt_smallrest_sat).isSelected());
-        assertEquals("两个子选项同时在：本周是大周还是小周，与小周休哪天无关", View.VISIBLE,
-                visibility(a, R.id.row_weekbig));
+        assertEquals(WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
+        assertEquals("周一上班", "班", cellText(cell(a, 0)));
+        assertEquals("周六休", "休", cellText(cell(a, 5)));
+        assertEquals("周日休", "休", cellText(cell(a, 6)));
+        assertEquals("第二周先收着", View.GONE, visibility(a, R.id.box_week2));
     }
 
-    /** 选「周六休」：只写 smallRestSat，不动制度、不动 anchor。 */
+    /** 只把周日点成上班 = 单休（休周六）。反推要认出这个最常见的形状。 */
     @Test
-    public void chooseSmallRestSat_writesSmallRestSatOnly() {
+    public void tappingSundayCell_makesSingleRestSaturday() {
         GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-        LocalDate anchorBefore = Prefs.getAnchor(ctx());
+        cell(a, 6).performClick();
+        ShadowLooper.idleMainLooper();
 
-        tap(a, R.id.opt_smallrest_sat);
-
-        assertTrue("小周休周六要写进去", Prefs.isSmallRestSat(ctx()));
-        assertEquals("制度仍是大小周", WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
-        assertEquals("选小周休哪天不该挪 anchor", anchorBefore, Prefs.getAnchor(ctx()));
-        assertTrue(a.findViewById(R.id.opt_smallrest_sat).isSelected());
-        assertFalse(a.findViewById(R.id.opt_smallrest_sun).isSelected());
+        assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
+        assertEquals("格子跟着变", "班", cellText(cell(a, 6)));
     }
 
-    /** 已经设过「小周休周六」的人重看引导：要回显，不能一进来就显示周日休。 */
+    /** 周三也点成休息：不像任何一种具名制度，落 7 天周期。 */
     @Test
-    public void existingSmallRestSat_isReflectedOnLaunch() {
+    public void tappingMidweekCell_fallsBackToCycle() {
+        GuideActivity a = fresh();
+        cell(a, 1).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(WeekSchedule.Mode.CYCLE, Prefs.getWeekMode(ctx()));
+        assertEquals(7, Prefs.getCycleLen(ctx()));
+        assertEquals("周一三五上班", 0b0011101L, Prefs.getCycleMask(ctx()));
+        assertTrue("按周排的表默认跟法定节假日", Prefs.isCycleHoliday(ctx()));
+        assertFalse("反推出来的表不能被当成轮班入口",
+                Prefs.getCycleKind(ctx()) == Prefs.CYCLE_KIND_ROTATION);
+    }
+
+    /** 勾「隔周换一次」：第二行出现，先复制第一周，用户再改。 */
+    @Test
+    public void biweekly_expandsSecondWeek() {
+        GuideActivity a = fresh();
+        assertEquals(View.GONE, visibility(a, R.id.box_week2));
+
+        tap(a, R.id.row_biweekly);
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_week2));
+        assertEquals("第二周先复制第一周", "休", cellText(cell(a, 13)));
+    }
+
+    /** 把第二周周六点成上班 = 标准大小周，anchor 落在本周六。 */
+    @Test
+    public void secondWeekDifferent_makesBigSmall() {
+        GuideActivity a = fresh();
+        tap(a, R.id.row_biweekly);
+        cell(a, 12).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
+        assertEquals("大周是本周", WeekSchedule.saturdayOf(LocalDate.now()),
+                Prefs.getAnchor(ctx()));
+        assertFalse("小周休周日", Prefs.isSmallRestSat(ctx()));
+    }
+
+    /** 轮班：七格表达不了 N 天一轮，换成一行摘要。 */
+    @Test
+    public void rotationMode_showsSummaryInsteadOfGrid() {
         wipe();
-        Prefs.getAlarms(ctx());
-        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.BIG_SMALL);
-        Prefs.setSmallRestSat(ctx(), true);
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleMask(ctx(), 0b0011L);
+        Prefs.setCycleStart(ctx(), LocalDate.now());
         GuideActivity a = launch();
 
-        assertEquals(View.VISIBLE, visibility(a, R.id.row_smallrest));
-        assertTrue(a.findViewById(R.id.opt_smallrest_sat).isSelected());
-        assertFalse(a.findViewById(R.id.opt_smallrest_sun).isSelected());
+        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
+        assertEquals(View.GONE, visibility(a, R.id.box_week));
+        assertEquals(View.GONE, visibility(a, R.id.row_biweekly));
+        assertTrue("摘要要写出周期", text(a, R.id.tv_rotation_title).contains("4天"));
     }
 
-    /** 切走再切回来：那份记忆要还在，不能退回周日休。 */
+    /** 第 2 页的「重复」行读的是第一个闹钟，不是另存一份。 */
     @Test
-    public void switchingAwayAndBack_keepsSmallRestDay() {
+    public void repeatRow_reflectsFirstAlarm() {
         GuideActivity a = fresh();
-        tap(a, R.id.mode_bigsmall);
-        tap(a, R.id.opt_smallrest_sat);
-        tap(a, R.id.mode_double);
-        assertEquals("双休时这一行收起来", View.GONE, visibility(a, R.id.row_smallrest));
-
-        tap(a, R.id.mode_bigsmall);
-        assertTrue("切回来还是周六休", a.findViewById(R.id.opt_smallrest_sat).isSelected());
-        assertTrue(Prefs.isSmallRestSat(ctx()));
+        assertTrue("默认那条是「仅上班日」，实际：" + text(a, R.id.tv_repeat),
+                text(a, R.id.tv_repeat).startsWith("仅上班日"));
     }
 
     // ================= 第二页：第一个闹钟 =================
@@ -637,17 +556,23 @@ public class GuideTest {
                 v.getMinimumHeight() >= 44 * density - 1);
     }
 
-    /** 单休 / 大小周的选项要等宽（v1.0.4，G7）：三行按钮组右对齐后左边缘才成一条线。 */
+    /**
+     * 七格必须等宽（v1.2.0 接替旧的「选项等宽」）。
+     *
+     * <p>格子宽度按 {@code weight=1} 平分；只要有一格被塞了固定宽度，整行就会
+     * 歪掉——而这张表是用户用来核对自己班次的，歪了会看错行。
+     */
     @Test
-    public void restDayOptions_shareSameWidth() {
+    public void weekCells_shareSameWeight() {
         GuideActivity a = fresh();
-        float density = ctx().getResources().getDisplayMetrics().density;
-        int[] ids = {R.id.opt_big, R.id.opt_small, R.id.opt_smallrest_sun,
-                R.id.opt_smallrest_sat, R.id.opt_rest_sun, R.id.opt_rest_sat};
-        for (int id : ids) {
-            View v = a.findViewById(id);
-            assertTrue("选项宽度该有下限，实际：" + v.getMinimumWidth(),
-                    v.getMinimumWidth() >= 76 * density - 1);
+        LinearLayout grid = a.findViewById(R.id.grid_week);
+        assertNotNull(grid);
+        assertEquals("应是七格", 7, grid.getChildCount());
+        for (int i = 0; i < grid.getChildCount(); i++) {
+            LinearLayout.LayoutParams lp =
+                    (LinearLayout.LayoutParams) grid.getChildAt(i).getLayoutParams();
+            assertEquals("第 " + i + " 格的权重", 1f, lp.weight, 0.001f);
+            assertEquals("第 " + i + " 格不该写死宽度", 0, lp.width);
         }
     }
 

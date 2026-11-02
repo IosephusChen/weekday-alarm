@@ -323,6 +323,43 @@ public final class WeekSchedule {
         return t == DayType.WORK || t == DayType.MAKEUP_WORK;
     }
 
+    /**
+     * 只看班表本身，不看节假日的「这天该不该上班」（v1.2.0）。
+     *
+     * <p><b>为什么需要第二个判定</b>：{@link #isWorkday} 把法定节假日和调休都算进去了，
+     * 那是「闹钟今天响不响」的答案。但引导页让用户「对班表」时，格子里必须显示
+     * <b>他自己的排班</b>——国庆那几天如果画成「休」，用户点一下就把它固化进班表，
+     * 于是明年国庆他以为在上班、闹钟不响，而根源是今年十月点过一下格子。
+     *
+     * <p>换句话说：节假日是「日历的事实」，班表是「你的作息」。核对作息的时候
+     * 只能看后者。
+     */
+    public static boolean isScheduledWorkday(LocalDate d, Rule rule) {
+        if (rule.mode.isCycle()) return isCycleWorkday(d, rule);
+
+        int v = d.getDayOfWeek().getValue();
+        if (v <= 5) return true;                    // 周一 ~ 周五，四种制度都上班
+        boolean sat = v == 6;
+
+        switch (rule.mode) {
+            case DOUBLE_REST:
+                return false;                       // 周六、周日都休
+            case SINGLE_REST_SUN:
+                return sat;                         // 周日休，周六上班
+            case SINGLE_REST_SAT:
+                return !sat;                        // 周六休，周日上班
+            case BIG_SMALL:
+            default:
+                if (sat) {
+                    if (isBigWeekSaturday(d, rule.anchor)) return false;   // 大周：休
+                    return !rule.smallRestSat;                             // 小周：看休哪天
+                }
+                // 周日：大周恒休；小周按「小周休周六」反过来
+                if (isBigWeekSaturday(saturdayOf(d), rule.anchor)) return false;
+                return rule.smallRestSat;
+        }
+    }
+
     /** 兼容旧签名：按大小周判断。 */
     public static boolean isWorkday(LocalDate d, LocalDate anchor, boolean smallRestSat) {
         return isWorkday(d, Rule.bigSmall(anchor, smallRestSat));

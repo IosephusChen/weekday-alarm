@@ -23,8 +23,11 @@ import java.util.Locale;
  * 未认证时按 IP 限流 60 次/小时，出口 IP 被邻居打满就全部 403；国内连通性也时好时坏。
  * 所以改成仓库根目录一个静态 {@code version.json}，走 jsDelivr（国内有节点）+
  * raw.githubusercontent 双源——和 {@link HolidayUpdater} 同一套通路，已经验证可用。
- * 静态文件没有限流，几百字节，弱网也就一两秒。<b>代价是 CDN 会缓存 {@code @main}
- * 约 12 小时</b>：刚发版那半天自己可能查到旧值，这是 CDN 的固有行为，不修。
+ * 静态文件没有限流，几百字节，弱网也就一两秒。<b>但 CDN 会缓存 {@code @main}
+ * 约 12 小时</b>（{@code s-maxage=43200}），刚发版那半天它稳定返回旧副本。
+ * v1.1.1 发布当天真机上就撞上了：点「检查更新」弹出「已是最新版本 v1.1.0」。
+ * 当时的写法是「第一个源成功就返回」，兜底源永远没机会开口。
+ * 现在改成两个源都读、取 {@link #pick 版本高的那个}——CDN 陈旧时 raw 会把它纠正回来。
  *
  * <p><b>比 versionCode 不比字符串</b>：主流写法拿 {@code tag_name} 做字符串比较，
  * 遇到 {@code 0.87.10} 与 {@code 0.9.0} 就判反。整数没有这个歧义。
@@ -63,6 +66,20 @@ public final class UpdateChecker {
 
     /** 更新说明的长度上限，防止一份被改坏的 json 把对话框撑成一篇长文。 */
     private static final int MAX_NOTES = 600;
+
+    /** 主源超时。与节假日那套一致，弱网也不至于卡太久。 */
+    private static final int CONNECT_MS = 8000;
+    private static final int READ_MS = 10000;
+
+    /**
+     * 兜底源超时。
+     *
+     * <p>它只在「主源说没更新」时才被问到——那时用户正等着一个「已是最新」，
+     * 而这条请求大概率也是白跑（raw 在国内时通时不通）。按主源的 18 秒等，
+     * 用户会以为卡死了；3 秒足够判定「这条通路此刻不通」。
+     */
+    private static final int FALLBACK_CONNECT_MS = 3000;
+    private static final int FALLBACK_READ_MS = 4000;
 
     /** 最近一次失败的可读原因（成功时为空串）。 */
     private static volatile String lastFailure = "";
@@ -251,7 +268,7 @@ public final class UpdateChecker {
     }
 
     /**
-     * 同步检查。两个源依次试，第一个成功就返回。
+     * 同步检查。两个源都问，取 {@code versionCode} 大的那个。
      *
      * <p>synchronized：{@code lastFailure} 与 Prefs 写入是共享状态，启动静默检查与
      * 用户手动检查可能撞在一起。
@@ -260,9 +277,17 @@ public final class UpdateChecker {
         lastFailure = "";
         lastInfo = null;
         String lastErr = "网络请求未成功";
+        int installed = installedVersionCode(ctx);
 
-        for (String src : SOURCES) {
-            String body = fetch(ctx, src);
+        Info best = null;
+        for (int i = 0; i < SOURCES.length; i++) {
+            // 兜底源给更短的超时：它只在「主源说没更新」时才被问到，
+            // 这时候用户正盯着屏幕等一个「已是最新」，不能让他为一次
+            // 大概率会超时的请求等满 18 秒
+            boolean fallback = i > 0;
+            String body = fetch(ctx, SOURCES[i],
+                    fallback ? FALLBACK_CONNECT_MS : CONNECT_MS,
+                    fallback ? FALLBACK_READ_MS : READ_MS);
             if (body == null) {
                 lastErr = lastFailure;
                 continue;
@@ -272,35 +297,63 @@ public final class UpdateChecker {
                 lastErr = "版本文件内容不对";
                 continue;
             }
-
-            lastInfo = info;
-            Prefs.setUpdateChecked(ctx, System.currentTimeMillis(), false);
-            lastFailure = "";
-
-            if (info.versionCode > installedVersionCode(ctx)) {
-                Prefs.setKnownUpdate(ctx, info.versionCode, info.versionName);
-                return Result.AVAILABLE;
-            }
-            // 远程不高于本地：可能是刚发完版，也可能是 CDN 还在缓存旧值。
-            // 两种情况都清掉已知更新——真实的新版会在下次检查时重新出现。
-            Prefs.clearKnownUpdate(ctx);
-            return Result.UP_TO_DATE;
+            best = pick(best, info);
+            // 已经确定有更新，第二个源不会给出更大的答案，不必再问
+            if (isNewer(best, installed)) break;
         }
 
-        // 全失败：记下来，隔天再试（而不是等一周）
-        Prefs.setUpdateChecked(ctx, System.currentTimeMillis(), true);
-        lastFailure = lastErr == null || lastErr.isEmpty() ? "网络请求未成功" : lastErr;
-        return Result.FAILED;
+        if (best == null) {
+            // 全失败：记下来，隔天再试（而不是等一周）
+            Prefs.setUpdateChecked(ctx, System.currentTimeMillis(), true);
+            lastFailure = lastErr == null || lastErr.isEmpty() ? "网络请求未成功" : lastErr;
+            return Result.FAILED;
+        }
+
+        lastInfo = best;
+        Prefs.setUpdateChecked(ctx, System.currentTimeMillis(), false);
+        lastFailure = "";
+
+        if (isNewer(best, installed)) {
+            Prefs.setKnownUpdate(ctx, best.versionCode, best.versionName);
+            return Result.AVAILABLE;
+        }
+        // 远程不高于本地：可能是刚发完版，也可能是 CDN 还在缓存旧值。
+        // 两种情况都清掉已知更新——真实的新版会在下次检查时重新出现。
+        Prefs.clearKnownUpdate(ctx);
+        return Result.UP_TO_DATE;
+    }
+
+    /**
+     * 两个源的结果取版本高的那个。
+     *
+     * <p><b>为什么要比而不是「先到先得」</b>：jsDelivr 对 {@code @main} 的边缘缓存是
+     * 12 小时（{@code s-maxage=43200}），刚发完版的那半天它会稳定返回旧副本。
+     * v1.1.1 发布当天就撞上了：手机上点「检查更新」，CDN 说 250、本地也是 250，
+     * 于是弹出「已是最新版本 v1.1.0」，而 raw 明明是 251——旧实现第一个源成功就
+     * return，兜底源永远没机会开口。现在两个源都读，取大的。
+     *
+     * <p>包级可见：这条取舍是纯逻辑，值得被测试钉住。
+     */
+    static Info pick(Info a, Info b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        return b.versionCode > a.versionCode ? b : a;
+    }
+
+    /** 远程版本比本地新。{@code null} 永远不算。 */
+    static boolean isNewer(Info info, int installed) {
+        return info != null && info.versionCode > installed;
     }
 
     /** 拉一个源；失败返回 null 并把原因写进 {@link #lastFailure}。 */
-    private static String fetch(Context ctx, String url) {
+    private static String fetch(Context ctx, String url, int connectMs, int readMs) {
         HttpURLConnection conn = null;
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
-            // 几百字节的文件，正常几十毫秒；8s/10s 与节假日那套一致，弱网也不至于卡太久
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(10000);
+            // 几百字节的文件，正常几十毫秒。主源沿用 8s/10s（与节假日那套一致），
+            // 兜底源压到 3s/4s：它只在主源说「没更新」时才被问到，多等无益
+            conn.setConnectTimeout(connectMs);
+            conn.setReadTimeout(readMs);
             conn.setRequestMethod("GET");
             conn.setRequestProperty("User-Agent", userAgent(ctx));
             conn.setInstanceFollowRedirects(true);

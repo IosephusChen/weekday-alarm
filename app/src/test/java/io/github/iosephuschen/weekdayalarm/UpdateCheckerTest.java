@@ -140,6 +140,54 @@ public class UpdateCheckerTest {
         assertEquals(UpdateChecker.PAGE_URL, i.pageUrl);
     }
 
+    // ================= 双源合并（v1.2.0）=================
+
+    private static UpdateChecker.Info info(int code, String name) {
+        return new UpdateChecker.Info(code, name, "2026-11-02", "标题", "", "", "");
+    }
+
+    /**
+     * v1.1.1 发布当天真机上的那一幕：jsDelivr 的边缘缓存还挂着 250，
+     * raw 已经是 251，旧写法第一个源成功就 return，于是弹出「已是最新 v1.1.0」。
+     *
+     * <p>现在两个源都读，取版本高的。这条盯的就是「陈旧的那个不能赢」。
+     */
+    @Test
+    public void pick_staleCdnIsCorrectedByRaw() {
+        UpdateChecker.Info cdn = info(250, "1.1.0");
+        UpdateChecker.Info raw = info(251, "1.1.1");
+
+        UpdateChecker.Info picked = UpdateChecker.pick(cdn, raw);
+
+        assertEquals(251, picked.versionCode);
+        assertEquals("1.1.1", picked.versionName);
+        assertTrue(UpdateChecker.isNewer(picked, 250));
+    }
+
+    @Test
+    public void pick_takesHigherRegardlessOfOrder() {
+        assertEquals(251, UpdateChecker.pick(info(251, "1.1.1"), info(250, "1.1.0")).versionCode);
+        assertEquals(251, UpdateChecker.pick(info(250, "1.1.0"), info(251, "1.1.1")).versionCode);
+        // 相等时取先到的那个，不该无意义地互相覆盖
+        assertEquals("A", UpdateChecker.pick(info(251, "A"), info(251, "B")).versionName);
+    }
+
+    /** 一个源挂了不能把另一个源的结果也带走——这是 for 循环改成累加之后最容易被写错的分支。 */
+    @Test
+    public void pick_survivesOneDeadSource() {
+        assertNull(UpdateChecker.pick(null, null));
+        assertEquals(251, UpdateChecker.pick(null, info(251, "1.1.1")).versionCode);
+        assertEquals(251, UpdateChecker.pick(info(251, "1.1.1"), null).versionCode);
+    }
+
+    @Test
+    public void isNewer_onlyWhenStrictlyGreater() {
+        assertTrue(UpdateChecker.isNewer(info(251, "1.1.1"), 250));
+        assertFalse(UpdateChecker.isNewer(info(250, "1.1.0"), 250));
+        assertFalse(UpdateChecker.isNewer(info(249, "1.0.11"), 250));
+        assertFalse(UpdateChecker.isNewer(null, 250));
+    }
+
     // ================= 节律 =================
 
     @Test

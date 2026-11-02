@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 闹钟自带班表的一行（v1.2.0）。
+
+     与 item_cycle_day 的差别只有一处：右边是开关，不是「时间 ›」。
+
+     原因：全局那张班表每一行要填「当天几点响」，因为一张班表要覆盖所有人；
+     而一条闹钟只有一个时刻（Alarm.hour/minute），逐日时间在这里没有落点。
+     硬把 item_cycle_day 搬过来的话，用户会看到一个能点开、但改完不生效的
+     「几点」——比不给还糟。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp">
+
+        <View
+            android:id="@+id/dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/bg_dot_work" />
+
+        <TextView
+            android:id="@+id/tv_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="周一"
+            android:textColor="@color/ink"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_tag_today"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_tag_today"
+            android:paddingStart="6dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="2dp"
+            android:text="今天"
+            android:textColor="@color/day_today_text"
+            android:textSize="10.5sp"
+            android:visibility="gone" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sw_work"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="这天上班" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="34dp"
+        android:layout_marginEnd="16dp"
+        android:background="@color/line" />
+</LinearLayout>

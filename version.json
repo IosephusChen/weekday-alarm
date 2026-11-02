@@ -1,13 +1,14 @@
 {
-  "versionCode": 251,
-  "versionName": "1.1.1",
+  "versionCode": 252,
+  "versionName": "1.2.0",
   "published": "2026-11-02",
-  "title": "轮班和自定义拆成两个入口",
+  "title": "每条闹钟可以有自己的班表",
   "notes": [
-    "设置页、引导页各多一张卡：自定义勾周一到周日，轮班按 N 天一轮排",
-    "修掉一个会让春节集体不响的默认值——「法定节假日放假」两种入口都默认勾上了",
-    "三个弹层按 App 样式重做；列表加了班/休状态点和「今天」标记"
+    "新建闹钟多了「轮班」「自定义」：上二休二那种班，一条闹钟能单独设",
+    "引导页第一步改成直接点七格标班/休，不再先问你属于哪种周休制度",
+    "请假、加班对自带班表的闹钟同样生效，不用两处各改一遍",
+    "修掉「已是最新版本」的误报：CDN 那份旧着时，会再问一次原始地址"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.1.1/weekday-alarm-1.1.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.1.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.2.0/weekday-alarm-1.2.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.2.0"
 }

@@ -31,19 +31,23 @@ import java.util.List;
 final class AlarmEditor {
 
     /**
-     * 四种重复规则（v0.77.0 卡片化，v0.77.1 去副标题）：主文案 + 对应的模式值。
+     * 六种重复规则（v0.77.0 卡片化，v0.77.1 去副标题，v1.2.0 加轮班/自定义）。
      *
      * <p>顺序就是界面顺序，{@code MODE_VALUES} 与文案一一对应——
      * 保存时按下标取值，不再靠 RadioButton 的 id 分支。
      *
-     * <p>v0.77.1 删掉每张卡的副标题（用户反馈「没必要」）：四张卡本身就是
+     * <p>「轮班」「自定义」排在「仅一次」前面：那两个是长期重复，和上面三种同类；
+     * 「仅一次」是临时闹钟，放到最后不至于让常用项越推越远。
+     *
+     * <p>v0.77.1 删掉每张卡的副标题（用户反馈「没必要」）：六张卡本身就是
      * 自解释的，「仅上班日」不需要再跟一句「按周休制度」。
      */
     static final String[] MODE_TITLES = {
-            "仅上班日", "每天", "仅休息日", "仅一次"
+            "仅上班日", "每天", "仅休息日", "轮班", "自定义", "仅一次"
     };
     static final Alarm.Mode[] MODE_VALUES = {
-            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND, Alarm.Mode.ONCE
+            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND,
+            Alarm.Mode.ROSTER, Alarm.Mode.CUSTOM, Alarm.Mode.ONCE
     };
 
     private AlarmEditor() {
@@ -69,6 +73,8 @@ final class AlarmEditor {
         LinearLayout modeList = view.findViewById(R.id.ll_alarm_modes);
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
+        View rowOwnRule = view.findViewById(R.id.row_own_rule);
+        TextView tvOwnRule = view.findViewById(R.id.tv_own_rule);
         TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
 
         // v0.88.0：这条闹钟单独用的铃声。null = 跟随「设置 → 铃声」，
@@ -103,6 +109,28 @@ final class AlarmEditor {
         // 保存时按下标取 MODE_VALUES——不再靠 RadioButton 的 id 分支。
         final int[] modeSel = {target != null ? modeIndex(target.mode)
                 : modeIndex(Alarm.Mode.WORKDAY)};
+
+        /**
+         * 这条闹钟自己的班表草稿（v1.2.0）。
+         *
+         * <p>新建时是 null，等用户真的点「轮班」「自定义」才按全局或默认形状生成——
+         * 八成的新闹钟是「仅上班日」，没必要为了它先算一张表。
+         * 编辑已有闹钟时直接取存下来的那套。
+         */
+        final WeekSchedule.Rule[] own = {target != null ? target.ownRule() : null};
+
+        /** 摘要行的显隐与文案：只在选中「轮班」「自定义」时出现。 */
+        final Runnable[] refreshOwn = new Runnable[1];
+        refreshOwn[0] = () -> {
+            Alarm.Mode m = MODE_VALUES[modeSel[0]];
+            boolean ownMode = m.isOwnRule();
+            rowOwnRule.setVisibility(ownMode ? View.VISIBLE : View.GONE);
+            if (ownMode) {
+                tvOwnRule.setText(own[0] == null
+                        ? "还没设班表，点这里填"
+                        : Alarm.describeOwn(m, own[0]));
+            }
+        };
         // v0.74.0：编辑页的配色圆点取消——一条闹钟一个色，日常根本没人在用，
         // 反而让列表五颜六色。color 字段仍留在数据层（老备份照常还原），
         // 只是不再有入口去改它
@@ -146,6 +174,16 @@ final class AlarmEditor {
                 }
                 rowOnceDate.setVisibility(
                         idx == modeIndex(Alarm.Mode.ONCE) ? View.VISIBLE : View.GONE);
+                // v1.2.0：选中轮班/自定义时，懒生成一份初值（优先抄全局那张，
+                // 用户是轮班的人多半全局也设成轮班了，不用重填一遍）
+                Alarm.Mode picked = MODE_VALUES[idx];
+                if (picked.isOwnRule() && own[0] == null) {
+                    WeekSchedule.Rule init = initialOwn(activity, picked);
+                    // 抄不到就立刻给默认形状：摘要行写「还没设班表」等于把决定推回给
+                    // 用户，而保存时本来也要兜一份默认的——不如当场落定，看得见才好改
+                    own[0] = init != null ? init : defaultOwn(picked);
+                }
+                refreshOwn[0].run();
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -163,6 +201,18 @@ final class AlarmEditor {
             once[0] = picked;
             tvOnceDate.setText(onceDateText(picked));
         }));
+
+        // 班表摘要行：选中轮班/自定义才出现。点它才打开那张 N 行的表——
+        // 六张卡已经把对话框塞满了，逐日开关不能摊在主界面上
+        refreshOwn[0].run();
+        rowOwnRule.setOnClickListener(v -> {
+            Alarm.Mode m = MODE_VALUES[modeSel[0]];
+            if (!m.isOwnRule()) return;
+            AlarmCycleEditor.show(activity, m == Alarm.Mode.CUSTOM, own[0], rule -> {
+                own[0] = rule;
+                refreshOwn[0].run();
+            });
+        });
 
         final boolean[] handled = {false};
         ((TextView) view.findViewById(R.id.tv_alarm_title))
@@ -198,12 +248,18 @@ final class AlarmEditor {
                         }
                     }
                     String onceStr = mode == Alarm.Mode.ONCE ? onceDay.toString() : null;
+                    // 轮班/自定义：用户没打开过那张表也要给一份能用的默认，
+                    // 否则闹钟挂着「轮班」的名字却按全局排班走，文案和实际对不上
+                    WeekSchedule.Rule ownRule = mode.isOwnRule()
+                            ? (own[0] != null ? own[0] : defaultOwn(mode))
+                            : null;
                     if (target == null) {
                         int id = Prefs.nextAlarmId(activity);
                         Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
                                 true, onceStr);
                         created.ringtone = ringtoneString(ring[0]);
                         created.silent = silent[0];
+                        if (ownRule != null) created.applyOwnRule(ownRule);
                         alarms.add(created);
                     } else {
                         // 铃声不属于「改完就开」那套业务规则，直接写字段即可
@@ -220,11 +276,13 @@ final class AlarmEditor {
                         int oldMinute = target.minute;
                         Alarm.Mode oldMode = target.mode;
                         String oldOnce = target.onceDate;
+                        WeekSchedule.Rule oldOwn = target.ownRule();
                         String tip = applyEdit(activity, target, hour[0], minute[0],
-                                label, mode, onceStr);
+                                label, mode, onceStr, ownRule);
                         if (oldHour != target.hour || oldMinute != target.minute
                                 || oldMode != target.mode
-                                || !java.util.Objects.equals(oldOnce, target.onceDate)) {
+                                || !java.util.Objects.equals(oldOnce, target.onceDate)
+                                || !sameRule(oldOwn, target.ownRule())) {
                             ScheduleManager.dropSnooze(activity, target.id);
                         }
                         if (tip != null) {
@@ -348,13 +406,34 @@ final class AlarmEditor {
         }
     }
 
+    /** 六参版本：老调用方（和测试）只用得到这些字段，自带班表保持原样。 */
     static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,
                             String label, Alarm.Mode mode, String onceStr) {
+        return applyEdit(activity, target, hour, minute, label, mode, onceStr, null);
+    }
+
+    /**
+     * 把编辑结果写进一条已有的闹钟（v1.2.0 加自带班表）。
+     *
+     * @param ownRule 轮班/自定义的班表；传 null 时保留该闹钟原有的那份，
+     *                而不是清空——老调用方只用六参版本，不该因此丢表
+     */
+    static String applyEdit(android.content.Context activity, Alarm target, int hour, int minute,
+                            String label, Alarm.Mode mode, String onceStr,
+                            WeekSchedule.Rule ownRule) {
         target.hour = hour;
         target.minute = minute;
         target.label = label;
         target.mode = mode;
         target.onceDate = onceStr;
+
+        // v1.2.0：模式决定这张表还要不要。切回「仅上班日」时留着它不会生效，
+        // 但下次再切回「轮班」会冒出一张用户早就忘了的旧表——不如当场清掉
+        if (mode.isOwnRule()) {
+            if (ownRule != null) target.applyOwnRule(ownRule);
+        } else {
+            target.applyOwnRule(null);
+        }
 
         // v0.87.6：编辑保存 = 重新表达意图，今天该响。
         // 不清跳过标记的话，「这次不响」之后改时间会让这条闹钟当天彻底哑掉，
@@ -376,6 +455,49 @@ final class AlarmEditor {
                 ? "这个时间已经过了，已改到" + onceDateText(target.parseOnceDate())
                 : null;
         return tip;
+    }
+
+    // ================= 自带班表（v1.2.0）=================
+
+    /**
+     * 点开「轮班」「自定义」那一刻的初值。
+     *
+     * <p>全局那张如果是轮班，直接抄过来——这人全局都设成轮班了，让他为第二条
+     * 闹钟再填一遍同样的表没有道理。全局是别家形状（双休/单休）时返回 null，
+     * 由编辑器给默认：「自定义」默认周一到周五，「轮班」默认上二休二。
+     *
+     * @return null 表示交给 {@link AlarmCycleEditor} 用默认形状起步
+     */
+    static WeekSchedule.Rule initialOwn(android.content.Context ctx, Alarm.Mode mode) {
+        if (mode == null || !mode.isOwnRule()) return null;
+        WeekSchedule.Rule g = Prefs.getRule(ctx);
+        if (g == null || g.mode != WeekSchedule.Mode.CYCLE || g.cycleLen <= 0) return null;
+        // 4 天一轮塞不进「周一到周日」这七个格子里，硬转只会得到一张对不上的表
+        if (mode == Alarm.Mode.CUSTOM && g.cycleLen != 7) return null;
+        return g;
+    }
+
+    /**
+     * 保存时的兜底：用户选了「轮班」却一次都没打开过那张表。
+     *
+     * <p>不给兜底的话，闹钟会挂着「轮班」的名字、实际按全局班表走——
+     * 界面上写着「轮班」，响起来却是双休的作息，这种不一致最难自查。
+     */
+    static WeekSchedule.Rule defaultOwn(Alarm.Mode mode) {
+        if (mode == Alarm.Mode.CUSTOM) {
+            return WeekSchedule.Rule.cycle(7, 0b0011111L,
+                    CycleEditor.mondayOf(LocalDate.now()), null, true);
+        }
+        return WeekSchedule.Rule.cycle(4, 0b0011L, LocalDate.now(), null, false);
+    }
+
+    /** 两张班表是不是同一份。改过才作废这一轮的小睡。 */
+    static boolean sameRule(WeekSchedule.Rule a, WeekSchedule.Rule b) {
+        if (a == null || b == null) return a == b;
+        return a.cycleLen == b.cycleLen
+                && a.cycleMask == b.cycleMask
+                && java.util.Objects.equals(a.cycleStart, b.cycleStart)
+                && a.cycleHoliday == b.cycleHoliday;
     }
 
     /**

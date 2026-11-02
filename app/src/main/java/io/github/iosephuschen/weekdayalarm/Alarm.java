@@ -17,6 +17,7 @@ import java.util.List;
  * - mode = WEEKEND：仅休息日响（随周休制度：双休=周六日，单休=那一个休息日）
  * - mode = ONCE：仅 {@link #onceDate} 那一天响（v0.41.0：临时闹钟；响过自动关闭，
  *   条目留在列表里，v0.42.0 起不再自动删除）
+ * - mode = CUSTOM / ROSTER：按自己带的班表响（v1.2.0，见 {@link #cycleLen}）
  */
 public final class Alarm {
 
@@ -25,7 +26,11 @@ public final class Alarm {
         DAILY("每天"),
         WEEKEND("仅休息日"),
         /** v0.41.0：一次性。只有 onceDate 那天响，与周休制度、节假日、请假都无关。 */
-        ONCE("仅一次");
+        ONCE("仅一次"),
+        /** v1.2.0：自定义七天，勾周一到周日。班表存在 {@link #cycleLen} 那组字段里。 */
+        CUSTOM("自定义"),
+        /** v1.2.0：N 天一轮（N = 1~62），上二休二、四班三倒这类。 */
+        ROSTER("轮班");
 
         private final String text;
 
@@ -37,6 +42,11 @@ public final class Alarm {
             return text;
         }
 
+        /** 是否按「自己带的班表」判定，而不是全局那张。 */
+        public boolean isOwnRule() {
+            return this == CUSTOM || this == ROSTER;
+        }
+
         /**
          * 由 JSON 里的 ordinal 还原。越界一律兜回 {@link #WORKDAY}。
          *
@@ -44,6 +54,9 @@ public final class Alarm {
          * 变成「仅休息日」，无伤大雅。现在最大值是 ONCE——越界的脏数据若钳到它，
          * 会造出一个没有 onceDate、永远不会响的「仅一次」闹钟躺在列表里，
          * 比「仅上班日」糟糕得多。兜回默认值才是安全的那个方向。
+         *
+         * <p>v1.2.0 同理：旧版本 App 读到新备份里的 mode=4/5 会兜回「仅上班日」，
+         * 排班错但不会漏响——降级方向安全，这也正是「追加在末尾」的意义。
          */
         public static Mode fromOrdinal(int i) {
             Mode[] vs = values();
@@ -113,6 +126,100 @@ public final class Alarm {
         return c < 0 || c >= COLOR_COUNT ? 0 : c;
     }
 
+    // ================= 自带班表（v1.2.0）=================
+
+    /**
+     * 这条闹钟自己的班表。{@code 0} 表示没有，走全局那张（{@link Mode#WORKDAY} /
+     * {@link Mode#WEEKEND} 的常态）。
+     *
+     * <p><b>为什么不是「引用全局」而是复制一份</b>：全局那张叫「我的班表」，是给日历、
+     * 月统计、小组件看的；而闹钟的重复规则是「这一条什么时候叫」。两者多数时候一致，
+     * 但医院、工厂的人会同时需要「日历按轮班显示」和「吃药闹钟每天响」——只有一个
+     * 全局的话，改一边就把另一边带跑了。
+     *
+     * <p>四个字段和 {@link WeekSchedule.Rule#cycle} 的参数一一对应，语义也照抄：
+     * {@code cycleMask} 第 i 位 = 第 i+1 天上班，{@code cycleStart} 是第 1 天，
+     * {@code cycleHoliday} 表示跟不跟法定节假日。逐日时间这里没有——一条闹钟只有
+     * 一个时刻，{@code Alarm.hour/minute} 就是它。
+     */
+    public int cycleLen;
+
+    /** 第 i 位为 1 表示循环第 i+1 天上班。见 {@link #cycleLen}。 */
+    public long cycleMask;
+
+    /** 循环的第 1 天。null 时 {@link #ownRule()} 退回今天，绝不抛。 */
+    public LocalDate cycleStart;
+
+    /** 自带班表跟不跟法定节假日/调休。默认 false：轮班的人春节照上班。 */
+    public boolean cycleHoliday;
+
+    /**
+     * 这条闹钟自己的规则；没有自带班表返回 {@code null}。
+     *
+     * <p>每次调用新建一个对象而不是缓存：{@code Rule} 是不可变的，而排程一次要算
+     * 几十天，缓存反而要处理失效。一个对象几十字节，GC 完全不在乎。
+     */
+    public WeekSchedule.Rule ownRule() {
+        if (cycleLen <= 0) return null;
+        return WeekSchedule.Rule.cycle(cycleLen, cycleMask, cycleStart, null, cycleHoliday);
+    }
+
+    /**
+     * 判定这一天该用哪张表：自带优先，没有则用传进来的全局。
+     *
+     * <p>排程、日历之外的每一个判断点（{@code ScheduleManager} 的排程与倒计时、
+     * 请假/加班的过滤）都从这里取规则，不要在调用方各写一遍「有就用自己的」——
+     * 漏一处就会出现「首页说会响、实际不响」。
+     */
+    public WeekSchedule.Rule ruleFor(WeekSchedule.Rule global) {
+        WeekSchedule.Rule own = ownRule();
+        return own != null ? own : global;
+    }
+
+    /** 把循环参数设成给定的规则（{@code null} = 清空，回到跟全局）。 */
+    public void applyOwnRule(WeekSchedule.Rule rule) {
+        if (rule == null) {
+            cycleLen = 0;
+            cycleMask = 0L;
+            cycleStart = null;
+            cycleHoliday = false;
+            return;
+        }
+        cycleLen = rule.cycleLen;
+        cycleMask = rule.cycleMask;
+        cycleStart = rule.cycleStart;
+        cycleHoliday = rule.cycleHoliday;
+    }
+
+    /**
+     * 自带班表的一句话说明：「轮班 · 4天上2天」「自定义 · 休2天」。
+     *
+     * <p>不复用 {@link WeekSchedule#describe}：那个按「周期是不是 7 天」猜入口，
+     * 而这里 {@link #mode} 本来就写着答案，没必要猜。猜错的时候用户会看到
+     * 一条「自定义」闹钟显示成「轮班」。
+     */
+    public String ownRuleText() {
+        WeekSchedule.Rule r = ownRule();
+        if (r == null) return mode.text();
+        return describeOwn(mode, r);
+    }
+
+    /**
+     * 自带班表的一句话说明，给列表行和编辑页的摘要行共用。
+     *
+     * <p>单拎成静态是为了编辑页能在「还没保存」的时候也算出同一句话——那里手上
+     * 只有一个草稿 {@code Rule}，没有 Alarm 实例。两处各写一套的话，用户在编辑页
+     * 看到「轮班 · 4天上2天」，保存后列表却写成别的，会以为没存上。
+     */
+    static String describeOwn(Mode mode, WeekSchedule.Rule r) {
+        if (r == null || r.cycleLen <= 0) return mode.text();
+        int work = r.cycleWorkDays();
+        int rest = r.cycleLen - work;
+        if (work == 0) return mode.text() + " · 每天都休";
+        if (mode == Mode.ROSTER) return "轮班 · " + r.cycleLen + "天上" + work + "天";
+        return "自定义 · 休" + rest + "天";
+    }
+
     public Alarm(int id, int hour, int minute, String label, Mode mode, boolean enabled) {
         this(id, hour, minute, label, mode, enabled, null);
     }
@@ -130,7 +237,10 @@ public final class Alarm {
 
     /** 一次性闹钟的规则文案，带上具体日期：「仅一次 · 明天 · 10月23日」。 */
     public String modeTextWithDate() {
-        if (mode != Mode.ONCE) return mode.text();
+        if (mode != Mode.ONCE) {
+            // v1.2.0：自带班表的不走 text()，要带上「几天一轮、上几天」
+            return mode.isOwnRule() ? ownRuleText() : mode.text();
+        }
         String day = onceDayLabel();
         return day == null ? mode.text() : mode.text() + " · " + day;
     }
@@ -282,6 +392,9 @@ public final class Alarm {
      * 法定节假日不算（返回 HOLIDAY 而非 REST），假期不打扰。
      */
     public boolean appliesTo(LocalDate d, WeekSchedule.Rule rule, boolean overtime) {
+        // v1.2.0：自带班表的先换表。不换的话，一条「轮班」闹钟会被拿去套全局的双休，
+        // 休息日照响、工作日反而不响——两处都错，而且只有真到那天才发现。
+        WeekSchedule.Rule r = mode.isOwnRule() ? ruleFor(rule) : rule;
         switch (mode) {
             case ONCE:
                 // 临时闹钟只看日期：那天是休息日、法定节假日还是请假日，都照响。
@@ -290,10 +403,15 @@ public final class Alarm {
             case DAILY:
                 return true;
             case WEEKEND:
-                return WeekSchedule.dayType(d, rule) == WeekSchedule.DayType.REST;
+                return WeekSchedule.dayType(d, r) == WeekSchedule.DayType.REST;
+            case CUSTOM:
+            case ROSTER:
+                // 请假在调用方统一处理（见 ScheduleManager），这里只管班表 + 加班。
+                // 加班 = 用户亲手说「这天要去上班」，比班表更晚更具体，冲突时听他的
+                return WeekSchedule.isWorkday(d, r) || overtime;
             case WORKDAY:
             default:
-                return WeekSchedule.isWorkday(d, rule) || overtime;
+                return WeekSchedule.isWorkday(d, r) || overtime;
         }
     }
 
@@ -322,6 +440,14 @@ public final class Alarm {
                 if (a.ringtone != null && !a.ringtone.isEmpty()) o.put("ringtone", a.ringtone);
                 // 同 color / ringtone：默认值（不静音）不落盘。老备份没有这个键，读时按 false
                 if (a.silent) o.put("silent", true);
+                // v1.2.0：只有自带班表的模式才写这四个键。其余模式写进去也没人看，
+                // 只会让备份文件多出一堆 0
+                if (a.mode.isOwnRule() && a.cycleLen > 0) {
+                    o.put("cycleLen", a.cycleLen);
+                    o.put("cycleMask", a.cycleMask);
+                    if (a.cycleStart != null) o.put("cycleStart", a.cycleStart.toString());
+                    if (a.cycleHoliday) o.put("cycleHoliday", true);
+                }
                 arr.put(o);
             } catch (Exception ignore) {
             }
@@ -364,6 +490,15 @@ public final class Alarm {
                     a.ringtone = ring == null || ring.trim().isEmpty() ? null : ring.trim();
                     // 老版本 / 手改的备份里没有这个键：默认 false，即照常响
                     a.silent = o.optBoolean("silent", false);
+                    // v1.2.0：自带班表。缺字段（老备份）时 cycleLen = 0 → ownRule() 返回 null
+                    // → 退回全局那张，行为与升级前完全一致
+                    a.cycleLen = clamp(o.optInt("cycleLen", 0), 0,
+                            WeekSchedule.Rule.MAX_CYCLE_LEN);
+                    a.cycleMask = a.cycleLen > 0
+                            ? (o.optLong("cycleMask", 0L) & WeekSchedule.Rule.maskOf(a.cycleLen))
+                            : 0L;
+                    a.cycleStart = parseDate(o.optString("cycleStart", null));
+                    a.cycleHoliday = o.optBoolean("cycleHoliday", false);
                     out.add(a);
                 } catch (Exception skip) {
                     // 单条坏数据跳过，别连带丢掉其余闹钟
@@ -377,5 +512,15 @@ public final class Alarm {
 
     private static int clamp(int v, int lo, int hi) {
         return Math.max(lo, Math.min(hi, v));
+    }
+
+    /** 解析 ISO 日期；坏数据返回 null 而不是抛——反序列化路径上抛会丢掉整条闹钟。 */
+    private static LocalDate parseDate(String s) {
+        if (s == null || s.trim().isEmpty()) return null;
+        try {
+            return LocalDate.parse(s.trim());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

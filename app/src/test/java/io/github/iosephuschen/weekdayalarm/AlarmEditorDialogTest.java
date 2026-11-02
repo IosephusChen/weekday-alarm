@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
@@ -25,6 +26,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,17 +86,19 @@ public class AlarmEditorDialogTest {
     }
 
     /**
-     * 四张卡只有主文案，不显示副标题（v0.77.1 用户反馈「副标题没必要」）。
+     * 六张卡只有主文案，不显示副标题（v0.77.1 用户反馈「副标题没必要」）。
      *
      * <p>选项卡的副标题位仍然占位（GONE）——那是 DialogKit 的通用结构，
      * 这条断言钉的是「占位但不显示」。
+     *
+     * <p>v1.2.0 从四张变六张：中间插进「轮班」「自定义」，各有自己的一张表。
      */
     @Test
-    public void modeCards_areFour_titlesOnly() {
+    public void modeCards_areSix_titlesOnly() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
-        assertEquals("四种重复规则", 4, box.getChildCount());
-        for (int i = 0; i < 4; i++) {
+        assertEquals("六种重复规则", 6, box.getChildCount());
+        for (int i = 0; i < 6; i++) {
             View card = box.getChildAt(i);
             assertTrue("第 " + i + " 张卡缺主文案：" + AlarmEditor.MODE_TITLES[i],
                     containsText(card, AlarmEditor.MODE_TITLES[i]));
@@ -111,11 +115,13 @@ public class AlarmEditorDialogTest {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
         assertTrue("第一张（仅上班日）应选中", box.getChildAt(0).isSelected());
-        for (int i = 1; i < 4; i++) {
+        for (int i = 1; i < box.getChildCount(); i++) {
             assertFalse("第 " + i + " 张不该选中", box.getChildAt(i).isSelected());
         }
         assertEquals("新建时不该显示「哪一天」",
                 View.GONE, d.findViewById(R.id.row_once_date).getVisibility());
+        assertEquals("新建时不该显示班表摘要",
+                View.GONE, d.findViewById(R.id.row_own_rule).getVisibility());
         // 未设置的中性按钮 AlertController 仍会创建（button3），只是 GONE
         Button del0 = d.getButton(DialogInterface.BUTTON_NEUTRAL);
         assertTrue("新建时没有可删的闹钟",
@@ -127,15 +133,16 @@ public class AlarmEditorDialogTest {
     public void clickingCards_movesSelection_andTogglesDateRow() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
-        View onceCard = box.getChildAt(3);
+        int onceIdx = AlarmEditor.modeIndex(Alarm.Mode.ONCE);
+        View onceCard = box.getChildAt(onceIdx);
         onceCard.performClick();
         ShadowLooper.idleMainLooper();
 
         assertTrue("点「仅一次」应出现日期行",
                 d.findViewById(R.id.row_once_date).getVisibility() == View.VISIBLE);
-        for (int i = 0; i < 4; i++) {
-            assertEquals("点第 4 张后第 " + i + " 张的选中态",
-                    i == 3, box.getChildAt(i).isSelected());
+        for (int i = 0; i < box.getChildCount(); i++) {
+            assertEquals("点第 " + onceIdx + " 张后第 " + i + " 张的选中态",
+                    i == onceIdx, box.getChildAt(i).isSelected());
         }
 
         box.getChildAt(1).performClick();
@@ -143,7 +150,24 @@ public class AlarmEditorDialogTest {
         assertEquals("切回「每天」日期行应收起",
                 View.GONE, d.findViewById(R.id.row_once_date).getVisibility());
         assertTrue("「每天」应选中", box.getChildAt(1).isSelected());
-        assertFalse("「仅一次」应取消选中", box.getChildAt(3).isSelected());
+        assertFalse("「仅一次」应取消选中", box.getChildAt(onceIdx).isSelected());
+    }
+
+    /** 点「轮班」：摘要行出现，且带着一份能用的默认班表（不是「还没设」）。 */
+    @Test
+    public void clickingRoster_showsOwnRuleRowWithDefault() {
+        AlertDialog d = openEditor(launch(), null, new ArrayList<>());
+        LinearLayout box = modes(d);
+        int rosterIdx = AlarmEditor.modeIndex(Alarm.Mode.ROSTER);
+
+        box.getChildAt(rosterIdx).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点「轮班」应出现班表摘要",
+                View.VISIBLE, d.findViewById(R.id.row_own_rule).getVisibility());
+        TextView tv = d.findViewById(R.id.tv_own_rule);
+        assertTrue("摘要应写出具体形状，实际：" + tv.getText(),
+                tv.getText().toString().startsWith("轮班 · "));
     }
 
     /** 编辑一条「每天」的闹钟：打开时卡片预选在第二张，删除按钮可见。 */
@@ -169,7 +193,10 @@ public class AlarmEditorDialogTest {
         assertEquals(0, AlarmEditor.modeIndex(Alarm.Mode.WORKDAY));
         assertEquals(1, AlarmEditor.modeIndex(Alarm.Mode.DAILY));
         assertEquals(2, AlarmEditor.modeIndex(Alarm.Mode.WEEKEND));
-        assertEquals(3, AlarmEditor.modeIndex(Alarm.Mode.ONCE));
+        // v1.2.0：轮班、自定义插在「仅一次」前面
+        assertEquals(3, AlarmEditor.modeIndex(Alarm.Mode.ROSTER));
+        assertEquals(4, AlarmEditor.modeIndex(Alarm.Mode.CUSTOM));
+        assertEquals(5, AlarmEditor.modeIndex(Alarm.Mode.ONCE));
         assertEquals("未知值按仅上班日处理", 0, AlarmEditor.modeIndex(null));
         for (int i = 0; i < AlarmEditor.MODE_VALUES.length; i++) {
             assertEquals("下标与模式必须一一对应", i,
@@ -183,7 +210,7 @@ public class AlarmEditorDialogTest {
         MainActivity a = launch();
         List<Alarm> list = new ArrayList<>();
         AlertDialog d = openEditor(a, null, list);
-        modes(d).getChildAt(3).performClick();
+        modes(d).getChildAt(AlarmEditor.modeIndex(Alarm.Mode.ONCE)).performClick();
         ShadowLooper.idleMainLooper();
         d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
@@ -193,6 +220,45 @@ public class AlarmEditorDialogTest {
         assertEquals("模式应为「仅一次」", Alarm.Mode.ONCE, saved.mode);
         assertNotNull("一次性闹钟必须存日期", saved.onceDate);
         assertTrue("新闹钟默认开启", saved.enabled);
+    }
+
+    /** 选「轮班」直接保存（没打开过那张表）：也要存下一份能用的班表。 */
+    @Test
+    public void savingRosterWithoutEditing_storesDefaultCycle() {
+        MainActivity a = launch();
+        List<Alarm> list = new ArrayList<>();
+        AlertDialog d = openEditor(a, null, list);
+        modes(d).getChildAt(AlarmEditor.modeIndex(Alarm.Mode.ROSTER)).performClick();
+        ShadowLooper.idleMainLooper();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(1, list.size());
+        Alarm saved = list.get(0);
+        assertEquals(Alarm.Mode.ROSTER, saved.mode);
+        assertNotNull("轮班必须有班表，否则文案和实际对不上", saved.ownRule());
+        assertEquals("默认上二休二", 4, saved.cycleLen);
+        assertEquals(0b0011L, saved.cycleMask);
+        assertFalse("轮班默认不跟节假日", saved.cycleHoliday);
+    }
+
+    /** 切回「仅上班日」时要把自带班表清掉，不能留一张看不见的旧表。 */
+    @Test
+    public void switchingAwayFromRoster_clearsOwnRule() {
+        MainActivity a = launch();
+        Alarm roster = new Alarm(1, 7, 30, "轮班", Alarm.Mode.ROSTER, true);
+        roster.applyOwnRule(WeekSchedule.Rule.cycle(4, 0b0011L, LocalDate.now(), null, false));
+        List<Alarm> list = new ArrayList<>();
+        list.add(roster);
+
+        AlertDialog d = openEditor(a, roster, list);
+        modes(d).getChildAt(0).performClick();
+        ShadowLooper.idleMainLooper();
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(Alarm.Mode.WORKDAY, roster.mode);
+        assertNull("切回跟全局之后不该还留着自己的表", roster.ownRule());
     }
 
     /** 选「仅休息日」再保存：卡片下标 2 必须落到 WEEKEND，别错位成「每天」。 */

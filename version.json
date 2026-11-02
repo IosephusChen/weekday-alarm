@@ -1,12 +1,13 @@
 {
-  "versionCode": 249,
-  "versionName": "1.0.11",
-  "published": "2026-11-01",
-  "title": "小部件缩略图的图标补上了",
+  "versionCode": 250,
+  "versionName": "1.1.0",
+  "published": "2026-11-02",
+  "title": "班表多了「自定义 / 轮班」",
   "notes": [
-    "系统「添加小部件」里的 4×2 缩略图，小图标还是旧的两针版",
-    "1.0.9 换折线针时漏了这张位图，这次补上"
+    "新增第四种制度：按 N 天一轮排，最多 62 天，自己标哪天上班",
+    "轮班默认不跟节假日——医院工厂春节照上班；想要放假可自己打开",
+    "引导页和设置页都能选，日历、小部件、闹钟自动跟着算"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.0.11/weekday-alarm-1.0.11.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.0.11"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.1.0/weekday-alarm-1.1.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.1.0"
 }

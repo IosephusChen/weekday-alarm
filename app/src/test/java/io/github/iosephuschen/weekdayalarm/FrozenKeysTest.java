@@ -33,6 +33,14 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_WEEK_BIG", "week_big");
         PREFS_KEYS.put("KEY_ANCHOR", "anchor");
         PREFS_KEYS.put("KEY_WEEK_MODE", "week_mode");
+        // v1.1.0 自定义 / 轮班。这几个 key 一旦发出去就改不得：
+        // 改了等于所有轮班用户打开 App 发现班表被重置。
+        PREFS_KEYS.put("KEY_CYCLE_LEN", "cycle_len");
+        PREFS_KEYS.put("KEY_CYCLE_MASK", "cycle_mask");
+        PREFS_KEYS.put("KEY_CYCLE_START", "cycle_start");
+        PREFS_KEYS.put("KEY_CYCLE_TIMES", "cycle_times");
+        PREFS_KEYS.put("KEY_CYCLE_HOLIDAY", "cycle_holiday");
+        PREFS_KEYS.put("KEY_CYCLE_KIND", "cycle_kind");
         PREFS_KEYS.put("KEY_WEEK_START", "week_start");
         PREFS_KEYS.put("KEY_ALARM_HOUR", "alarm_hour");
         PREFS_KEYS.put("KEY_ALARM_MIN", "alarm_min");

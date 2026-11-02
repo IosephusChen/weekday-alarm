@@ -89,6 +89,15 @@ public final class ConfigBackup {
             p.put(Prefs.KEY_WEEK_BIG, Prefs.isWeekBig(ctx));
             p.put(Prefs.KEY_ANCHOR, Prefs.getAnchor(ctx).toString());
             p.put(Prefs.KEY_SMALL_REST_SAT, Prefs.isSmallRestSat(ctx));
+            // v1.1.0：自定义 / 轮班的循环参数。不写进来，用户换机恢复后班表会退回默认的
+            // 「7 天、周一到周五」——班表一变，所有闹钟的响铃日跟着全错。
+            p.put(Prefs.KEY_CYCLE_LEN, Prefs.getCycleLen(ctx));
+            p.put(Prefs.KEY_CYCLE_MASK, Prefs.getCycleMask(ctx));
+            p.put(Prefs.KEY_CYCLE_START, Prefs.getCycleStart(ctx).toString());
+            p.put(Prefs.KEY_CYCLE_KIND, Prefs.getCycleKind(ctx));
+            p.put(Prefs.KEY_CYCLE_HOLIDAY, Prefs.isCycleHoliday(ctx));
+            int[] cycleTimes = Prefs.getCycleTimes(ctx);
+            if (cycleTimes != null) p.put(Prefs.KEY_CYCLE_TIMES, joinTimes(cycleTimes));
             p.put(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx));
             p.put(Prefs.KEY_HORIZON, Prefs.getHorizonDays(ctx));
             p.put(Prefs.KEY_ALARMS, new JSONArray(Alarm.toJson(Prefs.getAlarms(ctx))));
@@ -134,6 +143,16 @@ public final class ConfigBackup {
         return "打工人闹钟-配置-"
                 + java.time.LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmm")) + ".json";
+    }
+
+    /** 循环里每天的时间拼成 "480,840,-1,-1"（-1 = 休息 / 未指定），与 Prefs 内部格式一致。 */
+    private static String joinTimes(int[] times) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < times.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(times[i]);
+        }
+        return sb.toString();
     }
 
     private static JSONArray toArray(Set<LocalDate> dates) {
@@ -227,6 +246,21 @@ public final class ConfigBackup {
         if (anchor != null) ed.putString(Prefs.KEY_ANCHOR, anchor.toString());
         ed.putBoolean(Prefs.KEY_SMALL_REST_SAT,
                 p.optBoolean(Prefs.KEY_SMALL_REST_SAT, Prefs.isSmallRestSat(ctx)));
+        // 老备份没有这几个键：opt 的缺省值取「当前设置」，等于不动，不会把班表冲掉
+        ed.putInt(Prefs.KEY_CYCLE_LEN,
+                p.optInt(Prefs.KEY_CYCLE_LEN, Prefs.getCycleLen(ctx)));
+        ed.putLong(Prefs.KEY_CYCLE_MASK,
+                p.optLong(Prefs.KEY_CYCLE_MASK, Prefs.getCycleMask(ctx)));
+        String cycleStart = p.optString(Prefs.KEY_CYCLE_START, "");
+        if (cycleStart.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            ed.putString(Prefs.KEY_CYCLE_START, cycleStart);
+        }
+        ed.putInt(Prefs.KEY_CYCLE_KIND,
+                p.optInt(Prefs.KEY_CYCLE_KIND, Prefs.getCycleKind(ctx)));
+        ed.putBoolean(Prefs.KEY_CYCLE_HOLIDAY,
+                p.optBoolean(Prefs.KEY_CYCLE_HOLIDAY, Prefs.isCycleHoliday(ctx)));
+        String cycleTimesStr = p.optString(Prefs.KEY_CYCLE_TIMES, "");
+        if (!cycleTimesStr.isEmpty()) ed.putString(Prefs.KEY_CYCLE_TIMES, cycleTimesStr);
         // 一周开始日只有 0 / 1，越界按周一起始（与 Prefs.getWeekStart 同口径）
         ed.putInt(Prefs.KEY_WEEK_START,
                 p.optInt(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx)) == Prefs.WEEK_START_SUNDAY

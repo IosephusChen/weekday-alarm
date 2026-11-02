@@ -44,7 +44,18 @@ public final class WeekSchedule {
         BIG_SMALL("大小周"),
         DOUBLE_REST("双休"),
         SINGLE_REST_SUN("单休 · 周日休"),
-        SINGLE_REST_SAT("单休 · 周六休");
+        SINGLE_REST_SAT("单休 · 周六休"),
+        /**
+         * 自定义 / 轮班（v1.1.0）：N 天循环，每天自己标上不上班。
+         *
+         * <p>「自定义」和「轮班」在数据上是同一件事，只是周期长度不同：
+         * 自定义固定 7 天（勾周一到周日），轮班 2~62 天任意。
+         * 分成两个入口只是说法不同，底层都走 {@link Rule#cycleMask}。
+         *
+         * <p><b>必须追加在最后</b>：{@link #fromOrdinal} 按序号还原，
+         * 插在中间会让老用户存下的 week_mode 全部错位——排班一变，闹钟全错。
+         */
+        CYCLE("自定义 / 轮班");
 
         public final String label;
 
@@ -55,6 +66,11 @@ public final class WeekSchedule {
         /** 是否需要用 anchor / 大周小周这套 14 天循环。 */
         public boolean needsAnchor() {
             return this == BIG_SMALL;
+        }
+
+        /** 是否走「N 天循环」这套（自定义、轮班）。 */
+        public boolean isCycle() {
+            return this == CYCLE;
         }
 
         /**
@@ -82,14 +98,87 @@ public final class WeekSchedule {
         public final LocalDate anchor;
         public final boolean smallRestSat;
 
+        // ===== v1.1.0：自定义 / 轮班（Mode.CYCLE）专用，其余模式忽略 =====
+
+        /**
+         * 循环天数 1~{@link #MAX_CYCLE_LEN}。
+         *
+         * <p>取 62 是为了对齐澎湃：它的「轮班周期」滚轮能一直滚到 62 天，
+         * 铁路、船员这类长周期班型都在这条线以内。位掩码用 {@code long}，
+         * 64 位够装 62 天，不必再引入数组。
+         */
+        public final int cycleLen;
+
+        /** 第 i 位为 1 表示「循环第 i+1 天上班」。用 long 是因为 62 天超过 int 的 32 位。 */
+        public final long cycleMask;
+
+        /** 循环的第 1 天。取 {@code cycleStart} 那天为第 1 天，往后每 {@link #cycleLen} 天一循环。 */
+        public final LocalDate cycleStart;
+
+        /**
+         * 循环里每天的具体响铃分钟数（0~1439），{@code -1} 表示这天休息。
+         *
+         * <p>可以为 null——null 表示「只记了上不上班，时间由每个闹钟自己定」，
+         * 这是自定义（勾星期）的常态。非 null 时长度必须等于 {@link #cycleLen}，
+         * 长度对不上按 null 处理，宁可退化成「跟闹钟时间」也不要越界。
+         */
+        public final int[] cycleTimes;
+
+        /** 循环模式下是否跟随法定节假日与调休补班。默认 false——轮班的人春节照上班。 */
+        public final boolean cycleHoliday;
+
+        /** 位掩码能表达的最大天数（long 只有 64 位）。 */
+        public static final int MAX_CYCLE_LEN = 62;
+
         public Rule(Mode mode, LocalDate anchor, boolean smallRestSat) {
+            this(mode, anchor, smallRestSat, 0, 0L, null, null, false);
+        }
+
+        public Rule(Mode mode, LocalDate anchor, boolean smallRestSat,
+                    int cycleLen, long cycleMask, LocalDate cycleStart,
+                    int[] cycleTimes, boolean cycleHoliday) {
             this.mode = mode == null ? Mode.BIG_SMALL : mode;
             this.anchor = anchor;
             this.smallRestSat = smallRestSat;
+            this.cycleLen = cycleLen;
+            this.cycleMask = cycleMask;
+            // 兜底：三参构造（老代码仍在用）传进来的 cycleStart 是 null，
+            // 而 mode 万一被写成 CYCLE，cycleIndex 会在 ChronoUnit.between 上抛 NPE。
+            // 排班一抛异常，整个日历和闹钟都停摆，所以这里必须给一个可用值。
+            this.cycleStart = cycleStart == null ? LocalDate.now() : cycleStart;
+            this.cycleTimes = cycleTimes;
+            this.cycleHoliday = cycleHoliday;
         }
 
         public static Rule bigSmall(LocalDate anchor, boolean smallRestSat) {
             return new Rule(Mode.BIG_SMALL, anchor, smallRestSat);
+        }
+
+        /**
+         * 自定义 / 轮班。
+         *
+         * <p>这里做一次兜底：周期长度夹到 1~62，起始日为 null 时退回今天。
+         * 脏数据（手改配置、老备份）进来时宁可排出一张能用的表，也不要让
+         * {@link #dayType} 除零或抛出异常——排班一崩，闹钟就全不响了。
+         */
+        public static Rule cycle(int len, long mask, LocalDate start, int[] times, boolean holiday) {
+            int safeLen = Math.max(1, Math.min(len, MAX_CYCLE_LEN));
+            LocalDate safeStart = start == null ? LocalDate.now() : start;
+            int[] safeTimes = (times != null && times.length == safeLen) ? times : null;
+            long safeMask = mask & maskOf(safeLen);
+            return new Rule(Mode.CYCLE, null, false, safeLen, safeMask, safeStart, safeTimes, holiday);
+        }
+
+        /** 前 n 天全为 1 的掩码。 */
+        public static long maskOf(int n) {
+            if (n <= 0) return 0L;
+            if (n >= MAX_CYCLE_LEN) return -1L >>> (64 - MAX_CYCLE_LEN);
+            return (1L << n) - 1L;
+        }
+
+        /** 这个循环一共上几天班。 */
+        public int cycleWorkDays() {
+            return Long.bitCount(cycleMask & maskOf(cycleLen));
         }
     }
 
@@ -144,6 +233,17 @@ public final class WeekSchedule {
 
     /** 该日期的类型（节假日优先于周休制度）。 */
     public static DayType dayType(LocalDate d, Rule rule) {
+        // v1.1.0：自定义 / 轮班先分流，且**必须在这两行节假日判断之前**。
+        // 轮班的人春节照上班（医院、工厂、安保全年不停），如果照旧先判节假日，
+        // 整个春节会被判成「假」，闹钟集体不响——这是本功能最容易出错的地方。
+        if (rule.mode.isCycle()) {
+            if (rule.cycleHoliday) {
+                if (HolidayData.isMakeupWorkday(d)) return DayType.MAKEUP_WORK;
+                if (HolidayData.isHoliday(d)) return DayType.HOLIDAY;
+            }
+            return isCycleWorkday(d, rule) ? DayType.WORK : DayType.REST;
+        }
+
         if (HolidayData.isMakeupWorkday(d)) return DayType.MAKEUP_WORK;
         if (HolidayData.isHoliday(d)) return DayType.HOLIDAY;
 
@@ -181,6 +281,42 @@ public final class WeekSchedule {
         return dayType(d, Rule.bigSmall(anchor, smallRestSat));
     }
 
+    // ================= 自定义 / 轮班（v1.1.0）=================
+
+    /**
+     * 这一天落在循环里的第几天（0 基）。
+     *
+     * <p>{@code Math.floorMod} 而不是 {@code %}：目标日期早于起始日时，
+     * 后者会给出负数，拿去做基移位得到的是垃圾值，班表会莫名其妙全乱。
+     * 排班允许往前看（日历能翻到上个月），这条路一定会走到。
+     */
+    public static int cycleIndex(LocalDate d, Rule rule) {
+        int len = rule.cycleLen <= 0 ? 1 : rule.cycleLen;
+        long days = ChronoUnit.DAYS.between(rule.cycleStart, d);
+        return (int) Math.floorMod(days, (long) len);
+    }
+
+    /** 循环模式下这一天是否上班。 */
+    public static boolean isCycleWorkday(LocalDate d, Rule rule) {
+        int idx = cycleIndex(d, rule);
+        return ((rule.cycleMask >>> idx) & 1L) == 1L;
+    }
+
+    /**
+     * 循环模式下这一天在班表里填的时间（当天 0 点起的分钟数）。
+     *
+     * <p>返回 {@code -1} 有两种情况，调用方一律当「没有班表时间」处理：
+     * 这天休息，或者用户压根没给循环填过时间（只有上不上班）。
+     * 后一种是自定义的常态——时间由每个闹钟自己定。
+     */
+    public static int cycleTimeOf(LocalDate d, Rule rule) {
+        if (rule.cycleTimes == null) return -1;
+        if (!isCycleWorkday(d, rule)) return -1;
+        int idx = cycleIndex(d, rule);
+        if (idx < 0 || idx >= rule.cycleTimes.length) return -1;
+        return rule.cycleTimes[idx];
+    }
+
     /** 该日期是否上班。 */
     public static boolean isWorkday(LocalDate d, Rule rule) {
         DayType t = dayType(d, rule);
@@ -216,6 +352,13 @@ public final class WeekSchedule {
                 return "单休 · 周日休";
             case SINGLE_REST_SAT:
                 return "单休 · 周六休";
+            case CYCLE: {
+                int work = rule.cycleWorkDays();
+                int rest = rule.cycleLen - work;
+                if (work == 0) return "自定义 · 每天都休";
+                if (rule.cycleLen == 7) return "自定义 · 休" + rest + "天";
+                return "轮班 · " + rule.cycleLen + "天上" + work + "天";
+            }
             case BIG_SMALL:
             default:
                 return isBigWeekNow(today, rule.anchor) ? "大周 · 休2天" : "小周 · 休1天";

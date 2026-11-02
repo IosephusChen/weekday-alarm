@@ -86,6 +86,8 @@ public class GuideActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSmallRest, rowSingleDay;
     private TextView optBig, optSmall, optSmallRestSun, optSmallRestSat, optRestSun, optRestSat;
+    /** 自定义 / 轮班那张卡的副标题（v1.1.0）：显示「轮班 · 4天上2天」这类概况。 */
+    private TextView tvCycleSub;
     private final List<View> modeCards = new ArrayList<>();
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
@@ -125,6 +127,7 @@ public class GuideActivity extends AppCompatActivity {
         optSmallRestSat = findViewById(R.id.opt_smallrest_sat);
         rowSingleDay = findViewById(R.id.row_singleday);
         optRestSun = findViewById(R.id.opt_rest_sun);
+        tvCycleSub = findViewById(R.id.tv_cycle_sub);
         optRestSat = findViewById(R.id.opt_rest_sat);
 
         stNotif = findViewById(R.id.st_notif);
@@ -241,6 +244,11 @@ public class GuideActivity extends AppCompatActivity {
         // v0.39.0：周六休 / 周日休合成一张卡，休哪天交给下面的子选项。
         // 卡本身用 SINGLE_REST_SUN 代表「单休这一组」，真正写哪个由 selectMode 决定。
         addModeCard(R.id.mode_single, WeekSchedule.Mode.SINGLE_REST_SUN);
+        // v1.1.0：自定义 / 轮班。这张卡不直接改模式——它要先把周期和逐日班次问清楚，
+        // 所以点开编辑器，等那边「确定」再落盘（CycleEditor 里会 setWeekMode）。
+        addModeCard(R.id.mode_cycle, WeekSchedule.Mode.CYCLE);
+        findViewById(R.id.mode_cycle).setOnClickListener(v ->
+                CycleEditor.show(this, this::syncModeUi));
 
         optBig.setOnClickListener(v -> setWeekBig(true));
         optSmall.setOnClickListener(v -> setWeekBig(false));
@@ -334,6 +342,10 @@ public class GuideActivity extends AppCompatActivity {
             optSmallRestSun.setSelected(!restSat);
             optSmallRestSat.setSelected(restSat);
         }
+
+        tvCycleSub.setText(current == WeekSchedule.Mode.CYCLE
+                ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
+                : "几天一轮，自己标哪天上班");
 
         boolean single = isSingleRest(current);
         rowSingleDay.setVisibility(single ? View.VISIBLE : View.GONE);

@@ -92,6 +92,9 @@ public class WeekModeTest {
     public void holidayBeatsEveryMode() {
         LocalDate nationalDay = LocalDate.of(2026, 10, 2);   // 国庆假期，周五
         for (WeekSchedule.Mode m : WeekSchedule.Mode.values()) {
+            // v1.1.0：CYCLE（自定义 / 轮班）**默认不跟节假日**——轮班的人春节照上班，
+            // 这是刻意的设计，不是漏判。它的「跟 / 不跟」两种情形在 CycleScheduleTest 里单独覆盖。
+            if (m.isCycle()) continue;
             assertEquals("制度 " + m + " 下 10/2 都应是假日",
                     WeekSchedule.DayType.HOLIDAY, WeekSchedule.dayType(nationalDay, rule(m)));
         }
@@ -101,6 +104,7 @@ public class WeekModeTest {
     public void makeupWorkdayBeatsEveryMode() {
         LocalDate makeup = LocalDate.of(2026, 10, 10);       // 周六补班
         for (WeekSchedule.Mode m : WeekSchedule.Mode.values()) {
+            if (m.isCycle()) continue;   // 同 holidayBeatsEveryMode：轮班默认不吃节假日与补班
             assertEquals("制度 " + m + " 下 10/10 都应是补班",
                     WeekSchedule.DayType.MAKEUP_WORK, WeekSchedule.dayType(makeup, rule(m)));
         }
@@ -262,13 +266,16 @@ public class WeekModeTest {
      * 收到下面条件区，大类不掺细节。
      */
     @Test
-    public void dialogOffersThreeCategories() {
+    public void dialogOffersFourCategories() {
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
         assertNotNull(d);
         android.view.ViewGroup rg = d.findViewById(R.id.rg_mode);
         assertNotNull(rg);
-        assertEquals("大类应正好三个", 3, rg.getChildCount());
+        // v1.1.0 加了第四类「自定义 / 轮班」。这个数字写死是有意的：
+        // 卡片漏加或重复加，用户要么选不到轮班，要么看到两张一样的卡。
+        assertEquals("大类应正好四个", 4, rg.getChildCount());
+        assertNotNull("自定义 / 轮班卡必须存在", d.findViewById(R.id.rb_cycle));
     }
 
     /** 从双休切到「单休」不指定日子时，默认周日休。 */

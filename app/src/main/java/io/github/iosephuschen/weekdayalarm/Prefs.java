@@ -148,7 +148,129 @@ public final class Prefs {
 
     /** 打包成一次判断所需的全部上下文；调度、日历、小组件、睡前提醒统一用它。 */
     public static WeekSchedule.Rule getRule(Context c) {
-        return new WeekSchedule.Rule(getWeekMode(c), getAnchor(c), isSmallRestSat(c));
+        return new WeekSchedule.Rule(
+                getWeekMode(c), getAnchor(c), isSmallRestSat(c),
+                getCycleLen(c), getCycleMask(c), getCycleStart(c),
+                getCycleTimes(c), isCycleHoliday(c));
+    }
+
+    // ================= 自定义 / 轮班（v1.1.0）=================
+
+    /** 入口：0 = 自定义（固定 7 天，勾星期），1 = 轮班（N 天循环）。只影响界面文案与默认值。 */
+    public static final int CYCLE_KIND_WEEK = 0;
+    public static final int CYCLE_KIND_ROTATION = 1;
+
+    public static final String KEY_CYCLE_LEN = "cycle_len";
+    public static final String KEY_CYCLE_MASK = "cycle_mask";
+    public static final String KEY_CYCLE_START = "cycle_start";
+    public static final String KEY_CYCLE_TIMES = "cycle_times";
+    public static final String KEY_CYCLE_HOLIDAY = "cycle_holiday";
+    public static final String KEY_CYCLE_KIND = "cycle_kind";
+
+    public static int getCycleKind(Context c) {
+        return sp(c).getInt(KEY_CYCLE_KIND, CYCLE_KIND_WEEK) == CYCLE_KIND_ROTATION
+                ? CYCLE_KIND_ROTATION : CYCLE_KIND_WEEK;
+    }
+
+    public static void setCycleKind(Context c, int kind) {
+        sp(c).edit().putInt(KEY_CYCLE_KIND,
+                kind == CYCLE_KIND_ROTATION ? CYCLE_KIND_ROTATION : CYCLE_KIND_WEEK).apply();
+    }
+
+    /** 周期天数。越界夹到 1~62——脏数据不能让排班除零。 */
+    public static int getCycleLen(Context c) {
+        int n = sp(c).getInt(KEY_CYCLE_LEN, 7);
+        return Math.max(1, Math.min(n, WeekSchedule.Rule.MAX_CYCLE_LEN));
+    }
+
+    public static void setCycleLen(Context c, int len) {
+        sp(c).edit().putInt(KEY_CYCLE_LEN,
+                Math.max(1, Math.min(len, WeekSchedule.Rule.MAX_CYCLE_LEN))).apply();
+    }
+
+    /**
+     * 循环里哪天上班的位掩码，第 0 位 = 第 1 天。
+     *
+     * <p>默认「周一到周五上班」而不是 0（全休）：用户从「自定义」入口点进来时，
+     * 看到的是一个能直接用的双休变体，而不是一张全灰的表还要自己从头点亮。
+     */
+    public static long getCycleMask(Context c) {
+        long m = sp(c).getLong(KEY_CYCLE_MASK, 0b0011111L);
+        return m & WeekSchedule.Rule.maskOf(getCycleLen(c));
+    }
+
+    public static void setCycleMask(Context c, long mask) {
+        sp(c).edit().putLong(KEY_CYCLE_MASK, mask).apply();
+    }
+
+    public static LocalDate getCycleStart(Context c) {
+        String s = sp(c).getString(KEY_CYCLE_START, null);
+        if (s != null) {
+            try {
+                return LocalDate.parse(s);
+            } catch (Exception ignore) {
+            }
+        }
+        // 缺省取「本周一」：自定义是按星期勾的，周一当第 1 天最符合直觉。
+        return LocalDate.now().with(java.time.DayOfWeek.MONDAY);
+    }
+
+    public static void setCycleStart(Context c, LocalDate start) {
+        if (start == null) return;
+        sp(c).edit().putString(KEY_CYCLE_START, start.toString()).apply();
+    }
+
+    /**
+     * 循环里每天的时间（分钟，-1 = 休息）；没设过返回 null。
+     *
+     * <p>存成逗号分隔的字符串而不是数组：SharedPreferences 没有 int[]，
+     * 而这个东西只在排班推算时读一次，解析开销可以忽略。
+     * 长度对不上当前周期一律当 null——宁可退化成「跟闹钟时间」，也不要越界。
+     */
+    public static int[] getCycleTimes(Context c) {
+        String s = sp(c).getString(KEY_CYCLE_TIMES, null);
+        if (s == null || s.isEmpty()) return null;
+        String[] parts = s.split(",");
+        int len = getCycleLen(c);
+        if (parts.length != len) return null;
+        int[] out = new int[len];
+        try {
+            for (int i = 0; i < len; i++) {
+                int v = Integer.parseInt(parts[i].trim());
+                out[i] = (v >= 0 && v <= 1439) ? v : -1;
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return out;
+    }
+
+    public static void setCycleTimes(Context c, int[] times) {
+        if (times == null || times.length == 0) {
+            sp(c).edit().remove(KEY_CYCLE_TIMES).apply();
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < times.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(times[i]);
+        }
+        sp(c).edit().putString(KEY_CYCLE_TIMES, sb.toString()).apply();
+    }
+
+    /**
+     * 循环模式下是否跟随法定节假日。
+     *
+     * <p>默认值按入口分：自定义（勾星期）多是服务业、教培，春节真放假 → 跟；
+     * 轮班（几天一倒）多是医院、工厂、安保，春节照上班 → 不跟。
+     * 跟错方向的代价是整段假期不响或整段假期乱响，所以这个默认值不能一刀切。
+     */
+    public static boolean isCycleHoliday(Context c) {
+        return sp(c).getBoolean(KEY_CYCLE_HOLIDAY, getCycleKind(c) == CYCLE_KIND_WEEK);
+    }
+
+    public static void setCycleHoliday(Context c, boolean follow) {
+        sp(c).edit().putBoolean(KEY_CYCLE_HOLIDAY, follow).apply();
     }
 
     // ================= 一周开始日（v0.28.0）=================

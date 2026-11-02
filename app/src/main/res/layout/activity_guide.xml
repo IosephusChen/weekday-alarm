@@ -205,6 +205,39 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
+                <!-- v1.1.0：自定义 / 轮班。点开是循环编辑器，保存即生效。 -->
+                <LinearLayout
+                    android:id="@+id/mode_cycle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_10"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="@dimen/space_16"
+                    android:paddingBottom="13dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="自定义 / 轮班"
+                        android:textColor="@color/ink"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_cycle_sub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="几天一轮，自己标哪天上班"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
                 <!-- 大小周专属：本周是大周还是小周 -->
                 <LinearLayout
                     android:id="@+id/row_weekbig"

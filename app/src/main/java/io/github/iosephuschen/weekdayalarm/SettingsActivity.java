@@ -291,7 +291,12 @@ public class SettingsActivity extends AppCompatActivity {
      * 这里再写一遍会让这一行太长，而且那是「本周状态」不是「制度」。
      */
     private void updateWeekModeUi() {
-        tvWeekMode.setText(Prefs.getWeekMode(this).label);
+        WeekSchedule.Mode mode = Prefs.getWeekMode(this);
+        // 循环模式下 label 只是「自定义 / 轮班」，看不出现在是几天一轮——
+        // 这里换成 describe 给出的概况（「轮班 · 4天上2天」），一眼能确认自己设的是哪套。
+        tvWeekMode.setText(mode == WeekSchedule.Mode.CYCLE
+                ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
+                : mode.label);
     }
     /**
      * 周休制度（v0.61.0 改成「大类 + 条件细节」）。
@@ -310,6 +315,7 @@ public class SettingsActivity extends AppCompatActivity {
         View cardBigSmall = view.findViewById(R.id.rb_big_small);
         View cardDouble = view.findViewById(R.id.rb_double);
         View cardSingle = view.findViewById(R.id.rb_single);
+        View cardCycle = view.findViewById(R.id.rb_cycle);
         ViewGroup boxBigSmall = view.findViewById(R.id.box_big_small);
         ViewGroup boxSingle = view.findViewById(R.id.box_single);
         ViewGroup groupWeekBig = view.findViewById(R.id.rg_week_big);
@@ -327,12 +333,16 @@ public class SettingsActivity extends AppCompatActivity {
         final boolean[] bigTouched = {false};
         final boolean wasBigSmall = Prefs.getWeekMode(this) == WeekSchedule.Mode.BIG_SMALL;
         final WeekSchedule.Mode[] mode = {Prefs.getWeekMode(this)};
+        // 卡片「自定义 / 轮班」要在点击时把整个对话框关掉，得先拿到它的引用
+        final androidx.appcompat.app.AlertDialog[] dlgHolder = new androidx.appcompat.app.AlertDialog[1];
 
         Runnable refresh = () -> {
             boolean isBigSmall = mode[0] == WeekSchedule.Mode.BIG_SMALL;
             boolean isSingle = mode[0] == WeekSchedule.Mode.SINGLE_REST_SAT
                     || mode[0] == WeekSchedule.Mode.SINGLE_REST_SUN;
-            markOnly(groupMode, isBigSmall ? cardBigSmall : isSingle ? cardSingle : cardDouble);
+            boolean isCycle = mode[0] == WeekSchedule.Mode.CYCLE;
+            markOnly(groupMode, isCycle ? cardCycle
+                    : isBigSmall ? cardBigSmall : isSingle ? cardSingle : cardDouble);
             boxBigSmall.setVisibility(isBigSmall ? View.VISIBLE : View.GONE);
             boxSingle.setVisibility(isSingle ? View.VISIBLE : View.GONE);
             markOnly(groupWeekBig, groupWeekBig.getChildAt(big[0] ? 0 : 1));
@@ -352,6 +362,15 @@ public class SettingsActivity extends AppCompatActivity {
             mode[0] = restSat[0] ? WeekSchedule.Mode.SINGLE_REST_SAT
                     : WeekSchedule.Mode.SINGLE_REST_SUN;
             refresh.run();
+        });
+        // 自定义 / 轮班不能在这个对话框里展开：62 天的逐日列表会把它撑到屏幕外。
+        // 直接把班制对话框关掉、开循环编辑器——那边点「确定」就是保存，不用再回来按一次。
+        cardCycle.setOnClickListener(v -> {
+            if (dlgHolder[0] != null) dlgHolder[0].dismiss();
+            CycleEditor.show(this, () -> {
+                updateWeekModeUi();
+                applySettingsNow();
+            });
         });
         groupWeekBig.getChildAt(0).setOnClickListener(v -> {
             big[0] = true;
@@ -383,7 +402,7 @@ public class SettingsActivity extends AppCompatActivity {
         });
         refresh.run();
 
-        new RoundedDialog.Builder(this)
+        dlgHolder[0] = new RoundedDialog.Builder(this)
                 .setView(view)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确定", (d, w) -> {
@@ -401,6 +420,10 @@ public class SettingsActivity extends AppCompatActivity {
                         Prefs.setSmallRestSat(this, restSat[0]);
                     } else if (mode[0] == WeekSchedule.Mode.DOUBLE_REST) {
                         Prefs.setWeekMode(this, WeekSchedule.Mode.DOUBLE_REST);
+                    } else if (mode[0] == WeekSchedule.Mode.CYCLE) {
+                        // 循环的周期、起始日、逐日班次都已在 CycleEditor 里存过，
+                        // 这里只把制度切过去。缺了这一支，点确定会被下面的 else 改成单休。
+                        Prefs.setWeekMode(this, WeekSchedule.Mode.CYCLE);
                     } else {
                         Prefs.setWeekMode(this, restSat[0] ? WeekSchedule.Mode.SINGLE_REST_SAT
                                 : WeekSchedule.Mode.SINGLE_REST_SUN);

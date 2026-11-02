@@ -137,6 +137,40 @@
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>
+
+            <!-- v1.1.0：自定义 / 轮班。点它直接开循环编辑器，不在这里展开——
+                 62 天的逐日列表塞进这个对话框会把其他选项挤到屏幕外。 -->
+            <LinearLayout
+                android:id="@+id/rb_cycle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_guide_option"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="13dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="13dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="自定义 / 轮班"
+                    android:textColor="@color/ink"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cycle_sub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="按 N 天一轮排，自己标哪天上班"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- 仅大小周：本周是大周还是小周 + 小周休哪天 -->

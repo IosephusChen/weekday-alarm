@@ -315,6 +315,7 @@ public class SettingsActivity extends AppCompatActivity {
         View cardBigSmall = view.findViewById(R.id.rb_big_small);
         View cardDouble = view.findViewById(R.id.rb_double);
         View cardSingle = view.findViewById(R.id.rb_single);
+        View cardCustom = view.findViewById(R.id.rb_custom);
         View cardCycle = view.findViewById(R.id.rb_cycle);
         ViewGroup boxBigSmall = view.findViewById(R.id.box_big_small);
         ViewGroup boxSingle = view.findViewById(R.id.box_single);
@@ -341,7 +342,9 @@ public class SettingsActivity extends AppCompatActivity {
             boolean isSingle = mode[0] == WeekSchedule.Mode.SINGLE_REST_SAT
                     || mode[0] == WeekSchedule.Mode.SINGLE_REST_SUN;
             boolean isCycle = mode[0] == WeekSchedule.Mode.CYCLE;
-            markOnly(groupMode, isCycle ? cardCycle
+            // 两个入口共用 Mode.CYCLE，靠 cycleKind 区分该点亮哪张卡
+            boolean isWeekCycle = Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_WEEK;
+            markOnly(groupMode, isCycle ? (isWeekCycle ? cardCustom : cardCycle)
                     : isBigSmall ? cardBigSmall : isSingle ? cardSingle : cardDouble);
             boxBigSmall.setVisibility(isBigSmall ? View.VISIBLE : View.GONE);
             boxSingle.setVisibility(isSingle ? View.VISIBLE : View.GONE);
@@ -364,10 +367,17 @@ public class SettingsActivity extends AppCompatActivity {
             refresh.run();
         });
         // 自定义 / 轮班不能在这个对话框里展开：62 天的逐日列表会把它撑到屏幕外。
-        // 直接把班制对话框关掉、开循环编辑器——那边点「确定」就是保存，不用再回来按一次。
+        // 直接把班制对话框关掉、开对应入口的编辑器——那边点「确定」就是保存，不用再回来按一次。
+        cardCustom.setOnClickListener(v -> {
+            if (dlgHolder[0] != null) dlgHolder[0].dismiss();
+            CycleEditor.show(this, Prefs.CYCLE_KIND_WEEK, () -> {
+                updateWeekModeUi();
+                applySettingsNow();
+            });
+        });
         cardCycle.setOnClickListener(v -> {
             if (dlgHolder[0] != null) dlgHolder[0].dismiss();
-            CycleEditor.show(this, () -> {
+            CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, () -> {
                 updateWeekModeUi();
                 applySettingsNow();
             });

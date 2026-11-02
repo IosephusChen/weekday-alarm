@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日期选择器里「今天」（v1.1.1）：淡紫圆底，与日历页的「今天」同一对色
+     （day_today_bg / day_today_text）。这里只用底色、不用描边——
+     34dp 的圆上加一圈描边会显得比选中的那个还重。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/day_today_bg" />
+</shape>

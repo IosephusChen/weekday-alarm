@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「今天」小标签（v1.1.1）：淡紫底 + 主色字，贴在当天那一行的标题后面。
+
+     为什么不做成「整行变色」：列表行之间只隔一条发丝线，整行铺淡紫会跟
+     上面那行连成一块，反而分不清哪行是哪行。小标签只在需要时出现一次，
+     扫视时不打断列表的整齐。
+
+     圆角用 radius_chip（10dp）。这个标签高约 18dp，10dp 已经接近胶囊，
+     看着是「一枚标签」而不是「一个圆角方块」——正好。
+     不写真值：DesignTokenTest 要求形状只准引用 @dimen/radius_*。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/day_today_bg" />
+    <corners android:radius="@dimen/radius_chip" />
+</shape>

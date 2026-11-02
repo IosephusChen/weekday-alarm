@@ -86,8 +86,9 @@ public class GuideActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> importLauncher;
     private LinearLayout rowWeekBig, rowSmallRest, rowSingleDay;
     private TextView optBig, optSmall, optSmallRestSun, optSmallRestSat, optRestSun, optRestSat;
-    /** 自定义 / 轮班那张卡的副标题（v1.1.0）：显示「轮班 · 4天上2天」这类概况。 */
+    /** 自定义 / 轮班两张卡的副标题（v1.1.1）：显示当前设成什么样。 */
     private TextView tvCycleSub;
+    private TextView tvCustomSub;
     private final List<View> modeCards = new ArrayList<>();
     /** 与 modeCards 一一对应的制度；「单休」那张卡用 SINGLE_REST_SUN 代表整组。 */
     private final List<WeekSchedule.Mode> cardModes = new ArrayList<>();
@@ -128,6 +129,7 @@ public class GuideActivity extends AppCompatActivity {
         rowSingleDay = findViewById(R.id.row_singleday);
         optRestSun = findViewById(R.id.opt_rest_sun);
         tvCycleSub = findViewById(R.id.tv_cycle_sub);
+        tvCustomSub = findViewById(R.id.tv_custom_sub);
         optRestSat = findViewById(R.id.opt_rest_sat);
 
         stNotif = findViewById(R.id.st_notif);
@@ -246,9 +248,14 @@ public class GuideActivity extends AppCompatActivity {
         addModeCard(R.id.mode_single, WeekSchedule.Mode.SINGLE_REST_SUN);
         // v1.1.0：自定义 / 轮班。这张卡不直接改模式——它要先把周期和逐日班次问清楚，
         // 所以点开编辑器，等那边「确定」再落盘（CycleEditor 里会 setWeekMode）。
-        addModeCard(R.id.mode_cycle, WeekSchedule.Mode.CYCLE);
+        //
+        // v1.1.1：两张卡都走编辑器，但都**不进 modeCards**——它们共用 Mode.CYCLE，
+        // 放进去会在 syncModeUi 的循环里被同一条件点亮，界面上两张卡同时选中。
+        // 选中态按 cycleKind 单独判，见下面的 syncModeUi。
+        findViewById(R.id.mode_custom).setOnClickListener(v ->
+                CycleEditor.show(this, Prefs.CYCLE_KIND_WEEK, this::syncModeUi));
         findViewById(R.id.mode_cycle).setOnClickListener(v ->
-                CycleEditor.show(this, this::syncModeUi));
+                CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, this::syncModeUi));
 
         optBig.setOnClickListener(v -> setWeekBig(true));
         optSmall.setOnClickListener(v -> setWeekBig(false));
@@ -343,7 +350,15 @@ public class GuideActivity extends AppCompatActivity {
             optSmallRestSat.setSelected(restSat);
         }
 
-        tvCycleSub.setText(current == WeekSchedule.Mode.CYCLE
+        // 两张 CYCLE 卡：选中态按 cycleKind 分，副标题显示当前设成什么样
+        boolean cycle = current == WeekSchedule.Mode.CYCLE;
+        boolean weekKind = Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_WEEK;
+        findViewById(R.id.mode_custom).setSelected(cycle && weekKind);
+        findViewById(R.id.mode_cycle).setSelected(cycle && !weekKind);
+        tvCustomSub.setText(cycle && weekKind
+                ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
+                : "勾周一到周日，每周固定");
+        tvCycleSub.setText(cycle && !weekKind
                 ? WeekSchedule.describe(Prefs.getRule(this), LocalDate.now())
                 : "几天一轮，自己标哪天上班");
 

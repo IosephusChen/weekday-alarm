@@ -53,6 +53,20 @@
         <item name="android:colorControlNormal">@color/line</item>
     </style>
 
+    <!-- 日期选择器的星期表头（v1.1.1）：七列等宽、11sp 次级灰。
+         表头和下面的网格必须同权重，否则「一」会落在数字 1 的左边一格
+         ——用 TextView 各自写 weight 容易漏一个，抽成样式保证七列一模一样。 -->
+    <style name="DateWeekHead">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+
     <style name="WeekChip">
         <item name="android:background">@drawable/bg_chip_white</item>
         <item name="android:textColor">@color/white</item>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日期选择器里「选中的那天」（v1.1.1）：主色实心圆 + 白字。
+     尺寸固定 34dp 而不是跟着格子拉伸——见 PickDateDialog.buildGrid 里那段注释。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/indigo" />
+</shape>

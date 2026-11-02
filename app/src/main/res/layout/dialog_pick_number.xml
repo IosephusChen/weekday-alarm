@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单列数字滚轮（v1.1.1）：循环周期用它，替代 v1.1.0 那个裸 NumberPicker。
+
+     v1.1.0 直接把一个 NumberPicker 塞进对话框：白底、上下两个浅灰数字、
+     中间一个黑数字，没有任何包裹和列头——同一个 App 里「时/分」是带列头的
+     软底井（dialog_time_wheel），「周期」是个裸控件，看着像半成品。
+
+     现在两者同源：bg_time_well 那块软底 + 列头 + WheelPickerText 的居中大字。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="2dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_time_well"
+        android:orientation="vertical"
+        android:paddingStart="10dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="8dp">
+
+        <TextView
+            android:id="@+id/tv_unit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:letterSpacing="0.12"
+            android:text="天"
+            android:textColor="@color/sub"
+            android:textSize="12sp" />
+
+        <NumberPicker
+            android:id="@+id/np_num"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:descendantFocusability="blocksDescendants"
+            android:theme="@style/WheelPickerText" />
+    </LinearLayout>
+</LinearLayout>

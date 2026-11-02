@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 循环编辑器里的一行：第 N 天 · 周X —— 时间 / 上班 / 休息（v1.1.0）。 -->
+<!-- 循环编辑器里的一行（v1.1.1 重排）。
+
+     v1.1.0：「第 1 天 · 周一            00:00 ›」——三处同色同号的文字，
+     分不出哪行上班哪行休息，也看不出「今天」落在哪一行。
+
+     现在从左到右：状态点（有颜色 / 浅灰）→ 标题（含「今天」小标签）→ 值 → 箭头。
+     点用颜色表达班休，不靠读字；分隔线缩进到文字左边缘，与标题对齐，
+     扫视时视线不会被线头拽回最左边。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -14,19 +21,45 @@
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingTop="13dp"
-        android:paddingEnd="6dp"
-        android:paddingBottom="13dp">
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp">
+
+        <View
+            android:id="@+id/dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/bg_dot_work" />
 
         <TextView
             android:id="@+id/tv_label"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="第 1 天 · 周一"
+            android:layout_marginStart="10dp"
+            android:text="周一"
             android:textColor="@color/ink"
             android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_tag_today"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_tag_today"
+            android:paddingStart="6dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="2dp"
+            android:text="今天"
+            android:textColor="@color/day_today_text"
+            android:textSize="10.5sp"
+            android:visibility="gone" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/tv_value"
@@ -46,7 +79,10 @@
     </LinearLayout>
 
     <View
+        android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
+        android:layout_marginStart="34dp"
+        android:layout_marginEnd="16dp"
         android:background="@color/line" />
 </LinearLayout>

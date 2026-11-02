@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自绘的日期选择器（v1.1.1）：替代系统的 DatePickerDialog。
+
+     为什么不用系统那个：它在 App 里长得像另一个软件——顶部一整块 Material 紫，
+     标题是「2026年 11月2日周一」这种连写，底下是另一套圆角与间距。
+     同一个弹窗里还叠着本 App 的圆角白卡，两层皮。
+
+     自绘之后与 App 同一套 token：卡片底、14sp 数字、indigo 选中圆、
+     今天的日期加一个淡紫底——和日历页的语义色一致。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="2dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="8dp">
+
+    <!-- 月份切换 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_prev"
+            android:layout_width="44dp"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="44dp"
+            android:text="‹"
+            android:textColor="@color/indigo"
+            android:textSize="22sp" />
+
+        <TextView
+            android:id="@+id/tv_month"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="2026年11月"
+            android:textColor="@color/ink"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/btn_next"
+            android:layout_width="44dp"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="44dp"
+            android:text="›"
+            android:textColor="@color/indigo"
+            android:textSize="22sp" />
+    </LinearLayout>
+
+    <!-- 星期表头：固定七列，与下方网格同权重 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="horizontal">
+
+        <TextView style="@style/DateWeekHead" android:text="一" />
+        <TextView style="@style/DateWeekHead" android:text="二" />
+        <TextView style="@style/DateWeekHead" android:text="三" />
+        <TextView style="@style/DateWeekHead" android:text="四" />
+        <TextView style="@style/DateWeekHead" android:text="五" />
+        <TextView style="@style/DateWeekHead" android:text="六" />
+        <TextView style="@style/DateWeekHead" android:text="日" />
+    </LinearLayout>
+
+    <!-- 网格由 PickDateDialog 逐行填进来：6 行 × 7 格 -->
+    <LinearLayout
+        android:id="@+id/grid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:orientation="vertical" />
+</LinearLayout>

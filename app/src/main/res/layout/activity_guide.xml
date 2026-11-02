@@ -205,7 +205,40 @@
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- v1.1.0：自定义 / 轮班。点开是循环编辑器，保存即生效。 -->
+                <!-- v1.1.1：拆成「自定义」与「轮班」两张。两种说法对应两种界面，
+                     数据仍是一套（自定义 = 周期锁 7 天的轮班）。 -->
+                <LinearLayout
+                    android:id="@+id/mode_custom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_10"
+                    android:background="@drawable/bg_guide_option"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="13dp"
+                    android:paddingEnd="@dimen/space_16"
+                    android:paddingBottom="13dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="自定义"
+                        android:textColor="@color/ink"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_custom_sub"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="勾周一到周日，每周固定"
+                        android:textColor="@color/sub"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/mode_cycle"
                     android:layout_width="match_parent"
@@ -223,7 +256,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="自定义 / 轮班"
+                        android:text="轮班"
                         android:textColor="@color/ink"
                         android:textSize="15sp"
                         android:textStyle="bold" />

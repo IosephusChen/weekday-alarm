@@ -266,16 +266,17 @@ public class WeekModeTest {
      * 收到下面条件区，大类不掺细节。
      */
     @Test
-    public void dialogOffersFourCategories() {
+    public void dialogOffersFiveCategories() {
         SettingsActivity a = openSettings();
         androidx.appcompat.app.AlertDialog d = openModeDialog(a);
         assertNotNull(d);
         android.view.ViewGroup rg = d.findViewById(R.id.rg_mode);
         assertNotNull(rg);
-        // v1.1.0 加了第四类「自定义 / 轮班」。这个数字写死是有意的：
+        // v1.1.1 拆成「自定义」「轮班」两张，总数 4 → 5。这个数字写死是有意的：
         // 卡片漏加或重复加，用户要么选不到轮班，要么看到两张一样的卡。
-        assertEquals("大类应正好四个", 4, rg.getChildCount());
-        assertNotNull("自定义 / 轮班卡必须存在", d.findViewById(R.id.rb_cycle));
+        assertEquals("大类应正好五个", 5, rg.getChildCount());
+        assertNotNull("自定义卡必须存在", d.findViewById(R.id.rb_custom));
+        assertNotNull("轮班卡必须存在", d.findViewById(R.id.rb_cycle));
     }
 
     /** 从双休切到「单休」不指定日子时，默认周日休。 */

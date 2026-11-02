@@ -10,6 +10,15 @@
     android:paddingEnd="20dp"
     android:paddingBottom="10dp">
 
+    <TextView
+        android:id="@+id/tv_day_sub"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
+        android:text="这天几点响？"
+        android:textColor="@color/sub"
+        android:textSize="12sp" />
+
     <LinearLayout
         android:id="@+id/box_wheel"
         android:layout_width="match_parent"
@@ -109,12 +118,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="勾上以后这一天不算上班，时间作废"
+                android:text="这天不上班，闹钟不响"
                 android:textColor="@color/sub"
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <Switch
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/sw_rest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />

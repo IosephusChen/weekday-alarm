@@ -82,4 +82,16 @@
 
     <!-- 非当月格子数字：压暗但可辨 -->
     <color name="day_dim_text">#454B70</color>
+
+    <!-- 班表「休」格与结论条（v1.5.0）。见 values/colors.xml 同一组注释。
+         休格要比 card(#1C1F35) 亮一档、又别亮过 line(#2A2E47) 太多——
+         它是一块「关着的格子」，不是又一根分隔线。 -->
+    <color name="rest_cell_bg">#343956</color>
+    <color name="verdict_bg">#2A2350</color>
+
+    <!-- 「班」胶囊的底：与结论条同值，夜间 #818CF8 压上去 4.9:1 -->
+    <color name="pill_work_bg">#2A2350</color>
+
+    <!-- 「休」胶囊细边：比 #343956 深一档，与日间同一个方向 -->
+    <color name="pill_rest_stroke">#2A2E47</color>
 </resources>

@@ -55,20 +55,49 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- 结论条：不用点任何东西，一眼确认现在按哪张表排 -->
-        <TextView
-            android:id="@+id/tv_verdict"
+        <!-- 结论条：不用点任何东西，一眼确认现在按哪张表排。
+
+             v1.5.0：白卡 → 浅靛底 + 「现在」徽章 + 靛字。此前这一页从上到下的
+             五张卡（结论 / 两周不一样 / 法定节假日 / N 天一轮 / 旋转摘要）全是
+             bg_dialog_row，同一个长相、同一个间距，于是「你现在按哪张表排」
+             和「要不要跟节假日」读起来是同一级——最该被一眼看到的那句，
+             得逐行读过才知道它是结论。 -->
+        <LinearLayout
+            android:id="@+id/card_verdict"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_dialog_row"
+            android:background="@drawable/bg_verdict"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
             android:paddingStart="16dp"
-            android:paddingTop="14dp"
+            android:paddingTop="13dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="14dp"
-            android:text="双休 · 休2天"
-            android:textColor="@color/ink"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+            android:paddingBottom="13dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_verdict_tag"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:text="现在"
+                android:textColor="@color/bg"
+                android:textSize="10.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_verdict"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="9dp"
+                android:layout_weight="1"
+                android:text="双休 · 休2天"
+                android:textColor="@color/indigo"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <io.github.iosephuschen.weekdayalarm.WeekGrid
             android:id="@+id/week_grid"
@@ -152,11 +181,13 @@
                     android:textColor="@color/ink"
                     android:textSize="14sp" />
 
+                <!-- v1.5.0：「会多出一行」删掉。那是实现的说法——用户要的是
+                     「两周能填不一样」，不是「一个界面里多一行」。 -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="大小周、上四休二点这里，会多出一行"
+                    android:text="大小周、上四休二点这里"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -228,16 +259,19 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="按 N 天一轮排（上二休二、上四休二）"
+                android:text="按 N 天一轮排"
                 android:textColor="@color/ink"
                 android:textSize="14sp" />
 
+            <!-- v1.5.0：右侧从光秃秃的「›」改成「改 ›」，和上面那张旋转摘要卡
+                 用同一套说法；括号里的两个例子也删了——上一张卡的副标题刚说过
+                 「上四休二」，隔 8dp 再说一遍是啰嗦。 -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="›"
+                android:text="改 ›"
                 android:textColor="@color/sub"
-                android:textSize="14sp" />
+                android:textSize="12.5sp" />
         </LinearLayout>
 
         <LinearLayout

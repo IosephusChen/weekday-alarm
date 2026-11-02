@@ -328,11 +328,15 @@ public class GuideActivity extends AppCompatActivity {
                 ? span + " · 两周点成不一样就是大小周"
                 : span + " · 点一下切换班和休");
 
-        // 结论条：说清系统从这张表里认出了什么。格子每变一次都重算，反推是幂等的
+        // 结论条：说清系统从这张表里认出了什么。格子每变一次都重算，反推是幂等的。
+        //
+        // v1.5.0：去掉「按这两周排：」「按这张表排：」这两个前缀。
+        // 勾了两周、但两周排得一样时，v1.4.0 的 describe 会折回一周来说，
+        // 于是句子成了「按这两周排：每周固定 · 休1天」——前半句说按两周，
+        // 后半句说每周固定，自己跟自己打架。前缀想交代的「依据」已经在
+        // 上面的格子和日期区间里了，这里只该出现结论本身。
         String verdict = WeekSchedule.describe(Prefs.getRule(this), LocalDate.now());
-        tvWeekVerdict.setText(biweekly
-                ? "按这两周排：" + verdict
-                : "按这张表排：" + verdict);
+        tvWeekVerdict.setText(verdict);
         tvBiweeklyHint.setText("大小周、上四休二都勾这里");
     }
 

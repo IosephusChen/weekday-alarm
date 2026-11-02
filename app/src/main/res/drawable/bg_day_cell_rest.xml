@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 引导页七格里的「休」格（v1.2.0）。见 bg_day_cell_work.xml。 -->
+<!-- 班表格子里的「休」（v1.2.0 起，v1.5.0 改色）。见 bg_day_cell_work.xml。
+
+     v1.5.0 之前是白底（card）+ 1dp 发丝边。问题在于这张格子坐在 @color/bg
+     （#F4F5FB）上——白比底还亮，边界只剩那根线。于是一行六个实心紫块配一个
+     「白洞」，读起来像那一格没填，而不是「这一格休息」。
+
+     换成实心淡灰后，七格是「六块满色 + 一块淡色」，都是方块，轻重只差在深浅。
+     色值与日夜对比度见 @color/rest_cell_bg 那一组注释。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/card" />
-    <stroke
-        android:width="1dp"
-        android:color="@color/line" />
+    <solid android:color="@color/rest_cell_bg" />
     <corners android:radius="@dimen/radius_chip" />
 </shape>

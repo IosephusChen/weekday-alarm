@@ -169,7 +169,16 @@ public final class ScheduleSheet {
                     s.start = d;
                     self[0].run();
                 }));
-        swHoliday.setOnCheckedChangeListener((b, checked) -> s.holiday = checked);
+        // 这个开关只改一句话，不走 self[0].run()：那会重画整张表并把列表滚回顶部，
+        // 而用户只是勾了一下「跟不跟节假日」。摘要也不动——它说的是这张表本身的
+        // 形状（几天上班几天休），节假日是另一层规则，改的是到时候响不响。
+        //
+        // v1.5.0 补：原来只有 `s.holiday = checked`，副标题停在打开之前那句
+        // 「春节、国庆也照常上班」，开关已经紫了、字还说照常上班。
+        swHoliday.setOnCheckedChangeListener((b, checked) -> {
+            s.holiday = checked;
+            tvHolidayHint.setText(holidayHint(checked));
+        });
 
         new RoundedDialog.Builder(ctx)
                 .setTitle(role.title)
@@ -293,12 +302,24 @@ public final class ScheduleSheet {
         }
     }
 
-    /** 状态胶囊：上 = indigo 实心、休 = line 色填充，与引导页格子的「班/休」同一套语汇。 */
+    /**
+     * 状态胶囊：上 = 淡靛底 + 靛字、休 = 淡灰底 + body 字。
+     *
+     * <p>v1.5.0 曾把「班」做成 indigo 实心 + 白字，与引导页的格子同款。真机上
+     * 一屏六颗深紫药丸，反馈是「颜色太重」——问题不在颜色本身，在**用错了地方**：
+     * 一张 20 天的表里 19 天都在上班，多数派却拿了最重的色，扫一眼全是紫块，
+     * 唯一那个「休」反倒被淹掉。格子里能用实心，是因为一块面积只讲一天；这里
+     * 一列排下来是同一个数字重复 N 遍，重量要跟着信息量走。
+     *
+     * <p>换法只动底色与字色，形状位置不变——胶囊仍是「这一格可点」的暗示，
+     * 只是从「一块色」退成「一个标签」。休补一圈细边（见 bg_state_rest），
+     * 免得两样都变浅之后被比下去。
+     */
     private static void paintState(Context ctx, TextView pill, boolean work) {
         pill.setText(work ? "班" : "休");
-        pill.setTextColor(ctx.getColor(work ? R.color.white : R.color.sub));
+        pill.setTextColor(ctx.getColor(work ? R.color.indigo : R.color.body));
         pill.setBackgroundResource(work
-                ? R.drawable.bg_day_cell_work : R.drawable.bg_state_rest);
+                ? R.drawable.bg_state_work : R.drawable.bg_state_rest);
     }
 
     /**

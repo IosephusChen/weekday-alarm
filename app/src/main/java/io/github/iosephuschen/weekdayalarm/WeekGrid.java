@@ -78,8 +78,11 @@ public class WeekGrid extends LinearLayout {
 
         secondBox.setOrientation(VERTICAL);
         secondBox.setVisibility(GONE);
+        // v1.5.0：16 → 22。原来「下一周」离上面那组格子 16dp、离自己那组 10dp，
+        // 只差 6dp，读起来更像上一组的脚注而不是下一组的标题。拉开到 22 之后，
+        // 「属于哪一组」不再靠读字判断。
         LayoutParams boxLp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        boxLp.topMargin = dp(16);
+        boxLp.topMargin = dp(22);
 
         TextView label = new TextView(c);
         styleLabel(label, "下一周");
@@ -94,11 +97,18 @@ public class WeekGrid extends LinearLayout {
         addView(secondBox, boxLp);
     }
 
-    /** 两周分组的小标题（「这一周」「下一周」），与表头同一档字号。 */
+    /**
+     * 两周分组的小标题（「这一周」「下一周」）。
+     *
+     * <p>v1.5.0 之前是 11sp + sub，和表头「周一…周日」一模一样：三行等权重的灰字
+     * 叠在一起，标签加了等于没加——它只是多了几个字，没有「这是分组」这件事本身。
+     * 现在 12sp + bold + body（比 sub 深一档），和 11sp 常规的表头是两个层级。
+     */
     private void styleLabel(TextView tv, String text) {
         tv.setText(text);
-        tv.setTextColor(getContext().getColor(R.color.sub));
-        tv.setTextSize(11);
+        tv.setTextColor(getContext().getColor(R.color.body));
+        tv.setTextSize(12);
+        tv.setTypeface(Typeface.DEFAULT_BOLD);
     }
 
     /**
@@ -139,6 +149,18 @@ public class WeekGrid extends LinearLayout {
         return i >= 0 && i < row.getChildCount() ? row.getChildAt(i) : null;
     }
 
+    /**
+     * 第 index 个表头（0~13），与 {@link #cellAt} 对称。
+     *
+     * <p>加这个是因为「今天那一列要标出来」只有表头看得见——它在
+     * {@link #fillHead} 里改了颜色和字重，没有别的地方能验证。
+     */
+    public View headAt(int index) {
+        LinearLayout row = index < 7 ? firstHead : secondHead;
+        int i = index < 7 ? index : index - 7;
+        return i >= 0 && i < row.getChildCount() ? row.getChildAt(i) : null;
+    }
+
     private void render() {
         boolean twoWeeks = days.length > 7;
         secondBox.setVisibility(twoWeeks ? VISIBLE : GONE);
@@ -152,13 +174,27 @@ public class WeekGrid extends LinearLayout {
         }
     }
 
+    /**
+     * 表头一行七列。
+     *
+     * <p>v1.5.0：今天那一列改成 indigo + bold。此前这张表能回答「哪几天上班」，
+     * 但不回答「今天算什么」——用户得先想起今天周几，再横着数过去。同理，
+     * 表不是从本周开始时（编辑老闹钟的自排表）今天不在表内，自然就不标。
+     */
     private void fillHead(LinearLayout box, int offset) {
         box.removeAllViews();
+        LocalDate today = LocalDate.now();
         for (int i = 0; i < 7; i++) {
+            LocalDate day = monday.plusDays(offset + i);
+            boolean isToday = day.equals(today);
             TextView tv = new TextView(getContext());
-            tv.setText(TimeText.week(monday.plusDays(offset + i)));
-            tv.setTextColor(getContext().getColor(R.color.sub));
+            tv.setText(TimeText.week(day));
+            tv.setTextColor(getContext().getColor(isToday ? R.color.indigo : R.color.sub));
             tv.setTextSize(11);
+            if (isToday) {
+                tv.setTypeface(Typeface.DEFAULT_BOLD);
+                tv.setContentDescription(TimeText.week(day) + "（今天）");
+            }
             tv.setGravity(Gravity.CENTER);
             LayoutParams lp = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
             if (i > 0) lp.setMarginStart(dp(GAP_DP));
@@ -179,7 +215,9 @@ public class WeekGrid extends LinearLayout {
             cell.setGravity(Gravity.CENTER);
             cell.setMinHeight(dp(46));
             cell.setPadding(0, dp(12), 0, dp(12));
-            cell.setTextColor(getContext().getColor(work ? R.color.white : R.color.sub));
+            // 休的字色从 sub 提到 body：底色从白换成 #E2E6F2 后，sub(#6B7189)
+            // 压上去只有 4.3:1，14sp 不该停在门槛边上。
+            cell.setTextColor(getContext().getColor(work ? R.color.white : R.color.body));
             cell.setBackgroundResource(work
                     ? R.drawable.bg_day_cell_work : R.drawable.bg_day_cell_rest);
             cell.setContentDescription((work ? "上班：" : "休息：")

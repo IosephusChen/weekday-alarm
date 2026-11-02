@@ -136,7 +136,11 @@
 
                 <!-- 结论条（v1.3.0）：系统从格子里认出的是哪种班。
                      原来这句话塞在「隔周换一次」右边当小字，最该被看见的一句挂在
-                     最不像结论的位置；挪到格子正下方，和设置页「我的班表」同一个样子。 -->
+                     最不像结论的位置；挪到格子正下方，和设置页「我的班表」同一个样子。
+
+                     v1.5.0：13sp 常规 → 15sp bold。同一句话在班表页是 15sp bold、
+                     在这里是 13sp，两页各说各的；而且它是这一页唯一的「结论」，
+                     比下面的勾选卡还轻，层级就倒了。 -->
                 <TextView
                     android:id="@+id/tv_week_verdict"
                     android:layout_width="match_parent"
@@ -149,7 +153,8 @@
                     android:paddingBottom="@dimen/space_10"
                     android:text="双休 · 每周六、周日休"
                     android:textColor="@color/ink"
-                    android:textSize="13sp" />
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
                 <!-- 轮班：一行摘要 + 入口。不是所有人在这一页都该看到七格——
                      四班三倒的人点七格只会得到一张别扭的表，直接给他那张 N 天的表 -->
@@ -282,7 +287,7 @@
                     android:paddingEnd="@dimen/space_8"
                     android:paddingBottom="@dimen/space_8"
                     android:text="从旧手机搬过来？导入配置"
-                    android:textColor="@color/indigo"
+                    android:textColor="@color/sub"
                     android:textSize="13sp" />
             </LinearLayout>
         </ScrollView>

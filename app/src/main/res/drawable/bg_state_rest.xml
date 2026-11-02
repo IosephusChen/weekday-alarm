@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 「N 天一轮」表里的「休」胶囊（v1.4.0）。
+<!-- 「N 天一轮」表里的「休」胶囊（v1.4.0，v1.5.0 换色两次）。
 
-     为什么不直接复用 bg_day_cell_rest：那张是给格子用的——格子坐在浅灰页面
-     （@color/bg）上，白底 + 发丝边看得见。这张表坐在白色弹窗里，白压白，
-     「休」只剩一根几乎看不见的线，于是整行里五天的实心紫和一个空框并排，
-     轻重全歪。改成 line 色填充：白天是淡灰蓝、夜里是比卡片略亮一档的靛蓝灰，
-     两边都能读出「这里是关着的」，又不会抢「班」的那块实心紫。 -->
+     这张表坐在白色弹窗里，用白底 + 发丝边就成了白压白，「休」只剩一根几乎
+     看不见的线，整行里五天的实心紫和一个空框并排，轻重全歪。
+
+     v1.5.0 与班表格子（bg_day_cell_rest）共用 @color/rest_cell_bg；同一件事
+     在两个界面里是同一个色，不再是「弹层用 line、格子用 card + 描边」两套写法。
+
+     同一版「班」也从实心紫退成浅靛底之后，两样都变浅了，于是这里补一圈 1dp
+     细边：休是少数派（20 天里 1 天），该比班稍微实一点才找得到。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/line" />
+    <solid android:color="@color/rest_cell_bg" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/pill_rest_stroke" />
     <corners android:radius="@dimen/radius_chip" />
 </shape>

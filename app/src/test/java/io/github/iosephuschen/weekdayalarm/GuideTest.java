@@ -1168,4 +1168,24 @@ public class GuideTest {
         Prefs.setGuidePage(ctx(), 2);
         assertEquals("重看引导本来就该从头看", 0, flipperIndex(launch()));
     }
+
+    /**
+     * 结论条里只放结论本身（v1.5.0）。
+     *
+     * <p>原来拼成「按这两周排：每周固定 · 休1天」——勾了两周、但两周排得一样时，
+     * v1.4.0 的 describe 会折回一周来说，于是前半句说「按两周」、后半句说
+     * 「每周固定」，自己跟自己打架。依据（格子和上面的日期区间）都看得见，
+     * 这里不必再说一遍。
+     */
+    @Test
+    public void verdict_isJustTheVerdict() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        GuideActivity a = launch();
+
+        String v = text(a, R.id.tv_week_verdict);
+        assertTrue("应报出双休，实际：" + v, v.contains("双休"));
+        assertFalse("不该带「按这两周排：」，实际：" + v, v.contains("按这两周排"));
+        assertFalse("不该带「按这张表排：」，实际：" + v, v.contains("按这张表排"));
+    }
 }

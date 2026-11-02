@@ -106,6 +106,14 @@
 
         <!-- 关于（v0.87.1）：版本、源码、许可、免责、隐私、崩溃日志导出。
              闹钟类应用必须写清「不保证一定响」，这一页是它的落点。 -->
+        <!-- v1.3.0：设置里「周休制度」弹窗换成整页「我的班表」。
+             弹窗还剩一层「你是哪种制度」，而引导页早就改成点格子了。 -->
+        <activity
+            android:name=".WeekScheduleActivity"
+            android:exported="false"
+            android:label="我的班表"
+            android:parentActivityName=".SettingsActivity" />
+
         <activity
             android:name=".AboutActivity"
             android:exported="false"

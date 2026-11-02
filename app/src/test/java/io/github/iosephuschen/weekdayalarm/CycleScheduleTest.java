@@ -204,13 +204,14 @@ public class CycleScheduleTest {
 
     @Test
     public void describe_rotationShowsCycleAndWorkDays() {
-        assertEquals("轮班 · 4天上2天", WeekSchedule.describe(shang2xiu2(START), START));
+        // v1.3.0 术语收口：按形状叫「N 天一轮」，不再叫「轮班」
+        assertEquals("4 天一轮 · 上2休2", WeekSchedule.describe(shang2xiu2(START), START));
     }
 
     @Test
     public void describe_customShowsRestDays() {
         WeekSchedule.Rule r = WeekSchedule.Rule.cycle(7, 0b1011011L, START, null, true);
-        assertEquals("自定义 · 休2天", WeekSchedule.describe(r, START));
+        assertEquals("每周固定 · 休2天", WeekSchedule.describe(r, START));
     }
 
     // ================= 与原有四种模式互不影响 =================

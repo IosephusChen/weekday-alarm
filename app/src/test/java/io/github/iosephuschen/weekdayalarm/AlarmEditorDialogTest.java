@@ -65,6 +65,59 @@ public class AlarmEditorDialogTest {
         return d;
     }
 
+    /** 点末尾那张「其他」卡，返回弹出的选择框。 */
+    private static AlertDialog openExtra(AlertDialog d) {
+        modes(d).getChildAt(3).performClick();
+        ShadowLooper.idleMainLooper();
+        return (AlertDialog) ShadowAlertDialog.getLatestDialog();
+    }
+
+    /** 点对话框里文字等于 {@code text} 的那一项（找到可点的父容器再点）。 */
+    private static void clickText(AlertDialog d, String text) {
+        View v = findExact(d.getWindow().getDecorView(), text);
+        assertNotNull("对话框里找不到「" + text + "」", v);
+        View p = v;
+        while (p != null && !p.isClickable()) p = (View) p.getParent();
+        (p != null ? p : v).performClick();
+        ShadowLooper.idleMainLooper();
+    }
+
+    private static View findExact(View root, String text) {
+        if (root instanceof TextView) {
+            CharSequence t = ((TextView) root).getText();
+            if (t != null && text.contentEquals(t)) return root;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                View hit = findExact(g.getChildAt(i), text);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
+    }
+
+    /** 收集一棵子树里的全部文案，用来断言「副标题里写了什么」。 */
+    private static String collectText(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof TextView) {
+            CharSequence t = ((TextView) v).getText();
+            if (t != null) sb.append(t).append('\n');
+        }
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(collectText(g.getChildAt(i)));
+        }
+        return sb.toString();
+    }
+
+    /** 关掉最后弹出的那个对话框（选「自己排一周」会顺手拉起班表编辑器）。 */
+    private static void dismissLatest() {
+        android.app.Dialog last = ShadowAlertDialog.getLatestDialog();
+        if (last != null && last.isShowing()) last.dismiss();
+        ShadowLooper.idleMainLooper();
+    }
+
     private static LinearLayout modes(AlertDialog d) {
         LinearLayout box = d.findViewById(R.id.ll_alarm_modes);
         assertNotNull("规则卡片容器应在", box);
@@ -86,35 +139,30 @@ public class AlarmEditorDialogTest {
     }
 
     /**
-     * 六张卡只有主文案，不显示副标题（v0.77.1 用户反馈「副标题没必要」）。
+     * 三张常用卡 + 一行「其他」（v1.3.0）。
      *
-     * <p>选项卡的副标题位仍然占位（GONE）——那是 DialogKit 的通用结构，
-     * 这条断言钉的是「占位但不显示」。
-     *
-     * <p>v1.2.0 从四张变六张：中间插进「轮班」「自定义」，各有自己的一张表。
+     * <p>v0.77.0 卡片化时只有 4 项，密度成立；v1.2.0 加到 6 项后光规则就吃掉 430dp，
+     * 铃声和保存都被顶到屏幕外。「仅一次」「自己排一周」挪进「其他」之后，
+     * 默认路径只剩三张，一屏不用滚。
      */
     @Test
-    public void modeCards_areSix_titlesOnly() {
+    public void modeCards_areThreePlusOther() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
-        assertEquals("六种重复规则", 6, box.getChildCount());
-        for (int i = 0; i < 6; i++) {
-            View card = box.getChildAt(i);
-            assertTrue("第 " + i + " 张卡缺主文案：" + AlarmEditor.MODE_TITLES[i],
-                    containsText(card, AlarmEditor.MODE_TITLES[i]));
-            View sub = card.findViewWithTag("dlg_sub");
-            assertNotNull("第 " + i + " 张卡应有副标题占位", sub);
-            assertTrue("第 " + i + " 张卡不该显示副标题",
-                    sub.getVisibility() != View.VISIBLE);
+        assertEquals("三张常用卡 + 一行其他", 4, box.getChildCount());
+        for (int i = 0; i < AlarmEditor.BASE_MODES.length; i++) {
+            assertTrue("第 " + i + " 张卡缺主文案",
+                    containsText(box.getChildAt(i), AlarmEditor.titleOf(AlarmEditor.BASE_MODES[i])));
         }
+        assertTrue("最后一行应是「其他」入口", containsText(box.getChildAt(3), "其他规则"));
     }
 
-    /** 新建默认选中「仅上班日」：这是这个 App 的主场景，也是旧版默认。 */
+    /** 新建默认落在「跟随我的班表」：这是这个 App 的主场景。 */
     @Test
-    public void newAlarm_defaultsToWorkdayCard() {
+    public void newAlarm_defaultsToFollowCard() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
         LinearLayout box = modes(d);
-        assertTrue("第一张（仅上班日）应选中", box.getChildAt(0).isSelected());
+        assertTrue("第一张（跟随我的班表）应选中", box.getChildAt(0).isSelected());
         for (int i = 1; i < box.getChildCount(); i++) {
             assertFalse("第 " + i + " 张不该选中", box.getChildAt(i).isSelected());
         }
@@ -122,52 +170,48 @@ public class AlarmEditorDialogTest {
                 View.GONE, d.findViewById(R.id.row_once_date).getVisibility());
         assertEquals("新建时不该显示班表摘要",
                 View.GONE, d.findViewById(R.id.row_own_rule).getVisibility());
-        // 未设置的中性按钮 AlertController 仍会创建（button3），只是 GONE
         Button del0 = d.getButton(DialogInterface.BUTTON_NEUTRAL);
         assertTrue("新建时没有可删的闹钟",
                 del0 == null || del0.getVisibility() != View.VISIBLE);
     }
 
-    /** 点「仅一次」：选中态挪过去、日期行出现；再点回「每天」，日期行收起。 */
+    /** 「跟随我的班表」的副标题要写出全局现状，用户不用退回设置页确认。 */
     @Test
-    public void clickingCards_movesSelection_andTogglesDateRow() {
+    public void followCard_subtitleShowsGlobalSchedule() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
-        LinearLayout box = modes(d);
-        int onceIdx = AlarmEditor.modeIndex(Alarm.Mode.ONCE);
-        View onceCard = box.getChildAt(onceIdx);
-        onceCard.performClick();
-        ShadowLooper.idleMainLooper();
-
-        assertTrue("点「仅一次」应出现日期行",
-                d.findViewById(R.id.row_once_date).getVisibility() == View.VISIBLE);
-        for (int i = 0; i < box.getChildCount(); i++) {
-            assertEquals("点第 " + onceIdx + " 张后第 " + i + " 张的选中态",
-                    i == onceIdx, box.getChildAt(i).isSelected());
-        }
-
-        box.getChildAt(1).performClick();
-        ShadowLooper.idleMainLooper();
-        assertEquals("切回「每天」日期行应收起",
-                View.GONE, d.findViewById(R.id.row_once_date).getVisibility());
-        assertTrue("「每天」应选中", box.getChildAt(1).isSelected());
-        assertFalse("「仅一次」应取消选中", box.getChildAt(onceIdx).isSelected());
+        String all = collectText(modes(d).getChildAt(0));
+        assertTrue("副标题应报出全局班表，实际：" + all,
+                all.contains("按「我的班表」"));
     }
 
-    /** 点「轮班」：摘要行出现，且带着一份能用的默认班表（不是「还没设」）。 */
+    /** 点「其他」：弹出两项；选「仅一次」后日期行出现，那一项变成一张卡。 */
     @Test
-    public void clickingRoster_showsOwnRuleRowWithDefault() {
+    public void pickingOnce_showsDateRow() {
         AlertDialog d = openEditor(launch(), null, new ArrayList<>());
+        AlertDialog pick = openExtra(d);
+        clickText(pick, "仅一次");
+
+        assertEquals("选「仅一次」应出现日期行",
+                View.VISIBLE, d.findViewById(R.id.row_once_date).getVisibility());
         LinearLayout box = modes(d);
-        int rosterIdx = AlarmEditor.modeIndex(Alarm.Mode.ROSTER);
+        assertTrue("选中的那一项要显示成一张卡", containsText(box.getChildAt(3), "仅一次"));
+        assertTrue("它应处于选中态", box.getChildAt(3).isSelected());
+    }
 
-        box.getChildAt(rosterIdx).performClick();
-        ShadowLooper.idleMainLooper();
+    /** 选「自己排一周」：摘要行出现，并且带着一份能用的默认表。 */
+    @Test
+    public void pickingCustom_showsOwnRuleRowWithDefault() {
+        AlertDialog d = openEditor(launch(), null, new ArrayList<>());
+        AlertDialog pick = openExtra(d);
+        clickText(pick, "自己排一周");
+        // 选完会直接打开班表编辑器，这里先关掉它
+        dismissLatest();
 
-        assertEquals("点「轮班」应出现班表摘要",
+        assertEquals("应出现班表摘要",
                 View.VISIBLE, d.findViewById(R.id.row_own_rule).getVisibility());
         TextView tv = d.findViewById(R.id.tv_own_rule);
         assertTrue("摘要应写出具体形状，实际：" + tv.getText(),
-                tv.getText().toString().startsWith("轮班 · "));
+                tv.getText().toString().startsWith("自己排一周 · "));
     }
 
     /** 编辑一条「每天」的闹钟：打开时卡片预选在第二张，删除按钮可见。 */
@@ -179,29 +223,36 @@ public class AlarmEditorDialogTest {
         AlertDialog d = openEditor(launch(), daily, list);
         LinearLayout box = modes(d);
         assertTrue("「每天」应预选", box.getChildAt(1).isSelected());
-        assertFalse("「仅上班日」不该选中", box.getChildAt(0).isSelected());
-        // v1.0.4：删除从整宽淡红卡挪到按钮栏最左的中性位，与「保存」隔着一个「取消」
+        assertFalse("「跟随我的班表」不该选中", box.getChildAt(0).isSelected());
         Button del = d.getButton(DialogInterface.BUTTON_NEUTRAL);
         assertNotNull("编辑已有闹钟应有删除入口", del);
         assertEquals("编辑已有闹钟应有删除入口", View.VISIBLE, del.getVisibility());
         assertEquals("删除", del.getText().toString());
     }
 
-    /** 卡片下标 → 模式值：错了会静默存成别的模式，界面上看不出来。 */
+    /** 老数据里的轮班闹钟：打开编辑页要看得见它现在是「轮班」，不能显示成别的。 */
     @Test
-    public void modeIndex_mapsEveryModeAndFallsBackToWorkday() {
-        assertEquals(0, AlarmEditor.modeIndex(Alarm.Mode.WORKDAY));
-        assertEquals(1, AlarmEditor.modeIndex(Alarm.Mode.DAILY));
-        assertEquals(2, AlarmEditor.modeIndex(Alarm.Mode.WEEKEND));
-        // v1.2.0：轮班、自定义插在「仅一次」前面
-        assertEquals(3, AlarmEditor.modeIndex(Alarm.Mode.ROSTER));
-        assertEquals(4, AlarmEditor.modeIndex(Alarm.Mode.CUSTOM));
-        assertEquals(5, AlarmEditor.modeIndex(Alarm.Mode.ONCE));
-        assertEquals("未知值按仅上班日处理", 0, AlarmEditor.modeIndex(null));
-        for (int i = 0; i < AlarmEditor.MODE_VALUES.length; i++) {
-            assertEquals("下标与模式必须一一对应", i,
-                    AlarmEditor.modeIndex(AlarmEditor.MODE_VALUES[i]));
-        }
+    public void legacyRosterAlarm_showsItsOwnCard() {
+        Alarm roster = new Alarm(1, 7, 30, "轮班", Alarm.Mode.ROSTER, true);
+        roster.applyOwnRule(WeekSchedule.Rule.cycle(4, 0b0011L, LocalDate.now(), null, false));
+        List<Alarm> list = new ArrayList<>();
+        list.add(roster);
+
+        AlertDialog d = openEditor(launch(), roster, list);
+        LinearLayout box = modes(d);
+        assertTrue("末尾那张卡应写着「轮班」", containsText(box.getChildAt(3), "轮班"));
+        assertTrue("它应是选中态", box.getChildAt(3).isSelected());
+    }
+
+    /** 模式 → 文案：五种都要有，且不能串味（串了界面上看不出，保存后才报错）。 */
+    @Test
+    public void titleOf_coversEveryMode() {
+        assertEquals("跟随我的班表", AlarmEditor.titleOf(Alarm.Mode.WORKDAY));
+        assertEquals("每天", AlarmEditor.titleOf(Alarm.Mode.DAILY));
+        assertEquals("仅休息日", AlarmEditor.titleOf(Alarm.Mode.WEEKEND));
+        assertEquals("仅一次", AlarmEditor.titleOf(Alarm.Mode.ONCE));
+        assertEquals("自己排一周", AlarmEditor.titleOf(Alarm.Mode.CUSTOM));
+        assertEquals("轮班", AlarmEditor.titleOf(Alarm.Mode.ROSTER));
     }
 
     /** 选「仅一次」再保存：存下来的模式与日期都要对。 */
@@ -210,8 +261,7 @@ public class AlarmEditorDialogTest {
         MainActivity a = launch();
         List<Alarm> list = new ArrayList<>();
         AlertDialog d = openEditor(a, null, list);
-        modes(d).getChildAt(AlarmEditor.modeIndex(Alarm.Mode.ONCE)).performClick();
-        ShadowLooper.idleMainLooper();
+        clickText(openExtra(d), "仅一次");
         d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
@@ -222,24 +272,23 @@ public class AlarmEditorDialogTest {
         assertTrue("新闹钟默认开启", saved.enabled);
     }
 
-    /** 选「轮班」直接保存（没打开过那张表）：也要存下一份能用的班表。 */
+    /** 选「自己排一周」直接保存（没动过那张表）：也要存下一份能用的七天真表。 */
     @Test
-    public void savingRosterWithoutEditing_storesDefaultCycle() {
+    public void savingCustomWithoutEditing_storesWeekCycle() {
         MainActivity a = launch();
         List<Alarm> list = new ArrayList<>();
         AlertDialog d = openEditor(a, null, list);
-        modes(d).getChildAt(AlarmEditor.modeIndex(Alarm.Mode.ROSTER)).performClick();
-        ShadowLooper.idleMainLooper();
+        clickText(openExtra(d), "自己排一周");
+        dismissLatest();
         d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
         assertEquals(1, list.size());
         Alarm saved = list.get(0);
-        assertEquals(Alarm.Mode.ROSTER, saved.mode);
-        assertNotNull("轮班必须有班表，否则文案和实际对不上", saved.ownRule());
-        assertEquals("默认上二休二", 4, saved.cycleLen);
-        assertEquals(0b0011L, saved.cycleMask);
-        assertFalse("轮班默认不跟节假日", saved.cycleHoliday);
+        assertEquals(Alarm.Mode.CUSTOM, saved.mode);
+        assertNotNull("自己排一周必须有班表，否则文案和实际对不上", saved.ownRule());
+        assertEquals("默认按周排", 7, saved.cycleLen);
+        assertTrue("按周排默认跟节假日", saved.cycleHoliday);
     }
 
     /** 切回「仅上班日」时要把自带班表清掉，不能留一张看不见的旧表。 */

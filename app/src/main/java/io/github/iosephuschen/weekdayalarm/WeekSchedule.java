@@ -392,9 +392,11 @@ public final class WeekSchedule {
             case CYCLE: {
                 int work = rule.cycleWorkDays();
                 int rest = rule.cycleLen - work;
-                if (work == 0) return "自定义 · 每天都休";
-                if (rule.cycleLen == 7) return "自定义 · 休" + rest + "天";
-                return "轮班 · " + rule.cycleLen + "天上" + work + "天";
+                if (work == 0) return "每天都休";
+                // v1.3.0：术语收口。「自定义」「轮班」两个词从界面上退场——
+                // 前者叫「每周固定」，后者按它本来的形状叫「N 天一轮」。
+                if (rule.cycleLen == 7) return "每周固定 · 休" + rest + "天";
+                return rule.cycleLen + " 天一轮 · 上" + work + "休" + rest;
             }
             case BIG_SMALL:
             default:

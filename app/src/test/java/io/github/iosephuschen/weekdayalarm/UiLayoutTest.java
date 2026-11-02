@@ -267,10 +267,10 @@ public class UiLayoutTest {
 
         home.findViewById(R.id.row_week_mode).performClick();
         org.robolectric.shadows.ShadowLooper.idleMainLooper();
-        Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
-        assertNotNull("应弹出周休制度对话框", d);
-        assertNotNull("对话框里应有大周 / 小周的选择", d.findViewById(R.id.rg_week_big));
-        assertNotNull("对话框里应有单休休哪天的选择", d.findViewById(R.id.rg_single_rest));
+        // v1.3.0：不再弹「五选一」对话框，改为整页「我的班表」——进来就是你自己那张表
+        android.content.Intent next = org.robolectric.Shadows.shadowOf(home).getNextStartedActivity();
+        assertNotNull("点「我的班表」应打开整页", next);
+        assertEquals(WeekScheduleActivity.class.getName(), next.getComponent().getClassName());
     }
 
     /**

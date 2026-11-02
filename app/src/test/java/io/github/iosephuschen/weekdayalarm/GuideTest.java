@@ -128,9 +128,13 @@ public class GuideTest {
 
     /** 第 1 页的格子：0~6 是第一周，7~13 是第二周。 */
     private View cell(GuideActivity a, int idx) {
-        LinearLayout grid = a.findViewById(idx < 7 ? R.id.grid_week : R.id.grid_week2);
-        assertNotNull("格子容器应在", grid);
-        return grid.getChildAt(idx % 7);
+        return grid(a).cellAt(idx);
+    }
+
+    private static WeekGrid grid(GuideActivity a) {
+        WeekGrid g = a.findViewById(R.id.week_grid);
+        assertNotNull("格子组件应在（v1.3.0 收进 WeekGrid）", g);
+        return g;
     }
 
     private static String cellText(View v) {
@@ -151,7 +155,7 @@ public class GuideTest {
         assertEquals("周一上班", "班", cellText(cell(a, 0)));
         assertEquals("周六休", "休", cellText(cell(a, 5)));
         assertEquals("周日休", "休", cellText(cell(a, 6)));
-        assertEquals("第二周先收着", View.GONE, visibility(a, R.id.box_week2));
+        assertEquals("第二周先收着", 7, grid(a).dayCount());
     }
 
     /** 只把周日点成上班 = 单休（休周六）。反推要认出这个最常见的形状。 */
@@ -184,11 +188,11 @@ public class GuideTest {
     @Test
     public void biweekly_expandsSecondWeek() {
         GuideActivity a = fresh();
-        assertEquals(View.GONE, visibility(a, R.id.box_week2));
+        assertEquals("默认只看一周", 7, grid(a).dayCount());
 
         tap(a, R.id.row_biweekly);
 
-        assertEquals(View.VISIBLE, visibility(a, R.id.box_week2));
+        assertEquals("勾上后长成两周", 14, grid(a).dayCount());
         assertEquals("第二周先复制第一周", "休", cellText(cell(a, 13)));
     }
 
@@ -220,15 +224,16 @@ public class GuideTest {
         assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
         assertEquals(View.GONE, visibility(a, R.id.box_week));
         assertEquals(View.GONE, visibility(a, R.id.row_biweekly));
-        assertTrue("摘要要写出周期", text(a, R.id.tv_rotation_title).contains("4天"));
+        assertTrue("摘要要写出周期，实际：" + text(a, R.id.tv_rotation_title),
+                text(a, R.id.tv_rotation_title).contains("4 天一轮"));
     }
 
     /** 第 2 页的「重复」行读的是第一个闹钟，不是另存一份。 */
     @Test
     public void repeatRow_reflectsFirstAlarm() {
         GuideActivity a = fresh();
-        assertTrue("默认那条是「仅上班日」，实际：" + text(a, R.id.tv_repeat),
-                text(a, R.id.tv_repeat).startsWith("仅上班日"));
+        assertTrue("默认那条写「跟随我的班表」（与弹层同一套叫法），实际：" + text(a, R.id.tv_repeat),
+                text(a, R.id.tv_repeat).startsWith("跟随我的班表"));
     }
 
     // ================= 第二页：第一个闹钟 =================
@@ -565,12 +570,11 @@ public class GuideTest {
     @Test
     public void weekCells_shareSameWeight() {
         GuideActivity a = fresh();
-        LinearLayout grid = a.findViewById(R.id.grid_week);
-        assertNotNull(grid);
-        assertEquals("应是七格", 7, grid.getChildCount());
-        for (int i = 0; i < grid.getChildCount(); i++) {
+        LinearLayout row = (LinearLayout) grid(a).cellAt(0).getParent();
+        assertEquals("应是七格", 7, row.getChildCount());
+        for (int i = 0; i < row.getChildCount(); i++) {
             LinearLayout.LayoutParams lp =
-                    (LinearLayout.LayoutParams) grid.getChildAt(i).getLayoutParams();
+                    (LinearLayout.LayoutParams) row.getChildAt(i).getLayoutParams();
             assertEquals("第 " + i + " 格的权重", 1f, lp.weight, 0.001f);
             assertEquals("第 " + i + " 格不该写死宽度", 0, lp.width);
         }

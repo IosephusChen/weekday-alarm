@@ -61,6 +61,29 @@ public final class ScheduleInfer {
         return infer7(days, base);
     }
 
+    /**
+     * 反推，但保留「我正在看两周」这个意图（v1.3.0）。
+     *
+     * <p>勾了「两周不一样」却把两周点成一模一样时，{@link #infer} 会（正确地）
+     * 判成双休——可那样格子会当场缩回 7 格，用户刚点的第二周凭空消失。
+     * 这条路把它改写成 14 天一轮，视图意图留着，日历也只是多一行。
+     *
+     * <p>引导页与「我的班表」共用这一份：两边各写一遍的话，迟早有一边忘记保留意图。
+     */
+    public static Result inferKeepingTwoWeeks(boolean[] days, LocalDate monday, boolean twoWeeks) {
+        Result r = infer(days, monday);
+        if (!twoWeeks || r.mode == WeekSchedule.Mode.BIG_SMALL
+                || r.mode == WeekSchedule.Mode.CYCLE) {
+            return r;
+        }
+        long mask = 0L;
+        for (int i = 0; i < days.length && i < 14; i++) {
+            if (days[i]) mask |= (1L << i);
+        }
+        LocalDate base = monday != null ? monday : LocalDate.now();
+        return new Result(WeekSchedule.Mode.CYCLE, Math.max(7, days.length), mask, base, null, false);
+    }
+
     private static Result infer7(boolean[] w, LocalDate monday) {
         boolean[] week = new boolean[7];
         System.arraycopy(w, 0, week, 0, Math.min(7, w.length));

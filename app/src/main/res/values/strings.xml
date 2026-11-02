@@ -30,7 +30,7 @@
     <string name="settings_ringtone_default">系统默认</string>
     <string name="settings_more_ring_title">响铃方式</string>
     <string name="settings_section_schedule">周休与节假日</string>
-    <string name="settings_week_mode_title">周休制度</string>
+    <string name="settings_week_mode_title">我的班表</string>
     <string name="settings_week_mode_default">大小周</string>
     <string name="settings_holiday_data_title">节假日数据</string>
     <string name="settings_holiday_data_default">—</string>

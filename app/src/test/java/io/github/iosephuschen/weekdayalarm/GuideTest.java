@@ -1236,8 +1236,32 @@ public class GuideTest {
 
         assertEquals(View.VISIBLE, visibility(a, R.id.tv_week_verdict));
         assertEquals(View.VISIBLE, visibility(a, R.id.box_week));
-        assertEquals(View.GONE, visibility(a, R.id.card_rotation));
+        // v1.9：轮班卡常驻。按周态它是入口（副标题说明什么人来点），
+        // 不再是「一切按周就消失、只剩一行紫色小字」
+        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
+        assertEquals("几天一轮的班", text(a, R.id.tv_rotation_title));
+        assertEquals("四班三倒、上二休二点这里", text(a, R.id.tv_rotation_sub));
+        // 「改成按周排」是退出入口，按周态没有可退的地方
+        assertEquals(View.GONE, visibility(a, R.id.link_rotation));
         assertTrue(text(a, R.id.tv_week_title).contains("这一周"));
+    }
+
+    /** v1.9：轮班态那张卡换成摘要，同时冒出「改成按周排」，两者必须同进同退。 */
+    @Test
+    public void rotationPage_reusesSameCardAndOffersWayBack() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleStart(ctx(), LocalDate.now());
+        Prefs.setShiftCycle(ctx(), new int[]{-1, -1, -1, -1, -1, -1, -1});
+        GuideActivity a = launch();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
+        assertEquals(View.VISIBLE, visibility(a, R.id.link_rotation));
+        // 同一张卡，标题从「几天一轮的班」换成排班摘要——不是换另一个控件
+        assertFalse("轮班态不该还写着入口那句",
+                text(a, R.id.tv_rotation_title).equals("几天一轮的班"));
     }
 
     /**

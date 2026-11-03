@@ -90,7 +90,7 @@ public class GuideActivity extends AppCompatActivity {
     private LinearLayout boxWeek;
     private WeekGrid weekGrid;
     private LinearLayout cardRotation, rowBiweekly;
-    private View cbBiweekly;
+    private androidx.appcompat.widget.SwitchCompat swBiweekly;
     private TextView tvWeekSub, tvRotationTitle, tvRotationSub, tvBiweeklyHint, linkRotation;
     /** 第一页的标题与结论条（v1.3.0）：标题跟着「一周 / 两周」变，结论条报出认出的是哪种班。 */
     private TextView tvWeekTitle, tvWeekVerdict;
@@ -267,20 +267,20 @@ public class GuideActivity extends AppCompatActivity {
         tvWeekVerdict = findViewById(R.id.tv_week_verdict);
         cardRotation = findViewById(R.id.card_rotation);
         rowBiweekly = findViewById(R.id.row_biweekly);
-        cbBiweekly = findViewById(R.id.cb_biweekly);
+        swBiweekly = findViewById(R.id.sw_biweekly);
         tvWeekSub = findViewById(R.id.tv_week_sub);
         tvRotationTitle = findViewById(R.id.tv_rotation_title);
         tvRotationSub = findViewById(R.id.tv_rotation_sub);
         tvBiweeklyHint = findViewById(R.id.tv_biweekly_hint);
         linkRotation = findViewById(R.id.link_rotation);
+        // 和「我的班表」同一个配色：不 style 的话开关长什么样全看 ROM
+        SwitchKit.style(this, swBiweekly);
 
         weekGrid.setOnDayClick(this::toggleDay);
         cardRotation.setOnClickListener(v -> openRotation());
         rowBiweekly.setOnClickListener(v -> setBiweekly(!biweekly));
-        linkRotation.setOnClickListener(v -> {
-            if (rotation) backToWeek();
-            else openRotation();
-        });
+        // 只剩「改成按周排」一个动作：卡片自己就是入口，这里不用再判 direction
+        linkRotation.setOnClickListener(v -> backToWeek());
 
         reloadWeek();
     }
@@ -295,14 +295,17 @@ public class GuideActivity extends AppCompatActivity {
         rotation = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
                 && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
 
-        // 轮班：七格表达不了 N 天一轮的表，换一行摘要 + 编辑入口
-        cardRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
+        // 轮班：七格表达不了 N 天一轮的表，换一张摘要卡。
+        // v1.9：这张卡改成常驻——按周态是入口、轮班态是摘要，同一张卡换文案，
+        // 不再「一按周就缩成一行紫色小字」。
+        cardRotation.setVisibility(View.VISIBLE);
         boxWeek.setVisibility(rotation ? View.GONE : View.VISIBLE);
         rowBiweekly.setVisibility(rotation ? View.GONE : View.VISIBLE);
         // v1.8.1：结论条也得跟着走。原来它只算「按周」那一套，切到轮班后
         // 「双休」还留在页面上，和下面「8 天一轮 · 上 6 休 2」同屏打架
         tvWeekVerdict.setVisibility(rotation ? View.GONE : View.VISIBLE);
-        linkRotation.setText(rotation ? "改成按周排 ›" : "我是几天一轮的班（上二休二）›");
+        // 「改成按周排」是退出入口，只在轮班态有；按周态没有可退的地方
+        linkRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
         if (rotation) {
             WeekSchedule.Rule rule = Prefs.getRule(this);
             // 标题和副标题同样要换：格子已经收起来了，还写着「点一下切换班和休」
@@ -310,6 +313,11 @@ public class GuideActivity extends AppCompatActivity {
             tvWeekTitle.setText("你几天一轮、怎么倒？");
             tvWeekSub.setText("点下面那张卡改。休息日不用填时刻。");
             tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
+            // 轮班态这张卡是「摘要」，跟班表页那张摘要卡同一个规格：15sp bold。
+            // 按周态它只是入口，14sp 常规，和上面「大小周」那行平起平坐——
+            // 同一页两张并列的卡，一粗一细会让人以为轮班比大小周更当紧。
+            tvRotationTitle.setTextSize(15);
+            tvRotationTitle.setTypeface(null, android.graphics.Typeface.BOLD);
             // v1.8.0：班次建了没有、排了几天，在这一行说清；没有班次时直接指路
             java.util.List<Shift> shifts = Prefs.getShifts(this);
             String summary = WeekScheduleActivity.shiftsSummary(shifts);
@@ -318,6 +326,15 @@ public class GuideActivity extends AppCompatActivity {
                     : summary + (Prefs.isCycleHoliday(this) ? " · 按放假跳过" : " · 照常上班"));
             return;
         }
+
+        // 按周态：这张卡降级成入口，说清「什么人来点它」。
+        // 不写「轮班」两个字是有意的——「我是几天一轮的班」比术语好认，
+        // 班表页那张卡也是同一种说法（按 N 天一轮排）。
+        tvRotationTitle.setText("几天一轮的班");
+        // 从轮班切回来要复位：同一张 TextView 上一步可能还是 15sp bold
+        tvRotationTitle.setTextSize(14);
+        tvRotationTitle.setTypeface(null, android.graphics.Typeface.NORMAL);
+        tvRotationSub.setText("四班三倒、上二休二点这里");
 
         WeekSchedule.Mode mode = Prefs.getWeekMode(this);
         biweekly = mode == WeekSchedule.Mode.BIG_SMALL
@@ -336,8 +353,9 @@ public class GuideActivity extends AppCompatActivity {
      */
     private void renderWeek() {
         weekGrid.setDays(weekDays, mondayOfWeek());
-        cbBiweekly.setBackgroundResource(biweekly
-                ? R.drawable.bg_guide_check_on : R.drawable.bg_guide_check_off);
+        // 开关只跟着状态走，不设 OnCheckedChangeListener：整行才是点击目标。
+        // 两边都接的话，点开关时先弹 listener、再冒泡到行，状态翻两次回到原样。
+        swBiweekly.setChecked(biweekly);
 
         LocalDate mon = mondayOfWeek();
         String span = md(mon) + " – " + md(mon.plusDays(biweekly ? 13 : 6));

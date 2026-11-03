@@ -1,14 +1,14 @@
 {
-  "versionCode": 262,
-  "versionName": "1.8.3",
+  "versionCode": 263,
+  "versionName": "1.9.0",
   "published": "2026-11-03",
-  "title": "双休不再被班次带着走",
+  "title": "引导页和「我的班表」排成一套",
   "notes": [
-    "勾成双休后，第二步不再按白班倒推出 06:30，也不再列三个班次",
-    "「我的班表」里编辑班次，不会再叠出一摞一样的窗口",
-    "引导页两个文字链接按下时不再冒出一个大灰圆",
-    "引导页顶部的圆形图标收小一号"
+    "轮班从一行紫色小字变成常驻卡片，挪到「大小周」下面",
+    "按周时它写「几天一轮的班」，切成轮班就换成本次排班的摘要",
+    "「大小周」左边的空心方框改成右侧开关，和班表页同一个控件",
+    "顶部那句结论换成浅靛底，一眼能认出这是结论不是设置项"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.3/weekday-alarm-1.8.3.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.3"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.9.0/weekday-alarm-1.9.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.9.0"
 }

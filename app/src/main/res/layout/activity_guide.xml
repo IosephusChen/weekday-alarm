@@ -140,74 +140,37 @@
 
                      v1.5.0：13sp 常规 → 15sp bold。同一句话在班表页是 15sp bold、
                      在这里是 13sp，两页各说各的；而且它是这一页唯一的「结论」，
-                     比下面的勾选卡还轻，层级就倒了。 -->
+                     比下面的勾选卡还轻，层级就倒了。
+
+                     v1.9：底色换 bg_verdict（浅靛），字色跟班表页一样用靛。
+                     白卡 + 黑字时它和下面三张设置卡是同一个模子，读起来像
+                     「第四项设置」；全 App 只有这里和班表页有「结论」，
+                     两处就该长成同一个样子。「现在」那个小胶囊不加：
+                     引导页是第一次用，没有「以前」可对比。 -->
                 <TextView
                     android:id="@+id/tv_week_verdict"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_dialog_row"
+                    android:background="@drawable/bg_verdict"
                     android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
+                    android:paddingTop="13dp"
                     android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="@dimen/space_10"
+                    android:paddingBottom="13dp"
                     android:text="双休 · 每周六、周日休"
-                    android:textColor="@color/ink"
+                    android:textColor="@color/indigo"
                     android:textSize="15sp"
                     android:textStyle="bold" />
 
-                <!-- 轮班：一行摘要 + 入口。不是所有人在这一页都该看到七格——
-                     四班三倒的人点七格只会得到一张别扭的表，直接给他那张 N 天的表 -->
-                <LinearLayout
-                    android:id="@+id/card_rotation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:background="@drawable/bg_dialog_row"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_12"
-                    android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="@dimen/space_12"
-                    android:visibility="gone">
+                <!-- 隔周换一次（大小周）。
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                     v1.9：左侧空心方框换成右侧开关，跟「我的班表」同一个控件。
+                     方框只在这两处出现过，而且「点整行切换」这件事方框其实表达不了
+                     （方块有自己的点击区，点了不确定是勾它还是点行）；开关则是
+                     一看到就懂「这是个开/关」，全 App 其余四五个开关也是它。
 
-                        <TextView
-                            android:id="@+id/tv_rotation_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="轮班 · 4天上2天"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_rotation_sub"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="春节照上班"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="改 ›"
-                        android:textColor="@color/sub"
-                        android:textSize="12.5sp" />
-                </LinearLayout>
-
-                <!-- 隔周换一次（大小周） -->
+                     clickable=false：只让整行接点击，开关自己不吃事件。
+                     否则点开关时行与开关各触发一次，状态翻两下回到原样。 -->
                 <LinearLayout
                     android:id="@+id/row_biweekly"
                     android:layout_width="match_parent"
@@ -223,16 +186,9 @@
                     android:paddingEnd="@dimen/space_16"
                     android:paddingBottom="@dimen/space_10">
 
-                    <View
-                        android:id="@+id/cb_biweekly"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:background="@drawable/bg_guide_check_off" />
-
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/space_10"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -252,8 +208,76 @@
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/sw_biweekly"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
                 </LinearLayout>
 
+                <!-- 轮班卡（v1.9）：常驻，不再「按周态是链接、轮班态才变卡」。
+
+                     原来按周态只给一行紫色小字，轮班态才换成卡片——同一个东西
+                     两种长相，用户切过去会发现入口「原地变了张脸」。而且小字
+                     和下面的「导入配置」长得一样，读起来像同一类次要操作。
+
+                     位置跟随「我的班表」：大小周在前、轮班在后。班表页里
+                     「改成按周排」也是最后一行，两页从上往下是同一个顺序。
+
+                     不是所有人在这一页都该看到七格——四班三倒的人点七格只会
+                     得到一张别扭的表，所以轮班态收起格子和大小周，只留这张卡。 -->
+                <LinearLayout
+                    android:id="@+id/card_rotation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:background="@drawable/bg_dialog_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_12"
+                    android:paddingEnd="@dimen/space_16"
+                    android:paddingBottom="@dimen/space_12">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_rotation_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="几天一轮的班"
+                            android:textColor="@color/ink"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_rotation_sub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_2"
+                            android:text="四班三倒、上二休二点这里"
+                            android:textColor="@color/sub"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_rotation_action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="改 ›"
+                        android:textColor="@color/sub"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <!-- 退出入口，只在轮班态出现。它是「改回按周」而不是主入口，
+                     所以留成一行小字——和上面的卡片不是一类动作。 -->
                 <TextView
                     android:id="@+id/link_rotation"
                     android:layout_width="wrap_content"
@@ -267,9 +291,10 @@
                     android:paddingTop="@dimen/space_6"
                     android:paddingEnd="@dimen/space_8"
                     android:paddingBottom="@dimen/space_6"
-                    android:text="我是几天一轮的班（上二休二）›"
+                    android:text="改成按周排 ›"
                     android:textColor="@color/indigo"
-                    android:textSize="12.5sp" />
+                    android:textSize="12.5sp"
+                    android:visibility="gone" />
 
                 <!-- 从旧手机迁移（v0.83.0 从顶栏挪到这里）：它回答的是「我有旧配置」，
                      与顶栏那个「我不想设」的跳过不是一类动作。放正文末尾，看得见但不抢戏。 -->

@@ -119,7 +119,7 @@
             android:paddingStart="16dp"
             android:paddingTop="14dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="14dp"
+            android:paddingBottom="13dp"
             android:visibility="gone">
 
             <LinearLayout
@@ -145,6 +145,17 @@
                     android:text="第 1 天定下来，往后按 N 天一轮"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
+
+                <!-- v1.7.0：填过的时刻在这里回显。以前班表页只写「14 天一轮 · 上12休2」，
+                     用户填完时刻回到首页，中间那一步完全不可见，会以为填了等于没填 -->
+                <TextView
+                    android:id="@+id/tv_rotation_times"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/body"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <TextView

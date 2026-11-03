@@ -235,9 +235,10 @@ final class AlarmRowRenderer {
             // 不加图标、不占新的横向空间。停用的闹钟整行已经是灰的，那个「静音」
             // 也一起灰：本来就不响的闹钟，不值得再强调一次
             SpannableStringBuilder line = new SpannableStringBuilder(base);
-            // v1.6.0：时间跟随班表。和「静音」同一套写法——接在规则后面，不另起一行、
-            // 不加图标。写在「静音」之前：先说什么时候响，再说响不响
-            if (a.followSchedule) {
+            // v1.7.0：时间由「我的班表」决定时标一下。和「静音」同一套写法——
+            // 接在规则后面，不另起一行、不加图标。同一条闹钟明天可能换个点响，
+            // 不说一句用户会以为是 App 自己乱来
+            if (a.timeFromRule(globalRule)) {
                 line.append(" · ");
                 int from = line.length();
                 line.append("跟班表");
@@ -312,7 +313,7 @@ final class AlarmRowRenderer {
             // v0.90.0 再加「静音」——否则视障用户看不出这条闹钟到点不会响
             sw.setContentDescription(TimeText.clock(when.getHour(), when.getMinute())
                     + " " + a.label
-                    + (a.followSchedule ? " 跟班表" : "")
+                    + (a.timeFromRule(globalRule) ? " 跟班表" : "")
                     + (a.silent ? " 静音" : "") + " 闹钟开关");
             // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
             sw.setChecked(a.enabled);

@@ -24,7 +24,7 @@ import java.time.LocalDate;
 public class WeekScheduleActivity extends AppCompatActivity {
 
     private WeekGrid grid;
-    private TextView tvVerdict, tvHint, tvRotationTitle, tvRotationSub, tvHolidaySub;
+    private TextView tvVerdict, tvHint, tvRotationTitle, tvRotationSub, tvRotationTimes, tvHolidaySub;
     private SwitchCompat swBiweekly, swHoliday;
     private View cardRotation, rowBiweekly, rowHoliday, rowRotation, rowBackWeek;
 
@@ -45,6 +45,7 @@ public class WeekScheduleActivity extends AppCompatActivity {
         tvHint = findViewById(R.id.tv_hint);
         tvRotationTitle = findViewById(R.id.tv_rotation_title);
         tvRotationSub = findViewById(R.id.tv_rotation_sub);
+        tvRotationTimes = findViewById(R.id.tv_rotation_times);
         tvHolidaySub = findViewById(R.id.tv_holiday_sub);
         swBiweekly = findViewById(R.id.sw_biweekly);
         swHoliday = findViewById(R.id.sw_holiday);
@@ -96,12 +97,21 @@ public class WeekScheduleActivity extends AppCompatActivity {
             tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
             tvRotationSub.setText(Prefs.isCycleHoliday(this)
                     ? "春节、国庆按放假跳过" : "春节也照上班");
+            // v1.7.0：把填过的时刻回显出来。以前这张卡只写「14 天一轮 · 上12休2」，
+            // 用户填完时刻回到首页，中间那一步完全不可见，会以为填了等于没填
+            String times = timesSummary(rule);
+            tvRotationTimes.setVisibility(times == null ? View.GONE : View.VISIBLE);
+            if (times != null) tvRotationTimes.setText(times);
             cardRotation.setVisibility(View.VISIBLE);
             rowBackWeek.setVisibility(View.VISIBLE);
             grid.setVisibility(View.GONE);
             rowBiweekly.setVisibility(View.GONE);
             rowRotation.setVisibility(View.GONE);
-            tvHint.setText("这几天是怎么排的，点上面那张卡改。");
+            // 有时刻却没有任何闹钟在读它，就是这个功能最容易被以为「坏了」的地方：
+            // 填了半天，到点不响。指路写在这里而不是卡片里，卡片的行已经够多了
+            tvHint.setText(times != null && !anyoneFollows(rule)
+                    ? "上面这些时刻还没有闹钟在用——去闹钟里选「跟随我的班表」，它就跟着走。"
+                    : "这几天是怎么排的，点上面那张卡改。");
             return;
         }
 
@@ -196,6 +206,42 @@ public class WeekScheduleActivity extends AppCompatActivity {
 
     private void reschedule() {
         Reschedule.run(this, this::render);
+    }
+
+    /**
+     * 「上班日 08:00 / 20:00」——这一轮里出现过的时刻，去重后最多列三种（v1.7.0）。
+     *
+     * <p>62 天的表不可能全列，而用户真正关心的是「我这一轮有几种班次时间」，
+     * 所以先按时刻去重；三种以上只报个数。
+     *
+     * @return 一天时刻都没填时返回 null（双休、单休那类只标「上不上班」的表）
+     */
+    static String timesSummary(WeekSchedule.Rule r) {
+        if (r == null || r.cycleTimes == null) return null;
+        java.util.TreeSet<Integer> set = new java.util.TreeSet<>();
+        for (int m : r.cycleTimes) if (m >= 0) set.add(m);
+        if (set.isEmpty()) return null;
+
+        StringBuilder sb = new StringBuilder("上班日 ");
+        int i = 0;
+        for (int m : set) {
+            if (i == 3) {
+                sb.append(" 等 ").append(set.size()).append(" 种");
+                break;
+            }
+            if (i > 0) sb.append(" / ");
+            sb.append(TimeText.clock(m / 60, m % 60));
+            i++;
+        }
+        return sb.toString();
+    }
+
+    /** 有没有闹钟在按这张表的时间响（v1.7.0）。不看开关：关着的那条也算在用。 */
+    private boolean anyoneFollows(WeekSchedule.Rule r) {
+        for (Alarm a : Prefs.getAlarms(this)) {
+            if (a.timeFromRule(r)) return true;
+        }
+        return false;
     }
 
     /** 这一周的周一。{@code with(MONDAY)} 落回同一个 ISO 周，周日不会跳到下周一。 */

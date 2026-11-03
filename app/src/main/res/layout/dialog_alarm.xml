@@ -64,10 +64,12 @@
         android:text="时间" />
 
     <!-- 时间是这张卡里最该被看见的东西：34sp、居中、字距略开。
-         v0.77.1：去掉「点按修改时间」——控件本身的可点性一眼就能看出来，
-         这行小字只是噪音。 -->
-    <TextView
-        android:id="@+id/tv_alarm_pick_time"
+         v0.77.1：去掉「点按修改时间」——控件本身的可点性一眼就能看出来。
+         v1.7.0：这一格既是输入也是结果。班表填过每天的时刻、且这条闹钟
+         选「跟随我的班表」时，大字画的就是今天真正会响的时刻，下面补一行
+         说明它从哪来。原来那个独立的「时间跟随班表」开关就删在这里。 -->
+    <LinearLayout
+        android:id="@+id/box_alarm_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
@@ -75,61 +77,34 @@
         android:clickable="true"
         android:focusable="true"
         android:gravity="center"
-        android:letterSpacing="0.02"
-        android:padding="14dp"
-        android:text="07:30"
-        android:textColor="@color/ink"
-        android:textSize="34sp"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:paddingTop="13dp"
+        android:paddingBottom="11dp">
 
-    <!-- v1.6.0：时间跟随班表。轮班的人早班 7:30、晚班 19:30，
-         一条闹钟跟着「我的班表」每天换时间，不必按班型建两条。
-         只在全局班表是「轮班 / 自定义」且填过时间时出现——双休用户
-         没有「每天不同的时间」这回事，多一行开关只是噪音。 -->
-    <LinearLayout
-        android:id="@+id/row_follow_schedule"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/bg_dialog_row"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="14dp"
-        android:paddingTop="11dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="11dp"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tv_alarm_pick_time"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center"
+            android:letterSpacing="0.02"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="07:30"
+            android:textColor="@color/ink"
+            android:textSize="34sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="时间跟随班表"
-                android:textColor="@color/ink"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_follow_summary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="@color/sub"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/sw_follow_schedule"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/tv_alarm_time_source"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp" />
+            android:layout_marginTop="3dp"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="@color/sub"
+            android:textSize="12sp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView

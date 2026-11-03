@@ -214,7 +214,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="点某一天改时间，或者标成休息。"
+        android:text="点哪天，改那天几点上班；不上班就标休息。"
         android:textColor="@color/sub"
         android:textSize="11sp" />
 </LinearLayout>

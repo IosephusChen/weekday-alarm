@@ -121,9 +121,8 @@ final class AlarmEditor {
         View rowOwnRule = view.findViewById(R.id.row_own_rule);
         TextView tvOwnRule = view.findViewById(R.id.tv_own_rule);
         TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
-        LinearLayout rowFollow = view.findViewById(R.id.row_follow_schedule);
-        TextView tvFollowSummary = view.findViewById(R.id.tv_follow_summary);
-        SwitchCompat swFollow = view.findViewById(R.id.sw_follow_schedule);
+        View boxTime = view.findViewById(R.id.box_alarm_time);
+        TextView tvSource = view.findViewById(R.id.tv_alarm_time_source);
 
         // v0.88.0：这条闹钟单独用的铃声。null = 跟随「设置 → 铃声」，
         // 新建时不把当时的默认铃声抄进来——否则以后改默认，这条不跟着变（见 Alarm.ringtone）
@@ -178,9 +177,6 @@ final class AlarmEditor {
             Alarm.Mode m = sel[0];
             boolean ownMode = m.isOwnRule();
             rowOwnRule.setVisibility(ownMode ? View.VISIBLE : View.GONE);
-            // v1.6.0：自带班表没有逐日时间（Alarm 只存了上不上班），
-            // 对它摆「跟随班表」是个假开关，直接收起来
-            rowFollow.setVisibility(!ownMode && canFollow(global) ? View.VISIBLE : View.GONE);
             if (ownMode) {
                 tvOwnRule.setText(own[0] == null
                         ? "还没设班表，点这里填"
@@ -202,58 +198,57 @@ final class AlarmEditor {
                 minute[0] = primary.minute;
             }
         }
-        tvTime.setText(TimeText.clock(hour[0], minute[0]));
-
         /*
-         * v1.6.0：时间跟随「我的班表」。
+         * v1.7.0：时间只有一种来源，不再是一个开关。
          *
-         * 轮班的人早班 7:30、晚班 19:30，以前只能按班型建两条闹钟、各自关一半。
-         * 打开这个开关后，响铃时刻改读班表当天填的那个时间，一条就够。
+         * v1.6.0 在下面加过一行「时间跟随班表」，于是这一页出现两个都叫「跟班表」的
+         * 东西——一个管哪天响，一个管几点响，各自只说一半。用户得先知道这个分工，
+         * 才知道该拨哪一个。其实「跟随我的班表」本来就该连时间一起跟：班表里填的
+         * 每天时刻，唯一会读它的就是这条闹钟。
          *
-         * 只在全局班表是「轮班 / 自定义」且至少填过一天时间时才出现：双休、单休
-         * 的班表里根本没有「每天不同的时间」这回事，摆一个永远不生效的开关
-         * 比不摆更糟——用户拨开它会以为时间已经跟着走了。
+         * 现在由模式推导：WORKDAY 且班表有逐日时间 → 读班表那天的时间，大字画的
+         * 就是今天真正会响的时刻，下面一行说明它从哪来。双休、单休的班表没有逐日
+         * 时间，follows() 为 false，这一格与 v1.5.0 完全一样。
          */
-        final boolean[] follow = {target != null && target.followSchedule};
-        final Runnable[] refreshFollow = new Runnable[1];
-        refreshFollow[0] = () -> {
-            tvFollowSummary.setText(followSummary(global, follow[0], hour[0], minute[0]));
-            swFollow.setChecked(follow[0]);
-            swFollow.setEnabled(canFollow(global));
-            rowFollow.setAlpha(canFollow(global) ? 1f : 0.55f);
-        };
-        refreshFollow[0].run();
-        // 开关自己不改状态，点击统一交给整行：SwitchCompat 会先把 checked 翻过去
-        // 再回调，若在回调里再翻一次 follow[0]，视觉和真实状态就各说各话
-        swFollow.setClickable(false);
-        swFollow.setFocusable(false);
-        rowFollow.setOnClickListener(v -> {
-            if (!canFollow(global)) {
-                Toast.makeText(activity, "「我的班表」还没填每天的时间，先去那里填一下",
-                        Toast.LENGTH_LONG).show();
+        final Runnable[] refreshTime = new Runnable[1];
+        refreshTime[0] = () -> {
+            if (!follows(sel[0], global)) {
+                tvTime.setText(TimeText.clock(hour[0], minute[0]));
+                tvSource.setVisibility(View.GONE);
                 return;
             }
-            follow[0] = !follow[0];
-            refreshFollow[0].run();
-            refreshPickTime(tvTime, global, follow[0], hour[0], minute[0]);
-        });
-        refreshPickTime(tvTime, global, follow[0], hour[0], minute[0]);
+            LocalDate today = LocalDate.now();
+            int now = WeekSchedule.cycleTimeOf(today, global);
+            int next = WeekSchedule.cycleTimeOf(today.plusDays(1), global);
+            if (now >= 0) {
+                tvTime.setText(TimeText.clock(now / 60, now % 60));
+                tvSource.setText(next >= 0
+                        ? "明天 " + TimeText.clock(next / 60, next % 60) + " · 由「我的班表」决定"
+                        : "明天休息 · 由「我的班表」决定");
+            } else {
+                // 今天不上班：大字退回它自己的时刻，小字说清今天不响，
+                // 否则用户会以为这 07:30 今天也会叫
+                tvTime.setText(TimeText.clock(hour[0], minute[0]));
+                tvSource.setText("今天休息，不响");
+            }
+            tvSource.setVisibility(View.VISIBLE);
+        };
+        refreshTime[0].run();
 
         // 自绘「时 / 分」双列滚轮选择器：澎湃 OS 会无视框架 TimePicker 的 spinner
         // 主题设置、强制渲染成表盘拨轮，因此不再依赖 TimePickerDialog
-        tvTime.setOnClickListener(v -> {
-            if (follow[0] && canFollow(global)) {
-                // 时间已经不归它管：点进来给滚轮只会让人以为能改，
+        boxTime.setOnClickListener(v -> {
+            if (follows(sel[0], global)) {
+                // 时间已经不归它管：拨开滚轮只会让人以为能改，
                 // 改完发现明天响的还是班表那个点
-                Toast.makeText(activity, "时间由「我的班表」每天决定，关掉上面的开关就能自己定",
+                Toast.makeText(activity, "时间由「我的班表」每天决定，去那里改当天的时刻",
                         Toast.LENGTH_LONG).show();
                 return;
             }
             TimeWheelDialog.show(activity, hour[0], minute[0], (h, m) -> {
                 hour[0] = h;
                 minute[0] = m;
-                refreshFollow[0].run();
-                refreshPickTime(tvTime, global, follow[0], hour[0], minute[0]);
+                refreshTime[0].run();
             });
         });
 
@@ -332,6 +327,8 @@ final class AlarmEditor {
             modeList.addView(tail, tailLp);
 
             rowOnceDate.setVisibility(sel[0] == Alarm.Mode.ONCE ? View.VISIBLE : View.GONE);
+            // 模式一变，「时间由谁决定」也跟着变；绑在这里比在四处点击里各加一遍省心
+            refreshTime[0].run();
         };
 
         // 日期行：选中「仅一次」才出现
@@ -398,17 +395,12 @@ final class AlarmEditor {
                     WeekSchedule.Rule ownRule = mode.isOwnRule()
                             ? (own[0] != null ? own[0] : defaultOwn(mode))
                             : null;
-                    // v1.6.0：自带班表的闹钟没有逐日时间，跟随必然失效（Alarm.timeOn
-                    // 会退回自己的 hour/minute）。此时不写这个标记，列表才不会挂着
-                    // 「跟班表」三个字、响的却是固定时刻
-                    boolean wantFollow = !mode.isOwnRule() && follow[0] && canFollow(global);
                     if (target == null) {
                         int id = Prefs.nextAlarmId(activity);
                         Alarm created = new Alarm(id, hour[0], minute[0], label, mode,
                                 true, onceStr);
                         created.ringtone = ringtoneString(ring[0]);
                         created.silent = silent[0];
-                        created.followSchedule = wantFollow;
                         if (ownRule != null) created.applyOwnRule(ownRule);
                         alarms.add(created);
                     } else {
@@ -427,13 +419,10 @@ final class AlarmEditor {
                         Alarm.Mode oldMode = target.mode;
                         String oldOnce = target.onceDate;
                         WeekSchedule.Rule oldOwn = target.ownRule();
-                        boolean oldFollow = target.followSchedule;
                         String tip = applyEdit(activity, target, hour[0], minute[0],
                                 label, mode, onceStr, ownRule);
-                        target.followSchedule = wantFollow;
                         if (oldHour != target.hour || oldMinute != target.minute
                                 || oldMode != target.mode
-                                || oldFollow != target.followSchedule
                                 || !java.util.Objects.equals(oldOnce, target.onceDate)
                                 || !sameRule(oldOwn, target.ownRule())) {
                             ScheduleManager.dropSnooze(activity, target.id);
@@ -559,14 +548,14 @@ final class AlarmEditor {
         }
     }
 
-    // ================= 时间跟随班表（v1.6.0）=================
+    // ================= 按班表时间响（v1.7.0）=================
 
     /**
-     * 这张班表能不能被「跟随」。
+     * 这张班表里有没有「每天不同的时间」可读。
      *
      * <p>两个条件缺一不可：必须是轮班 / 自定义（双休、大小周的班表本来就没有
-     * 「每天不同的时间」），且至少有一天填了时刻。只有「上不上班」的那张表
-     * 跟过来也全是空的，{@link Alarm#timeOn} 每次都会退回自己的时间。
+     * 逐日时刻），且至少有一天填了时刻。只有「上不上班」的那张表跟过来也全是空的，
+     * {@link Alarm#timeOn} 每次都会退回自己的时间。
      */
     static boolean canFollow(WeekSchedule.Rule g) {
         if (g == null || !g.mode.isCycle() || g.cycleTimes == null) return false;
@@ -575,43 +564,15 @@ final class AlarmEditor {
     }
 
     /**
-     * 「时间跟随班表」那一行的副文案。
+     * 这条闹钟的时间是否由「我的班表」决定（v1.7.0）。
      *
-     * <p>关着的时候不写「未开启」——那三个字只是复述开关本身。写的是<b>打开能得到什么</b>：
-     * 轮班的人看到「早班晚班时间不同」才知道这一行跟自己有关。
+     * <p>只有「跟随我的班表」会。班表里填的每天时刻，唯一会读它的就是它；
+     * 「每天」「仅休息日」用的是自己那个固定时刻——那两张卡回答的是「多久响一次」，
+     * 跟班次时间本来就没关系。v1.6.0 把这件事做成一个独立开关，于是同一页上
+     * 出现两个都叫「跟班表」的东西，现在收进模式里。
      */
-    static String followSummary(WeekSchedule.Rule g, boolean follow, int hour, int minute) {
-        if (!canFollow(g)) {
-            return "「我的班表」没填每天的时间，按 " + TimeText.clock(hour, minute) + " 响";
-        }
-        if (!follow) return "早班晚班时间不同？打开就跟着班表走";
-        LocalDate t = LocalDate.now();
-        return dayTimeText(t, g, "今天") + " · " + dayTimeText(t.plusDays(1), g, "明天");
-    }
-
-    /** 「今天 07:30」/「今天休」/「今天未填」。 */
-    private static String dayTimeText(LocalDate d, WeekSchedule.Rule g, String name) {
-        if (!WeekSchedule.isCycleWorkday(d, g)) return name + "休";
-        int m = WeekSchedule.cycleTimeOf(d, g);
-        return m < 0 ? name + "未填" : name + " " + TimeText.clock(m / 60, m % 60);
-    }
-
-    /**
-     * 时间大字。
-     *
-     * <p>跟随班表时必须显示<b>今天实际会响的时刻</b>：还写着那条闹钟自己的 07:30，
-     * 而明天 19:30 就响了，是这一页最容易让人骂「设了没用」的地方。
-     */
-    static void refreshPickTime(TextView tv, WeekSchedule.Rule g,
-                                boolean follow, int hour, int minute) {
-        if (follow && canFollow(g)) {
-            int m = WeekSchedule.cycleTimeOf(LocalDate.now(), g);
-            if (m >= 0) {
-                tv.setText(TimeText.clock(m / 60, m % 60));
-                return;
-            }
-        }
-        tv.setText(TimeText.clock(hour, minute));
+    static boolean follows(Alarm.Mode m, WeekSchedule.Rule g) {
+        return m == Alarm.Mode.WORKDAY && canFollow(g);
     }
 
     /** 六参版本：老调用方（和测试）只用得到这些字段，自带班表保持原样。 */

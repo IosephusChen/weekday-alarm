@@ -80,7 +80,7 @@ public final class ScheduleSheet {
         }
 
         String hint() {
-            if (withTimes) return "点某一天改时间，或者标成休息。";
+            if (withTimes) return "点哪天，改那天几点上班；不上班就标休息。";
             return "点一天就切换「班 / 休」，改完点确定。";
         }
     }

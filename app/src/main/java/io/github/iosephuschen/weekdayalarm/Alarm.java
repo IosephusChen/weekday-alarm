@@ -122,33 +122,36 @@ public final class Alarm {
     public boolean silent;
 
     /**
-     * 时间跟随「我的班表」的逐日时间（v1.6.0）。
+     * 这条闹钟在 {@code d} 这天的响铃时刻（v1.7.0）。
      *
-     * <p>默认 {@code false}：一条闹钟仍然是「7:30 响」。打开之后，响铃时刻读班表
-     * 当天填的那个时间——早班 7:30、晚班 19:30 那种轮班，一条闹钟就能跟着转，
-     * 不必按班型建两条。
+     * <p>只有 {@link Mode#WORKDAY} 会读班表的逐日时间——「跟随我的班表」这四个字
+     * 本来就该连时间一起跟：班表里填的每天时刻，唯一会读它的就是这条闹钟。
      *
-     * <p><b>只看「几点响」，不看「哪天响」</b>：哪天由 {@link #mode} 决定，两件事正交。
+     * <p>v1.6.0 曾另设一个 {@code followSchedule} 开关来做这件事，结果是编辑页上
+     * 出现两个都叫「跟班表」的东西：一个管哪天响、一个管几点响，各自只说一半。
+     * 用户得先知道这个分工，才知道该拨哪一个——所以 v1.7.0 把它收回
+     * {@link Mode} 里，开关连同字段一起删了。
      *
-     * <p>班表那天取不到时间时（{@code WeekSchedule.cycleTimeOf} 返回 -1，比如那天
-     * 在班表里是休息、或那张表从来没填过时间）退回自己的 {@code hour/minute}——
-     * 宁可响在旧时刻，也不要因为班表某天漏填就让这条闹钟整天不响。
+     * <p>班表那天取不到时间（{@code cycleTimeOf} 返回 -1：休息日、那天没填、
+     * 或整张表没有逐日时间）就退回自己的 {@code hour/minute}——宁可响在旧时刻，
+     * 也不要因为班表漏填一天就让这条闹钟整天不响。双休、单休的班表里根本没有
+     * 逐日时间，那些用户一直走的是回退分支，行为与 v1.5.0 逐字一致。
      */
-    public boolean followSchedule;
-
     /**
-     * 这条闹钟在 {@code d} 这天的响铃时刻。
+     * 这条闹钟的时间是否由 {@code rule} 的逐日时刻决定（v1.7.0）。
      *
-     * <p>不开 {@link #followSchedule} 时就是自己的 {@code hour/minute}，与 v1.5.0 完全一致。
-     *
-     * <p>用了 {@code ruleFor(rule)} 而不是直接收 {@code rule}：自带班表的闹钟
-     * （「自己排一周」）要读它自己那张表，交给它全局那张会读到别人的时间。
-     * 那种表本来就没有逐日时间（{@code cycleTimes == null}），所以这里一定走回退分支。
+     * <p>列表和编辑页都要回答「这条跟不跟班表」，判定必须只有一处，
+     * 否则总有一边先对不上。
      */
+    public boolean timeFromRule(WeekSchedule.Rule rule) {
+        if (mode != Mode.WORKDAY || rule == null || rule.cycleTimes == null) return false;
+        for (int m : rule.cycleTimes) if (m >= 0) return true;
+        return false;
+    }
+
     public LocalTime timeOn(LocalDate d, WeekSchedule.Rule rule) {
-        if (followSchedule) {
-            WeekSchedule.Rule r = mode.isOwnRule() ? ruleFor(rule) : rule;
-            int m = WeekSchedule.cycleTimeOf(d, r);
+        if (mode == Mode.WORKDAY) {
+            int m = WeekSchedule.cycleTimeOf(d, rule);
             if (m >= 0) return LocalTime.of(m / 60, m % 60);
         }
         return LocalTime.of(hour, minute);
@@ -475,8 +478,6 @@ public final class Alarm {
                 if (a.ringtone != null && !a.ringtone.isEmpty()) o.put("ringtone", a.ringtone);
                 // 同 color / ringtone：默认值（不静音）不落盘。老备份没有这个键，读时按 false
                 if (a.silent) o.put("silent", true);
-                // v1.6.0 同例：默认「按自己的时间响」不落盘，老备份读时按 false
-                if (a.followSchedule) o.put("followSchedule", true);
                 // v1.2.0：只有自带班表的模式才写这四个键。其余模式写进去也没人看，
                 // 只会让备份文件多出一堆 0
                 if (a.mode.isOwnRule() && a.cycleLen > 0) {
@@ -527,9 +528,6 @@ public final class Alarm {
                     a.ringtone = ring == null || ring.trim().isEmpty() ? null : ring.trim();
                     // 老版本 / 手改的备份里没有这个键：默认 false，即照常响
                     a.silent = o.optBoolean("silent", false);
-                    // v1.6.0：老备份没有这个键 → false → 按自己的 hour/minute 响，
-                    // 与升级前逐字一致（新增功能不能改变已有闹钟的行为）
-                    a.followSchedule = o.optBoolean("followSchedule", false);
                     // v1.2.0：自带班表。缺字段（老备份）时 cycleLen = 0 → ownRule() 返回 null
                     // → 退回全局那张，行为与升级前完全一致
                     a.cycleLen = clamp(o.optInt("cycleLen", 0), 0,

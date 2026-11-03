@@ -171,7 +171,10 @@ final class CalendarPanel {
                 int bgRes;
                 int textColorRes;
                 String label;
-                // v1.1.0：只有「纯工作日」的标签才降一档色。请假 / 加班 / 假加这些
+                // v1.11.0：加班那天的班次名只取一次——格子上写它，无障碍描述也要用它，
+                // 两处各算一遍迟早漂（DayTag 的注释里记着上一次这种漂）
+                String shiftName = DayTag.shiftName(rule, ov, 2);
+                // v1.1.0：只有「纯工作日」的标签才降一档色。请假 / 加班这些
                 // 是例外状态，标签本身就是要被注意到的注记，跟着数字同色才对。
                 boolean plainWork = false;
                 if (vacation) {
@@ -183,7 +186,6 @@ final class CalendarPanel {
                     textColorRes = R.color.day_overtime_text;
                     // v1.11.0：有班次就写班次名（「夜班」比「加班」多答了「上哪个」），
                     // 老数据没班次才退回「加班」
-                    String shiftName = DayTag.shiftName(rule, ov, 2);
                     label = shiftName != null ? shiftName : "加班";
                 } else {
                     // 节日 / 节气 / 班休的优先级只在 DayTag 里判一次（v0.91.8）：
@@ -253,7 +255,7 @@ final class CalendarPanel {
                     labelColor = color;
                 }
                 // 无障碍：TalkBack 读到的是「17」这种光秃秃的数字，无法判断当天班休
-                cell.setContentDescription(describeDay(d, type, vacation, overtime));
+                cell.setContentDescription(describeDay(d, type, vacation, overtime, shiftName));
 
                 num.setText(String.valueOf(d.getDayOfMonth()));
                 num.setTextColor(color);
@@ -363,14 +365,14 @@ final class CalendarPanel {
 
     /** 格子的一句话描述，供 TalkBack 朗读。 */
     private String describeDay(LocalDate d, WeekSchedule.DayType type,
-                               boolean vacation, boolean overtime) {
+                               boolean vacation, boolean overtime, String shiftName) {
         String state;
-        if (vacation && overtime) {
-            state = "请假，并且加班";
-        } else if (vacation) {
+        // v1.11.0：一天只有一个值，「请假 + 加班」不可能同时存在；加班有班次时
+        // 读出来是「加班 · 夜班」，与格子上的两个字对得上
+        if (vacation) {
             state = "请假";
         } else if (overtime) {
-            state = "加班";
+            state = shiftName == null ? "加班" : "加班 · " + shiftName;
         } else {
             switch (type) {
                 case MAKEUP_WORK:

@@ -39,7 +39,7 @@ final class ShiftPickDialog {
         for (int i = 0; i < shifts.size(); i++) {
             Shift s = shifts.get(i);
             names[i] = s.name;
-            subs[i] = s.spanText();
+            subs[i] = s.startText() + " 开始";
             checked[i] = contains(currentIds, s.id);
         }
         // 一条都没勾过（新建）：默认全勾。用户点这一行的意图就是「跟班表」，

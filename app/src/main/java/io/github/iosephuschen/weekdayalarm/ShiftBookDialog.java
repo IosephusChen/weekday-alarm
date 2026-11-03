@@ -14,7 +14,6 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
@@ -163,7 +162,8 @@ public final class ShiftBookDialog {
         name.setIncludeFontPadding(false);
 
         TextView span = new TextView(ctx);
-        span.setText(s.spanText());
+        // v1.9.2：不再显示「– 17:00」，只写「08:00 开始」
+        span.setText(s.startText() + " 开始");
         span.setTextSize(12);
         span.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
         span.setPadding(0, dp(ctx, 4), 0, 0);
@@ -197,11 +197,6 @@ public final class ShiftBookDialog {
     private static void edit(Context ctx, Shift base, OnChanged cb) {
         final boolean isNew = base == null;
         final int[] start = {isNew ? 8 * 60 : base.start};
-        final int[] end = {isNew ? 17 * 60 : base.end};
-        final boolean[] noEnd = {!isNew && base.end == Shift.END_UNKNOWN};
-        // 新建时结束时间跟着开始走：改了「开始」而「结束」还停在 17:00，
-        // 20:00 的白班就变成「20:00 – 次日 17:00」，21 小时的班。用户自己动过就不再跟
-        final boolean[] endTouched = {!isNew};
 
         LinearLayout box = new LinearLayout(ctx);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -250,72 +245,28 @@ public final class ShiftBookDialog {
 
         Field fStart = fieldRow(ctx, "开始");
         box.addView(fStart.row, margin(ctx, 10));
-        Field fEnd = fieldRow(ctx, "结束");
-        box.addView(fEnd.row, margin(ctx, 10));
         final TextView tvStart = fStart.value;
-        final TextView tvEnd = fEnd.value;
         final LinearLayout rowStart = fStart.row;
-        final LinearLayout rowEnd = fEnd.row;
 
-        // 不填下班时间：与「开始 / 结束」同一张卡片语言，开关靠右
-        LinearLayout rowNoEnd = card(ctx);
-        rowNoEnd.setOrientation(LinearLayout.HORIZONTAL);
-        rowNoEnd.setGravity(Gravity.CENTER_VERTICAL);
-        rowNoEnd.setPadding(dp(ctx, 16), dp(ctx, 8), dp(ctx, 14), dp(ctx, 8));
-        rowNoEnd.setMinimumHeight(dp(ctx, 48));
-        TextView noEndLabel = new TextView(ctx);
-        noEndLabel.setText("不填下班时间");
-        noEndLabel.setTextSize(15);
-        noEndLabel.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
-        noEndLabel.setLayoutParams(new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        SwitchCompat swNoEnd = new SwitchCompat(ctx);
-        swNoEnd.setChecked(noEnd[0]);
-        SwitchKit.style(ctx, swNoEnd);
-        rowNoEnd.addView(noEndLabel);
-        rowNoEnd.addView(swNoEnd);
-        box.addView(rowNoEnd, margin(ctx, 10));
-
+        // v1.9.2：「结束」和「不填下班时间」一起删了。这两个字段不参与任何计算——
+        // 响铃只认「开始 + 偏移」，结束时间唯一的作用是让列表多写「– 17:00」。
+        // 留着它等于收填写税：用户花时间填一个不会改变任何行为的数，还不知道它没用。
         TextView tip = new TextView(ctx);
-        tip.setText("结束时间早于开始时间，就算次日——夜班 20:00 到次日 08:00 直接这么填。");
+        tip.setText("只填开始时刻。响铃只认上班几点，夜班也填开始时间就行。");
         tip.setTextSize(12);
         tip.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
         tip.setLineSpacing(dp(ctx, 3), 1f);
         tip.setPadding(dp(ctx, 2), dp(ctx, 12), dp(ctx, 2), 0);
         box.addView(tip);
 
-        final Runnable paint = () -> {
-            tvStart.setText(clock(start[0]));
-            tvEnd.setText(noEnd[0] ? "不填" : clock(end[0]));
-            tvEnd.setTextColor(ContextCompat.getColor(ctx,
-                    noEnd[0] ? R.color.sub : R.color.indigo));
-            rowEnd.setAlpha(noEnd[0] ? 0.55f : 1f);
-            rowEnd.setEnabled(!noEnd[0]);
-        };
+        final Runnable paint = () -> tvStart.setText(clock(start[0]));
         paint.run();
 
         rowStart.setOnClickListener(v -> TimeWheelDialog.show(ctx, "几点开始",
                 start[0] / 60, start[0] % 60, (h, m) -> {
                     start[0] = h * 60 + m;
-                    if (!endTouched[0]) {
-                        // 保持默认的 9 小时班长
-                        end[0] = (start[0] + 9 * 60) % 1440;
-                    }
                     paint.run();
                 }));
-        rowEnd.setOnClickListener(v -> {
-            if (noEnd[0]) return;
-            TimeWheelDialog.show(ctx, "几点结束",
-                    end[0] / 60, end[0] % 60, (h, m) -> {
-                        end[0] = h * 60 + m;
-                        endTouched[0] = true;
-                        paint.run();
-                    });
-        });
-        swNoEnd.setOnCheckedChangeListener((b, checked) -> {
-            noEnd[0] = checked;
-            paint.run();
-        });
 
         // 分步调：Builder 的 setTitle / setView 返回父类型，链式之后就调不到 setNeutralButton
         RoundedDialog.Builder builder = new RoundedDialog.Builder(ctx);
@@ -325,7 +276,9 @@ public final class ShiftBookDialog {
         builder.setPositiveButton("保存", (d, w) -> {
             String label = name.getText().toString().trim();
             if (label.isEmpty()) label = isNew ? "班次" : base.name;
-            save(ctx, base, label, start[0], noEnd[0] ? Shift.END_UNKNOWN : end[0]);
+            // end 仍写进数据（老配置、备份都读这个字段），只是界面不再采集。
+            // 按「9 小时班」补一个，跨午夜自动折回 0~1439
+            save(ctx, base, label, start[0], (start[0] + 9 * 60) % 1440);
             // 先关自己再开列表：不然新列表会开在这张编辑页下面，一闪而过
             d.dismiss();
             show(ctx, cb);

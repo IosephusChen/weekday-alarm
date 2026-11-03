@@ -6,7 +6,6 @@ import android.view.ViewGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
@@ -70,13 +69,13 @@ final class ShiftCycleSheet {
         TextView tvSub = view.findViewById(R.id.tv_sub);
         TextView tvLen = view.findViewById(R.id.tv_len);
         TextView tvStart = view.findViewById(R.id.tv_start);
-        TextView tvHolidayHint = view.findViewById(R.id.tv_holiday_hint);
         TextView tvSummary = view.findViewById(R.id.tv_summary);
         TextView tvHint = view.findViewById(R.id.tv_hint);
-        SwitchCompat swHoliday = view.findViewById(R.id.sw_holiday);
         ScrollView scroll = view.findViewById(R.id.scroll_days);
         ViewGroup list = view.findViewById(R.id.list_days);
-        SwitchKit.style(ctx, swHoliday);
+        // v1.9.2：节假日开关移回「我的班表」，这个弹窗不再露它。
+        // 同一个值在两处出现，而且弹窗要按「确定」才写、班表页点一下立刻生效
+        view.findViewById(R.id.row_holiday).setVisibility(View.GONE);
 
         tvSub.setText(fresh && !shifts.isEmpty()
                 ? "已经先按「" + shifts.get(0).name + "」铺满了，把休息的那几天点掉就行。"
@@ -89,15 +88,12 @@ final class ShiftCycleSheet {
         final int[] fLen = {len};
         final LocalDate[] fStart = {start};
         final int[][] fCycle = {cycle};
-        final boolean[] fHoliday = {Prefs.isCycleHoliday(ctx)};
 
         final Runnable[] paint = new Runnable[1];
         paint[0] = () -> {
             tvLen.setText(fLen[0] + " 天");
             tvStart.setText(fStart[0].equals(LocalDate.now())
                     ? "今天（" + fStart[0].format(MD) + "）" : fStart[0].format(MD));
-            tvHolidayHint.setText(fHoliday[0] ? "春节、国庆会按放假跳过" : "春节、国庆也照常上班");
-            swHoliday.setChecked(fHoliday[0]);
             tvSummary.setText(summaryOf(fCycle[0], shifts));
             buildRows(ctx, list, fCycle[0], fStart[0], shifts, paint);
             fitListHeight(ctx, scroll, fLen[0]);
@@ -120,22 +116,22 @@ final class ShiftCycleSheet {
                     fStart[0] = d;
                     paint[0].run();
                 }));
-        swHoliday.setOnCheckedChangeListener((b, checked) -> {
-            fHoliday[0] = checked;
-            tvHolidayHint.setText(checked ? "春节、国庆会按放假跳过" : "春节、国庆也照常上班");
-        });
-
         new RoundedDialog.Builder(ctx)
                 .setTitle("轮班")
                 .setView(view)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确定", (d, w) -> {
+                    // v1.9.2：换到轮班入口时把节假日默认掰回「不跟」——
+                    // 轮班的人春节照上班。没换入口就保留用户在班表页手动设的值。
+                    // 这段原来在弹窗里靠用户自己勾，开关移走后只能在这里补
+                    if (Prefs.getCycleKind(ctx) != Prefs.CYCLE_KIND_ROTATION) {
+                        Prefs.setCycleHoliday(ctx, false);
+                    }
                     Prefs.setWeekMode(ctx, WeekSchedule.Mode.CYCLE);
                     Prefs.setCycleKind(ctx, Prefs.CYCLE_KIND_ROTATION);
                     Prefs.setCycleLen(ctx, fLen[0]);
                     Prefs.setCycleStart(ctx, fStart[0]);
                     Prefs.setShiftCycle(ctx, fCycle[0]);
-                    Prefs.setCycleHoliday(ctx, fHoliday[0]);
                     // 逐日时刻是老路径的字段：班次表一旦建立，它就不再被读，
                     // 清掉可以避免「两套数据都在、改了一套另一套还在」的错觉
                     Prefs.setCycleTimes(ctx, null);
@@ -199,7 +195,7 @@ final class ShiftCycleSheet {
         ids.add(-1);
         for (Shift s : shifts) {
             names.add(s.name);
-            subs.add(s.spanText());
+            subs.add(s.startText() + " 开始");
             ids.add(s.id);
         }
         if (shifts.isEmpty()) {

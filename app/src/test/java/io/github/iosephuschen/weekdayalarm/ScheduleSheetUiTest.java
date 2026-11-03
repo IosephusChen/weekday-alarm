@@ -67,8 +67,7 @@ public class ScheduleSheetUiTest {
     @Test
     public void holidaySwitch_rewritesItsOwnHint() {
         Dialog d = open(false);
-        TextView hint = d.findViewById(R.id.tv_holiday_hint);
-        SwitchCompat sw = d.findViewById(R.id.sw_holiday);
+        TextView hint = d.findViewById(R.id.tv_holiday_hint);        SwitchCompat sw = d.findViewById(R.id.sw_holiday);
         assertNotNull("应有节假日开关的副标题", hint);
         assertNotNull("应有节假日开关", sw);
 
@@ -131,5 +130,37 @@ public class ScheduleSheetUiTest {
         assertEquals("休", rest.getText().toString());
         assertEquals("「休」仍用 body 色，压在淡灰底上",
                 ctx().getColor(R.color.body), rest.getCurrentTextColor());
+    }
+
+    /**
+     * 全局班表的弹窗不再露节假日开关（v1.9.2）。
+     *
+     * <p>同一个值原来有三处入口：我的班表页、按周弹窗、轮班弹窗。班表页点一下
+     * 立刻写盘，弹窗里要按「确定」才算——两个脾气。而且在弹窗里改了再按取消，
+     * 用户会以为改好了。现在全局只留班表页那一行。
+     */
+    @Test
+    public void globalSheet_hidesHolidaySwitch() {
+        Dialog d = open(false);
+        assertEquals("全局班表不该再问一次节假日",
+                android.view.View.GONE, d.findViewById(R.id.row_holiday).getVisibility());
+    }
+
+    /**
+     * 单条闹钟的弹窗必须留着——{@code Alarm.cycleHoliday} 是它自己的字段，
+     * 除了这里没有别的地方能设。砍了等于这条功能没了。
+     */
+    @Test
+    public void alarmSheet_keepsHolidaySwitch() {
+        WeekScheduleActivity host =
+                Robolectric.buildActivity(WeekScheduleActivity.class).setup().get();
+        ScheduleSheet.Seed seed =
+                new ScheduleSheet.Seed(7, MON, 0b0011111L, null, false);
+        ScheduleSheet.show(host, ScheduleSheet.Role.ALARM_ROTATION, seed, null);
+
+        Dialog d = ShadowDialog.getLatestDialog();
+        assertNotNull(d);
+        assertEquals(android.view.View.VISIBLE,
+                d.findViewById(R.id.row_holiday).getVisibility());
     }
 }

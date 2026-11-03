@@ -1,14 +1,14 @@
 {
-  "versionCode": 264,
-  "versionName": "1.9.1",
+  "versionCode": 265,
+  "versionName": "1.9.2",
   "published": "2026-11-03",
-  "title": "轮班默认 4 天，班次列表更清楚",
+  "title": "班次只填开始时刻",
   "notes": [
-    "排轮班时默认 4 天，并先按第一个班次铺满，只把休息的天点掉",
-    "班次列表的色标加了淡色底，右侧改成「改 ›」，标题下说明长按删除",
-    "「＋ 新建班次」换成浅靛底，不再和上面两条班次长成一个样",
-    "引导页「改成按周排」从一行小字改成卡片，和「我的班表」一致"
+    "新建班次去掉「结束」和「不填下班时间」——响铃只认上班几点",
+    "班次列表改写成「08:00 开始」，不再显示「– 17:00」",
+    "排班弹窗和轮班弹窗不再问「法定节假日放假」，统一回「我的班表」改",
+    "单条闹钟自己排班时仍保留这个开关——那是它自己的设置"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.9.1/weekday-alarm-1.9.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.9.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.9.2/weekday-alarm-1.9.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.9.2"
 }

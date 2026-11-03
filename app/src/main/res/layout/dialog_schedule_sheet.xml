@@ -130,8 +130,17 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 节假日开关 -->
+    <!-- 节假日开关（v1.9.2：只在「单条闹钟自己排班」时露出来）
+
+         原来的问题是同一个开关出现在三处：我的班表页、按周弹窗、轮班弹窗，
+         绑的是同一个 Prefs 值。更糟的是提交语义还不一样——班表页点一下立刻写盘，
+         弹窗里要按「确定」才算，按了「取消」白改。
+
+         现在只留给单条闹钟：{@code Alarm.cycleHoliday} 是这条闹钟自己的属性，
+         别处没有入口，砍了就再也设不了。全局那两个 Role 由
+         {@link io.github.iosephuschen.weekdayalarm.ScheduleSheet} 直接 GONE。 -->
     <LinearLayout
+        android:id="@+id/row_holiday"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"

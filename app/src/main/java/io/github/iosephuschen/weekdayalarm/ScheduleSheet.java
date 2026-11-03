@@ -141,6 +141,12 @@ public final class ScheduleSheet {
         tvSub.setText(role.sub());
         tvHint.setText(role.hint());
         view.findViewById(R.id.box_params).setVisibility(role.rotation ? View.VISIBLE : View.GONE);
+        // v1.9.2：全局班表（我的班表 → 自定义 / 轮班）不再露这个开关——它已经在
+        // 「我的班表」占一行，同一个值出现在两处，而且弹窗里按「取消」不保存、
+        // 班表页点一下立刻生效，两种提交语义。单条闹钟保留：cycleHoliday 是
+        // 这条闹钟自己的字段，别处没有入口。
+        view.findViewById(R.id.row_holiday)
+                .setVisibility(role.forAlarm ? View.VISIBLE : View.GONE);
         // 开关统一成 App 的配色：ROM 默认把「关」画成黑拇指，整张卡里最重的元素
         // 会变成那个没打开的开关
         SwitchKit.style(ctx, swHoliday);

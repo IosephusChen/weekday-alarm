@@ -165,7 +165,10 @@ public final class Alarm {
      */
     public boolean timeFromRule(WeekSchedule.Rule rule) {
         if (mode != Mode.WORKDAY || rule == null) return false;
-        if (rule.shiftCycle != null && shiftIds != null && shiftIds.length > 0) return true;
+        // v1.8.2：空 shiftIds 表示「全部班次」（不筛），不能当成「没挂班次」——
+        // 否则引导页与编辑页建的那条永远不带「跟班表」标记，班表页还会误报
+        // 「这张表还没有闹钟在用」
+        if (rule.mode.isCycle() && rule.shiftCycle != null) return true;
         if (rule.cycleTimes == null) return false;
         for (int m : rule.cycleTimes) if (m >= 0) return true;
         return false;

@@ -462,6 +462,16 @@ public class GuideActivity extends AppCompatActivity {
         // 原来这里还是框架的 TimePickerDialog——澎湃 OS 会无视主题把 spinner 渲染成表盘拨轮，
         // 于是同一个 App 里选时间出现两种完全不同的交互，引导页反而最花哨。
         tvShiftPreview = findViewById(R.id.tv_shift_preview);
+        // v1.8.2：轮班默认「春节也照上班」，副标题却写「节假日自动跳过」——
+        // 页面在承诺一件不会发生的事。跟着班表实际设置走
+        TextView tvAlarmSub = findViewById(R.id.tv_alarm_sub);
+        boolean rotationNow = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
+                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
+        if (rotationNow) {
+            tvAlarmSub.setText(Prefs.isCycleHoliday(this)
+                    ? "只在上班日响，休息日和节假日自动跳过。"
+                    : "只在上班日响，休息日跳过。");
+        }
         // v1.8.1：排了班次就得先说清「上面那个数是怎么来的」，再让用户去拨
         syncTimeFromShift();
 
@@ -611,18 +621,43 @@ public class GuideActivity extends AppCompatActivity {
             return;
         }
         int offset = hour * 60 + minute - shiftBaseStart;
-        StringBuilder sb = new StringBuilder();
-        int i = 0;
-        for (Shift sh : shifts) {
-            if (i == 3) break;
-            if (i > 0) sb.append(" · ");
-            sb.append(sh.name).append(" ").append(TimeText.clockOfMinutes(sh.start + offset));
-            i++;
+        String text;
+        if (shifts.size() == 1) {
+            // 只有一种班：说出「这个数比上班早多少」。v1.8.1 这里只写「白班 06:30」，
+            // 等于把大字重复了一遍——用户看不出 06:30 是哪来的，只好当成 bug
+            Shift only = shifts.get(0);
+            if (offset == 0) {
+                text = "就是上班时刻 · " + only.name + " "
+                        + TimeText.clockOfMinutes(only.start);
+            } else {
+                text = "比上班" + (offset < 0 ? "早 " : "晚 ") + spanText(Math.abs(offset))
+                        + " · " + only.name + " " + TimeText.clockOfMinutes(only.start);
+            }
+        } else {
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            for (Shift sh : shifts) {
+                if (i == 3) break;
+                if (i > 0) sb.append(" · ");
+                sb.append(sh.name).append(" ").append(TimeText.clockOfMinutes(sh.start + offset));
+                i++;
+            }
+            if (shifts.size() > 3) sb.append(" 等 ").append(shifts.size()).append(" 个");
+            sb.append("（比上班 ");
+            sb.append(offset < 0 ? "早 " : "晚 ").append(spanText(Math.abs(offset))).append("）");
+            text = sb.toString();
         }
-        if (shifts.size() > 3) sb.append(" 等 ").append(shifts.size()).append(" 个");
-        if (offset == 0) sb.append("（上班就响）");
-        tvShiftPreview.setText(sb.toString());
+        tvShiftPreview.setText(text);
         tvShiftPreview.setVisibility(View.VISIBLE);
+    }
+
+    /** 「1 小时 30 分」；整点时不写「0 分」。 */
+    private static String spanText(int minutes) {
+        int h = minutes / 60;
+        int m = minutes % 60;
+        if (h == 0) return m + " 分";
+        if (m == 0) return h + " 小时";
+        return h + " 小时 " + m + " 分";
     }
 
     /**
@@ -1248,8 +1283,11 @@ public class GuideActivity extends AppCompatActivity {
         // v1.0.5：顺手把「测试通知」撤掉。用户发了通知没点、转头点了「开始使用」，
         // 那条「点它应回到刚才那一页」会一直挂在通知栏里——引导都做完了，它没有意义了。
         NotificationManagerCompat.from(this).cancel(9401);
+        // 轮班态下这一个数只对应基准班次，说「06:30 会响」会漏掉夜班那天的 18:30
         final String tip = firstRun
-                ? "已排好班，" + TimeText.clock(hour, minute) + " 会响"
+                ? (shiftBaseStart >= 0
+                        ? "已排好班，跟着班次走"
+                        : "已排好班，" + TimeText.clock(hour, minute) + " 会响")
                 : "设置已更新";
         // v0.74.3：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
         // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App

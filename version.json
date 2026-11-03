@@ -1,14 +1,14 @@
 {
-  "versionCode": 260,
-  "versionName": "1.8.1",
+  "versionCode": 261,
+  "versionName": "1.8.2",
   "published": "2026-11-03",
-  "title": "轮班时不再同时写双休",
+  "title": "班次那三个弹窗重做了",
   "notes": [
-    "选了轮班，「我的班表」就不再同时挂着「双休」",
-    "引导页第二步按班次倒推：白班 08:00 就显示 06:30",
-    "下方一行小字写清夜班那天几点响",
-    "「跟随我的班表」的提前量原来存不下来，改完时间点就恢复原样，已修"
+    "新建班次、班次列表、第几天上哪个班，都换成卡片行",
+    "编辑完班次点「完成」没反应：一次点开就把回调弄丢了，已修",
+    "删除班次后，跟它的闹钟会一起摘干净，不再静默失效",
+    "引导页第二步的小字说清 06:30 的来历：比上班早 1 小时 30 分"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.1/weekday-alarm-1.8.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.2/weekday-alarm-1.8.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.2"
 }

@@ -175,6 +175,19 @@ public class AlarmLimitTest {
         // setup 会走 onResume → 检测到版本变化 → 自动 rescheduleAll
         Robolectric.buildActivity(MainActivity.class).setup();
 
+        // v1.8.2：升级重排是后台线程（v0.73.3 挪的，几百次跨进程 IPC）。
+        // 以前这里直接读，等于赌后台线程已经在断言前跑完——大部分时候能过，
+        // 机器一忙就红。等它落地再断言，最多 3 秒
+        long deadline = System.currentTimeMillis() + 3000;
+        while (Prefs.getScheduledDates(ctx()).isEmpty() && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
         Set<String> recs = Prefs.getScheduledDates(ctx());
         assertFalse("旧格式记录应已被清掉", recs.contains("2026-10-21"));
         assertTrue("重排后应有新记录", !recs.isEmpty());

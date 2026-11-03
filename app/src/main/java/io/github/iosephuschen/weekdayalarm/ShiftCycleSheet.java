@@ -180,11 +180,14 @@ final class ShiftCycleSheet {
     private static void pickShift(Context ctx, int idx, int[] cycle, List<Shift> shifts,
                                   Runnable[] paint) {
         List<String> names = new ArrayList<>();
+        List<String> subs = new ArrayList<>();
         List<Integer> ids = new ArrayList<>();
         names.add("休息");
+        subs.add("那天不上班，跟班次的闹钟不响");
         ids.add(-1);
         for (Shift s : shifts) {
-            names.add(s.name + "  " + s.spanText());
+            names.add(s.name);
+            subs.add(s.spanText());
             ids.add(s.id);
         }
         if (shifts.isEmpty()) {
@@ -197,16 +200,14 @@ final class ShiftCycleSheet {
         }
         int current = cycle[idx];
         int checked = ids.indexOf(current);
-        new RoundedDialog.Builder(ctx)
-                .setTitle("第 " + (idx + 1) + " 天")
-                .setSingleChoiceItems(names.toArray(new String[0]), Math.max(0, checked),
-                        (d, which) -> {
-                            cycle[idx] = ids.get(which);
-                            paint[0].run();
-                            d.dismiss();
-                        })
-                .setNegativeButton("取消", null)
-                .show();
+        // v1.8.2：原来用系统的 setSingleChoiceItems——圆形单选钮 + 无卡片，
+        // 跟 App 里其余选择弹窗（DialogKit.showPick）不是一套语言，白卡里嵌一行裸列表
+        DialogKit.showPick(ctx, "第 " + (idx + 1) + " 天上哪个班",
+                "点一下就是那一天", names.toArray(new String[0]),
+                subs.toArray(new String[0]), Math.max(0, checked), which -> {
+                    cycle[idx] = ids.get(which);
+                    paint[0].run();
+                });
     }
 
     /** 结论条：几天上班、几天休，各占几。 */

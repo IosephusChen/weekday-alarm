@@ -1,10 +1,11 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.text.InputFilter;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,11 @@ import java.util.List;
  * <p><b>结束时刻可以留空。</b>老数据只记了「几点响」，没有「几点下班」；
  * 强行要求填一个结束时间等于让用户编数。留空时界面只写「08:00 起」。
  * 结束时刻小于开始时刻即视为次日（夜班 20:00 – 次日 08:00），不用另设开关。
+ *
+ * <p><b>版式（v1.8.2 重做）</b>：v1.8.0 这两屏是自己拼的 View——编辑框是系统下划线、
+ * 开始/结束是两行纯文字、开关孤零零一行，跟 App 里其余十四个弹窗不是一套语言。
+ * 现在统一成「卡片行」：{@code bg_dialog_row} 的白底圆角卡、左标题右值、行间距 10dp，
+ * 与「我的班表」「睡前提醒」里的开关行长一样。
  */
 public final class ShiftBookDialog {
 
@@ -49,34 +55,40 @@ public final class ShiftBookDialog {
         LinearLayout box = new LinearLayout(ctx);
         box.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(ctx, 20);
-        box.setPadding(pad, dp(ctx, 4), pad, dp(ctx, 4));
+        box.setPadding(pad, dp(ctx, 8), pad, dp(ctx, 8));
 
         if (shifts.isEmpty()) {
             TextView empty = new TextView(ctx);
             empty.setText("还没有班次。先建一个「白班 08:00 – 20:00」，再把它排进循环。");
             empty.setTextSize(13);
             empty.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
-            empty.setLineSpacing(dp(ctx, 3), 1f);
-            empty.setPadding(0, dp(ctx, 10), 0, dp(ctx, 14));
+            empty.setLineSpacing(dp(ctx, 4), 1f);
+            empty.setPadding(0, 0, 0, dp(ctx, 12));
             box.addView(empty);
         }
 
         for (Shift s : shifts) {
-            // 编辑完直接重开列表：对话框栈不叠三层，用户点「完成」就回到班表页
-            box.addView(row(ctx, s, () -> show(ctx, cb)));
+            // 编辑完直接重开列表：对话框栈不叠三层，用户点「完成」就回到班表页。
+            // v1.8.2：这里原来传的是 null，一次「点进去改个时间」就把回调丢了，
+            // 之后点「完成」引导页不会往下走——看着像按钮点了没反应
+            box.addView(row(ctx, s, cb));
         }
 
         TextView add = new TextView(ctx);
         add.setText("＋ 新建班次");
-        add.setTextSize(14);
+        add.setTextSize(14.5f);
         add.setTypeface(MEDIUM);
         add.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
         add.setGravity(Gravity.CENTER);
         add.setPadding(0, dp(ctx, 14), 0, dp(ctx, 14));
-        add.setBackgroundResource(ripple(ctx));
+        add.setBackground(rippleCard(ctx));
         add.setClickable(true);
+        add.setFocusable(true);
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        alp.topMargin = dp(ctx, 10);
         add.setOnClickListener(v -> edit(ctx, null, cb));
-        box.addView(add);
+        box.addView(add, alp);
 
         new RoundedDialog.Builder(ctx)
                 .setTitle("班次")
@@ -89,22 +101,24 @@ public final class ShiftBookDialog {
                 .show();
     }
 
-    /** 一行：色点 + 名字 + 时段。点进去编辑。 */
-    private static View row(Context ctx, Shift s, OnChanged afterEdit) {
+    /** 一行卡片：色点 + 名字 / 时段 + 箭头。点进去编辑，长按删除。 */
+    private static View row(Context ctx, Shift s, OnChanged cb) {
         LinearLayout row = new LinearLayout(ctx);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setMinimumHeight(dp(ctx, 54));
-        row.setBackgroundResource(ripple(ctx));
+        row.setMinimumHeight(dp(ctx, 56));
+        row.setPadding(dp(ctx, 16), dp(ctx, 12), dp(ctx, 14), dp(ctx, 12));
+        row.setBackground(rippleCard(ctx));
         row.setClickable(true);
+        row.setFocusable(true);
 
         View dot = new View(ctx);
         GradientDrawable g = new GradientDrawable();
         g.setShape(GradientDrawable.OVAL);
         g.setColor(ShiftColors.of(ctx, s.color));
         dot.setBackground(g);
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(ctx, 8), dp(ctx, 8));
-        dlp.setMarginEnd(dp(ctx, 10));
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(ctx, 9), dp(ctx, 9));
+        dlp.setMarginEnd(dp(ctx, 12));
         row.addView(dot, dlp);
 
         LinearLayout mid = new LinearLayout(ctx);
@@ -123,7 +137,7 @@ public final class ShiftBookDialog {
         span.setText(s.spanText());
         span.setTextSize(12);
         span.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
-        span.setPadding(0, dp(ctx, 3), 0, 0);
+        span.setPadding(0, dp(ctx, 4), 0, 0);
 
         mid.addView(name);
         mid.addView(span);
@@ -131,13 +145,18 @@ public final class ShiftBookDialog {
 
         TextView arrow = new TextView(ctx);
         arrow.setText("›");
-        arrow.setTextSize(18);
+        arrow.setTextSize(17);
         arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
         row.addView(arrow);
 
-        row.setOnClickListener(v -> edit(ctx, s, null));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(ctx, 10);
+        row.setLayoutParams(lp);
+
+        row.setOnClickListener(v -> edit(ctx, s, cb));
         row.setOnLongClickListener(v -> {
-            confirmDelete(ctx, s, afterEdit);
+            confirmDelete(ctx, s, cb);
             return true;
         });
         return row;
@@ -149,70 +168,116 @@ public final class ShiftBookDialog {
         final int[] start = {isNew ? 8 * 60 : base.start};
         final int[] end = {isNew ? 17 * 60 : base.end};
         final boolean[] noEnd = {!isNew && base.end == Shift.END_UNKNOWN};
+        // 新建时结束时间跟着开始走：改了「开始」而「结束」还停在 17:00，
+        // 20:00 的白班就变成「20:00 – 次日 17:00」，21 小时的班。用户自己动过就不再跟
+        final boolean[] endTouched = {!isNew};
 
         LinearLayout box = new LinearLayout(ctx);
         box.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(ctx, 20);
-        box.setPadding(pad, dp(ctx, 6), pad, dp(ctx, 2));
+        box.setPadding(pad, dp(ctx, 8), pad, dp(ctx, 4));
+
+        // 名字：卡片包一层无背景的 EditText，跟下面的「开始 / 结束」同宽同高，
+        // 不再是系统那根横线——一根线出现在三张卡中间，会看成第四种控件
+        // v1.8.2：光一个占位符，这一行看着像空卡，也跟下面「开始 / 结束」不对齐。
+        // 给它同一个左标签，四张卡就是同一张表
+        LinearLayout nameCard = card(ctx);
+        nameCard.setOrientation(LinearLayout.HORIZONTAL);
+        nameCard.setGravity(Gravity.CENTER_VERTICAL);
+        nameCard.setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 16), dp(ctx, 14));
+        nameCard.setMinimumHeight(dp(ctx, 52));
+
+        TextView nameLabel = new TextView(ctx);
+        nameLabel.setText("名字");
+        nameLabel.setTextSize(15);
+        nameLabel.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        llp.setMarginEnd(dp(ctx, 18));
+        nameLabel.setLayoutParams(llp);
 
         EditText name = new EditText(ctx);
-        name.setHint("名字，如白班 / 夜班");
-        name.setTextSize(16);
+        name.setHint("白班 / 夜班");
+        name.setHintTextColor(ContextCompat.getColor(ctx, R.color.sub));
+        name.setTextSize(15);
+        name.setTypeface(MEDIUM);
+        name.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
+        name.setGravity(Gravity.START);
         name.setSingleLine(true);
+        name.setBackground(null);
+        name.setPadding(0, 0, 0, 0);
+        name.setIncludeFontPadding(false);
         name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(8)});
-        if (!isNew) name.setText(base.name);
-        if (!isNew) name.setSelection(name.getText().length());
-        box.addView(name);
+        if (!isNew) {
+            name.setText(base.name);
+            name.setSelection(name.getText().length());
+        }
+        nameCard.addView(nameLabel);
+        nameCard.addView(name, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        box.addView(nameCard);
 
-        TextView tvStart = new TextView(ctx);
-        tvStart.setTextSize(15);
-        tvStart.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
-        tvStart.setPadding(0, dp(ctx, 16), 0, dp(ctx, 10));
-        tvStart.setBackgroundResource(ripple(ctx));
-        tvStart.setClickable(true);
-        box.addView(tvStart);
+        Field fStart = fieldRow(ctx, "开始");
+        box.addView(fStart.row, margin(ctx, 10));
+        Field fEnd = fieldRow(ctx, "结束");
+        box.addView(fEnd.row, margin(ctx, 10));
+        final TextView tvStart = fStart.value;
+        final TextView tvEnd = fEnd.value;
+        final LinearLayout rowStart = fStart.row;
+        final LinearLayout rowEnd = fEnd.row;
 
-        TextView tvEnd = new TextView(ctx);
-        tvEnd.setTextSize(15);
-        tvEnd.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
-        tvEnd.setPadding(0, dp(ctx, 10), 0, dp(ctx, 10));
-        tvEnd.setBackgroundResource(ripple(ctx));
-        tvEnd.setClickable(true);
-        box.addView(tvEnd);
-
+        // 不填下班时间：与「开始 / 结束」同一张卡片语言，开关靠右
+        LinearLayout rowNoEnd = card(ctx);
+        rowNoEnd.setOrientation(LinearLayout.HORIZONTAL);
+        rowNoEnd.setGravity(Gravity.CENTER_VERTICAL);
+        rowNoEnd.setPadding(dp(ctx, 16), dp(ctx, 8), dp(ctx, 14), dp(ctx, 8));
+        rowNoEnd.setMinimumHeight(dp(ctx, 48));
+        TextView noEndLabel = new TextView(ctx);
+        noEndLabel.setText("不填下班时间");
+        noEndLabel.setTextSize(15);
+        noEndLabel.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
+        noEndLabel.setLayoutParams(new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         SwitchCompat swNoEnd = new SwitchCompat(ctx);
-        swNoEnd.setText("不填下班时间");
-        swNoEnd.setTextSize(13);
         swNoEnd.setChecked(noEnd[0]);
         SwitchKit.style(ctx, swNoEnd);
-        box.addView(swNoEnd);
+        rowNoEnd.addView(noEndLabel);
+        rowNoEnd.addView(swNoEnd);
+        box.addView(rowNoEnd, margin(ctx, 10));
 
         TextView tip = new TextView(ctx);
         tip.setText("结束时间早于开始时间，就算次日——夜班 20:00 到次日 08:00 直接这么填。");
         tip.setTextSize(12);
         tip.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
-        tip.setLineSpacing(dp(ctx, 2), 1f);
-        tip.setPadding(0, dp(ctx, 8), 0, 0);
+        tip.setLineSpacing(dp(ctx, 3), 1f);
+        tip.setPadding(dp(ctx, 2), dp(ctx, 12), dp(ctx, 2), 0);
         box.addView(tip);
 
         final Runnable paint = () -> {
-            tvStart.setText("开始    " + clock(start[0]));
-            tvEnd.setText(noEnd[0] ? "结束    不填" : "结束    " + clock(end[0]));
-            tvEnd.setAlpha(noEnd[0] ? 0.4f : 1f);
-            tvEnd.setEnabled(!noEnd[0]);
+            tvStart.setText(clock(start[0]));
+            tvEnd.setText(noEnd[0] ? "不填" : clock(end[0]));
+            tvEnd.setTextColor(ContextCompat.getColor(ctx,
+                    noEnd[0] ? R.color.sub : R.color.indigo));
+            rowEnd.setAlpha(noEnd[0] ? 0.55f : 1f);
+            rowEnd.setEnabled(!noEnd[0]);
         };
         paint.run();
 
-        tvStart.setOnClickListener(v -> TimeWheelDialog.show(ctx, "几点开始",
+        rowStart.setOnClickListener(v -> TimeWheelDialog.show(ctx, "几点开始",
                 start[0] / 60, start[0] % 60, (h, m) -> {
                     start[0] = h * 60 + m;
+                    if (!endTouched[0]) {
+                        // 保持默认的 9 小时班长
+                        end[0] = (start[0] + 9 * 60) % 1440;
+                    }
                     paint.run();
                 }));
-        tvEnd.setOnClickListener(v -> {
+        rowEnd.setOnClickListener(v -> {
             if (noEnd[0]) return;
             TimeWheelDialog.show(ctx, "几点结束",
                     end[0] / 60, end[0] % 60, (h, m) -> {
                         end[0] = h * 60 + m;
+                        endTouched[0] = true;
                         paint.run();
                     });
         });
@@ -221,17 +286,93 @@ public final class ShiftBookDialog {
             paint.run();
         });
 
-        new RoundedDialog.Builder(ctx)
-                .setTitle(isNew ? "新建班次" : "编辑班次")
-                .setView(box)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("保存", (d, w) -> {
-                    String label = name.getText().toString().trim();
-                    if (label.isEmpty()) label = isNew ? "班次" : base.name;
-                    save(ctx, base, label, start[0], noEnd[0] ? Shift.END_UNKNOWN : end[0]);
-                    show(ctx, cb);
-                })
-                .show();
+        // 分步调：Builder 的 setTitle / setView 返回父类型，链式之后就调不到 setNeutralButton
+        RoundedDialog.Builder builder = new RoundedDialog.Builder(ctx);
+        builder.setTitle(isNew ? "新建班次" : "编辑班次");
+        builder.setView(box);
+        builder.setNegativeButton("取消", null);
+        builder.setPositiveButton("保存", (d, w) -> {
+            String label = name.getText().toString().trim();
+            if (label.isEmpty()) label = isNew ? "班次" : base.name;
+            save(ctx, base, label, start[0], noEnd[0] ? Shift.END_UNKNOWN : end[0]);
+            show(ctx, cb);
+        });
+        // v1.8.2：删除原来是长按——没有入口提示，等于只有开发者知道。
+        // 编辑页放一个「删除」，是这类「很少用但必须有」的动作该在的位置
+        if (!isNew) builder.setNeutralButton("删除", (d, w) -> confirmDelete(ctx, base, cb));
+        builder.show();
+    }
+
+    /** 一行卡片的两个把手：整行用来挂点击，值用来重画。 */
+    private static final class Field {
+        final LinearLayout row;
+        final TextView value;
+
+        Field(LinearLayout row, TextView value) {
+            this.row = row;
+            this.value = value;
+        }
+    }
+
+    /** 一行「标签 —— 值 ›」的卡片。 */
+    private static Field fieldRow(Context ctx, String label) {
+        LinearLayout row = card(ctx);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(ctx, 16), dp(ctx, 14), dp(ctx, 14), dp(ctx, 14));
+        row.setMinimumHeight(dp(ctx, 52));
+        row.setClickable(true);
+        row.setFocusable(true);
+
+        TextView title = new TextView(ctx);
+        title.setText(label);
+        title.setTextSize(15);
+        title.setTextColor(ContextCompat.getColor(ctx, R.color.ink));
+        title.setLayoutParams(new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        row.addView(title);
+
+        LinearLayout right = new LinearLayout(ctx);
+        right.setOrientation(LinearLayout.HORIZONTAL);
+        right.setGravity(Gravity.CENTER_VERTICAL);
+
+        TextView value = new TextView(ctx);
+        value.setTextSize(15);
+        value.setTypeface(MEDIUM);
+        value.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
+
+        TextView arrow = new TextView(ctx);
+        arrow.setText("›");
+        arrow.setTextSize(17);
+        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
+        arrow.setPadding(dp(ctx, 4), 0, 0, 0);
+
+        right.addView(value);
+        right.addView(arrow);
+        row.addView(right);
+        return new Field(row, value);
+    }
+
+    private static LinearLayout card(Context ctx) {
+        LinearLayout v = new LinearLayout(ctx);
+        v.setBackground(rippleCard(ctx));
+        return v;
+    }
+
+    private static LinearLayout.LayoutParams margin(Context ctx, int dp) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(ctx, dp);
+        return lp;
+    }
+
+    /** 白底圆角卡 + 按压水波纹，与 {@code bg_dialog_row} 同一对 token。 */
+    private static RippleDrawable rippleCard(Context ctx) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(ContextCompat.getColor(ctx, R.color.card));
+        g.setStroke(dp(ctx, 1), ContextCompat.getColor(ctx, R.color.line));
+        g.setCornerRadius(dp(ctx, 14));
+        return new RippleDrawable(ColorStateList.valueOf(0x16000000), g, null);
     }
 
     private static void save(Context ctx, Shift base, String name, int start, int end) {
@@ -267,8 +408,22 @@ public final class ShiftBookDialog {
                         for (int i = 0; i < cycle.length; i++) {
                             if (cycle[i] == s.id) cycle[i] = -1;
                         }
-                        Prefs.setShiftCycle(ctx, cycle);
+                            Prefs.setShiftCycle(ctx, cycle);
                     }
+                    // v1.8.2：闹钟里还留着这个 id，删完那条闹钟会一直算不出时刻、
+                    // 静默失效——用户只会觉得「闹钟怎么不响了」。跟着一起摘掉
+                    List<Alarm> alarms = Prefs.getAlarms(ctx);
+                    boolean touched = false;
+                    for (Alarm a : alarms) {
+                        if (a.shiftIds == null) continue;
+                        List<Integer> keep = new ArrayList<>();
+                        for (int id : a.shiftIds) if (id != s.id) keep.add(id);
+                        if (keep.size() == a.shiftIds.length) continue;
+                        a.shiftIds = new int[keep.size()];
+                        for (int i = 0; i < keep.size(); i++) a.shiftIds[i] = keep.get(i);
+                        touched = true;
+                    }
+                    if (touched) Prefs.setAlarms(ctx, alarms);
                     show(ctx, cb);
                 })
                 .show();
@@ -279,7 +434,7 @@ public final class ShiftBookDialog {
     }
 
     static int ripple(Context ctx) {
-        TypedValue tv = new TypedValue();
+        android.util.TypedValue tv = new android.util.TypedValue();
         ctx.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, tv, true);
         return tv.resourceId;
     }

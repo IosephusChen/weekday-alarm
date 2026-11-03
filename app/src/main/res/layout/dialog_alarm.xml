@@ -107,25 +107,11 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <TextView
-        style="@style/FieldLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:text="重复规则" />
-
-    <!-- v0.77.0：卡片在 AlarmEditor 里用 DialogKit.optionView 填，
-         与设置页的单选弹窗同一套视觉（选中淡紫底 + 右侧勾） -->
-    <LinearLayout
-        android:id="@+id/ll_alarm_modes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical" />
-
     <!-- v1.8.0：选「跟随我的班表」且班表里已经建了班次时出现。
          这一行取代了原来「时间由班表决定」那句只读说明——用户要改的不是「跟不跟」，
-         而是「跟哪几个班、提前多久」。 -->
+         而是「跟哪几个班、提前多久」。
+         v1.10.1：它挪到时间卡正下方。它管的是「几点响」，不是「哪天响」，
+         原来塞在重复规则下面，是这一页最长的一个误会。 -->
     <LinearLayout
         android:id="@+id/row_shift_follow"
         android:layout_width="match_parent"
@@ -152,13 +138,59 @@
             android:textSize="13.5sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <TextView style="@style/SettingsChevron" />
+    </LinearLayout>
+
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="重复" />
+
+    <!-- v1.10.1：五条规则收进二级。
+         原来是三张常用卡 + 一行「其他」，光规则就占 640dp，名称、时间、铃声、
+         保存按钮全被顶到屏幕外；而用户一条闹钟只选一次规则，不是每次都要看五张。
+         现在这一格只回答「现在是哪种」，点开才列全五项——系统时钟也是这么分的。 -->
+    <LinearLayout
+        android:id="@+id/row_repeat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_field_outline"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="改 ›"
-            android:textColor="@color/sub"
-            android:textSize="12.5sp" />
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_repeat_value"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_repeat_sub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="@color/sub"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView style="@style/SettingsChevron" />
     </LinearLayout>
 
     <!-- v1.2.0：选中「轮班」「自定义」才出现的班表摘要。
@@ -190,13 +222,7 @@
             android:textSize="13.5sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="改 ›"
-            android:textColor="@color/sub"
-            android:textSize="12.5sp" />
+        <TextView style="@style/SettingsChevron" />
     </LinearLayout>
 
     <!-- v1.27：只有选中「仅一次」才出现的那一天。默认隐藏，

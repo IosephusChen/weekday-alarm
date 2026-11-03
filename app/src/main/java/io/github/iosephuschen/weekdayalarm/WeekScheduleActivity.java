@@ -21,7 +21,7 @@ import java.util.List;
  * 引导页在 v1.2.0 就已经反过来问「你哪几天上班」了，两个地方方向相反，用户得学两套。
  *
  * <p>现在进来就是你自己那张表：上面一句话结论，下面七格（勾了「两周不一样」变十四格）。
- * 大小周 = 打开那个开关；轮班 = 点「按 N 天一轮排」换一张 N 天的表。
+ * 大小周 = 打开那个开关；轮班 = 点「改成几天一轮」换一张 N 天的表。
  * 「制度」这个词不再出现在界面上——用户不需要知道自己的班叫什么。
  *
  * <p><b>v1.10.0：改成草稿制。</b>点格子、拨开关、排循环都只改 {@link ScheduleDraft}，
@@ -129,7 +129,7 @@ public class WeekScheduleActivity extends AppCompatActivity {
 
         tvVerdict.setText(WeekSchedule.describe(rule, LocalDate.now()));
         tvHolidaySub.setText(draft.cycleHoliday
-                ? "春节、国庆会按放假跳过" : "春节、国庆也照常上班");
+                ? "春节、国庆自动标成「休」" : "春节、国庆也照常上班");
         swHoliday.setChecked(draft.cycleHoliday);
 
         btnSave.setEnabled(draft.dirty);
@@ -290,10 +290,13 @@ public class WeekScheduleActivity extends AppCompatActivity {
     private void save() {
         if (!draft.dirty) return;
         draft.commit(this);
-        render();
-        // 保存这一下才重排：草稿阶段一次排程都不该动，否则「没保存」也照样生效
-        Reschedule.run(this, this::render);
         Toast.makeText(this, "班表已保存", Toast.LENGTH_SHORT).show();
+        // 不回主线程重绘：这一页马上就没，回调里再动视图只会碰到已销毁的界面
+        Reschedule.run(this, null);
+        // v1.10.1：保存完直接退。留在这里时页面什么都没有变——格子还是那些格子，
+        // 只是按钮变灰，唯一的回执是个两秒就消失的 toast；用户还得自己再点一次返回。
+        // 真正的回执在首页：回去就能看见「下次响铃」重算成了什么。
+        finish();
     }
 
     /** 退出：有未保存的改动先问一句，别让用户以为点过的格子已经生效了。 */

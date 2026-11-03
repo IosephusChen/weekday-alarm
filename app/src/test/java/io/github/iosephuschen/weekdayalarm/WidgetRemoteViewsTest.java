@@ -170,7 +170,7 @@ public class WidgetRemoteViewsTest {
     @Test
     public void compactLayout_alwaysHasWeekCells() {
         NextAlarmWidget.WidgetModel m =
-                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天", "休息日 · 下次 明天 07:00 起床");
+                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休 1 天", "休息日 · 下次 明天 07:00 起床");
         View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
         assertNotNull("4×2 卡要有七格", v.findViewById(R.id.day_0));
@@ -187,7 +187,7 @@ public class WidgetRemoteViewsTest {
     @Test
     public void compactLayout_hasNoLeaveButtons() {
         NextAlarmWidget.WidgetModel m =
-                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休1天", "休息日 · 下次 明天 07:00 起床");
+                new NextAlarmWidget.WidgetModel("今天休息", "小周 · 休 1 天", "休息日 · 下次 明天 07:00 起床");
         View v = NextAlarmWidget.buildViews(ctx(), m).apply(ctx(), new FrameLayout(ctx()));
 
         // 整月卡那份布局里的东西，4×2 一个都不该有
@@ -272,7 +272,7 @@ public class WidgetRemoteViewsTest {
      * v0.70.1 起闹钟并进标题行、只报状态不报时刻；v0.73.4 删开关，两个变体都恒定显示。
      *
      * <p>v1.1.0 回到「只有 4×4 显示」——不是恢复开关，是排版上放不下：4×3 的标题行
-     * 里「2026 年 10 月」13sp + 「大周 · 休2天」chip + 「闹钟已开启」10sp，
+     * 里「2026 年 10 月」13sp + 「大周 · 休 2 天」chip + 「闹钟已开启」10sp，
      * 250dp 宽扣掉两侧内边距只剩 226dp，第三段被推到卡片边缘之外（用户截图里直接贴边）。
      * 而 4×3 底下本来就没有统计行，少这一句不缺信息；4×4 有空间，保留。
      */

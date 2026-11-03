@@ -205,13 +205,13 @@ public class CycleScheduleTest {
     @Test
     public void describe_rotationShowsCycleAndWorkDays() {
         // v1.3.0 术语收口：按形状叫「N 天一轮」，不再叫「轮班」
-        assertEquals("4 天一轮 · 上2休2", WeekSchedule.describe(shang2xiu2(START), START));
+        assertEquals("4 天一轮 · 上 2 休 2", WeekSchedule.describe(shang2xiu2(START), START));
     }
 
     @Test
     public void describe_customShowsRestDays() {
         WeekSchedule.Rule r = WeekSchedule.Rule.cycle(7, 0b1011011L, START, null, true);
-        assertEquals("每周固定 · 休2天", WeekSchedule.describe(r, START));
+        assertEquals("每周固定 · 休 2 天", WeekSchedule.describe(r, START));
     }
 
     /**
@@ -227,13 +227,13 @@ public class CycleScheduleTest {
     /**
      * 十四天里两周排得一模一样，本质就是「每周固定」（v1.4.0）。
      *
-     * <p>按存储结构说成「14 天一轮 · 上10休4」等于把自己的实现细节当成用户的班型；
+     * <p>按存储结构说成「14 天一轮 · 上 10 休 4」等于把自己的实现细节当成用户的班型；
      * 而且在「我的班表」里勾一下「两周不一样」——一格都没点——结论条会当场变脸。
      */
     @Test
     public void describe_repeatedHalvesCollapseToOneWeek() {
         WeekSchedule.Rule r = WeekSchedule.Rule.cycle(14, 0b00111110011111L, START, null, false);
-        assertEquals("每周固定 · 休2天", WeekSchedule.describe(r, START));
+        assertEquals("每周固定 · 休 2 天", WeekSchedule.describe(r, START));
     }
 
     /** 两周真不一样时才该说 N 天一轮。 */
@@ -241,7 +241,7 @@ public class CycleScheduleTest {
     public void describe_differentHalvesStayRotation() {
         // 第 1 周双休（上5休2），第 2 周单休（上6休1）
         WeekSchedule.Rule r = WeekSchedule.Rule.cycle(14, 0b01111110011111L, START, null, false);
-        assertEquals("14 天一轮 · 上11休3", WeekSchedule.describe(r, START));
+        assertEquals("14 天一轮 · 上 11 休 3", WeekSchedule.describe(r, START));
     }
 
     // ================= 与原有四种模式互不影响 =================

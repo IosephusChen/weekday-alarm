@@ -114,7 +114,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="点一下切换班和休，点完就是你的班表"
+                    android:text="点格子切换「班」和「休」"
                     android:textColor="@color/sub"
                     android:textSize="13sp" />
 
@@ -204,7 +204,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_2"
-                            android:text="大小周、上四休二都勾这里"
+                            android:text="大小周、隔周双休点这里"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -268,12 +268,8 @@
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/tv_rotation_action"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="改 ›"
-                        android:textColor="@color/sub"
-                        android:textSize="12.5sp" />
+                                style="@style/SettingsChevron"
+                                android:id="@+id/tv_rotation_action" />
                 </LinearLayout>
 
                 <!-- 退出入口，只在轮班态出现。v1.9.1：从一行紫色小字改成卡片行——
@@ -303,12 +299,7 @@
                         android:textColor="@color/ink"
                         android:textSize="14sp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="14sp" />
+                    <TextView style="@style/SettingsChevron" />
                 </LinearLayout>
 
                 <!-- 从旧手机迁移（v0.83.0 从顶栏挪到这里）：它回答的是「我有旧配置」，
@@ -459,13 +450,7 @@
                         android:textColor="@color/indigo"
                         android:textSize="14sp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/space_6"
-                        android:text="›"
-                        android:textColor="@color/sub"
-                        android:textSize="16sp" />
+                    <TextView style="@style/SettingsChevron" />
                 </LinearLayout>
 
                 <!-- v0.85.0：删掉「之后可以在主界面加更多闹钟」这一行。
@@ -864,12 +849,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                         <View
@@ -923,12 +903,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                         <View
@@ -982,12 +957,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                         <View
@@ -1042,12 +1012,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
 
@@ -1120,12 +1085,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                         <View
@@ -1179,12 +1139,7 @@
                                     android:textSize="12sp" />
                             </LinearLayout>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="›"
-                                android:textColor="@color/sub"
-                                android:textSize="18sp" />
+                            <TextView style="@style/SettingsChevron" />
                         </LinearLayout>
 
                 </LinearLayout>

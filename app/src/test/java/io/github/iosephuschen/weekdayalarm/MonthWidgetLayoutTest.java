@@ -107,7 +107,7 @@ public class MonthWidgetLayoutTest {
      * 标题行三件套的层级：周次是 chip（有背景），闹钟状态是纯文字且更淡。
      *
      * <p>v0.77.3 之前两者都是 10sp 裸文字、颜色同为 #E6E4FF、中间只隔 6dp，
-     * 读起来像一句话「大周 · 休2天 闹钟已开启」。chip 用 4×2 那张 bg_chip_white，
+     * 读起来像一句话「大周 · 休 2 天 闹钟已开启」。chip 用 4×2 那张 bg_chip_white，
      * 与首页角标、4×2 周次角标同一套语言。
      */
     @Test

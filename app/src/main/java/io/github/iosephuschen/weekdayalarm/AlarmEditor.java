@@ -7,7 +7,6 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,26 +31,32 @@ import java.util.List;
 final class AlarmEditor {
 
     /**
-     * 重复规则：常用三张 + 一个「其他」（v1.3.0）。
+     * 重复规则的五个选项，顺序即二级弹层里的顺序（v1.10.1）。
      *
      * <p>v0.77.0 把单选框换成大卡片时只有 4 项，密度成立；v1.2.0 加到 6 项之后
      * 光规则就吃掉 430dp，名称、时间、铃声、保存按钮被顶到屏幕外，每次设闹钟都要滚。
+     * v1.3.0 收成「三张常用 + 其他」，仍然要滚；v1.10.1 索性把整块收进二级：
+     * 一条闹钟只选一次规则，不该为它常驻五张卡。
      *
-     * <p>收成三张之后，「仅一次」和「自己排一周」并没有消失，只是挪进「其他」：
-     * 前者是一次性闹钟，后者是只对这一条生效的自排表，都不是每天要选的东西。
-     * 顺带把「轮班」「自定义」两张卡合成一张——对用户来说那是同一个问题
-     * （要不要给这条单独排），而不是两种制度。新建入口不再提供 N 天一轮：
-     * 那种表跟「星期几」脱钩，只能在「我的班表」里设一份，否则两条闹钟各有一套班表，
-     * 用户永远说不清明早为什么响。
+     * <p>一级页只留一行「重复」，点开才列全五项。也顺手取消了「其他」这层：
+     * 一级已经收起，二级就该一次看全，少一次点击、少一层藏在第三层的选项。
      */
-    static final Alarm.Mode[] BASE_MODES = {
-            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND
-    };
-
-    /** 「其他」里的两种，顺序即弹层里的顺序。 */
-    static final Alarm.Mode[] EXTRA_MODES = {
+    static final Alarm.Mode[] REPEAT_MODES = {
+            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND,
             Alarm.Mode.ONCE, Alarm.Mode.CUSTOM
     };
+
+    /**
+     * 当前模式在 {@link #REPEAT_MODES} 里的位置。
+     *
+     * <p>老数据里的 ROSTER（v1.2.0 建的单条轮班）已经不再单独提供，落到
+     * 「自己排一周」这一项上——点它就是把它改成按周排，路径和原来一致。
+     */
+    static int repeatIndex(Alarm.Mode m) {
+        if (m == Alarm.Mode.ROSTER) m = Alarm.Mode.CUSTOM;
+        for (int i = 0; i < REPEAT_MODES.length; i++) if (REPEAT_MODES[i] == m) return i;
+        return 0;
+    }
 
     /** 卡片与弹层里的叫法。ROSTER 只有老数据还会出现，标题照旧写「轮班」。 */
     static String titleOf(Alarm.Mode m) {
@@ -97,12 +102,6 @@ final class AlarmEditor {
         }
     }
 
-    /** 是不是「其他」里的那两种。 */
-    static boolean isExtra(Alarm.Mode m) {
-        for (Alarm.Mode e : EXTRA_MODES) if (e == m) return true;
-        return false;
-    }
-
     private AlarmEditor() {
     }
 
@@ -115,7 +114,9 @@ final class AlarmEditor {
         View view = activity.getLayoutInflater().inflate(R.layout.dialog_alarm, null);
         EditText etLabel = view.findViewById(R.id.et_alarm_label);
         TextView tvTime = view.findViewById(R.id.tv_alarm_pick_time);
-        LinearLayout modeList = view.findViewById(R.id.ll_alarm_modes);
+        View rowRepeat = view.findViewById(R.id.row_repeat);
+        TextView tvRepeatValue = view.findViewById(R.id.tv_repeat_value);
+        TextView tvRepeatSub = view.findViewById(R.id.tv_repeat_sub);
         View rowOnceDate = view.findViewById(R.id.row_once_date);
         TextView tvOnceDate = view.findViewById(R.id.tv_once_date);
         View rowOwnRule = view.findViewById(R.id.row_own_rule);
@@ -278,18 +279,30 @@ final class AlarmEditor {
             });
         });
 
-        // 三张常用卡 + 一行「其他」（v1.3.0）。整块每次重建而不是就地改选中态：
-        // 选「仅一次」会让第四张卡出现，选回「每天」它又该消失，就地改做不到。
-        final Runnable[] rebuild = new Runnable[1];
-        final Runnable[] openExtra = new Runnable[1];
+        // v1.10.1：重复规则收进二级。一级只回答「现在是哪一种」，
+        // 点开才列全五项——一条闹钟只选一次规则，不该为它常驻五张卡。
+        final Runnable[] refreshRepeat = new Runnable[1];
+        final Runnable[] openRepeat = new Runnable[1];
 
-        openExtra[0] = () -> {
-            int checked = sel[0] == Alarm.Mode.ONCE ? 0 : sel[0] == Alarm.Mode.CUSTOM ? 1 : -1;
-            DialogKit.showPick(activity, "其他重复规则", "只对这一条闹钟生效",
-                    new String[]{"仅一次", "自己排一周"},
-                    new String[]{"响一次就自动关掉", "勾哪天响，不跟全局班表"},
-                    checked, which -> {
-                        Alarm.Mode pick = EXTRA_MODES[which];
+        refreshRepeat[0] = () -> {
+            tvRepeatValue.setText(titleOf(sel[0]));
+            tvRepeatSub.setText(subOf(activity, sel[0]));
+            rowOnceDate.setVisibility(sel[0] == Alarm.Mode.ONCE ? View.VISIBLE : View.GONE);
+            refreshOwn[0].run();
+            // 模式一变，「时间由谁决定」也跟着变；绑在这里比在四处点击里各加一遍省心
+            refreshTime[0].run();
+        };
+
+        openRepeat[0] = () -> {
+            String[] titles = new String[REPEAT_MODES.length];
+            String[] subs = new String[REPEAT_MODES.length];
+            for (int i = 0; i < REPEAT_MODES.length; i++) {
+                titles[i] = titleOf(REPEAT_MODES[i]);
+                subs[i] = subOf(activity, REPEAT_MODES[i]);
+            }
+            DialogKit.showPick(activity, "重复", "只对这一条闹钟生效",
+                    titles, subs, repeatIndex(sel[0]), which -> {
+                        Alarm.Mode pick = REPEAT_MODES[which];
                         sel[0] = pick;
                         if (pick == Alarm.Mode.CUSTOM) {
                             if (own[0] == null) {
@@ -303,59 +316,11 @@ final class AlarmEditor {
                                 refreshOwn[0].run();
                             });
                         }
-                        rebuild[0].run();
-                        refreshOwn[0].run();
+                        refreshRepeat[0].run();
                     });
         };
 
-        rebuild[0] = () -> {
-            modeList.removeAllViews();
-            int gap = Math.round(10 * activity.getResources().getDisplayMetrics().density);
-
-            // 三张常用卡；当前选的是「其他」里的那两种时，一张都不亮
-            for (int i = 0; i < BASE_MODES.length; i++) {
-                final Alarm.Mode m = BASE_MODES[i];
-                View card = DialogKit.optionView(activity, titleOf(m), subOf(activity, m));
-                boolean on = sel[0] == m;
-                card.setSelected(on);
-                DialogKit.showCheck(card, on);
-                card.setOnClickListener(v -> {
-                    sel[0] = m;
-                    rebuild[0].run();
-                    refreshOwn[0].run();
-                });
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                if (i > 0) lp.topMargin = gap;
-                modeList.addView(card, lp);
-            }
-
-            // 「其他」：选中的那一种显示成一张卡（看得见自己选了什么），
-            // 没选中的时候是一行入口
-            // 老数据里可能还挂着 ROSTER（v1.2.0 建的单条轮班）。它也算「其他」：
-            // 不亮出来用户就看不出这条闹钟现在是什么规则；点它则引导改成按周
-            boolean extra = isExtra(sel[0]) || sel[0].isOwnRule();
-            View tail;
-            if (extra) {
-                tail = DialogKit.optionView(activity, titleOf(sel[0]), subOf(activity, sel[0]));
-                tail.setSelected(true);
-                DialogKit.showCheck(tail, true);
-            } else {
-                tail = DialogKit.optionView(activity, "其他规则", "仅一次 · 自己排一周");
-                DialogKit.showCheck(tail, false);
-            }
-            tail.setOnClickListener(v -> openExtra[0].run());
-            LinearLayout.LayoutParams tailLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            tailLp.topMargin = gap;
-            modeList.addView(tail, tailLp);
-
-            rowOnceDate.setVisibility(sel[0] == Alarm.Mode.ONCE ? View.VISIBLE : View.GONE);
-            // 模式一变，「时间由谁决定」也跟着变；绑在这里比在四处点击里各加一遍省心
-            refreshTime[0].run();
-        };
+        rowRepeat.setOnClickListener(v -> openRepeat[0].run());
 
         // 日期行：选中「仅一次」才出现
         tvOnceDate.setText(onceDateText(once[0]));
@@ -370,7 +335,7 @@ final class AlarmEditor {
             if (!m.isOwnRule()) return;
             // 轮班是老数据：七格表达不了 4 天的表，点它先问要不要改成按周
             if (m == Alarm.Mode.ROSTER) {
-                openExtra[0].run();
+                openRepeat[0].run();
                 return;
             }
             AlarmCycleEditor.show(activity, true, own[0], rule -> {
@@ -379,8 +344,7 @@ final class AlarmEditor {
             });
         });
 
-        rebuild[0].run();
-        refreshOwn[0].run();
+        refreshRepeat[0].run();
 
         final boolean[] handled = {false};
         ((TextView) view.findViewById(R.id.tv_alarm_title))

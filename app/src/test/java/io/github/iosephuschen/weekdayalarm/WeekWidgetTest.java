@@ -80,7 +80,7 @@ public class WeekWidgetTest {
     public void model_titleMatchesBigOrSmallWeek() {
         WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(ctx()));
-        // v0.27.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休2天」，格子窄，前缀留给制度
+        // v0.27.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休 2 天」，格子窄，前缀留给制度
         assertTrue(big ? m.title.startsWith("大周") : m.title.startsWith("小周"));
         assertTrue(m.title.contains("休"));
     }

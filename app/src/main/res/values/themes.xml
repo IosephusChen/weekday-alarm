@@ -169,12 +169,17 @@
     </style>
 
     <!-- 行末箭头：与右值同色，统一 16sp，保证每行右侧基线一致 -->
+    <!-- v1.10.1：行末箭头统一到这一处。
+         原来是每页自己写 textSize（14/15/16/18/20/22 七档）与 textColor（sub/ink/indigo）；
+         灰箭头和副文案同色，读起来像句末标点，不像一个能点的入口。
+         这里用主色：这个 App 里紫色只表示「能操作」，用户靠颜色就能认出可点的地方。
+         要调大小或颜色，改这一处，40 处一起变。 -->
     <style name="SettingsChevron">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginStart">@dimen/space_6</item>
         <item name="android:text">›</item>
-        <item name="android:textColor">@color/sub</item>
+        <item name="android:textColor">@color/indigo</item>
         <item name="android:textSize">17sp</item>
     </style>
 

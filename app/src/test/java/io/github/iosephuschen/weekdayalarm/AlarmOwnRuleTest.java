@@ -179,9 +179,9 @@ public class AlarmOwnRuleTest {
 
     @Test
     public void text_describesCycle() {
-        assertEquals("轮班 · 4天上2天", roster(4, 0b0011L, MON, false).modeTextWithDate());
+        assertEquals("轮班 · 4 天上 2 天", roster(4, 0b0011L, MON, false).modeTextWithDate());
         // 0b0011111 = 周一至周五上班，周六日休
-        assertEquals("自己排一周 · 休2天", custom(0b0011111L).modeTextWithDate());
+        assertEquals("自己排一周 · 休 2 天", custom(0b0011111L).modeTextWithDate());
     }
 
     /** 没有班表数据的坏闹钟，文案退回模式名，不能显示成空字符串。 */

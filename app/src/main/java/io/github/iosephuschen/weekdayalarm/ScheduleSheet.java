@@ -71,8 +71,8 @@ public final class ScheduleSheet {
         String sub() {
             if (rotation) {
                 return forAlarm
-                        ? "第 1 天定下来，往后按 N 天一轮排，只对这一条闹钟生效。"
-                        : "第 1 天定下来，往后按 N 天一轮排。";
+                        ? "第 1 天定下来，往后按这个顺序循环，只对这一条闹钟生效。"
+                        : "第 1 天定下来，往后按这个顺序循环。";
             }
             return forAlarm
                     ? "勾哪天上班、哪天休息，只对这一条闹钟生效。"
@@ -253,7 +253,7 @@ public final class ScheduleSheet {
     }
 
     private static String holidayHint(boolean holiday) {
-        return holiday ? "春节、国庆会按放假跳过" : "春节、国庆也照常上班";
+        return holiday ? "春节、国庆自动标成「休」" : "春节、国庆也照常上班";
     }
 
     // ================= 列表 =================

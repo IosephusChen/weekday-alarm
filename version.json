@@ -1,14 +1,14 @@
 {
-  "versionCode": 266,
-  "versionName": "1.10.0",
+  "versionCode": 267,
+  "versionName": "1.10.1",
   "published": "2026-11-03",
-  "title": "班表先改再保存",
+  "title": "少滚一屏，箭头看得见了",
   "notes": [
-    "「我的班表」点格子只改预览，点底部保存才生效",
-    "引导页的格子、时间也等到「开始使用」才写",
-    "有未保存的改动时返回会问一句，不再悄悄丢掉",
-    "修：切回双休后闹钟被误判成每天都不响"
+    "保存班表后直接回上一页，改没改成看首页的「下次响铃」",
+    "编辑闹钟的重复规则收成一行，点开再从五项里选",
+    "行末箭头统一成紫色：原来每页一个字号，灰箭头还和副文案同色",
+    "文案纠正：大小周开关不再写成「上四休二」（那是 6 天一轮）"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.0/weekday-alarm-1.10.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.1/weekday-alarm-1.10.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.1"
 }

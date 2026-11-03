@@ -159,12 +159,7 @@
                     android:textSize="11sp" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="改 ›"
-                android:textColor="@color/sub"
-                android:textSize="12.5sp" />
+            <TextView style="@style/SettingsChevron" />
         </LinearLayout>
 
         <!-- 按 N 天一轮：七格表达不了 62 天的表，换成一张摘要卡 -->
@@ -204,7 +199,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="第 1 天定下来，往后按 N 天一轮"
+                    android:text="第 1 天定下来，往后按这个顺序循环"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
 
@@ -220,12 +215,7 @@
                     android:visibility="gone" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="改 ›"
-                android:textColor="@color/sub"
-                android:textSize="12.5sp" />
+            <TextView style="@style/SettingsChevron" />
         </LinearLayout>
 
         <LinearLayout
@@ -260,7 +250,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="大小周、上四休二点这里"
+                    android:text="大小周、隔周双休点这里"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -302,7 +292,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="春节、国庆会按放假跳过"
+                    android:text="春节、国庆自动标成「休」"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -332,19 +322,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="按 N 天一轮排"
+                android:text="改成几天一轮"
                 android:textColor="@color/ink"
                 android:textSize="14sp" />
 
             <!-- v1.5.0：右侧从光秃秃的「›」改成「改 ›」，和上面那张旋转摘要卡
                  用同一套说法；括号里的两个例子也删了——上一张卡的副标题刚说过
                  「上四休二」，隔 8dp 再说一遍是啰嗦。 -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="改 ›"
-                android:textColor="@color/sub"
-                android:textSize="12.5sp" />
+            <TextView style="@style/SettingsChevron" />
         </LinearLayout>
 
         <LinearLayout
@@ -371,12 +356,7 @@
                 android:textColor="@color/ink"
                 android:textSize="14sp" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="›"
-                android:textColor="@color/sub"
-                android:textSize="14sp" />
+            <TextView style="@style/SettingsChevron" />
         </LinearLayout>
 
         <TextView

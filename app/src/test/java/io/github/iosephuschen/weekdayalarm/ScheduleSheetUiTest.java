@@ -75,8 +75,8 @@ public class ScheduleSheetUiTest {
                 "春节、国庆也照常上班", hint.getText().toString());
 
         sw.setChecked(true);
-        assertEquals("打开之后要改口：会按放假跳过",
-                "春节、国庆会按放假跳过", hint.getText().toString());
+        assertEquals("打开之后要改口：自动标成「休」",
+                "春节、国庆自动标成「休」", hint.getText().toString());
 
         sw.setChecked(false);
         assertEquals("关回来要改回去，不能停在上一句",

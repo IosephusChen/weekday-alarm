@@ -228,12 +228,7 @@
                     android:layout_weight="1"
                     android:text="@string/about_disclaimer" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="›"
-                    android:textColor="@color/sub"
-                    android:textSize="16sp" />
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
 
             <View
@@ -259,12 +254,7 @@
                     android:layout_weight="1"
                     android:text="@string/about_privacy" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="›"
-                    android:textColor="@color/sub"
-                    android:textSize="16sp" />
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
 
             <View

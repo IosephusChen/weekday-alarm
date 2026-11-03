@@ -84,9 +84,9 @@ public class ScheduleDraftTest {
                 WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
     }
 
-    /** 点保存才落盘，并且按钮随即变灰。 */
+    /** 点保存才落盘，并且随即退回上一页（v1.10.1）。 */
     @Test
-    public void save_commitsAndDisablesTheButton() {
+    public void save_commitsAndFinishes() {
         WeekScheduleActivity a = openDoubleRest();
 
         grid(a).cellAt(5).performClick();
@@ -96,7 +96,9 @@ public class ScheduleDraftTest {
         tap(a, R.id.btn_save);
 
         assertEquals(WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
-        assertFalse("保存完就没有可保存的了", a.findViewById(R.id.btn_save).isEnabled());
+        // 留在这里时页面什么都没变，用户还得自己再点一次返回；现在保存即退出，
+        // 回执由首页的「下次响铃」给出
+        assertTrue("保存后应直接退回上一页", a.isFinishing());
     }
 
     /** 有未保存的改动时按返回：不直接退，先问一句。 */

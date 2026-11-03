@@ -222,6 +222,27 @@
                     android:layout_weight="1"
                     android:text="@string/help_s2_b4" />
             </LinearLayout>
+
+            <!-- v1.10.1：关机。两条一对——先说做不到，再给一条能走的路。 -->
+            <LinearLayout style="@style/HelpItemRow">
+                <TextView style="@style/HelpDot" />
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/help_s2_b5" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/HelpItemRow">
+                <TextView style="@style/HelpDot" />
+                <TextView
+                    style="@style/HelpItem"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/help_s2_b6" />
+            </LinearLayout>
         </LinearLayout>
 
         <!-- ===== 3. 临时请假 / 加班 ===== -->

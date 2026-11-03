@@ -178,7 +178,7 @@ public class GuideTest {
         cell(a, 1).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals("每周固定 · 休3天", text(a, R.id.tv_week_verdict));
+        assertEquals("每周固定 · 休 3 天", text(a, R.id.tv_week_verdict));
         // 点「开始使用」才落盘——这一步顺带验证延后提交写对了值
         for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
 
@@ -1178,7 +1178,7 @@ public class GuideTest {
     /**
      * 结论条里只放结论本身（v1.5.0）。
      *
-     * <p>原来拼成「按这两周排：每周固定 · 休1天」——勾了两周、但两周排得一样时，
+     * <p>原来拼成「按这两周排：每周固定 · 休 1 天」——勾了两周、但两周排得一样时，
      * v1.4.0 的 describe 会折回一周来说，于是前半句说「按两周」、后半句说
      * 「每周固定」，自己跟自己打架。依据（格子和上面的日期区间）都看得见，
      * 这里不必再说一遍。

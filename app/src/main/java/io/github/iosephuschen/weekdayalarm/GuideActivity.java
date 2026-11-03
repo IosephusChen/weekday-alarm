@@ -385,9 +385,11 @@ public class GuideActivity extends AppCompatActivity {
         LocalDate mon = mondayOfWeek();
         String span = md(mon) + " – " + md(mon.plusDays(biweekly ? 13 : 6));
         tvWeekTitle.setText(biweekly ? "这两周你哪几天上班？" : "这一周你哪几天上班？");
+        // v1.10.1：「点一下切换班和休」说的是动作，没说清点的是什么。
+        // 这一行只交代怎么用，结论条就在下面，不用在这里重复「会跟着变」。
         tvWeekSub.setText(biweekly
                 ? span + " · 两周点成不一样就是大小周"
-                : span + " · 点一下切换班和休");
+                : span + " · 点格子切换「班」和「休」");
 
         // 结论条：说清系统从这张表里认出了什么。格子每变一次都重算，反推是幂等的。
         //
@@ -398,7 +400,10 @@ public class GuideActivity extends AppCompatActivity {
         // 上面的格子和日期区间里了，这里只该出现结论本身。
         String verdict = WeekSchedule.describe(draft.rule(Prefs.getShifts(this)), LocalDate.now());
         tvWeekVerdict.setText(verdict);
-        tvBiweeklyHint.setText("大小周、上四休二都勾这里");
+        // v1.10.1：原来写「大小周、上四休二都勾这里」——上四休二是 6 天一轮，
+        // 勾这个开关只会得到一张对不上的 14 天表。开关管的是「隔周多休一天」，
+        // 说成「隔周双休」才和它实际做的事一致。
+        tvBiweeklyHint.setText("大小周、隔周双休点这里");
     }
 
     /** 点一格：翻转 → 反推 → 落盘 → 重画。反推是幂等的，连点两下正好回到原样。 */

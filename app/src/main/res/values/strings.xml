@@ -109,8 +109,13 @@
     <string name="help_s2_title">闹钟</string>
     <string name="help_s2_b1">「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」</string>
     <string name="help_s2_b2">每条右侧有自己的开关，拨一下就单独停掉它</string>
-    <string name="help_s2_b3">改任何设置即时生效，不用再点保存</string>
+    <string name="help_s2_b3">铃声、音量这些改完即时生效；「我的班表」要点「保存」才算数</string>
     <string name="help_s2_b4">锁屏响铃只亮屏、解锁才看到界面 → 系统里「锁屏显示」没开</string>
+    <!-- v1.10.1：关机这条问得多，而且容易被当成 Bug（设了闹钟没响）。
+         两句分开写：前一句是事实边界，后一句是给人一条能走的路。
+         不写「重启后不补响」——那是更冷门的分支，写进来只会让这一条变长。 -->
+    <string name="help_s2_b5">手机彻底关机时不会响。第三方 App 做不到——能响的只有厂商自带时钟里的「关机闹钟」</string>
+    <string name="help_s2_b6">不想被打扰又要闹钟：开飞行模式 + 勿扰就行，闹钟照响，一晚掉电很少</string>
 
     <string name="help_s3_title">临时请假 / 加班</string>
     <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点一下就是请假或加班</string>

@@ -156,7 +156,7 @@ public class WeekModeTest {
         assertEquals("单休 · 周六休",
                 WeekSchedule.describe(rule(WeekSchedule.Mode.SINGLE_REST_SAT), SAT));
         // 大小周：anchor 当周是大周
-        assertEquals("大周 · 休2天",
+        assertEquals("大周 · 休 2 天",
                 WeekSchedule.describe(rule(WeekSchedule.Mode.BIG_SMALL), SAT));
     }
 
@@ -179,6 +179,6 @@ public class WeekModeTest {
         assertFalse(WeekSchedule.isBigWeekNow(SUN, SAT.minusWeeks(1)));
         // 关键：周日与同一行的周六标签一致（旧实现这里会差一周）
         assertEquals(WeekSchedule.describe(r, SAT), WeekSchedule.describe(r, SUN));
-        assertEquals("小周 · 休1天", WeekSchedule.describe(r, SUN));
+        assertEquals("小周 · 休 1 天", WeekSchedule.describe(r, SUN));
     }
 }

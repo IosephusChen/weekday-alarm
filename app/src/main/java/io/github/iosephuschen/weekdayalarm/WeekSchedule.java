@@ -484,12 +484,12 @@ public final class WeekSchedule {
                 if (rest == 0) return "每天都要上班";
                 // v1.3.0：术语收口。「自定义」「轮班」两个词从界面上退场——
                 // 前者叫「每周固定」，后者按它本来的形状叫「N 天一轮」。
-                if (len == 7) return "每周固定 · 休" + rest + "天";
-                return len + " 天一轮 · 上" + work + "休" + rest;
+                if (len == 7) return "每周固定 · 休 " + rest + " 天";
+                return len + " 天一轮 · 上 " + work + " 休 " + rest;
             }
             case BIG_SMALL:
             default:
-                return isBigWeekNow(today, rule.anchor) ? "大周 · 休2天" : "小周 · 休1天";
+                return isBigWeekNow(today, rule.anchor) ? "大周 · 休 2 天" : "小周 · 休 1 天";
         }
     }
 }

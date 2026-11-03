@@ -337,8 +337,8 @@ public final class Alarm {
         if (work == 0) return mode.text() + " · 每天都休";
         // v1.3.0：单条闹钟不再提供「按 N 天一轮」的入口，老数据里若还有
         // ROSTER，摘要照旧写「轮班 · 4天上2天」——不能让它显示成一个陌生的说法
-        if (mode == Mode.ROSTER) return "轮班 · " + r.cycleLen + "天上" + work + "天";
-        return "自己排一周 · 休" + rest + "天";
+        if (mode == Mode.ROSTER) return "轮班 · " + r.cycleLen + " 天上 " + work + " 天";
+        return "自己排一周 · 休 " + rest + " 天";
     }
 
     public Alarm(int id, int hour, int minute, String label, Mode mode, boolean enabled) {

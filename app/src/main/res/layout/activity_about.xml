@@ -134,11 +134,11 @@
 
                 <TextView
                     android:id="@+id/tv_check_update_value"
+                    style="@style/SettingsValue"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/about_check_update_value"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
+                    android:layout_height="wrap_content" />
+
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
 
             <View
@@ -165,11 +165,13 @@
                     android:text="@string/about_source" />
 
                 <TextView
+                    style="@style/SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/about_source_value"
-                    android:textColor="@color/indigo"
-                    android:textSize="13sp" />
+                    android:gravity="end"
+                    android:text="@string/about_source_value" />
+
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
 
             <View
@@ -196,11 +198,13 @@
                     android:text="@string/about_license" />
 
                 <TextView
+                    style="@style/SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/about_license_value"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
+                    android:gravity="end"
+                    android:text="@string/about_license_value" />
+
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
         </LinearLayout>
 
@@ -281,11 +285,13 @@
                     android:text="@string/about_export_crash" />
 
                 <TextView
+                    style="@style/SettingsValue"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/about_export_crash_value"
-                    android:textColor="@color/indigo"
-                    android:textSize="13sp" />
+                    android:gravity="end"
+                    android:text="@string/about_export_crash_value" />
+
+                <TextView style="@style/SettingsChevron" />
             </LinearLayout>
         </LinearLayout>
 

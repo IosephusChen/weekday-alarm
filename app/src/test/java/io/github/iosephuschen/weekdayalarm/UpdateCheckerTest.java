@@ -235,7 +235,9 @@ public class UpdateCheckerTest {
         Prefs.clearKnownUpdate(ctx);
         AboutActivity idle = Robolectric.buildActivity(AboutActivity.class).setup().get();
         TextView v = idle.findViewById(R.id.tv_check_update_value);
-        assertEquals("没有新版本时应是一个箭头", "›", v.getText().toString());
+        // v1.10.1：值留空，右侧那个紫尖角由 SettingsChevron 提供。
+        // 原来这里把「›」当成值塞进文本里，字号颜色都跟别处不一样。
+        assertEquals("没有新版本时值应留空", "", v.getText().toString());
 
         Prefs.setKnownUpdate(ctx, UpdateChecker.installedVersionCode(ctx) + 5, "9.9.9");
         AboutActivity found = Robolectric.buildActivity(AboutActivity.class).setup().get();

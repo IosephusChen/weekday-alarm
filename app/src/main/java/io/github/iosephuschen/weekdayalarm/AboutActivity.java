@@ -115,7 +115,10 @@ public class AboutActivity extends AppCompatActivity {
             v.setText(getString(R.string.about_check_update_available, known));
             styleUpdateValue(v, true);
         } else {
-            v.setText(R.string.about_check_update_value);
+            // v1.10.1：无更新 / 未检查过时值留空，右侧只剩那个紫尖角。
+            // 原来这里的值就是「›」。既然箭头已经由 SettingsChevron 统一提供，
+            // 再把一个字符塞进值里，这一行就会有两个箭头、且大小颜色都不同。
+            v.setText("");
             styleUpdateValue(v, false);
         }
     }

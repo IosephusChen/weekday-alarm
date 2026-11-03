@@ -1,14 +1,12 @@
 {
-  "versionCode": 267,
-  "versionName": "1.10.1",
+  "versionCode": 268,
+  "versionName": "1.10.2",
   "published": "2026-11-03",
-  "title": "少滚一屏，箭头看得见了",
+  "title": "箭头这一处补完",
   "notes": [
-    "保存班表后直接回上一页，改没改成看首页的「下次响铃」",
-    "编辑闹钟的重复规则收成一行，点开再从五项里选",
-    "行末箭头统一成紫色：原来每页一个字号，灰箭头还和副文案同色",
-    "文案纠正：大小周开关不再写成「上四休二」（那是 6 天一轮）"
+    "班次弹窗里的箭头是代码画的，上一版批量改漏了，还是灰色小字",
+    "关于页六行补齐：「检查更新」原来把「›」当成值塞在文字里"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.1/weekday-alarm-1.10.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.2/weekday-alarm-1.10.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.2"
 }

@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(268, "1.10.2", "2026/11/03", "箭头这一处补完",
+                    "班次弹窗里的箭头是代码画的，上一版批量改漏了，还是灰色小字",
+                    "关于页六行补齐：「检查更新」原来把「›」当成值塞在文字里"),
             new Entry(267, "1.10.1", "2026/11/03", "少滚一屏，箭头看得见了",
                     "保存班表后直接回上一页，改没改成看首页的「下次响铃」",
                     "编辑闹钟的重复规则收成一行，点开再从五项里选",

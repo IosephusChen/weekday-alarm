@@ -177,12 +177,15 @@ public final class ShiftBookDialog {
         mid.addView(span);
         row.addView(mid);
 
-        // v1.9.1：光秃秃的「›」→「改 ›」。班表页每一行都写「改 ›」，
-        // 一个符号在这里反而说不清是「看详情」还是「编辑」
+        // v1.10.1：跟全 App 的行末箭头对齐——只留尖角、17sp、主色。
+        // 这里是代码建的行，上一版批量接 SettingsChevron 时漏了，
+        // 于是弹窗里还留着 12.5sp 的灰「改 ›」，和外层那一行紫箭头并排看着像两套界面。
         TextView arrow = new TextView(ctx);
-        arrow.setText("改 ›");
-        arrow.setTextSize(12.5f);
-        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
+        arrow.setText("›");
+        arrow.setTextSize(17);
+        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
+        arrow.setPadding(dp(ctx, 6), 0, 0, 0);
+        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         row.addView(arrow);
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -336,8 +339,9 @@ public final class ShiftBookDialog {
         TextView arrow = new TextView(ctx);
         arrow.setText("›");
         arrow.setTextSize(17);
-        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
-        arrow.setPadding(dp(ctx, 4), 0, 0, 0);
+        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
+        arrow.setPadding(dp(ctx, 6), 0, 0, 0);
+        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
 
         right.addView(value);
         right.addView(arrow);

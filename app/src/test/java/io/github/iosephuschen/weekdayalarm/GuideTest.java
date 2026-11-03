@@ -152,7 +152,8 @@ public class GuideTest {
     public void freshInstall_startsWithDoubleRest() {
         GuideActivity a = fresh();
 
-        assertEquals(WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
+        // v1.10.0：改草稿制后，这一刻 Prefs 还是老值；页面上的结论条才是真相
+        assertEquals("双休", text(a, R.id.tv_week_verdict));
         assertEquals("周一上班", "班", cellText(cell(a, 0)));
         assertEquals("周六休", "休", cellText(cell(a, 5)));
         assertEquals("周日休", "休", cellText(cell(a, 6)));
@@ -166,7 +167,7 @@ public class GuideTest {
         cell(a, 6).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
+        assertEquals("单休 · 周六休", text(a, R.id.tv_week_verdict));
         assertEquals("格子跟着变", "班", cellText(cell(a, 6)));
     }
 
@@ -176,6 +177,10 @@ public class GuideTest {
         GuideActivity a = fresh();
         cell(a, 1).performClick();
         ShadowLooper.idleMainLooper();
+
+        assertEquals("每周固定 · 休3天", text(a, R.id.tv_week_verdict));
+        // 点「开始使用」才落盘——这一步顺带验证延后提交写对了值
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
 
         assertEquals(WeekSchedule.Mode.CYCLE, Prefs.getWeekMode(ctx()));
         assertEquals(7, Prefs.getCycleLen(ctx()));
@@ -1278,12 +1283,15 @@ public class GuideTest {
         GuideActivity a = launch();
 
         assertEquals("白班 08:00 提前一小时半该是 06:30", "06:30", text(a, R.id.tv_time));
-        Alarm first = Prefs.getAlarms(ctx()).get(0);
-        assertEquals("偏移要一起落盘，否则大字改了也不生效", -90, first.offsetMin);
-        assertEquals(6 * 60 + 30, first.hour * 60 + first.minute);
         assertEquals("轮班态要说清这个时刻在别的班上分别几点",
                 View.VISIBLE, visibility(a, R.id.tv_shift_preview));
         assertTrue(text(a, R.id.tv_shift_preview).contains("夜班"));
+
+        // v1.10.0：偏移要等「开始使用」才落盘
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
+        Alarm first = Prefs.getAlarms(ctx()).get(0);
+        assertEquals("偏移要一起落盘，否则大字改了也不生效", -90, first.offsetMin);
+        assertEquals(6 * 60 + 30, first.hour * 60 + first.minute);
     }
 
     /** 拨一次时间，偏移要跟着改——这是「改时间真的生效」的唯一保证。 */
@@ -1294,6 +1302,9 @@ public class GuideTest {
         GuideActivity a = launch();
 
         a.setTime(7, 0);
+        assertEquals("07:00", text(a, R.id.tv_time));
+
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
         Alarm first = Prefs.getAlarms(ctx()).get(0);
         assertEquals("07:00 比白班 08:00 早一小时", -60, first.offsetMin);
         assertEquals(7 * 60, first.hour * 60 + first.minute);

@@ -64,4 +64,31 @@ public class ShiftBookDialogTest {
         ShiftBookDialog.show(ctx(), null);
         assertEquals("连开三次也只该有一张", 1, showing());
     }
+
+    /**
+     * 「完成」挂在 positive 位（v1.10.0）。
+     *
+     * <p>原来在 negative 位，长成右下角一颗灰字，和「编辑闹钟」那颗空心胶囊的
+     * 「保存」不是一个东西。挪到 positive 后样式由 RoundedDialog 统一套，
+     * 位置仍在右下角。
+     */
+    @Test
+    public void done_isPrimaryButton() {
+        ShiftBookDialog.show(ctx(), null);
+        ShadowLooper.idleMainLooper();
+        androidx.appcompat.app.AlertDialog d =
+                (androidx.appcompat.app.AlertDialog) ShadowDialog.getLatestDialog();
+
+        android.widget.Button positive = d.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+        assertEquals("完成", positive.getText().toString());
+        assertEquals("勾上 bg_btn_outline 的白底紫描边",
+                R.drawable.bg_btn_outline, org.robolectric.Shadows.shadowOf(
+                        positive.getBackground()).getCreatedFromResId());
+        // 负位那个按钮是 AlertController 自己建的，一直在，只是没文字没显示。
+        // 断言它不可见就够——用户看到的是右下角唯一那颗胶囊
+        android.widget.Button negative =
+                d.getButton(android.content.DialogInterface.BUTTON_NEGATIVE);
+        assertEquals("负位那颗不该露出来",
+                android.view.View.GONE, negative.getVisibility());
+    }
 }

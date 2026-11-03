@@ -30,8 +30,15 @@ import java.util.Map;
  */
 final class ShiftCycleSheet {
 
-    interface OnSaved {
-        void onSaved();
+    /**
+     * 回传结果，不落盘（v1.10.0）。
+     *
+     * <p>原来这里点「确定」直接写 Prefs——于是「我的班表」点一下就改、
+     * 引导页也改，两处都没法取消。现在弹窗只负责「这次排成什么样」，
+     * 写不写、什么时候写，由调用方的草稿决定。
+     */
+    interface OnResult {
+        void onResult(int len, LocalDate start, int[] cycle);
     }
 
     private static final DateTimeFormatter MD =
@@ -42,14 +49,14 @@ final class ShiftCycleSheet {
     private ShiftCycleSheet() {
     }
 
-    static void show(Context ctx, Runnable onSaved) {
+    static void show(Context ctx, ScheduleDraft draft, OnResult cb) {
         if (ctx == null) return;
 
         List<Shift> shifts = new ArrayList<>(Prefs.getShifts(ctx));
-        int[] cycle = Prefs.getShiftCycle(ctx);
+        int[] cycle = draft != null ? draft.shiftCycle : null;
         boolean fresh = cycle == null;
         int len;
-        if (cycle == null) {
+        if (fresh) {
             // v1.9.1：第一次排轮班，默认 4 天、每天先铺第一个班次。
             // 原来直接沿用 Prefs 里的 7 / 14 天，且每天都是「休」——用户进来
             // 看到一排「休」，等于要先把「你几天一轮」在脑子里数一遍，再一天天点。
@@ -60,9 +67,10 @@ final class ShiftCycleSheet {
             int first = shifts.isEmpty() ? -1 : shifts.get(0).id;
             for (int i = 0; i < len; i++) cycle[i] = first;
         } else {
-            len = Prefs.getCycleLen(ctx);
+            len = Math.max(1, draft.cycleLen);
         }
-        LocalDate start = Prefs.getCycleStart(ctx);
+        LocalDate start = draft != null && draft.cycleStart != null
+                ? draft.cycleStart : LocalDate.now();
         cycle = fit(cycle, len);
 
         View view = View.inflate(ctx, R.layout.dialog_schedule_sheet, null);
@@ -121,21 +129,9 @@ final class ShiftCycleSheet {
                 .setView(view)
                 .setNegativeButton("取消", null)
                 .setPositiveButton("确定", (d, w) -> {
-                    // v1.9.2：换到轮班入口时把节假日默认掰回「不跟」——
-                    // 轮班的人春节照上班。没换入口就保留用户在班表页手动设的值。
-                    // 这段原来在弹窗里靠用户自己勾，开关移走后只能在这里补
-                    if (Prefs.getCycleKind(ctx) != Prefs.CYCLE_KIND_ROTATION) {
-                        Prefs.setCycleHoliday(ctx, false);
-                    }
-                    Prefs.setWeekMode(ctx, WeekSchedule.Mode.CYCLE);
-                    Prefs.setCycleKind(ctx, Prefs.CYCLE_KIND_ROTATION);
-                    Prefs.setCycleLen(ctx, fLen[0]);
-                    Prefs.setCycleStart(ctx, fStart[0]);
-                    Prefs.setShiftCycle(ctx, fCycle[0]);
-                    // 逐日时刻是老路径的字段：班次表一旦建立，它就不再被读，
-                    // 清掉可以避免「两套数据都在、改了一套另一套还在」的错觉
-                    Prefs.setCycleTimes(ctx, null);
-                    if (onSaved != null) onSaved.run();
+                    // 只回传，不写。写盘由调用方的草稿在「保存 / 开始使用」时做，
+                    // 这样这一页点错了还能退出来
+                    if (cb != null) cb.onResult(fLen[0], fStart[0], fCycle[0]);
                 })
                 .show();
     }

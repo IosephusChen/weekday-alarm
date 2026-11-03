@@ -102,6 +102,25 @@ public class GuideActivity extends AppCompatActivity {
     private boolean biweekly;
     /** 当前是不是「轮班」形态：七格表达不了 N 天一轮的表，换成一行摘要。 */
     private boolean rotation;
+    /**
+     * 这一遍引导里改的班表（v1.10.0）。
+     *
+     * <p>原来点一格就直接写盘——用户「重看一遍引导」随手点两下，
+     * 配好的班表就变了，退出也不恢复。现在只改草稿，点「开始使用」才提交。
+     */
+    private ScheduleDraft draft;
+    /** 第 2 页选的重复规则，同样等到「开始使用」才写进闹钟（v1.10.0）。 */
+    private Alarm.Mode draftRepeat = Alarm.Mode.WORKDAY;
+    /** 「自己排一周」那张表，跟着 {@link #draftRepeat} 一起延后提交。 */
+    private WeekSchedule.Rule draftOwn;
+    /**
+     * 用户在这一遍里拨过时间（v1.10.0）。
+     *
+     * <p>以前拨一下就直接写进闹钟，所以再翻回第 2 页时 {@code syncTimeFromShift}
+     * 能靠 Prefs 里的值判断「他已经改过」。现在延后提交，Prefs 永远是旧值，
+     * 不记这个标记就会把他刚选的 07:00 又倒推回 06:30。
+     */
+    private boolean timeTouched;
 
     private TextView tvVolume, tvFade, tvVibrate, tvSnooze, tvPreNotice;
     /** 盯着系统闹钟音量（v0.91.1），见 {@link VolumeWatcher}。 */
@@ -152,6 +171,19 @@ public class GuideActivity extends AppCompatActivity {
         findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
         syncRingArrow(false);   // 默认收起：箭头先指下
 
+        // v1.10.0：草稿要在 bindTime 之前载入——第 2 页的「跟着班次倒推」要问它
+        // 现在是不是轮班态，晚一步就会读到 null，大字停在预置的 07:30
+        draft = ScheduleDraft.load(this);
+
+        // 已经有闹钟的话（重看引导），第二页显示第一个闹钟的时间，改时间就是改它。
+        // v1.10.0：必须排在 bindTime 之前——syncTimeFromShift 里「还没被改过」的判断
+        // 要拿这个时间比，反过来的话它刚倒推出的 06:30 会被这里覆盖回 07:30
+        List<Alarm> existing = Prefs.getAlarms(this);
+        if (!existing.isEmpty()) {
+            hour = existing.get(0).hour;
+            minute = existing.get(0).minute;
+        }
+
         bindTime();
         bindRing();
         bindPermissions();
@@ -170,14 +202,6 @@ public class GuideActivity extends AppCompatActivity {
                 Toast.makeText(this, "没有可用的文件管理器，无法导入", Toast.LENGTH_LONG).show();
             }
         });
-
-        // 已经有闹钟的话（重看引导），第二页显示第一个闹钟的时间，改时间就是改它
-        List<Alarm> existing = Prefs.getAlarms(this);
-        if (!existing.isEmpty()) {
-            hour = existing.get(0).hour;
-            minute = existing.get(0).minute;
-
-        }
 
         // v1.0.3：接着上次那一页。原因见 {@link Prefs#KEY_GUIDE_PAGE}——这一页是叠在
         // MainActivity 上的第二层，从通知 / 桌面图标再进来时会被销毁重开；页码只放在
@@ -198,8 +222,10 @@ public class GuideActivity extends AppCompatActivity {
         // 让他第一眼看到一张对得上的七天表，比看到「大周 / 小周」两行省事得多。
         // 只在从没走完引导、且模式还是缺省值时才改，不会覆盖用户点出来的结果。
         if (!Prefs.isOnboardDone(this)
-                && Prefs.getWeekMode(this) == WeekSchedule.Mode.BIG_SMALL) {
-            Prefs.setWeekMode(this, WeekSchedule.Mode.DOUBLE_REST);
+                && draft.mode == WeekSchedule.Mode.BIG_SMALL) {
+            // v1.10.0：只改进草稿，等用户点「开始使用」再落盘。
+            // 原来这里直接写 Prefs——用户点开引导页什么都没做，班表已经被改过一次了
+            draft.mode = WeekSchedule.Mode.DOUBLE_REST;
         }
 
         bindWeekGrid();
@@ -294,8 +320,7 @@ public class GuideActivity extends AppCompatActivity {
      * 页面上任何一个「班表可能变了」的时机都调这个，不要在别处自己拼格子。
      */
     private void reloadWeek() {
-        rotation = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
-                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
+        rotation = draft.rotation();
 
         // 轮班：七格表达不了 N 天一轮的表，换一张摘要卡。
         // v1.9：这张卡改成常驻——按周态是入口、轮班态是摘要，同一张卡换文案，
@@ -309,7 +334,7 @@ public class GuideActivity extends AppCompatActivity {
         // 「改成按周排」是退出入口，只在轮班态有；按周态没有可退的地方
         linkRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
         if (rotation) {
-            WeekSchedule.Rule rule = Prefs.getRule(this);
+            WeekSchedule.Rule rule = draft.rule(Prefs.getShifts(this));
             // 标题和副标题同样要换：格子已经收起来了，还写着「点一下切换班和休」
             // 就是让人去点一个不存在的东西
             tvWeekTitle.setText("你几天一轮、怎么倒？");
@@ -325,7 +350,7 @@ public class GuideActivity extends AppCompatActivity {
             String summary = WeekScheduleActivity.shiftsSummary(shifts);
             tvRotationSub.setText(summary == null
                     ? "还没建班次。点这里建一个「白班 08:00 – 20:00」。"
-                    : summary + (Prefs.isCycleHoliday(this) ? " · 按放假跳过" : " · 照常上班"));
+                    : summary + (draft.cycleHoliday ? " · 按放假跳过" : " · 照常上班"));
             return;
         }
 
@@ -338,10 +363,8 @@ public class GuideActivity extends AppCompatActivity {
         tvRotationTitle.setTypeface(null, android.graphics.Typeface.NORMAL);
         tvRotationSub.setText("四班三倒、上二休二点这里");
 
-        WeekSchedule.Mode mode = Prefs.getWeekMode(this);
-        biweekly = mode == WeekSchedule.Mode.BIG_SMALL
-                || (mode == WeekSchedule.Mode.CYCLE && Prefs.getCycleLen(this) == 14);
-        weekDays = ScheduleInfer.expand(Prefs.getRule(this), mondayOfWeek(),
+        biweekly = draft.isTwoWeeks();
+        weekDays = ScheduleInfer.expand(draft.rule(Prefs.getShifts(this)), mondayOfWeek(),
                 biweekly ? 14 : 7);
         renderWeek();
     }
@@ -373,7 +396,7 @@ public class GuideActivity extends AppCompatActivity {
         // 于是句子成了「按这两周排：每周固定 · 休1天」——前半句说按两周，
         // 后半句说每周固定，自己跟自己打架。前缀想交代的「依据」已经在
         // 上面的格子和日期区间里了，这里只该出现结论本身。
-        String verdict = WeekSchedule.describe(Prefs.getRule(this), LocalDate.now());
+        String verdict = WeekSchedule.describe(draft.rule(Prefs.getShifts(this)), LocalDate.now());
         tvWeekVerdict.setText(verdict);
         tvBiweeklyHint.setText("大小周、上四休二都勾这里");
     }
@@ -382,8 +405,7 @@ public class GuideActivity extends AppCompatActivity {
     private void toggleDay(int idx) {
         if (weekDays == null || idx < 0 || idx >= weekDays.length) return;
         weekDays[idx] = !weekDays[idx];
-        applyInferred(inferOrCycle());
-        renderWeek();
+        applyDraft();
     }
 
     /**
@@ -400,15 +422,12 @@ public class GuideActivity extends AppCompatActivity {
             boolean[] d = new boolean[14];
             for (int i = 0; i < 14; i++) d[i] = weekDays[i % 7];
             weekDays = d;
-            applyInferred(inferOrCycle());
-            renderWeek();
         } else {
             boolean[] d = new boolean[7];
             System.arraycopy(weekDays, 0, d, 0, 7);
             weekDays = d;
-            applyInferred(ScheduleInfer.infer(d, mondayOfWeek()));
-            renderWeek();
         }
+        applyDraft();
     }
 
     /**
@@ -418,12 +437,10 @@ public class GuideActivity extends AppCompatActivity {
      * 第二行下次进来就没了，他得重新勾一遍。所以这里把结果改写成 14 天周期——
      * 班表内容不变，只是「两周一起看」这个视图被记住了。
      */
-    private ScheduleInfer.Result inferOrCycle() {
-        return ScheduleInfer.inferKeepingTwoWeeks(weekDays, mondayOfWeek(), biweekly);
-    }
-
-    private void applyInferred(ScheduleInfer.Result r) {
-        ScheduleSave.apply(this, r);
+    /** 把这一页的格子交给草稿——只改内存，点「开始使用」才落盘（v1.10.0）。 */
+    private void applyDraft() {
+        draft.setDays(weekDays, biweekly);
+        renderWeek();
     }
 
     /**
@@ -434,19 +451,25 @@ public class GuideActivity extends AppCompatActivity {
      */
     private void openRotation() {
         if (!Prefs.getShifts(this).isEmpty()) {
-            ShiftCycleSheet.show(this, this::reloadWeek);
+            pickRotation();
             return;
         }
-        // 第一次进来：先建班次。点「完成」后直接切到轮班模式并接着排循环——
-        // 让用户自己再点一次「我是几天一轮的班」，等于把刚说的话再问一遍
+        // 第一次进来：先建班次。建完直接接着排循环——让用户自己再点一次
+        // 「我是几天一轮的班」，等于把刚说的话再问一遍
         ShiftBookDialog.show(this, () -> {
             if (Prefs.getShifts(this).isEmpty()) {
                 reloadWeek();
                 return;
             }
-            Prefs.setWeekMode(this, WeekSchedule.Mode.CYCLE);
-            Prefs.setCycleKind(this, Prefs.CYCLE_KIND_ROTATION);
-            ShiftCycleSheet.show(this, this::reloadWeek);
+            pickRotation();
+        });
+    }
+
+    /** 排循环：结果只进草稿，和格子一样等「开始使用」才落盘（v1.10.0）。 */
+    private void pickRotation() {
+        ShiftCycleSheet.show(this, draft, (len, start, cycle) -> {
+            draft.setRotation(len, start, cycle);
+            reloadWeek();
         });
     }
 
@@ -457,8 +480,9 @@ public class GuideActivity extends AppCompatActivity {
      * 直接把他上一周的班抹掉，他得从头再点七下。
      */
     private void backToWeek() {
-        boolean[] d = ScheduleInfer.expand(Prefs.getRule(this), mondayOfWeek(), 7);
-        applyInferred(ScheduleInfer.infer(d, mondayOfWeek()));
+        boolean[] d = ScheduleInfer.expand(draft.rule(Prefs.getShifts(this)), mondayOfWeek(), 7);
+        draft.setDays(d, false);
+        biweekly = false;
         reloadWeek();
     }
 
@@ -490,6 +514,10 @@ public class GuideActivity extends AppCompatActivity {
                     ? "只在上班日响，休息日和节假日自动跳过。"
                     : "只在上班日响，休息日跳过。");
         }
+        // v1.10.0：重复规则也先进草稿。原来选完就写盘，用户改主意退出也回不去
+        Alarm seed = firstAlarm();
+        draftRepeat = seed == null ? Alarm.Mode.WORKDAY : seed.mode;
+        draftOwn = seed == null ? null : seed.ownRule();
         // v1.8.1：排了班次就得先说清「上面那个数是怎么来的」，再让用户去拨
         syncTimeFromShift();
 
@@ -531,14 +559,14 @@ public class GuideActivity extends AppCompatActivity {
     /** 第 2 页那一行「重复」显示什么：直接读第一个闹钟，没有则按默认。 */
     private void refreshRepeatRow() {
         if (tvRepeat == null) return;
-        Alarm first = firstAlarm();
-        if (first == null || first.mode == Alarm.Mode.WORKDAY) {
+        if (draftRepeat == Alarm.Mode.WORKDAY) {
             // 这一行跟着弹层里的叫法走：弹层写「跟随我的班表」，行里就不能写「仅上班日」，
             // 否则用户选完回来发现名字变了，会以为没选上
             tvRepeat.setText("跟随我的班表");
             return;
         }
-        tvRepeat.setText(first.modeTextWithDate());
+        tvRepeat.setText(draftRepeat == Alarm.Mode.ONCE
+                ? "仅一次" : draftRepeat.text());
     }
 
     private Alarm firstAlarm() {
@@ -547,14 +575,11 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     private void pickRepeat() {
-        Alarm first = firstAlarm();
         int checked = 0;
-        if (first != null) {
-            for (int i = 0; i < REPEAT_MODES.length; i++) {
-                if (REPEAT_MODES[i] == first.mode) {
-                    checked = i;
-                    break;
-                }
+        for (int i = 0; i < REPEAT_MODES.length; i++) {
+            if (REPEAT_MODES[i] == draftRepeat) {
+                checked = i;
+                break;
             }
         }
         DialogKit.showPick(this, "重复规则", "只改这一条闹钟，不影响到别的",
@@ -566,8 +591,8 @@ public class GuideActivity extends AppCompatActivity {
                     }
                     // 自己排一周要先有那张表。第一个闹钟已经配过就沿用，
                     // 否则按全局那张或默认形状起步
-                    WeekSchedule.Rule initial = first != null && first.ownRule() != null
-                            ? first.ownRule()
+                    WeekSchedule.Rule initial = draftOwn != null
+                            ? draftOwn
                             : AlarmEditor.initialOwn(this, mode);
                     AlarmCycleEditor.show(this, true, initial, rule ->
                             applyRepeat(mode, rule));
@@ -581,29 +606,13 @@ public class GuideActivity extends AppCompatActivity {
      * 不能因为用户先改了重复规则、再没点别的地方就落空。
      */
     private void applyRepeat(Alarm.Mode mode, WeekSchedule.Rule ownRule) {
-        List<Alarm> alarms = Prefs.getAlarms(this);
-        Alarm target;
-        if (alarms.isEmpty()) {
-            target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班", mode, true);
-            applyShiftOffset(target);
-            alarms.add(target);
-        } else {
-            target = alarms.get(0);
-            target.mode = mode;
-        }
-        target.hour = hour;
-        target.minute = minute;
-        // 轮班态下偏移才是真正决定响铃的数；切回「每天」「仅休息日」时要清掉，
-        // 否则数据里留着一条用不上的偏移
-        if (mode == Alarm.Mode.WORKDAY) applyShiftOffset(target);
-        else target.offsetMin = 0;
-        if (mode.isOwnRule()) {
-            target.applyOwnRule(ownRule != null ? ownRule : AlarmEditor.defaultOwn(mode));
-        } else {
-            target.applyOwnRule(null);
-        }
-        Prefs.setAlarms(this, alarms);
-        Reschedule.run(this, null);
+        // v1.10.0：只记在草稿里，点「开始使用」时随闹钟一起写。
+        // 原来选完就 Prefs.setAlarms + 重排——用户在引导页试了几个选项再退出，
+        // 真实闹钟已经被改过好几轮了
+        draftRepeat = mode;
+        draftOwn = mode.isOwnRule()
+                ? (ownRule != null ? ownRule : AlarmEditor.defaultOwn(mode))
+                : null;
         refreshRepeatRow();
     }
 
@@ -614,8 +623,12 @@ public class GuideActivity extends AppCompatActivity {
     void setTime(int h, int m) {
         hour = h;
         minute = m;
+        timeTouched = true;
         updateTimeText();
-        applyTimeToFirstAlarm();
+        refreshRepeatRow();
+        refreshShiftPreview();
+        // v1.10.0：不再立刻写第一条闹钟。改时间只是「这次想设成几点」，
+        // 点「开始使用」才落盘——不然随手拨两下就把预置闹钟改了
     }
 
     private void updateTimeText() {
@@ -632,8 +645,7 @@ public class GuideActivity extends AppCompatActivity {
      * 所有跟班次有关的计算都必须先过这道闸门。
      */
     private boolean isRotationNow() {
-        return Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
-                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
+        return draft != null && draft.rotation();
     }
 
     /**
@@ -702,6 +714,7 @@ public class GuideActivity extends AppCompatActivity {
      * 一律不动，否则重看引导会把他改过的时间又拉回去。
      */
     private void syncTimeFromShift() {
+        if (timeTouched) return;   // 用户自己拨过，别再按班次倒推
         List<Shift> shifts = Prefs.getShifts(this);
         // v1.8.3：双休 / 单休 / 大小周不吃班次，哪怕 Prefs 里还留着上次建的班次定义
         if (!isRotationNow()) {
@@ -724,13 +737,11 @@ public class GuideActivity extends AppCompatActivity {
                 && first.hour * 60 + first.minute == DEFAULT_ALARM_MIN;
         if (!untouched) return;
 
+        // v1.10.0：只改大字，不写闹钟。用户还没点「开始使用」，
+        // 预置的那条「07:30」不该在他只是翻到这一页时就被改掉
         int m = Math.floorMod(shiftBaseStart - 90, 1440);
         hour = m / 60;
         minute = m % 60;
-        first.hour = hour;
-        first.minute = minute;
-        first.offsetMin = -90;
-        Prefs.setAlarms(this, alarms);
     }
 
     /** 轮班态给新建的闹钟补上「相对基准班次的偏移」；非轮班态什么也不做。 */
@@ -738,22 +749,6 @@ public class GuideActivity extends AppCompatActivity {
         if (a == null || !isRotationNow() || shiftBaseStart < 0
                 || a.mode != Alarm.Mode.WORKDAY) return;
         a.offsetMin = hour * 60 + minute - shiftBaseStart;
-    }
-
-    /** 改时间时如果已经有闹钟，直接改第一个，避免「改了却没生效」。 */
-    private void applyTimeToFirstAlarm() {
-        List<Alarm> alarms = Prefs.getAlarms(this);
-        if (alarms.isEmpty()) return;
-        Alarm first = alarms.get(0);
-        first.hour = hour;
-        first.minute = minute;
-        // v1.8.1：轮班态下真正决定响铃的是偏移，光改 hour/minute 等于没改——
-        // timeOn 走的是「班次开始 + offsetMin」，大字只是个展示
-        if (shiftBaseStart >= 0 && first.mode == Alarm.Mode.WORKDAY) {
-            first.offsetMin = hour * 60 + minute - shiftBaseStart;
-        }
-        Prefs.setAlarms(this, alarms);
-        Reschedule.run(this, null);
     }
 
     /**
@@ -768,14 +763,25 @@ public class GuideActivity extends AppCompatActivity {
     private boolean ensureAlarm() {
         List<Alarm> alarms = Prefs.getAlarms(this);
         boolean created = false;
+        Alarm target;
         if (alarms.isEmpty()) {
-            Alarm a = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班",
-                    Alarm.Mode.WORKDAY, true);
-            applyShiftOffset(a);
-            alarms.add(a);
-            Prefs.setAlarms(this, alarms);
+            target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班", draftRepeat, true);
+            alarms.add(target);
             created = true;
+        } else {
+            // v1.10.0：时间是这一遍引导里选的，重复规则也是——到这里才真正写进去
+            target = alarms.get(0);
+            target.hour = hour;
+            target.minute = minute;
+            target.mode = draftRepeat;
         }
+        // 轮班态下偏移才是真正决定响铃的数；切回「每天」「仅休息日」时要清掉，
+        // 否则数据里留着一条用不上的偏移
+        // 只有轮班态才写偏移；切回按周后要清掉旧的 -90，否则数据里留着一条用不上的偏移
+        if (draftRepeat == Alarm.Mode.WORKDAY && isRotationNow()) applyShiftOffset(target);
+        else target.offsetMin = 0;
+        target.applyOwnRule(draftRepeat.isOwnRule() ? draftOwn : null);
+        Prefs.setAlarms(this, alarms);
         return created;
     }
 
@@ -1286,8 +1292,9 @@ public class GuideActivity extends AppCompatActivity {
      *
      * <p>三件事一件都不能省：
      * <ol>
-     *   <li>第 2 页的时间大字读的是内存字段 {@code hour/minute}，不重读 Prefs 就会停在 07:30；
-     *       用户点「改时间」时 {@code applyTimeToFirstAlarm()} 会把导入的时间覆盖掉。</li>
+     *   <li>第 2 页的时间大字读的是内存字段 {@code hour/minute}，不重读 Prefs 就会停在 07:30。</li>
+     *   <li>v1.10.0：草稿也要重载。导入是直接写 Prefs 的，草稿还停在进入时的旧班表——
+     *       不重载，最后点「开始使用」会把刚导入的班表覆盖回去。</li>
      *   <li>第 1 页的选中卡片也要同步，否则用户点「上一步」回看时会显示成另一个制度。</li>
      *   <li>不能直接 {@link #complete()}：新手机还没开任何权限，跳过第 3 页等于「导入完也不响」。</li>
      * </ol>
@@ -1299,8 +1306,12 @@ public class GuideActivity extends AppCompatActivity {
         if (!alarms.isEmpty()) {
             hour = alarms.get(0).hour;
             minute = alarms.get(0).minute;
+            draftRepeat = alarms.get(0).mode;
+            draftOwn = alarms.get(0).ownRule();
             updateTimeText();
         }
+        // 导入已经写盘，草稿必须重新从 Prefs 取一次，否则「开始使用」会把导入结果盖掉
+        draft = ScheduleDraft.load(this);
         reloadWeek();
         refreshRepeatRow();
         // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，
@@ -1313,6 +1324,8 @@ public class GuideActivity extends AppCompatActivity {
     /** 完成（或跳过）：落库、排程、写标记，然后关闭。 */
     private void complete() {
         boolean firstRun = !Prefs.isOnboardDone(this);
+        // v1.10.0：班表与闹钟到这一刻才落盘——没点「开始使用」就退出，什么都没改
+        draft.commit(this);
         ensureAlarm();
         Prefs.setOnboardDone(this, true);
         // 引导走完就把页码清掉：下次从设置里重看，从第 1 页看起
@@ -1322,7 +1335,7 @@ public class GuideActivity extends AppCompatActivity {
         NotificationManagerCompat.from(this).cancel(9401);
         // 轮班态下这一个数只对应基准班次，说「06:30 会响」会漏掉夜班那天的 18:30
         final String tip = firstRun
-                ? (shiftBaseStart >= 0
+                ? (isRotationNow() && shiftBaseStart >= 0
                         ? "已排好班，跟着班次走"
                         : "已排好班，" + TimeText.clock(hour, minute) + " 会响")
                 : "设置已更新";

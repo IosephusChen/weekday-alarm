@@ -49,7 +49,7 @@ public class ShiftCycleSheetTest {
     private LinearLayout openList() {
         WeekScheduleActivity host =
                 Robolectric.buildActivity(WeekScheduleActivity.class).setup().get();
-        ShiftCycleSheet.show(host, null);
+        ShiftCycleSheet.show(host, ScheduleDraft.load(host), null);
         Dialog d = ShadowDialog.getLatestDialog();
         assertNotNull("弹层应已显示", d);
         return d.findViewById(R.id.list_days);

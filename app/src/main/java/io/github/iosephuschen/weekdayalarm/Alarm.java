@@ -227,9 +227,16 @@ public final class Alarm {
         return false;
     }
 
-    /** 这条闹钟是不是「挂在班次上」的（v1.8.0）。 */
+    /**
+     * 这条闹钟是不是「挂在班次上」的（v1.8.0）。
+     *
+     * <p>v1.10.0：补 {@code rule.mode.isCycle()}。切回双休 / 单休之后
+     * {@code shift_cycle} 还留在 Prefs 里（没人清，下次切回轮班还要用），
+     * 少了这半句，闹钟行会一直挂着「跟班表」标记，而班表已经没有班次可跟。
+     */
     public boolean followsShifts(WeekSchedule.Rule rule) {
-        return mode == Mode.WORKDAY && rule != null && rule.shiftCycle != null
+        return mode == Mode.WORKDAY && rule != null && rule.mode.isCycle()
+                && rule.shiftCycle != null
                 && shiftIds != null && shiftIds.length > 0;
     }
 
@@ -528,7 +535,13 @@ public final class Alarm {
                 if (!(WeekSchedule.isWorkday(d, r) || overtime)) return false;
                 // v1.8.0：挂了班次的还要看「这天是不是我勾的那几个班」。
                 // 不判这一句，一条只勾白班的午休闹钟会在夜班那天也响
-                if (rule != null && rule.shiftCycle != null
+                //
+                // v1.10.0：这里只看了 shiftCycle 非空，没看 mode。切回双休后
+                // shiftCycle 还留着，而 shiftOn() 因为有 mode 闸门返回 null，
+                // 于是走到下面的 `return overtime` = false —— 一周五天全被判成
+                // 「今天不响」，首页倒计时直接变成 --:--:--。
+                // 症状是「今天上班，但没有要响的闹钟」，但闹钟其实好好的。
+                if (rule != null && rule.mode.isCycle() && rule.shiftCycle != null
                         && shiftIds != null && shiftIds.length > 0) {
                     Shift s = WeekSchedule.shiftOn(d, rule);
                     // 加班日没有班次：放行，时刻在 timeOn 里退到第一个勾选的班次

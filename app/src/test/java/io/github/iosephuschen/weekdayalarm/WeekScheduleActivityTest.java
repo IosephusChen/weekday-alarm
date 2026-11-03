@@ -114,6 +114,8 @@ public class WeekScheduleActivityTest {
         WeekScheduleActivity a = openDoubleRest();
         grid(a).cellAt(2).performClick();
         ShadowLooper.idleMainLooper();
+        // v1.10.0：点格子只改草稿，点「保存」才写
+        tap(a, R.id.btn_save);
 
         assertEquals(WeekSchedule.Mode.CYCLE, Prefs.getWeekMode(ctx()));
         assertEquals(7, Prefs.getCycleLen(ctx()));
@@ -129,6 +131,7 @@ public class WeekScheduleActivityTest {
         // 周六也点成上班 → 只休周日 = 单休（休周日）
         grid(a).cellAt(5).performClick();
         ShadowLooper.idleMainLooper();
+        tap(a, R.id.btn_save);
 
         assertEquals(WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
     }
@@ -153,6 +156,7 @@ public class WeekScheduleActivityTest {
         tap(a, R.id.sw_biweekly);
         grid(a).cellAt(12).performClick();
         ShadowLooper.idleMainLooper();
+        tap(a, R.id.btn_save);
 
         assertEquals(WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
         assertEquals("anchor 是本周期那个周六",
@@ -166,6 +170,7 @@ public class WeekScheduleActivityTest {
         assertTrue("默认跟节假日", checked(a, R.id.sw_holiday));
 
         tap(a, R.id.sw_holiday);
+        tap(a, R.id.btn_save);
         assertFalse(Prefs.isCycleHoliday(ctx()));
         assertTrue("副标题要跟着改成「照常上班」，实际：" + text(a, R.id.tv_holiday_sub),
                 text(a, R.id.tv_holiday_sub).contains("照常上班"));
@@ -199,10 +204,11 @@ public class WeekScheduleActivityTest {
         WeekScheduleActivity a = open();
 
         tap(a, R.id.row_back_week);
+        assertEquals("切回按周要当场看得见", View.VISIBLE, grid(a).getVisibility());
 
+        tap(a, R.id.btn_save);
         assertFalse("不该再是轮班入口",
                 Prefs.getCycleKind(ctx()) == Prefs.CYCLE_KIND_ROTATION);
-        assertEquals(View.VISIBLE, grid(a).getVisibility());
     }
 
     /** 结论条随格子变：改完不用退出去也能确认系统认成了什么。 */

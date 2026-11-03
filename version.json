@@ -1,14 +1,14 @@
 {
-  "versionCode": 265,
-  "versionName": "1.9.2",
+  "versionCode": 266,
+  "versionName": "1.10.0",
   "published": "2026-11-03",
-  "title": "班次只填开始时刻",
+  "title": "班表先改再保存",
   "notes": [
-    "新建班次去掉「结束」和「不填下班时间」——响铃只认上班几点",
-    "班次列表改写成「08:00 开始」，不再显示「– 17:00」",
-    "排班弹窗和轮班弹窗不再问「法定节假日放假」，统一回「我的班表」改",
-    "单条闹钟自己排班时仍保留这个开关——那是它自己的设置"
+    "「我的班表」点格子只改预览，点底部保存才生效",
+    "引导页的格子、时间也等到「开始使用」才写",
+    "有未保存的改动时返回会问一句，不再悄悄丢掉",
+    "修：切回双休后闹钟被误判成每天都不响"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.9.2/weekday-alarm-1.9.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.9.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.0/weekday-alarm-1.10.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.0"
 }

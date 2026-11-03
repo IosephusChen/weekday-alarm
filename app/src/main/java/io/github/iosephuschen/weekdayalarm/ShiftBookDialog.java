@@ -111,7 +111,12 @@ public final class ShiftBookDialog {
                 .setView(box)
                 // 只有「完成」回调一次：每次保存都回调会让引导页在建第二个班次时
                 // 被硬拉去排循环，用户还没建完就被打断
-                .setNegativeButton("完成", (dlg, w) -> {
+                //
+                // v1.10.0：从 negative 位挪到 positive 位。它原来在负位，长成一颗
+                // 右下角的灰字，和「编辑闹钟」那颗空心胶囊的「保存」不是一个东西——
+                // 同一个 App 里「确认」有两种长相，这一个还特别像随手一划的次要动作。
+                // 位置照旧在右下角，样式由 RoundedDialog 统一套 bg_btn_outline。
+                .setPositiveButton("完成", (dlg, w) -> {
                     if (cb != null) cb.onChanged();
                 })
                 .show();

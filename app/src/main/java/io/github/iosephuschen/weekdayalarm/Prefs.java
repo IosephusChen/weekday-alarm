@@ -4,12 +4,17 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import org.json.JSONObject;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** 设置持久化。 */
@@ -32,6 +37,11 @@ public final class Prefs {
     public static final String KEY_LAST_RUN_VERSION = "last_run_version"; // 上次运行的 versionCode（升级后自动重排用）
     public static final String KEY_VACATION_DATES = "vacation_dates"; // 个人请假日期集合（yyyy-MM-dd）
     public static final String KEY_OVERTIME_DATES = "overtime_dates"; // 个人加班日期集合（yyyy-MM-dd）
+    // v1.11.0：请假与加班合并成一张「按天覆盖」表（日期 → 班次 id，-1 = 请假）。
+    // 两个旧键只读不写：升级时迁进新表，之后一直留着是为了回滚——删掉旧键，
+    // 用户退回旧版本就什么记录都没有了。
+    public static final String KEY_DAY_PLAN = "day_plan";
+    public static final String KEY_DAY_PLAN_MIGRATED = "day_plan_migrated";
     public static final String KEY_VOLKEY_ACTION = "volkey_action";   // 音量键作用：0 无 / 1 稍后提醒 / 2 关闭
     public static final String KEY_POWERKEY_ACTION = "powerkey_action"; // 电源键作用：同上
     public static final String KEY_FADE_IN = "fade_in";               // 铃声渐响（约 30 秒到设定音量）
@@ -150,11 +160,15 @@ public final class Prefs {
     public static WeekSchedule.Rule getRule(Context c) {
         int[] shiftCycle = getShiftCycle(c);
         List<Shift> defs = shiftCycle == null ? null : getShifts(c);
+        // v1.11.0：按天覆盖与全局班次表。班次不分模式——双休用户标加班同样要选一个班次，
+        // 「只有轮班才有班次」是 v1.8.0 的实现细节，不该漏到这一层
+        List<Shift> all = getShifts(c);
         return new WeekSchedule.Rule(
                 getWeekMode(c), getAnchor(c), isSmallRestSat(c),
                 getCycleLen(c), getCycleMask(c), getCycleStart(c),
                 getCycleTimes(c), isCycleHoliday(c),
-                shiftCycle, defs == null || defs.isEmpty() ? null : defs.toArray(new Shift[0]));
+                shiftCycle, defs == null || defs.isEmpty() ? null : defs.toArray(new Shift[0]),
+                getDayPlan(c), all.isEmpty() ? null : all.toArray(new Shift[0]));
     }
 
     // ================= 自定义 / 轮班（v1.1.0）=================
@@ -673,76 +687,198 @@ public final class Prefs {
         sp(c).edit().putInt(KEY_LAST_RUN_VERSION, v).apply();
     }
 
-    // ================= 个人请假（v0.12.0 起）=================
+    // ================= 个人请假 / 加班（v0.12.0 起，v1.11.0 合并成一张表）=================
+
+    /**
+     * 全部按天覆盖：日期 → 班次 id。
+     *
+     * <p>{@link WeekSchedule#DAY_LEAVE} 表示请假，{@link WeekSchedule#DAY_OVERTIME_ANY}
+     * 表示老数据迁过来的「加班但没指定班次」。表里没有的日期按轮转规则算。
+     *
+     * <p>第一次读时会先把两个旧日期集合搬进来（{@link #ensureDayPlanMigrated}），
+     * 所以老用户升级后看见的还是原来那几天，不用重设。
+     *
+     * <p>损坏条目逐条忽略：一天的解析失败不能让整张表变空——那等于把这个月的请假
+     * 和加班全丢了，用户只会看到闹钟在请假日乱响。
+     */
+    public static Map<LocalDate, Integer> getDayPlan(Context c) {
+        ensureDayPlanMigrated(c);
+        Map<LocalDate, Integer> out = new HashMap<>();
+        String raw = sp(c).getString(KEY_DAY_PLAN, null);
+        if (raw == null || raw.isEmpty()) return out;
+        try {
+            JSONObject o = new JSONObject(raw);
+            Iterator<String> it = o.keys();
+            while (it.hasNext()) {
+                String k = it.next();
+                try {
+                    out.put(LocalDate.parse(k), o.optInt(k, WeekSchedule.DAY_LEAVE));
+                } catch (Exception ignore) {
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        return out;
+    }
+
+    public static void setDayPlan(Context c, Map<LocalDate, Integer> plan) {
+        ensureDayPlanMigrated(c);
+        sp(c).edit().putString(KEY_DAY_PLAN, encodeDayPlan(plan)).apply();
+    }
+
+    /** 这天在覆盖表里的值；没有例外返回 {@code null}。 */
+    public static Integer getDayShift(Context c, LocalDate d) {
+        return getDayPlan(c).get(d);
+    }
+
+    /** 把某天设成某个班次 / 请假（传 {@link WeekSchedule#DAY_LEAVE}）。 */
+    public static void setDayShift(Context c, LocalDate d, int value) {
+        Map<LocalDate, Integer> plan = getDayPlan(c);
+        plan.put(d, value);
+        setDayPlan(c, plan);
+    }
+
+    /** 清掉某天的例外，回到「按规则算」。 */
+    public static void clearDayShift(Context c, LocalDate d) {
+        Map<LocalDate, Integer> plan = getDayPlan(c);
+        if (plan.remove(d) != null) setDayPlan(c, plan);
+    }
+
+    private static String encodeDayPlan(Map<LocalDate, Integer> plan) {
+        JSONObject o = new JSONObject();
+        if (plan != null) {
+            for (Map.Entry<LocalDate, Integer> e : plan.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) continue;
+                try {
+                    o.put(e.getKey().toString(), e.getValue().intValue());
+                } catch (Exception ignore) {
+                }
+            }
+        }
+        return o.toString();
+    }
+
+    /**
+     * 把 v1.10.x 的两个日期集合搬进新表，只做一次。
+     *
+     * <p>加班日给一个班次 id：有班次就取第一个——老版本没有记录「加的是哪个班」，
+     * 取哪个都是猜，第一个至少与旧行为一致（旧代码也是退回第一个勾选的班次）。
+     * 一个班次都没建过就记 {@link WeekSchedule#DAY_OVERTIME_ANY}，行为完全照旧。
+     *
+     * <p>同一天两边都有（旧版允许「假加」）→ 请假优先。旧版日历也是这么显示的：
+     * 底色只能选一个，请假压过加班。
+     */
+    private static void ensureDayPlanMigrated(Context c) {
+        SharedPreferences p = sp(c);
+        if (p.getBoolean(KEY_DAY_PLAN_MIGRATED, false)) return;
+        Map<LocalDate, Integer> plan = new HashMap<>();
+        for (String s : p.getStringSet(KEY_VACATION_DATES, Collections.emptySet())) {
+            try {
+                plan.put(LocalDate.parse(s), WeekSchedule.DAY_LEAVE);
+            } catch (Exception ignore) {
+            }
+        }
+        int firstShift = firstShiftId(c);
+        for (String s : p.getStringSet(KEY_OVERTIME_DATES, Collections.emptySet())) {
+            try {
+                LocalDate d = LocalDate.parse(s);
+                if (!plan.containsKey(d)) {
+                    plan.put(d, firstShift >= 0 ? firstShift : WeekSchedule.DAY_OVERTIME_ANY);
+                }
+            } catch (Exception ignore) {
+            }
+        }
+        p.edit().putString(KEY_DAY_PLAN, encodeDayPlan(plan))
+                .putBoolean(KEY_DAY_PLAN_MIGRATED, true).apply();
+    }
+
+    private static int firstShiftId(Context c) {
+        for (Shift s : getShifts(c)) {
+            if (s != null) return s.id;
+        }
+        return -1;
+    }
 
     /** 全部请假日期（损坏条目自动忽略）。 */
     public static Set<LocalDate> getVacationDates(Context c) {
         Set<LocalDate> out = new HashSet<>();
-        for (String s : sp(c).getStringSet(KEY_VACATION_DATES, Collections.emptySet())) {
-            try {
-                out.add(LocalDate.parse(s));
-            } catch (Exception ignore) {
-            }
+        for (Map.Entry<LocalDate, Integer> e : getDayPlan(c).entrySet()) {
+            if (e.getValue() != null && e.getValue() == WeekSchedule.DAY_LEAVE) out.add(e.getKey());
         }
         return out;
     }
 
+    /** 整体替换请假集合（备份恢复用）；加班项原样保留。 */
     public static void setVacationDates(Context c, Set<LocalDate> dates) {
-        Set<String> raw = new HashSet<>();
-        for (LocalDate d : dates) raw.add(d.toString());
-        sp(c).edit().putStringSet(KEY_VACATION_DATES, raw).apply();
+        Map<LocalDate, Integer> plan = getDayPlan(c);
+        plan.values().removeIf(v -> v != null && v == WeekSchedule.DAY_LEAVE);
+        if (dates != null) {
+            for (LocalDate d : dates) plan.put(d, WeekSchedule.DAY_LEAVE);
+        }
+        setDayPlan(c, plan);
     }
 
     /** 某天是否被标记为个人请假（请假日全部闹钟不响）。 */
     public static boolean isVacation(Context c, LocalDate d) {
-        return sp(c).getStringSet(KEY_VACATION_DATES, Collections.emptySet())
-                .contains(d.toString());
+        Integer v = getDayShift(c, d);
+        return v != null && v == WeekSchedule.DAY_LEAVE;
     }
 
     public static void addVacation(Context c, LocalDate d) {
-        Set<LocalDate> cur = getVacationDates(c);
-        if (cur.add(d)) setVacationDates(c, cur);
+        setDayShift(c, d, WeekSchedule.DAY_LEAVE);
     }
 
     public static void removeVacation(Context c, LocalDate d) {
-        Set<LocalDate> cur = getVacationDates(c);
-        if (cur.remove(d)) setVacationDates(c, cur);
+        if (isVacation(c, d)) clearDayShift(c, d);
     }
 
     // ================= 个人加班（v0.13.0 起）=================
 
-    /** 全部加班日期（损坏条目自动忽略）。 */
+    /** 全部加班日期（含「加班但没指定班次」的老数据）。 */
     public static Set<LocalDate> getOvertimeDates(Context c) {
         Set<LocalDate> out = new HashSet<>();
-        for (String s : sp(c).getStringSet(KEY_OVERTIME_DATES, Collections.emptySet())) {
-            try {
-                out.add(LocalDate.parse(s));
-            } catch (Exception ignore) {
-            }
+        for (Map.Entry<LocalDate, Integer> e : getDayPlan(c).entrySet()) {
+            if (e.getValue() != null && e.getValue() != WeekSchedule.DAY_LEAVE) out.add(e.getKey());
         }
         return out;
     }
 
+    /** 整体替换加班集合（备份恢复用）；请假项原样保留。 */
     public static void setOvertimeDates(Context c, Set<LocalDate> dates) {
-        Set<String> raw = new HashSet<>();
-        for (LocalDate d : dates) raw.add(d.toString());
-        sp(c).edit().putStringSet(KEY_OVERTIME_DATES, raw).apply();
+        Map<LocalDate, Integer> plan = getDayPlan(c);
+        plan.values().removeIf(v -> v != null && v != WeekSchedule.DAY_LEAVE);
+        int firstShift = firstShiftId(c);
+        int value = firstShift >= 0 ? firstShift : WeekSchedule.DAY_OVERTIME_ANY;
+        if (dates != null) {
+            for (LocalDate d : dates) {
+                if (!plan.containsKey(d)) plan.put(d, value);
+            }
+        }
+        setDayPlan(c, plan);
     }
 
     /** 某天是否被标记为个人加班（休息日标记后「仅上班日」闹钟当天照响）。 */
     public static boolean isOvertime(Context c, LocalDate d) {
-        return sp(c).getStringSet(KEY_OVERTIME_DATES, Collections.emptySet())
-                .contains(d.toString());
+        Integer v = getDayShift(c, d);
+        return v != null && v != WeekSchedule.DAY_LEAVE;
     }
 
+    /**
+     * 标加班，但没说上哪个班。
+     *
+     * <p>只有一个班次时直接用它的 id——「我们厂只有一个班」是常见情况，让用户为
+     * 一个选项再点一次没有意义。多个班次或没有班次时记
+     * {@link WeekSchedule#DAY_OVERTIME_ANY}，行为与旧版一致；日历里可以再改。
+     */
     public static void addOvertime(Context c, LocalDate d) {
-        Set<LocalDate> cur = getOvertimeDates(c);
-        if (cur.add(d)) setOvertimeDates(c, cur);
+        List<Shift> shifts = getShifts(c);
+        int value = shifts.size() == 1 && shifts.get(0) != null
+                ? shifts.get(0).id : WeekSchedule.DAY_OVERTIME_ANY;
+        setDayShift(c, d, value);
     }
 
     public static void removeOvertime(Context c, LocalDate d) {
-        Set<LocalDate> cur = getOvertimeDates(c);
-        if (cur.remove(d)) setOvertimeDates(c, cur);
+        if (isOvertime(c, d)) clearDayShift(c, d);
     }
 
     // ================= 响铃设置（v0.14.0 起）=================

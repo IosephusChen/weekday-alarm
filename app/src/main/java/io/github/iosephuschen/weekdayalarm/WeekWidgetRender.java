@@ -84,17 +84,22 @@ final class WeekWidgetRender {
         LocalDate start = WeekSchedule.startOfWeek(today, sundayFirst);
         String[] letters = WeekSchedule.weekLetters(sundayFirst);
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
-        Set<LocalDate> vacations = Prefs.getVacationDates(ctx);
-        Set<LocalDate> overtimes = Prefs.getOvertimeDates(ctx);
+        // v1.11.0：请假与加班合并成一张按天覆盖表
+        java.util.Map<LocalDate, Integer> plan = Prefs.getDayPlan(ctx);
 
         List<DayCell> cells = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
             LocalDate d = start.plusDays(i);
             WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-            boolean baseWork = DayOffAction.isWorkDay(type);
-            boolean vacation = baseWork && vacations.contains(d);
-            boolean overtime = !baseWork && overtimes.contains(d);
-            String label = vacation ? "请假" : overtime ? "加班" : type.label;
+            Integer ov = plan.get(d);
+            boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
+            boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
+            // v1.11.0：不再要求「和班表反着来」才显示。上班日标了加班同样要写出来，
+            // 否则这天的班次（夜班 / 白班）就白选了
+            String shiftName = DayTag.shiftName(rule, ov, 2);
+            String label = vacation ? "请假"
+                    : overtime ? (shiftName != null ? shiftName : "加班")
+                    : type.label;
             cells.add(new DayCell(letters[i], label, d.equals(today),
                     type, vacation, overtime));
         }

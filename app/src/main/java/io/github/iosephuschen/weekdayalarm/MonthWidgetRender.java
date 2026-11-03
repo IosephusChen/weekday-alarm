@@ -138,6 +138,16 @@ final class MonthWidgetRender {
     }
 
     /**
+     * 班次名的第一个字（v1.11.0）：小部件一格只放得下一个字。
+     *
+     * <p>「夜班」写成「夜」比统一写「加」多给了一层信息，而且和日历页的完整班次名
+     * 是同一个来源，不会一处写「夜」一处写「白班」。
+     */
+    private static String shiftTag(WeekSchedule.Rule rule, Integer ov) {
+        return DayTag.shiftName(rule, ov, 1);
+    }
+
+    /**
      * 同上，但「下次响铃」由调用方给定。
      *
      * <p>为测试而留的入口：`nextRing` 读真实时钟，而这里的 {@code today} 是参数，
@@ -150,6 +160,8 @@ final class MonthWidgetRender {
 
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         m.subtitle = WeekSchedule.describe(rule, today);
+        // v1.11.0：请假 / 加班合并成一张按天覆盖表，渲染时只读一次
+        java.util.Map<LocalDate, Integer> plan = Prefs.getDayPlan(ctx);
 
         // 前导空格：本月 1 号是这一行的第几格
         int firstDow = ym.atDay(1).getDayOfWeek().getValue();   // 周一=1 … 周日=7
@@ -175,8 +187,9 @@ final class MonthWidgetRender {
 
             WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
             boolean work = DayOffAction.isWorkDay(type);
-            boolean leave = Prefs.isVacation(ctx, d);
-            boolean overtime = Prefs.isOvertime(ctx, d);
+            Integer ov = plan.get(d);
+            boolean leave = ov != null && ov == WeekSchedule.DAY_LEAVE;
+            boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
 
             // v0.80.0 底部统计用：请了假就不算上班，休息日加了班就算上班。
             // v0.92.0 起判断交给 MonthStats，日历页底部那行统计也调它——
@@ -188,14 +201,13 @@ final class MonthWidgetRender {
             // 补班日一律不覆盖——「补」比节日名要紧，用户得知道那天得上班。
             m.colors[i] = work ? C_WORK : C_REST;
 
-            if (leave && overtime) {
-                m.tags[i] = "假加";
-                m.colors[i] = C_LEAVE;
-            } else if (leave) {
+            if (leave) {
                 m.tags[i] = "假";
                 m.colors[i] = C_LEAVE;
             } else if (overtime) {
-                m.tags[i] = "加";
+                // v1.11.0：有班次就写班次名首字（「夜」），比一个「加」多答了半句
+                String t = shiftTag(rule, ov);
+                m.tags[i] = t != null ? t : "加";
                 m.colors[i] = C_OT;
             } else {
                 // 与日历页共用同一个判断（v0.91.8）。之前这里少了两层：

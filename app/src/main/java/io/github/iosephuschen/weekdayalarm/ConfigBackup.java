@@ -104,6 +104,10 @@ public final class ConfigBackup {
 
             p.put(Prefs.KEY_VACATION_DATES, toArray(Prefs.getVacationDates(ctx)));
             p.put(Prefs.KEY_OVERTIME_DATES, toArray(Prefs.getOvertimeDates(ctx)));
+            // v1.11.0：请假 / 加班合并成一张表，备份里也带上。老版本的 App 读不懂这个键，
+            // 会忽略它——所以上面两个旧键继续写，退回去还能恢复出「有哪几天请假」，
+            // 只是丢掉「那天是哪个班」。
+            p.put(Prefs.KEY_DAY_PLAN, dayPlanJson(ctx));
 
             // v0.91.0：音量不再进备份——它是系统 STREAM_ALARM 的档位，属于设备状态，
             // 换到新设备上应当沿用那边的系统音量，而不是把旧机器的值搬过去
@@ -161,6 +165,28 @@ public final class ConfigBackup {
         java.util.Collections.sort(sorted);
         for (LocalDate d : sorted) arr.put(d.toString());
         return arr;
+    }
+
+    /**
+     * 按天覆盖表导出成 JSON 对象（v1.11.0）。
+     *
+     * <p>日期排序后写入：Json 对象的键本来无序，但排序能让两份备份可以直接 diff，
+     * 排查「换机后哪几天变了」时省事。
+     */
+    private static JSONObject dayPlanJson(Context ctx) {
+        JSONObject o = new JSONObject();
+        java.util.Map<LocalDate, Integer> plan = Prefs.getDayPlan(ctx);
+        List<LocalDate> sorted = new ArrayList<>(plan.keySet());
+        java.util.Collections.sort(sorted);
+        for (LocalDate d : sorted) {
+            Integer v = plan.get(d);
+            if (v == null) continue;
+            try {
+                o.put(d.toString(), v.intValue());
+            } catch (Exception ignore) {
+            }
+        }
+        return o;
     }
 
     // ================= 导入 =================
@@ -273,6 +299,18 @@ public final class ConfigBackup {
         }
         ed.putStringSet(Prefs.KEY_VACATION_DATES, vacations);
         ed.putStringSet(Prefs.KEY_OVERTIME_DATES, overtimes);
+        // v1.11.0：新版备份带 day_plan，直接用——它比两个旧集合多一层「那天是哪个班」。
+        // 老备份没有这个键：清掉新表与迁移标记，让 Prefs 下次读时按旧集合重新迁一次。
+        // 不清标记的话，用户恢复一份老备份，请假加班会整个丢——新表说「没数据」，
+        // 而迁移这辈子不会再跑一遍。
+        JSONObject plan = p.optJSONObject(Prefs.KEY_DAY_PLAN);
+        if (plan != null) {
+            ed.putString(Prefs.KEY_DAY_PLAN, plan.toString());
+            ed.putBoolean(Prefs.KEY_DAY_PLAN_MIGRATED, true);
+        } else {
+            ed.remove(Prefs.KEY_DAY_PLAN);
+            ed.putBoolean(Prefs.KEY_DAY_PLAN_MIGRATED, false);
+        }
 
         // 旧备份里的 alarm_volume 字段忽略：v0.91.0 起音量由系统决定，导入不再覆盖
         ed.putInt(Prefs.KEY_VOLKEY_ACTION,

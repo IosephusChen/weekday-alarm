@@ -2,6 +2,8 @@ package io.github.iosephuschen.weekdayalarm;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * 排班计算（纯逻辑，无 Android 依赖，可单测）。
@@ -30,7 +32,18 @@ public final class WeekSchedule {
         MAKEUP_WORK("补"),   // 调休补班
         HOLIDAY("假"),       // 法定节假日放假
         WORK("班"),          // 正常上班
-        REST("休");          // 正常休息
+        REST("休"),          // 正常休息
+        /**
+         * 个人请假（v1.11.0）。
+         *
+         * <p>以前请假不在这里——它是一个独立的日期集合，在排程时被「跳过」了事，
+         * 于是同一天可以既请假又加班，日历格子上写成「假加」，到底算哪天没人说得清。
+         * 现在请假就是这一天的一种状态，和「班 / 休 / 假 / 补」并列，一天只有一个。
+         *
+         * <p><b>必须追加在末尾</b>：{@link #label} 前面四个的语义早被日历、小部件、
+         * 统计各自引用，中间插一个会让所有 {@code switch} 的 default 落错地方。
+         */
+        LEAVE("请假");
 
         public final String label;
 
@@ -38,6 +51,21 @@ public final class WeekSchedule {
             this.label = label;
         }
     }
+
+    /** 按天覆盖里表示「这天请假」的值（v1.11.0）。 */
+    public static final int DAY_LEAVE = -1;
+
+    /**
+     * 按天覆盖里表示「这天加班，但没说上哪个班」的值（v1.11.0）。
+     *
+     * <p>只由老数据迁移产生：老版本的加班是一个布尔标记，没记班次。迁过来时如果
+     * 用户根本没建过班次，就只能记成这个值——行为与迁移前完全一致（时刻退回
+     * 闹钟自己的 {@code hour/minute}，挂了班次的退回第一个勾选的班次）。
+     *
+     * <p>新写入不会再产生它：日历里标加班会先问「上哪个班」。
+     */
+    public static final int DAY_OVERTIME_ANY = -2;
+
 
     /** 周休制度（v0.27.0）。顺序即设置页对话框的顺序。 */
     public enum Mode {
@@ -139,6 +167,26 @@ public final class WeekSchedule {
         /** v1.8.0：可选的班次定义；{@link #shiftCycle} 里的 id 指向它。{@code null} = 没有。 */
         public final Shift[] shifts;
 
+        /**
+         * v1.11.0：按天覆盖 —— key 是日期，value 是班次 id。
+         *
+         * <p>{@link #DAY_LEAVE} 表示这天请假，{@link #DAY_OVERTIME_ANY} 表示老数据里
+         * 「标了加班但没指定班次」。表里没有的日期一律按轮转规则算。
+         *
+         * <p>这是「一天只有一个答案」的落点：请假和加班不再是两个各自为政的日期集合，
+         * 而是同一张表上的两种值。同一天不可能既请假又加班——后写的覆盖先写的。
+         */
+        public final Map<LocalDate, Integer> days;
+
+        /**
+         * v1.11.0：全局班次表，只用来解析 {@link #days} 里的 id。
+         *
+         * <p>为什么不复用 {@link #shifts}：那个字段只在轮班模式下有值（{@code shiftOn}
+         * 有 mode 闸门），双休用户标加班同样要选班次，读不到就会退化成「不知道上哪个班」。
+         * 单独一份、只服务覆盖层，既不动 v1.8.1 那条闸门，也不影响闹钟编辑页的班次显示。
+         */
+        public final Shift[] dayShifts;
+
         /** 循环模式下是否跟随法定节假日与调休补班。默认 false——轮班的人春节照上班。 */
         public final boolean cycleHoliday;
 
@@ -160,6 +208,19 @@ public final class WeekSchedule {
                     int cycleLen, long cycleMask, LocalDate cycleStart,
                     int[] cycleTimes, boolean cycleHoliday,
                     int[] shiftCycle, Shift[] shifts) {
+            this(mode, anchor, smallRestSat, cycleLen, cycleMask, cycleStart,
+                    cycleTimes, cycleHoliday, shiftCycle, shifts, null, null);
+        }
+
+        /**
+         * @param days      按天覆盖，可为 null（= 没有例外）
+         * @param dayShifts 全局班次表，可为 null；{@code days} 里的正数 id 指向它
+         */
+        public Rule(Mode mode, LocalDate anchor, boolean smallRestSat,
+                    int cycleLen, long cycleMask, LocalDate cycleStart,
+                    int[] cycleTimes, boolean cycleHoliday,
+                    int[] shiftCycle, Shift[] shifts,
+                    Map<LocalDate, Integer> days, Shift[] dayShifts) {
             this.mode = mode == null ? Mode.BIG_SMALL : mode;
             this.anchor = anchor;
             this.smallRestSat = smallRestSat;
@@ -175,12 +236,33 @@ public final class WeekSchedule {
                     ? shiftCycle : null;
             this.shifts = (this.shiftCycle == null || shifts == null || shifts.length == 0)
                     ? null : shifts;
+            // 空表统一成 null：{@code days == null} 与 {@code isEmpty()} 是同一个意思，
+            // 让调用方只判一种情况
+            this.days = (days == null || days.isEmpty())
+                    ? null : Collections.unmodifiableMap(days);
+            this.dayShifts = (dayShifts == null || dayShifts.length == 0) ? null : dayShifts;
+        }
+
+        /** 同一条规则，换一张按天覆盖表（v1.11.0）。 */
+        public Rule withDays(Map<LocalDate, Integer> newDays) {
+            return new Rule(mode, anchor, smallRestSat, cycleLen, cycleMask, cycleStart,
+                    cycleTimes, cycleHoliday, shiftCycle, shifts, newDays, dayShifts);
+        }
+
+        /** 这天在覆盖表里的值；没有例外返回 {@code null}。 */
+        public Integer overrideOf(LocalDate d) {
+            return days == null || d == null ? null : days.get(d);
         }
 
         /** 按 id 找班次；找不到返回 null（班次被删了，那天就当作没有班）。 */
         public Shift shiftById(int id) {
-            if (shifts == null) return null;
-            for (Shift s : shifts) {
+            Shift s = find(shifts, id);
+            return s != null ? s : find(dayShifts, id);
+        }
+
+        private static Shift find(Shift[] arr, int id) {
+            if (arr == null) return null;
+            for (Shift s : arr) {
                 if (s != null && s.id == id) return s;
             }
             return null;
@@ -267,8 +349,19 @@ public final class WeekSchedule {
         return isBigWeekSaturday(saturdayOf(today), anchor);
     }
 
-    /** 该日期的类型（节假日优先于周休制度）。 */
+    /** 该日期的类型（个人覆盖 &gt; 节假日 &gt; 周休制度）。 */
     public static DayType dayType(LocalDate d, Rule rule) {
+        // v1.11.0：用户亲手改过的那一天，优先级最高——比法定节假日还高。
+        // 节假日是「国家怎么放」，覆盖是「我实际怎么上」：国庆被叫去值班，
+        // 标了加班就该按上班算，不能被 HOLIDAY 又盖回去。
+        Integer ov = rule == null ? null : rule.overrideOf(d);
+        if (ov != null) {
+            if (ov == DAY_LEAVE) return DayType.LEAVE;
+            // 班次被删了（用户整理过班次表）：这条覆盖已经没有意义，落回规则算，
+            // 总比显示「上班」但没有任何班次、闹钟全不响要好
+            if (rule.shiftById(ov) != null) return DayType.WORK;
+        }
+
         // v1.1.0：自定义 / 轮班先分流，且**必须在这两行节假日判断之前**。
         // 轮班的人春节照上班（医院、工厂、安保全年不停），如果照旧先判节假日，
         // 整个春节会被判成「假」，闹钟集体不响——这是本功能最容易出错的地方。
@@ -367,7 +460,18 @@ public final class WeekSchedule {
      * 真相源，两处不会打架。
      */
     public static Shift shiftOn(LocalDate d, Rule rule) {
-        if (rule == null || rule.shiftCycle == null || rule.shifts == null) return null;
+        if (rule == null) return null;
+        // v1.11.0：覆盖表优先。加班日从此有确定的班次——这正是 v1.8.0 那条
+        // 「加班日没有班次，时刻只能退回第一个勾选的班次」的补丁
+        Integer ov = rule.overrideOf(d);
+        if (ov != null) {
+            if (ov == DAY_LEAVE) return null;
+            if (ov == DAY_OVERTIME_ANY) return null;   // 老数据：沿用旧行为
+            Shift s = rule.shiftById(ov);
+            if (s != null) return s;
+            // 班次被删掉 → 落回规则
+        }
+        if (rule.shiftCycle == null || rule.shifts == null) return null;
         // v1.8.1：切回「双休 / 大小周」之后 shift_cycle 还留在 Prefs 里（没人清），
         // 不挡住的话 cycleIndex 会按旧的 N 天表取班次，于是那天明明休息，
         // 闹钟却还按「白班 08:00 + 偏移」响
@@ -397,6 +501,13 @@ public final class WeekSchedule {
      * 只能看后者。
      */
     public static boolean isScheduledWorkday(LocalDate d, Rule rule) {
+        // v1.11.0：自己改过的那天就是「我的作息」，与法定节假日无关
+        Integer ov = rule == null ? null : rule.overrideOf(d);
+        if (ov != null) {
+            if (ov == DAY_LEAVE) return false;
+            if (ov == DAY_OVERTIME_ANY) return true;          // 老数据：标了加班就是要上班
+            if (rule.shiftById(ov) != null) return true;
+        }
         if (rule.mode.isCycle()) return isCycleWorkday(d, rule);
 
         int v = d.getDayOfWeek().getValue();

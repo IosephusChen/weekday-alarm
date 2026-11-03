@@ -50,4 +50,21 @@ final class DayTag {
         if (christ != null) return christ;
         return type.label;
     }
+
+    /**
+     * 覆盖表里那天的班次名（v1.11.0）。
+     *
+     * <p>为什么放在这里：班次名和「班 / 休 / 假 / 补」抢的是同一个位置，超长怎么截、
+     * 没班次怎么退，三处（日历页、两个小部件）必须同一个答案。v0.91.8 的教训——
+     * 同一个位置在两处各写一份，最后一个是「假」一个是「休」。
+     *
+     * @param maxChars 最多几个字：日历格两字、4×4 小部件一格只有一字
+     * @return 没有班次（老数据 / 班次被删）返回 {@code null}，由调用方退回「加班」
+     */
+    static String shiftName(WeekSchedule.Rule rule, Integer ov, int maxChars) {
+        if (rule == null || ov == null || ov < 0) return null;
+        Shift s = rule.shiftById(ov);
+        if (s == null || s.name == null || s.name.isEmpty()) return null;
+        return s.name.length() > maxChars ? s.name.substring(0, maxChars) : s.name;
+    }
 }

@@ -38,9 +38,9 @@ final class DayOffAction {
         return LocalDate.now().plusDays(clampOffset(offset));
     }
 
-    /** 那一天按排班规则本该上班还是休息。 */
+    /** 那一天按排班规则本该上班还是休息（v1.11.0：不含个人覆盖，只看规则）。 */
     static WeekSchedule.DayType typeOf(Context ctx, LocalDate day) {
-        return WeekSchedule.dayType(day, Prefs.getRule(ctx));
+        return WeekSchedule.dayType(day, Prefs.getRule(ctx).withDays(null));
     }
 
     /** 上班日与调休补班日都算「该上班」，休息日与法定节假日不算。 */
@@ -71,11 +71,19 @@ final class DayOffAction {
         return actionText(clampOffset(dayOffset) == TODAY ? "今天" : "明天", type, marked);
     }
 
-    /** 那天是否已被标成「和排班不一样」：上班日标了请假 / 休息日标了加班。 */
+    /**
+     * 那天是否已被标成「和排班不一样」：上班日标了请假 / 休息日标了加班（v1.11.0）。
+     *
+     * <p>一天只有一个值，但不能只判「有没有值」：工作日标「加班」也会写一个班次 id，
+     * 那是记录「那天上了哪个班」，不是「这天不上班」。按钮文案由这里决定，
+     * 判错就会出现「今天已请假」这种假话。
+     */
     static boolean isMarked(Context ctx, LocalDate day) {
+        Integer ov = Prefs.getDayShift(ctx, day);
+        if (ov == null) return false;
         return isWorkDay(typeOf(ctx, day))
-                ? Prefs.isVacation(ctx, day)
-                : Prefs.isOvertime(ctx, day);
+                ? ov == WeekSchedule.DAY_LEAVE
+                : ov != WeekSchedule.DAY_LEAVE;
     }
 
     /**
@@ -83,18 +91,23 @@ final class DayOffAction {
      *
      * <p>只写 Prefs，不重排、不刷新、不弹 Toast——首页要刷界面，小组件在广播里
      * 必须 {@code goAsync()} 到后台线程重排，两边对「改完之后做什么」的要求完全不同。
+     *
+     * <p>v1.11.0：上班日只认「请假」这一种例外，休息日只认「加班」。工作日上如果
+     * 先记了「这天上了夜班」，再点按钮不该把它悄悄删掉——那是另一个动作的结果，
+     * 按钮说的是「不上班」，就只处理请假。
      */
     static boolean toggle(Context ctx, LocalDate day) {
+        Integer ov = Prefs.getDayShift(ctx, day);
         if (isWorkDay(typeOf(ctx, day))) {
-            if (Prefs.isVacation(ctx, day)) {
-                Prefs.removeVacation(ctx, day);
+            if (ov != null && ov == WeekSchedule.DAY_LEAVE) {
+                Prefs.clearDayShift(ctx, day);
                 return false;
             }
             Prefs.addVacation(ctx, day);
             return true;
         }
-        if (Prefs.isOvertime(ctx, day)) {
-            Prefs.removeOvertime(ctx, day);
+        if (ov != null) {
+            Prefs.clearDayShift(ctx, day);
             return false;
         }
         Prefs.addOvertime(ctx, day);

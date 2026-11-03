@@ -58,6 +58,11 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_LAST_RUN_VERSION", "last_run_version");
         PREFS_KEYS.put("KEY_VACATION_DATES", "vacation_dates");
         PREFS_KEYS.put("KEY_OVERTIME_DATES", "overtime_dates");
+        // v1.11.0：两个旧集合合并成「按天覆盖」表。day_plan 发出去就改不得——
+        // 改了等于所有人的请假和加班记录一次性消失。day_plan_migrated 是迁移闸门，
+        // 同样必须稳定：改名会让老数据被「再迁一次」，冲掉用户在新版里改过的日期。
+        PREFS_KEYS.put("KEY_DAY_PLAN", "day_plan");
+        PREFS_KEYS.put("KEY_DAY_PLAN_MIGRATED", "day_plan_migrated");
         // KEY_VOLUME / alarm_volume 已删（v0.91.0）：音量交给系统 STREAM_ALARM，
         // App 不再存这个键。旧备份里的同名字段导入时直接忽略。
         PREFS_KEYS.put("KEY_VOLKEY_ACTION", "volkey_action");

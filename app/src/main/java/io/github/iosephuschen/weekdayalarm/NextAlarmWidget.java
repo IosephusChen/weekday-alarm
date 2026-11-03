@@ -70,12 +70,13 @@ public class NextAlarmWidget extends AppWidgetProvider {
         LocalDate today = LocalDate.now();
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
-        boolean vacation = Prefs.isVacation(ctx, today);
-        boolean baseWork = DayOffAction.isWorkDay(todayType);
-        boolean overtime = !vacation && !baseWork && Prefs.isOvertime(ctx, today);
-        boolean work = (baseWork && !vacation) || overtime;
+        // v1.11.0：同首页，一天只有一个值
+        Integer ov = Prefs.getDayShift(ctx, today);
+        boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
+        boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
+        boolean work = DayOffAction.isWorkDay(todayType);
         String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
-        Shift todayShift = work && !vacation && !overtime ? WeekSchedule.shiftOn(today, rule) : null;
+        Shift todayShift = work ? WeekSchedule.shiftOn(today, rule) : null;
         return new WidgetModel(
                 TodayCard.statusText(vacation, overtime, work,
                         todayShift == null ? null : todayShift.name),

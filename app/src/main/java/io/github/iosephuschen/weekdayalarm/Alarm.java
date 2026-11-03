@@ -193,12 +193,19 @@ public final class Alarm {
 
     /**
      * @param overtime 这天是否被个人标为「加班」。休息日标加班后，跟班表的闹钟照响——
-     *                 但那天没有班次，时刻只能退回自己的 {@code hour/minute}
-     *                 （挂了班次的退到第一个勾选的班次）。这是 v1.8.0 的已知边界，
-     *                 正解是「这天加哪个班」，见 {@code docs/项目状态.md} 6.1 H。
+     *                 那天若指定了班次，时刻就按那个班算；只有老数据（没指定班次）
+     *                 才退回自己的 {@code hour/minute}（挂了班次的退到第一个勾选的班次）。
      */
     public int timeOn(LocalDate d, WeekSchedule.Rule rule, boolean overtime) {
         if (mode == Mode.WORKDAY && rule != null) {
+            // v1.11.0：覆盖表指定了具体班次，就按它算时刻——这才是「加班选了班次」
+            // 的意义。必须放在 mode.isCycle() 前面：双休 / 大小周用户同样会标加班、
+            // 同样要选班次，只在轮班模式下认班次的话，他们的加班时刻仍然全错。
+            Integer ov = rule.overrideOf(d);
+            if (ov != null && ov >= 0) {
+                Shift s = rule.shiftById(ov);
+                if (s != null) return s.start + offsetMin;
+            }
             // 同上：只有班表当前真的是「N 天一轮」时才认班次，否则退回下面的老路径
             if (rule.mode.isCycle() && rule.shiftCycle != null) {
                 Shift s = WeekSchedule.shiftOn(d, rule);

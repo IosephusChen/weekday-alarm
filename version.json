@@ -1,12 +1,14 @@
 {
-  "versionCode": 268,
-  "versionName": "1.10.2",
-  "published": "2026-11-03",
-  "title": "箭头这一处补完",
+  "versionCode": 269,
+  "versionName": "1.11.0",
+  "published": "2026-11-04",
+  "title": "加班那天，说清上哪个班",
   "notes": [
-    "班次弹窗里的箭头是代码画的，上一版批量改漏了，还是灰色小字",
-    "关于页六行补齐：「检查更新」原来把「›」当成值塞在文字里"
+    "标加班会先问「上哪个班」，日历格子直接写「夜班」不再写「加班」",
+    "请假和加班合成一本账，一天只有一个结果，「假加」不会再出现",
+    "加班日的闹钟按那个班的点响：白班 8 点、夜班 20 点，不再一律早上",
+    "老记录自动搬过来一条不丢；没记过班次的，仍按原来的时间响"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.10.2/weekday-alarm-1.10.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.10.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.0/weekday-alarm-1.11.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.11.0"
 }

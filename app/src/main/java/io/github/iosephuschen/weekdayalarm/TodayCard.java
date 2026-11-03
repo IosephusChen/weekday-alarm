@@ -33,9 +33,12 @@ final class TodayCard {
      */
     static String statusText(boolean vacation, boolean overtime, boolean work, String shiftName) {
         if (vacation) return "今天请假";
-        if (overtime) return "今天加班";
+        boolean hasShift = shiftName != null && !shiftName.trim().isEmpty();
+        // v1.11.0：加班日有班次就写班次名——「今天夜班」比「今天加班」多答了「上到几点」，
+        // 这正是这一年多来「加班日没有班次」那个缺口的最后一公里
+        if (overtime && !hasShift) return "今天加班";
         if (!work) return "今天休息";
-        if (shiftName == null || shiftName.trim().isEmpty()) return "今天上班";
+        if (!hasShift) return "今天上班";
         String n = shiftName.trim();
         return "今天" + (n.length() > 2 ? n.substring(0, 2) : n);
     }

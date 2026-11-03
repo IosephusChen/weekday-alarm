@@ -148,19 +148,27 @@ public class OvertimeTest {
         assertTrue(ScheduleManager.isEffectiveWorkday(ctx(), restDay));
     }
 
+    /**
+     * v1.11.0：同一天只能有一个标记——后标的覆盖先标的。
+     *
+     * <p>旧版这里是两个独立的日期集合，同一天可以两边都有，格子上印「假加」，
+     * 到底算哪天没人说得清。合并成一张表之后这种状态从数据层就不存在了。
+     */
     @Test
-    public void vacationWins_ifBothMarked() {
-        // 数据层面同时标了请假与加班（UI 入口互斥，不会发生）：请假优先，不排
+    public void oneMarkPerDay_lastWriteWins() {
         setupSingleWorkdayAlarm();
         LocalDate restDay = findRestDay();
-        int before = ScheduleManager.rescheduleAll(ctx());
 
         Prefs.addVacation(ctx(), restDay);
-        Prefs.addOvertime(ctx(), restDay);
-        int after = ScheduleManager.rescheduleAll(ctx());
+        assertTrue(Prefs.isVacation(ctx(), restDay));
 
-        assertEquals(before, after);
-        assertFalse("请假优先于加班", Prefs.getScheduledDates(ctx()).contains("1:" + restDay));
+        Prefs.addOvertime(ctx(), restDay);
+        assertFalse("加班覆盖请假：一天只有一个值", Prefs.isVacation(ctx(), restDay));
+        assertTrue(Prefs.isOvertime(ctx(), restDay));
+
+        Prefs.addVacation(ctx(), restDay);
+        assertTrue("再标请假就覆盖加班", Prefs.isVacation(ctx(), restDay));
+        assertFalse(Prefs.isOvertime(ctx(), restDay));
     }
 
     /**

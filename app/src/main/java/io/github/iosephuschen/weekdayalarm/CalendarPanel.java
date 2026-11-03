@@ -18,7 +18,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 /**
  * 首页内嵌的排班日历（v0.48.1）。
@@ -126,11 +126,10 @@ final class CalendarPanel {
     // ================= 日历格子 =================
 
     private void renderCalendar() {
-        WeekSchedule.Rule rule = Prefs.getRule(host);
+        WeekSchedule.Rule rule = Prefs.getRule(host);   // v1.11.0：规则里已含按天覆盖
         LocalDate today = LocalDate.now();
-        // 请假 / 加班集合各读一次：42 个格子逐个调 Prefs.isVacation 会重复拷贝整个 StringSet
-        Set<LocalDate> vacations = Prefs.getVacationDates(host);
-        Set<LocalDate> overtimes = Prefs.getOvertimeDates(host);
+        // 覆盖表只读一次：42 个格子逐个调 Prefs.isVacation 会把整张表解析 42 遍
+        Map<LocalDate, Integer> plan = Prefs.getDayPlan(host);
         // 农历 / 基督教节日开关只读一次（42 个格子逐个读 SharedPreferences 是白花 42 次读）
         boolean lunar = Prefs.isLunarFestivals(host);
         boolean christian = Prefs.isChristianFestivals(host);
@@ -161,12 +160,12 @@ final class CalendarPanel {
                 LocalDate d = start.plusDays(r * 7L + c);
                 boolean inMonth = d.getMonthValue() == month && d.getYear() == year;
                 WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-                // v0.51.0：不再按班休过滤。
-                // 原来「请假只标上班日、加班只标休息日」，于是工作日的加班记录存了也不显示，
-                // 用户想记「工作日晚上加班」时格子一片空白。现在两个集合各自独立判断，
-                // 同一天可以既有请假又有加班（白天请假、晚上补工），格子上写「假加」。
-                boolean vacation = inMonth && vacations.contains(d);
-                boolean overtime = inMonth && overtimes.contains(d);
+                // v1.11.0：请假 / 加班合并成一张「按天覆盖」表，同一天只可能有一个值。
+                // 「假加」这个状态从此不存在——以前它是两个日期集合各自独立判断拼出来的，
+                // 用户点开那天会看到两个互相矛盾的记录，取消时还得想删哪个。
+                Integer ov = inMonth ? plan.get(d) : null;
+                boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
+                boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
                 if (inMonth && MonthStats.countsAsWork(type, vacation, overtime)) workDays++;
 
                 int bgRes;
@@ -175,19 +174,17 @@ final class CalendarPanel {
                 // v1.1.0：只有「纯工作日」的标签才降一档色。请假 / 加班 / 假加这些
                 // 是例外状态，标签本身就是要被注意到的注记，跟着数字同色才对。
                 boolean plainWork = false;
-                if (vacation && overtime) {
-                    // 底色只能选一个，请假优先——「这天没上班」比「这天还加了班」更主导
-                    bgRes = R.drawable.bg_day_vacation;
-                    textColorRes = R.color.day_vacation_text;
-                    label = "假加";
-                } else if (vacation) {
+                if (vacation) {
                     bgRes = R.drawable.bg_day_vacation;
                     textColorRes = R.color.day_vacation_text;
                     label = "请假";
                 } else if (overtime) {
                     bgRes = R.drawable.bg_day_overtime;
                     textColorRes = R.color.day_overtime_text;
-                    label = "加班";
+                    // v1.11.0：有班次就写班次名（「夜班」比「加班」多答了「上哪个」），
+                    // 老数据没班次才退回「加班」
+                    String shiftName = DayTag.shiftName(rule, ov, 2);
+                    label = shiftName != null ? shiftName : "加班";
                 } else {
                     // 节日 / 节气 / 班休的优先级只在 DayTag 里判一次（v0.91.8）：
                     // 这段原来在这里和 MonthWidgetRender 各写一份，然后两边漂了——
@@ -412,32 +409,37 @@ final class CalendarPanel {
      * 把「标了会怎样」直接写在选项旁边——这件事以前只在点完的 Toast 里说。
      */
     private void onDayClick(LocalDate d) {
+        // v1.11.0：这里的「上班日 / 休息日」指按规则本来是什么，不是这天最终算什么。
+        // 用带覆盖的类型会得出「标了请假 → 休息日 → 只给加班选项」这种死循环，
+        // 用户就再也取消不掉自己的请假了
         boolean work = DayOffAction.isWorkDay(DayOffAction.typeOf(host, d));
         boolean past = d.isBefore(LocalDate.now());
-        boolean hasV = Prefs.isVacation(host, d);
-        boolean hasO = Prefs.isOvertime(host, d);
+        Integer ov = Prefs.getDayShift(host, d);
+        boolean hasV = ov != null && ov == WeekSchedule.DAY_LEAVE;
+        boolean hasO = ov != null && ov != WeekSchedule.DAY_LEAVE;
         String dateText = TimeText.monthDayWeek(d);
 
         List<String> items = new ArrayList<>();
         List<String> subs = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
-        // 请假项：上班日给；已有标记时也给，用来取消（老数据可能在休息日上留了请假）
+        // 请假项：上班日给；已有标记时也给，用来取消
         if (work || hasV) {
             items.add(hasV ? "取消请假" : "标记为请假");
             subs.add(vacationSub(work, past, hasV));
             actions.add(() -> toggleVacation(d, work, past));
         }
-        // 加班项：任何日子都给。工作日的加班不影响闹钟，只是一条记录
+        // 加班项：任何日子都给。v1.11.0 起点了会先问「上哪个班」。
+        // DialogKit 已改为「先关弹窗再回调」，这里可以直接接着弹下一层
         items.add(hasO ? "取消加班" : "标记为加班");
         subs.add(overtimeSub(work, past, hasO));
-        actions.add(() -> toggleOvertime(d, work, past));
+        actions.add(() -> onOvertimeClick(d, work, past));
 
         DialogKit.showPick(host,
                 dateText + " · " + (work ? "上班日" : "休息日")
                         + (past ? " · 已过去" : ""),
                 past ? "这一天已经过了，标记只作记录，不影响闹钟"
                         : (work ? "请假会跳过当天的闹钟，加班只作记录"
-                        : "标了加班，当天按上班日排程、闹钟照响"),
+                        : "选了班次，当天就按它的时刻排程"),
                 items.toArray(new String[0]), subs.toArray(new String[0]),
                 -1, which -> actions.get(which).run());
     }
@@ -449,11 +451,11 @@ final class CalendarPanel {
         return work ? "当天闹钟跳过" : "只是留个记录";
     }
 
-    /** 加班选项的副标题：最容易误解的一项——工作日标加班闹钟照样响。 */
+    /** 加班选项的副标题：v1.11.0 起点了不是直接生效，而是先问「上哪个班」。 */
     private static String overtimeSub(boolean work, boolean past, boolean hasO) {
         if (hasO) return "删掉这一天的加班记录";
         if (past) return "补记一下，不影响闹钟";
-        return work ? "当天闹钟不受影响" : "当天按上班日响铃";
+        return work ? "换成别的班，当天按它的时刻排程" : "选一个班次，当天按它的时刻排程";
     }
 
     /** 切换某天的请假标记。上班日标了才影响闹钟，休息日上的老数据只做清理。 */
@@ -475,33 +477,57 @@ final class CalendarPanel {
     }
 
     /**
-     * 切换某天的加班标记。
+     * 标加班 / 取消加班（v1.11.0）。
      *
-     * <p>对闹钟的影响分两种，Toast 必须说清楚——用户很容易以为「标了加班闹钟就不响」：
-     * 休息日标加班 → 那天按上班日排程，「仅上班日」的闹钟照响；
-     * 工作日标加班 → 本来就在上班，排程不变，这条纯属记录。
+     * <p><b>标加班现在要多问一句「上哪个班」</b>：从前它只是一个布尔标记，App 只知道
+     * 「这天要去」，不知道几点去——起床闹钟只能退回第一个勾选的班次，白班的人标一个
+     * 夜班加班，时间全错。选了班次，那天的时刻、下班点、哪些闹钟该响才都有答案。
      *
-     * <p>过去的日子只补记，不提闹钟——那天已经过完了。
+     * <p>一个班次都没建过时直接记「加班（未指定班次）」：这类用户本来就不用班次模型，
+     * 强行让他先建一个班次才能记录加班，是把功能门槛架在记录之上。
+     *
+     * <p>过去的日子同样只问班次、不提闹钟——那天已经过完了。
      */
-    private void toggleOvertime(LocalDate d, boolean work, boolean past) {
+    private void onOvertimeClick(LocalDate d, boolean work, boolean past) {
         String dateText = TimeText.monthDayWeek(d);
-        if (Prefs.isOvertime(host, d)) {
-            Prefs.removeOvertime(host, d);
+        Integer ov = Prefs.getDayShift(host, d);
+        if (ov != null && ov != WeekSchedule.DAY_LEAVE) {
+            Prefs.clearDayShift(host, d);
             onChanged.run();
             Toast.makeText(host, dateText + " 已取消加班记录", Toast.LENGTH_SHORT).show();
-        } else {
+            return;
+        }
+
+        List<Shift> shifts = Prefs.getShifts(host);
+        if (shifts.isEmpty()) {
             Prefs.addOvertime(host, d);
             onChanged.run();
-            if (past) {
-                Toast.makeText(host, dateText + " 已补记加班（那天已过去，不影响闹钟）",
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(host, work
-                                ? dateText + " 已记录加班（当天闹钟不受影响）"
-                                : dateText + " 已标记加班，当天按上班日响铃",
-                        Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(host, dateText + (past
+                            ? " 已补记加班（那天已过去，不影响闹钟）"
+                            : (work ? " 已记录加班（当天闹钟不受影响）"
+                            : " 已标记加班，当天按上班日排程")),
+                    Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        String[] names = new String[shifts.size()];
+        String[] subs = new String[shifts.size()];
+        for (int i = 0; i < shifts.size(); i++) {
+            Shift s = shifts.get(i);
+            names[i] = s.name;
+            subs[i] = s.startText() + " 开始";
+        }
+        DialogKit.showPick(host, dateText + " 上哪个班",
+                past ? "这天已经过了，选完只作记录" : "选完，当天的闹钟就按这个班的时刻排",
+                names, subs, -1, which -> {
+                    Shift s = shifts.get(which);
+                    Prefs.setDayShift(host, d, s.id);
+                    onChanged.run();
+                    Toast.makeText(host, dateText + " 已标记「" + s.name + "」"
+                                    + (past ? "（那天已过去，只作记录）"
+                                    : "，当天按 " + s.startText() + " 排程"),
+                            Toast.LENGTH_SHORT).show();
+                });
     }
 
     // ================= 图例 =================

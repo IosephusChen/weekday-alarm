@@ -212,8 +212,11 @@ public final class DialogKit {
             showCheck(row, i == checked);
             final int which = i;
             row.setOnClickListener(v -> {
-                if (onPick != null) onPick.onPick(which);
+                // v1.11.0：先关再回调。日历里点「标记为加班」要接着弹「上哪个班」，
+                // 回调先跑就会在旧弹窗还亮着时叠出新弹窗，两层遮罩一起压暗。
+                // 这个顺序对其它调用方没有影响：它们都只是写数据 / 弹 Toast。
                 if (dlg[0] != null) dlg[0].dismiss();
+                if (onPick != null) onPick.onPick(which);
             });
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,

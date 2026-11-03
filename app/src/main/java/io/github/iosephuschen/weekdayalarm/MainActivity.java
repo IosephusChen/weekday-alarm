@@ -705,11 +705,12 @@ public class MainActivity extends AppCompatActivity {
         LocalDate today = LocalDate.now();
         WeekSchedule.Rule rule = Prefs.getRule(this);
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
-        boolean vacation = Prefs.isVacation(this, today);   // 个人请假：当天全部闹钟跳过
-        boolean baseWork = DayOffAction.isWorkDay(todayType);
-        // 个人加班（v0.13.0）：休息日 / 节假日标记加班后按上班日响「仅上班日」闹钟
-        boolean overtime = !vacation && !baseWork && Prefs.isOvertime(this, today);
-        boolean work = (baseWork && !vacation) || overtime;
+        // v1.11.0：请假 / 加班合并成一张表，一天只有一个值。今天算不算上班已经由
+        // dayType 给出（覆盖层优先级最高），这里只负责把「为什么」取出来给文案用
+        Integer ov = Prefs.getDayShift(this, today);
+        boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
+        boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
+        boolean work = DayOffAction.isWorkDay(todayType);
 
         tvTodayDate.setText(TimeText.monthDayWeek(today));
         // v0.24.0：农历单独一行，节日当天直接点出节日名（如「农历八月十五 中秋」）。
@@ -748,7 +749,7 @@ public class MainActivity extends AppCompatActivity {
             tvTodayLunar.setVisibility(View.VISIBLE);
         }
         tvWeekChip.setText(TodayCard.chipText(rule, today));
-        Shift todayShift = work && !vacation && !overtime ? WeekSchedule.shiftOn(today, rule) : null;
+        Shift todayShift = work ? WeekSchedule.shiftOn(today, rule) : null;
         tvTodayStatus.setText(TodayCard.statusText(vacation, overtime, work,
                 todayShift == null ? null : todayShift.name));
         // v0.30.0：倒计时和「下一个 / 下次」都改用 ScheduleManager.nextRing 统一计算。

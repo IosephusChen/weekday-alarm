@@ -29,6 +29,7 @@ import org.robolectric.shadows.ShadowToast;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
+import java.util.Arrays;
 
 /**
  * 日历上的请假 / 加班标记（v0.52.0）。
@@ -208,9 +209,14 @@ public class PastMarkTest {
         assertFalse("再点一下应删掉补记", Prefs.isVacation(ctx(), past));
     }
 
-    /** 过去的日子也能同时补记请假与加班，格子上印「假加」。 */
+    /**
+     * 过去的日子也只能占一个标记：标加班会把请假顶掉（v1.11.0）。
+     *
+     * <p>旧版允许同一天既请假又加班，格子上印「假加」——那是个用户看不懂的状态。
+     * 现在一天只有一个值，后标的覆盖先标的。
+     */
     @Test
-    public void pastDay_bothMarksAllowed() throws Exception {
+    public void pastDay_overtimeReplacesLeave() throws Exception {
         resetPrefs();
         LocalDate past = dayOf(true, true);
         Prefs.addVacation(ctx(), past);
@@ -219,9 +225,9 @@ public class PastMarkTest {
         clickDay(panelOf(a), past);
         clickItem(latestDialog(), 1);   // 上班日第二项「标记为加班」
 
-        assertTrue("请假还在", Prefs.isVacation(ctx(), past));
-        assertTrue("加班也补上了", Prefs.isOvertime(ctx(), past));
-        assertTrue("格子上应出现「假加」", hasLabelNear(a, "假加"));
+        assertFalse("请假应被顶掉", Prefs.isVacation(ctx(), past));
+        assertTrue("加班补上了", Prefs.isOvertime(ctx(), past));
+        assertFalse("「假加」这个状态不该再出现", hasLabelNear(a, "假加"));
     }
 
     // ---------- 今天及以后：照旧 ----------
@@ -259,10 +265,39 @@ public class PastMarkTest {
         assertEquals("标记为加班", items[0]);
     }
 
-    /** 工作日的加班能标上，且不影响「这天和排班不一样」的判断（首页按钮语义）。 */
+    /**
+     * 休息日标加班会接着问「上哪个班」，选完存的是班次 id（v1.11.0）。
+     *
+     * <p>这是这一版的核心交互：从前一拨开关就完事，App 只知道「这天要去」，
+     * 不知道几点去。两层弹窗的顺序也有讲究——第一层先关，第二层才弹得出来。
+     */
     @Test
-    public void workdayOvertime_canBeMarked_withoutAffectingDayOffButton() throws Exception {
+    public void restDayOvertime_asksWhichShift_thenStoresIt() throws Exception {
         resetPrefs();
+        Prefs.setShifts(ctx(), Arrays.asList(
+                new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0),
+                new Shift(2, "夜班", 20 * 60, Shift.END_UNKNOWN, 0)));
+        MainActivity a = launch();
+        LocalDate rest = dayOf(false, false);
+
+        clickDay(panelOf(a), rest);
+        clickItem(latestDialog(), 0);   // 休息日第一项「标记为加班」
+
+        AlertDialog pick = latestDialog();
+        assertNotNull("选完「标记为加班」应接着问上哪个班", pick);
+        assertTrue("第二层标题要写清问的是什么",
+                String.valueOf(titleOf(pick)).contains("上哪个班"));
+        assertEquals("两个班次都列出来", 2, itemsOf(pick).length);
+
+        clickItem(pick, 1);   // 夜班
+        assertEquals("存的是夜班的 id", Integer.valueOf(2), Prefs.getDayShift(ctx(), rest));
+        assertEquals("那天从此有确定的班次", "夜班",
+                WeekSchedule.shiftOn(rest, Prefs.getRule(ctx())).name);
+    }
+
+    /** 工作日的加班能标上，并且算一条「和排班不一样」的例外（v1.11.0 起一天只有一条记录）。 */
+    @Test
+    public void workdayOvertime_canBeMarked_asException() throws Exception {        resetPrefs();
         MainActivity a = launch();
         LocalDate work = dayOf(true, false);
 
@@ -270,7 +305,9 @@ public class PastMarkTest {
         clickItem(latestDialog(), 1);   // 「标记为加班」
 
         assertTrue("工作日加班应能记上", Prefs.isOvertime(ctx(), work));
-        assertFalse("但那天仍是上班日，首页按钮不该认为已请假", DayOffAction.isMarked(ctx(), work));
+        assertFalse("它只是「这天上了哪个班」的记录，不该让首页按钮显示「已加班 / 已请假」",
+                DayOffAction.isMarked(ctx(), work));
+        assertFalse("但它不是请假", Prefs.isVacation(ctx(), work));
     }
 
     /** 上班日点「标记为请假」后，再点同一天，选项应变成「取消请假」。 */
@@ -313,28 +350,30 @@ public class PastMarkTest {
     public void openingApp_keepsAllMarks() {
         resetPrefs();
         LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate dayBefore = LocalDate.now().minusDays(2);
         Prefs.addVacation(ctx(), yesterday);
-        Prefs.addOvertime(ctx(), yesterday);
+        Prefs.addOvertime(ctx(), dayBefore);   // v1.11.0：一天只能一个值，用两个日期
 
         launch();   // onCreate + onResume
 
         assertTrue("打开 App 后过去的请假记录应还在", Prefs.isVacation(ctx(), yesterday));
-        assertTrue("打开 App 后过去的加班记录应还在", Prefs.isOvertime(ctx(), yesterday));
+        assertTrue("打开 App 后过去的加班记录应还在", Prefs.isOvertime(ctx(), dayBefore));
     }
 
     // ---------- 渲染 ----------
 
-    /** 同一天两个标记，格子上印「假加」——两个字，宽度与「请假」相同。 */
+    /** 一天只印一个标签：后标的加班顶掉请假，格子上不会再出现「假加」。 */
     @Test
-    public void bothMarks_renderAsCombinedLabel() throws Exception {
+    public void oneMarkPerDay_rendersSingleLabel() throws Exception {
         resetPrefs();
         LocalDate today = LocalDate.now();
         Prefs.addVacation(ctx(), today);
-        Prefs.addOvertime(ctx(), today);
+        Prefs.addOvertime(ctx(), today);   // 覆盖请假
 
         MainActivity a = launch();
 
-        assertTrue("格子上应出现「假加」", hasLabelNear(a, "假加"));
+        assertFalse("「假加」这个状态已不存在", hasLabel(a, "假加"));
+        assertTrue("只剩「加班」", hasLabelNear(a, "加班"));
     }
 
     /**

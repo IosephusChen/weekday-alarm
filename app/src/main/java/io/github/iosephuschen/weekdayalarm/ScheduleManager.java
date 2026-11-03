@@ -751,7 +751,11 @@ public final class ScheduleManager {
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 // 个人加班（v0.13.0）：休息日标记加班后「仅上班日」闹钟当天照响
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
-                LocalDateTime when = LocalDateTime.of(d, a.timeOn(d, rule));
+                // v1.8.0：timeOn 返回「当天第几分钟」，负值（提前到前一天）与
+                // ≥1440（落到次日）都靠 plusMinutes 落地，不写分支
+                int minutes = a.timeOn(d, rule, overtimes.contains(d));
+                if (minutes == Alarm.NO_TIME) continue;
+                LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
                 if (!when.isAfter(now)) continue;   // 今天已过点就跳过
                 candidates.add(new Instance(a, when));
             }
@@ -893,7 +897,9 @@ public final class ScheduleManager {
                 if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
-                if (LocalDateTime.of(d, a.timeOn(d, rule)).isAfter(now)) n++;
+                int minutes = a.timeOn(d, rule, overtimes.contains(d));
+                if (minutes == Alarm.NO_TIME) continue;
+                if (d.atStartOfDay().plusMinutes(minutes).isAfter(now)) n++;
             }
         }
         return n;
@@ -965,7 +971,9 @@ public final class ScheduleManager {
             if (!a.enabled) continue;
             for (int i = 0; i < horizon; i++) {
                 LocalDate d = today.plusDays(i);
-                LocalDateTime when = LocalDateTime.of(d, a.timeOn(d, rule));
+                int minutes = a.timeOn(d, rule, overtimes.contains(d));
+                if (minutes == Alarm.NO_TIME) continue;
+                LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
                 if (!when.isAfter(now)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;   // 请假：跳过
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
@@ -1034,7 +1042,9 @@ public final class ScheduleManager {
                 if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (vacation && !a.ignoresVacation()) continue;
                 if (!a.appliesTo(d, rule, overtime)) continue;
-                LocalDateTime when = LocalDateTime.of(d, a.timeOn(d, rule));
+                int minutes = a.timeOn(d, rule, overtimes.contains(d));
+                if (minutes == Alarm.NO_TIME) continue;
+                LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
                 if (!when.isAfter(from)) continue;
                 if (best == null || when.isBefore(best.when)) {
                     best = new NextAlarm(when, a.label, a.id);

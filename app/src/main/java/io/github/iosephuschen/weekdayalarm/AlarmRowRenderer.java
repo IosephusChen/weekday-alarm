@@ -77,14 +77,43 @@ final class AlarmRowRenderer {
      * 行是代码里 new 出来的，没有 id 也没有 tag，从外面认不出哪个是时间。
      */
     static List<Alarm> sortedByTime(List<Alarm> raw) {
+        return sortedByTime(raw, null, LocalDate.now(), false);
+    }
+
+    /**
+     * 按**指定那天实际会响的时刻**排序（v1.7.1）。
+     *
+     * <p>旧版按闹钟自带的固定时刻排，而跟班表的闹钟行里画的是今天真实时刻——
+     * 于是 19:30 那条排在 07:30 下面，看着像排序坏了。今天不响的（跟班表但今天休息）
+     * 一律沉底：用户关心的是「今天几点响」，不响的排哪儿都不对。
+     */
+    static List<Alarm> sortedByTime(List<Alarm> raw, WeekSchedule.Rule rule, LocalDate day) {
+        return sortedByTime(raw, rule, day, false);
+    }
+
+    static List<Alarm> sortedByTime(List<Alarm> raw, WeekSchedule.Rule rule, LocalDate day,
+                                    boolean overtime) {
         List<Alarm> list = new ArrayList<>(raw);
         // List.sort 是稳定排序：同一时刻的两条闹钟保持原有（创建）顺序
-        list.sort(Comparator.comparingInt(a -> a.hour * 60 + a.minute));
+        list.sort(Comparator.comparingInt(a -> sortKey(a, rule, day, overtime)));
         return list;
     }
 
+    private static int sortKey(Alarm a, WeekSchedule.Rule rule, LocalDate day, boolean overtime) {
+        boolean follows = a.timeFromRule(rule);
+        // 今天不响的沉底：要么今天休息，要么班次不匹配
+        if (follows && !a.appliesTo(day, rule, overtime)) return Integer.MAX_VALUE;
+        int m = a.timeOn(day, rule, overtime);
+        return m == Alarm.NO_TIME ? Integer.MAX_VALUE : m;
+    }
+
     void render(List<Alarm> raw) {
-        List<Alarm> alarms = sortedByTime(raw);
+        // v1.6.0：时间跟随班表的闹钟，每天的时刻不同，列表要按「今天实际会响的」画。
+        // 只在渲染前读一次：这是模态改动不到的东西，每行反序列化一遍浪费
+        final WeekSchedule.Rule globalRule = Prefs.getRule(activity);
+        final LocalDate today = LocalDate.now();
+        final boolean overtimeToday = Prefs.isOvertime(activity, today);
+        List<Alarm> alarms = sortedByTime(raw, globalRule, today, overtimeToday);
 
         container.removeAllViews();
         float density = activity.getResources().getDisplayMetrics().density;
@@ -100,10 +129,6 @@ final class AlarmRowRenderer {
         int timeW = (int) Math.ceil(Math.max(probe.getPaint().measureText("00:00"),
                 probe.getPaint().measureText("88:88"))) + 1;
         int timeGap = (int) (14 * density);
-
-        // v1.6.0：时间跟随班表的闹钟，每天的时刻不同，列表要按「今天实际会响的」画。
-        // 只在渲染前读一次：这是模态改动不到的东西，每行反序列化一遍浪费
-        final WeekSchedule.Rule globalRule = Prefs.getRule(activity);
 
         if (alarms.isEmpty()) {
             LinearLayout box = new LinearLayout(activity);
@@ -173,7 +198,6 @@ final class AlarmRowRenderer {
 
             // 被「这次不响」跳过的那一天（v0.91.8）。只认今天和明天——
             // 更远的跳过还看不见摸不着，提前在列表里挂一句只会让人以为闹钟坏了。
-            final LocalDate today = LocalDate.now();
             LocalDate skipDay = null;
             if (a.enabled) {
                 if (Prefs.isSkippedOn(activity, a.id, today)) skipDay = today;
@@ -185,14 +209,20 @@ final class AlarmRowRenderer {
             TextView time = new TextView(activity);
             // 跟随班表的按今天实际时刻画：还写着闹钟自己的 07:30 而实际 19:30 响，
             // 是这个功能最容易让人以为「没生效」的地方
-            LocalTime when = a.timeOn(today, globalRule);
-            time.setText(TimeText.clock(when.getHour(), when.getMinute()));
+            //
+            // v1.7.1：跟班表但今天休息的，不能画那个「不会响的时刻」——`timeOn` 取不到
+            // 班表值时会退回闹钟自己的固定时刻，那个数谁也没设过，画出来像是今晚要响。
+            boolean follows = a.timeFromRule(globalRule);
+            boolean resting = follows && !a.appliesTo(today, globalRule, overtimeToday);
+            int whenMin = a.timeOn(today, globalRule, overtimeToday);
+            boolean noTime = whenMin == Alarm.NO_TIME;
+            time.setText(resting || noTime ? "—" : TimeText.clockOfMinutes(whenMin));
             // v0.74.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
             // 「灰不灰」这一个维度表达有没有开就够了
             //
             // v0.91.8：跳过的那一天也降成灰的。这一行的「不响」是临时的，
             // 时间灰掉正好表达「这次弱化」，而名称仍是深色——整行不塌成灰色。
-            time.setTextColor(skipDay != null
+            time.setTextColor(skipDay != null || resting
                     ? ContextCompat.getColor(activity, R.color.sub) : titleColor);
             time.setTextSize(26);
             time.setTypeface(TYPEFACE_MEDIUM);
@@ -238,11 +268,11 @@ final class AlarmRowRenderer {
             // v1.7.0：时间由「我的班表」决定时标一下。和「静音」同一套写法——
             // 接在规则后面，不另起一行、不加图标。同一条闹钟明天可能换个点响，
             // 不说一句用户会以为是 App 自己乱来
-            if (a.timeFromRule(globalRule)) {
+            if (follows) {
                 line.append(" · ");
                 int from = line.length();
-                line.append("跟班表");
-                if (a.enabled) {
+                line.append(resting ? "今天休息" : "跟班表");
+                if (a.enabled && !resting) {
                     line.setSpan(new ForegroundColorSpan(
                                     ContextCompat.getColor(activity, R.color.indigo)),
                             from, line.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -311,9 +341,10 @@ final class AlarmRowRenderer {
             SwitchKit.style(activity, sw);
             // 无障碍（v0.45.0）：TalkBack 默认只读「开关，已开启」，不说是哪一条；
             // v0.90.0 再加「静音」——否则视障用户看不出这条闹钟到点不会响
-            sw.setContentDescription(TimeText.clock(when.getHour(), when.getMinute())
-                    + " " + a.label
-                    + (a.timeFromRule(globalRule) ? " 跟班表" : "")
+            sw.setContentDescription((resting || noTime
+                    ? a.label + " 今天休息"
+                    : TimeText.clockOfMinutes(whenMin) + " " + a.label
+                            + (follows ? " 跟班表" : ""))
                     + (a.silent ? " 静音" : "") + " 闹钟开关");
             // setChecked 必须在 setOnCheckedChangeListener 之前：初始回写不触发用户逻辑
             sw.setChecked(a.enabled);

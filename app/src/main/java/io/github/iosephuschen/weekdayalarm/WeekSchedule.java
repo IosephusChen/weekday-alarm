@@ -124,6 +124,21 @@ public final class WeekSchedule {
          */
         public final int[] cycleTimes;
 
+        /**
+         * v1.8.0：循环里每天是哪个班次的 id，{@code -1} = 休息。
+         *
+         * <p>与 {@link #cycleMask} 分工：mask 只答「上不上班」，这里答「上哪个班」。
+         * 两者必须同步写入（见 {@code Prefs#setShiftCycle}），不合并是因为
+         * {@link #dayType} / 日历 / 小组件都只关心前半句，让它们继续读 mask
+         * 就一行都不用改。
+         *
+         * <p>{@code null} = 没有班次表（双休 / 单休 / 大小周 / 老的自定义）。
+         */
+        public final int[] shiftCycle;
+
+        /** v1.8.0：可选的班次定义；{@link #shiftCycle} 里的 id 指向它。{@code null} = 没有。 */
+        public final Shift[] shifts;
+
         /** 循环模式下是否跟随法定节假日与调休补班。默认 false——轮班的人春节照上班。 */
         public final boolean cycleHoliday;
 
@@ -131,12 +146,20 @@ public final class WeekSchedule {
         public static final int MAX_CYCLE_LEN = 62;
 
         public Rule(Mode mode, LocalDate anchor, boolean smallRestSat) {
-            this(mode, anchor, smallRestSat, 0, 0L, null, null, false);
+            this(mode, anchor, smallRestSat, 0, 0L, null, null, false, null, null);
         }
 
         public Rule(Mode mode, LocalDate anchor, boolean smallRestSat,
                     int cycleLen, long cycleMask, LocalDate cycleStart,
                     int[] cycleTimes, boolean cycleHoliday) {
+            this(mode, anchor, smallRestSat, cycleLen, cycleMask, cycleStart,
+                    cycleTimes, cycleHoliday, null, null);
+        }
+
+        public Rule(Mode mode, LocalDate anchor, boolean smallRestSat,
+                    int cycleLen, long cycleMask, LocalDate cycleStart,
+                    int[] cycleTimes, boolean cycleHoliday,
+                    int[] shiftCycle, Shift[] shifts) {
             this.mode = mode == null ? Mode.BIG_SMALL : mode;
             this.anchor = anchor;
             this.smallRestSat = smallRestSat;
@@ -148,6 +171,19 @@ public final class WeekSchedule {
             this.cycleStart = cycleStart == null ? LocalDate.now() : cycleStart;
             this.cycleTimes = cycleTimes;
             this.cycleHoliday = cycleHoliday;
+            this.shiftCycle = (shiftCycle != null && shiftCycle.length == Math.max(1, cycleLen))
+                    ? shiftCycle : null;
+            this.shifts = (this.shiftCycle == null || shifts == null || shifts.length == 0)
+                    ? null : shifts;
+        }
+
+        /** 按 id 找班次；找不到返回 null（班次被删了，那天就当作没有班）。 */
+        public Shift shiftById(int id) {
+            if (shifts == null) return null;
+            for (Shift s : shifts) {
+                if (s != null && s.id == id) return s;
+            }
+            return null;
         }
 
         public static Rule bigSmall(LocalDate anchor, boolean smallRestSat) {
@@ -310,11 +346,33 @@ public final class WeekSchedule {
      * 后一种是自定义的常态——时间由每个闹钟自己定。
      */
     public static int cycleTimeOf(LocalDate d, Rule rule) {
+        if (rule == null) return -1;
+        // v1.8.0：有班次表就按班次算，逐日时刻（cycleTimes）退回备用
+        if (rule.shiftCycle != null) {
+            Shift s = shiftOn(d, rule);
+            return s == null ? -1 : s.start;
+        }
         if (rule.cycleTimes == null) return -1;
         if (!isCycleWorkday(d, rule)) return -1;
         int idx = cycleIndex(d, rule);
         if (idx < 0 || idx >= rule.cycleTimes.length) return -1;
         return rule.cycleTimes[idx];
+    }
+
+    /**
+     * 这天是哪个班次（v1.8.0）；休息日、法定节假日、或被删掉的班次返回 {@code null}。
+     *
+     * <p>「节假日也算没有班」是有意的：轮班的人选中「跟随法定节假日」后，春节那天
+     * 没有班，挂班次的闹钟就该一起不响。这个判断和 {@link #isWorkday} 共用同一个
+     * 真相源，两处不会打架。
+     */
+    public static Shift shiftOn(LocalDate d, Rule rule) {
+        if (rule == null || rule.shiftCycle == null || rule.shifts == null) return null;
+        if (!isWorkday(d, rule)) return null;
+        int idx = cycleIndex(d, rule);
+        if (idx < 0 || idx >= rule.shiftCycle.length) return null;
+        int id = rule.shiftCycle[idx];
+        return id < 0 ? null : rule.shiftById(id);
     }
 
     /** 该日期是否上班。 */

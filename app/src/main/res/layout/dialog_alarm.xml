@@ -123,6 +123,44 @@
         android:layout_marginTop="8dp"
         android:orientation="vertical" />
 
+    <!-- v1.8.0：选「跟随我的班表」且班表里已经建了班次时出现。
+         这一行取代了原来「时间由班表决定」那句只读说明——用户要改的不是「跟不跟」，
+         而是「跟哪几个班、提前多久」。 -->
+    <LinearLayout
+        android:id="@+id/row_shift_follow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_dialog_row"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_shift_follow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="白班、夜班 · 开始前 1 小时 30 分"
+            android:textColor="@color/indigo"
+            android:textSize="13.5sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="改 ›"
+            android:textColor="@color/sub"
+            android:textSize="12.5sp" />
+    </LinearLayout>
+
     <!-- v1.2.0：选中「轮班」「自定义」才出现的班表摘要。
          卡片本身只负责「选中」，真正的周期和逐日开关在这个入口后面——
          六张卡已经占掉大半屏，再往下摊一张 62 行的表就没法用了。 -->

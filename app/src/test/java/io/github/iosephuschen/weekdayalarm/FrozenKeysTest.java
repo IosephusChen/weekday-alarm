@@ -41,6 +41,10 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_CYCLE_TIMES", "cycle_times");
         PREFS_KEYS.put("KEY_CYCLE_HOLIDAY", "cycle_holiday");
         PREFS_KEYS.put("KEY_CYCLE_KIND", "cycle_kind");
+        // v1.8.0 班次表。这两个必须稳定：前者是用户建的班次（名字 / 起止），
+        // 后者是「每天哪个班」。改名等于让所有轮班用户重排一遍班。
+        PREFS_KEYS.put("KEY_SHIFT_DEFS", "shift_defs");
+        PREFS_KEYS.put("KEY_SHIFT_CYCLE", "shift_cycle");
         PREFS_KEYS.put("KEY_WEEK_START", "week_start");
         PREFS_KEYS.put("KEY_ALARM_HOUR", "alarm_hour");
         PREFS_KEYS.put("KEY_ALARM_MIN", "alarm_min");

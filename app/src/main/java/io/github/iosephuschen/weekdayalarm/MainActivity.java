@@ -748,7 +748,9 @@ public class MainActivity extends AppCompatActivity {
             tvTodayLunar.setVisibility(View.VISIBLE);
         }
         tvWeekChip.setText(TodayCard.chipText(rule, today));
-        tvTodayStatus.setText(TodayCard.statusText(vacation, overtime, work));
+        Shift todayShift = work && !vacation && !overtime ? WeekSchedule.shiftOn(today, rule) : null;
+        tvTodayStatus.setText(TodayCard.statusText(vacation, overtime, work,
+                todayShift == null ? null : todayShift.name));
         // v0.30.0：倒计时和「下一个 / 下次」都改用 ScheduleManager.nextRing 统一计算。
         // 旧写法有两个洞：
         // ① 只算「今天 + 今天算上班」——休息日里设了「每天」闹钟、节假日里设了「每天」闹钟，

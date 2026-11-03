@@ -96,17 +96,29 @@ public final class BedtimeReminder {
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         boolean overtime = Prefs.isOvertime(ctx, tomorrow);
         Alarm first = null;
+        int firstMinute = -1;
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
             if (!a.appliesTo(tomorrow, rule, overtime)) continue;
-            if (first == null || a.hour * 60 + a.minute < first.hour * 60 + first.minute) {
+            // v1.7.1：按**明天实际会响的时刻**比，不是闹钟自己的固定时刻。
+            // 跟班表的闹钟明天 22:00 上班，通知却写「明早 07:30 会响」——
+            // 这正是这个提醒最该说准的地方
+            //
+            // v1.8.0：timeOn 返回分钟的 int，NO_TIME 表示那天不响
+            int m = a.timeOn(tomorrow, rule, overtime);
+            if (m == Alarm.NO_TIME) continue;
+            if (first == null || m < firstMinute) {
                 first = a;
+                firstMinute = m;
             }
         }
         boolean hasAlarm = first != null && !vacation;
         String label = first != null ? first.label : "";
-        int hour = first != null ? first.hour : 0;
-        int minute = first != null ? first.minute : 0;
+        // 归一化到 00:00~23:59：提前量跨到前一天时 firstMinute 是负的，
+        // 直接 /60 会得出 -1 点
+        int shown = first != null ? Math.floorMod(firstMinute, 1440) : 0;
+        int hour = shown / 60;
+        int minute = shown % 60;
 
         boolean notify = Prefs.isBedtimeWorkdayOnly(ctx) ? workday : true;
 

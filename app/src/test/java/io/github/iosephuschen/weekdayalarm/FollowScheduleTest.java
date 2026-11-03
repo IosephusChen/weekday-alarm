@@ -77,30 +77,38 @@ public class FollowScheduleTest {
     @Test
     public void workday_readsTimeOfThatDay() {
         WeekSchedule.Rule g = cycleRule();
-        assertEquals(LocalTime.of(8, 0), workday().timeOn(START, g));
-        assertEquals(LocalTime.of(20, 0), workday().timeOn(START.plusDays(1), g));
+        assertEquals("08:00", TimeText.clockOfMinutes(workday().timeOn(START, g)));
+        assertEquals("20:00", TimeText.clockOfMinutes(workday().timeOn(START.plusDays(1), g)));
     }
 
     @Test
     public void workday_wrapsAroundCycle() {
         // 第 5 天回到循环第 1 天：8:00，不是「第 5 个时间」
-        assertEquals(LocalTime.of(8, 0), workday().timeOn(START.plusDays(4), cycleRule()));
+        assertEquals("08:00", TimeText.clockOfMinutes(workday().timeOn(START.plusDays(4), cycleRule())));
     }
 
     /** 起点之前的日期也要算对：Math.floorMod 保证下标非负。 */
     @Test
     public void workday_handlesDaysBeforeStart() {
-        // START 前 2 天 = 循环第 3 天（休），回退到 7:30
-        assertEquals(LocalTime.of(7, 30), workday().timeOn(START.minusDays(2), cycleRule()));
-        // START 前 1 天 = 循环第 4 天（休），同样回退
-        assertEquals(LocalTime.of(7, 30), workday().timeOn(START.minusDays(1), cycleRule()));
+        // START 前 2 天 = 循环第 3 天（休）；前 1 天 = 第 4 天（休）。
+        // v1.8.0 起休息日不再退回自己的时刻——那个时刻谁也没设过
+        assertEquals(Alarm.NO_TIME, workday().timeOn(START.minusDays(2), cycleRule()));
+        assertEquals(Alarm.NO_TIME, workday().timeOn(START.minusDays(1), cycleRule()));
+        // 第 5 天回到第 1 天（班），仍取得到
+        assertEquals("08:00", TimeText.clockOfMinutes(workday().timeOn(START.plusDays(4), cycleRule())));
     }
 
     // ================= 取不到时间就回退 =================
 
+    /**
+     * v1.8.0 改了结论：休息日不再「退回自己的时刻」。
+     *
+     * <p>旧行为是「宁可响在旧时刻」，但那个旧时刻谁也没为这一天设过——07:30 是
+     * 这条闹钟在别处用的数。跟班表的人休息日就该不响，这正是他要的。
+     */
     @Test
-    public void restDay_fallsBackToOwnTime() {
-        assertEquals(LocalTime.of(7, 30), workday().timeOn(START.plusDays(2), cycleRule()));
+    public void restDay_isNoTime() {
+        assertEquals(Alarm.NO_TIME, workday().timeOn(START.plusDays(2), cycleRule()));
     }
 
     @Test
@@ -108,15 +116,15 @@ public class FollowScheduleTest {
         // 上班但那天没填时间（-1）：不能因此不响
         WeekSchedule.Rule g = WeekSchedule.Rule.cycle(2, 0b11L, START,
                 new int[]{-1, 9 * 60}, false);
-        assertEquals(LocalTime.of(7, 30), workday().timeOn(START, g));
-        assertEquals(LocalTime.of(9, 0), workday().timeOn(START.plusDays(1), g));
+        assertEquals("07:30", TimeText.clockOfMinutes(workday().timeOn(START, g)));
+        assertEquals("09:00", TimeText.clockOfMinutes(workday().timeOn(START.plusDays(1), g)));
     }
 
     @Test
     public void nonCycleRule_fallsBack() {
         // 双休的班表里没有「每天不同的时间」，只能按自己的时间响
         WeekSchedule.Rule g = new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST, START, false);
-        assertEquals(LocalTime.of(7, 30), workday().timeOn(START, g));
+        assertEquals("07:30", TimeText.clockOfMinutes(workday().timeOn(START, g)));
     }
 
     // ================= 其他模式不吃班表时刻（v1.7.0 的关键边界）=================
@@ -130,15 +138,15 @@ public class FollowScheduleTest {
     @Test
     public void daily_usesOwnTime() {
         Alarm a = new Alarm(1, 6, 45, "吃药", Alarm.Mode.DAILY, true);
-        assertEquals(LocalTime.of(6, 45), a.timeOn(START, cycleRule()));
-        assertEquals(LocalTime.of(6, 45), a.timeOn(START.plusDays(1), cycleRule()));
+        assertEquals("06:45", TimeText.clockOfMinutes(a.timeOn(START, cycleRule())));
+        assertEquals("06:45", TimeText.clockOfMinutes(a.timeOn(START.plusDays(1), cycleRule())));
     }
 
     /** 「仅休息日」那天班表根本没时刻，读它必然空转——这条就是 6.1 里那条 S1。 */
     @Test
     public void weekend_usesOwnTime() {
         Alarm a = new Alarm(1, 21, 0, "周末", Alarm.Mode.WEEKEND, true);
-        assertEquals(LocalTime.of(21, 0), a.timeOn(START.plusDays(2), cycleRule()));
+        assertEquals("21:00", TimeText.clockOfMinutes(a.timeOn(START.plusDays(2), cycleRule())));
     }
 
     @Test
@@ -146,7 +154,7 @@ public class FollowScheduleTest {
         Alarm a = new Alarm(1, 6, 45, "吃药", Alarm.Mode.CUSTOM, true);
         a.applyOwnRule(WeekSchedule.Rule.cycle(7, 0b0011111L, START, null, true));
         // 自带班表只存了上不上班，没有逐日时间——读全局那张就会串到别人的作息
-        assertEquals(LocalTime.of(6, 45), a.timeOn(START, cycleRule()));
+        assertEquals("06:45", TimeText.clockOfMinutes(a.timeOn(START, cycleRule())));
     }
 
     // ================= 编辑页：谁来读班表 =================
@@ -209,7 +217,7 @@ public class FollowScheduleTest {
 
         List<Alarm> back = Alarm.fromJson(arr.toString());
         assertEquals(1, back.size());
-        assertEquals(LocalTime.of(8, 0), back.get(0).timeOn(START, cycleRule()));
+        assertEquals("08:00", TimeText.clockOfMinutes(back.get(0).timeOn(START, cycleRule())));
     }
 
     /**
@@ -233,6 +241,6 @@ public class FollowScheduleTest {
         arr.put(o);
 
         List<Alarm> back = Alarm.fromJson(arr.toString());
-        assertEquals(LocalTime.of(6, 45), back.get(0).timeOn(START, cycleRule()));
+        assertEquals("06:45", TimeText.clockOfMinutes(back.get(0).timeOn(START, cycleRule())));
     }
 }

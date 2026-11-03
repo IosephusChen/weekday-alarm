@@ -296,8 +296,12 @@ public class GuideActivity extends AppCompatActivity {
         if (rotation) {
             WeekSchedule.Rule rule = Prefs.getRule(this);
             tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
-            tvRotationSub.setText(Prefs.isCycleHoliday(this)
-                    ? "春节、国庆按放假跳过" : "春节也照上班");
+            // v1.8.0：班次建了没有、排了几天，在这一行说清；没有班次时直接指路
+            java.util.List<Shift> shifts = Prefs.getShifts(this);
+            String summary = WeekScheduleActivity.shiftsSummary(shifts);
+            tvRotationSub.setText(summary == null
+                    ? "还没建班次。点这里建一个「白班 08:00 – 20:00」。"
+                    : summary + (Prefs.isCycleHoliday(this) ? " · 按放假跳过" : " · 照常上班"));
             return;
         }
 
@@ -388,9 +392,28 @@ public class GuideActivity extends AppCompatActivity {
         ScheduleSave.apply(this, r);
     }
 
-    /** 打开轮班编辑器（N 天一轮）。保存后回到这一页重新展开。 */
+    /**
+     * 打开轮班编辑（v1.8.0：先有班次，再排循环）。保存后回到这一页重新展开。
+     *
+     * <p>还没有班次时先跳去建班次：空表上排不出东西，而「上二休二」这类人
+     * 第一步本来就该说清「白班几点到几点」。
+     */
     private void openRotation() {
-        CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, this::reloadWeek);
+        if (!Prefs.getShifts(this).isEmpty()) {
+            ShiftCycleSheet.show(this, this::reloadWeek);
+            return;
+        }
+        // 第一次进来：先建班次。点「完成」后直接切到轮班模式并接着排循环——
+        // 让用户自己再点一次「我是几天一轮的班」，等于把刚说的话再问一遍
+        ShiftBookDialog.show(this, () -> {
+            if (Prefs.getShifts(this).isEmpty()) {
+                reloadWeek();
+                return;
+            }
+            Prefs.setWeekMode(this, WeekSchedule.Mode.CYCLE);
+            Prefs.setCycleKind(this, Prefs.CYCLE_KIND_ROTATION);
+            ShiftCycleSheet.show(this, this::reloadWeek);
+        });
     }
 
     /**

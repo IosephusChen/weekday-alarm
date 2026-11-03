@@ -123,6 +123,8 @@ final class AlarmEditor {
         TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
         View boxTime = view.findViewById(R.id.box_alarm_time);
         TextView tvSource = view.findViewById(R.id.tv_alarm_time_source);
+        View rowShiftFollow = view.findViewById(R.id.row_shift_follow);
+        TextView tvShiftFollow = view.findViewById(R.id.tv_shift_follow);
 
         // v0.88.0：这条闹钟单独用的铃声。null = 跟随「设置 → 铃声」，
         // 新建时不把当时的默认铃声抄进来——否则以后改默认，这条不跟着变（见 Alarm.ringtone）
@@ -171,6 +173,15 @@ final class AlarmEditor {
          */
         final WeekSchedule.Rule global = Prefs.getRule(activity);
 
+        /**
+         * v1.8.0：这条闹钟挂在哪些班次、相对开始偏移多少。
+         *
+         * <p>只在「跟随我的班表」+ 班表里已经建了班次时才露出来。双休、单休的用户
+         * 永远看不到这一行——这是「复杂只对需要它的人出现」的落点。
+         */
+        final int[][] followIds = {target != null ? target.shiftIds : null};
+        final int[] followOffset = {target != null ? target.offsetMin : -90};
+
         /** 摘要行的显隐与文案：只在选中「轮班」「自定义」时出现。 */
         final Runnable[] refreshOwn = new Runnable[1];
         refreshOwn[0] = () -> {
@@ -212,18 +223,23 @@ final class AlarmEditor {
          */
         final Runnable[] refreshTime = new Runnable[1];
         refreshTime[0] = () -> {
+            boolean onShifts = follows(sel[0], global) && global.shiftCycle != null;
+            rowShiftFollow.setVisibility(onShifts ? View.VISIBLE : View.GONE);
+            if (onShifts) {
+                tvShiftFollow.setText(shiftFollowText(global, followIds[0], followOffset[0]));
+            }
             if (!follows(sel[0], global)) {
                 tvTime.setText(TimeText.clock(hour[0], minute[0]));
                 tvSource.setVisibility(View.GONE);
                 return;
             }
             LocalDate today = LocalDate.now();
-            int now = WeekSchedule.cycleTimeOf(today, global);
-            int next = WeekSchedule.cycleTimeOf(today.plusDays(1), global);
-            if (now >= 0) {
-                tvTime.setText(TimeText.clock(now / 60, now % 60));
-                tvSource.setText(next >= 0
-                        ? "明天 " + TimeText.clock(next / 60, next % 60) + " · 由「我的班表」决定"
+            int now = previewTime(today, global, followIds[0], followOffset[0]);
+            int next = previewTime(today.plusDays(1), global, followIds[0], followOffset[0]);
+            if (now != Alarm.NO_TIME) {
+                tvTime.setText(TimeText.clockOfMinutes(now));
+                tvSource.setText(next != Alarm.NO_TIME
+                        ? "明天 " + TimeText.clockOfMinutes(next) + " · 由「我的班表」决定"
                         : "明天休息 · 由「我的班表」决定");
             } else {
                 // 今天不上班：大字退回它自己的时刻，小字说清今天不响，
@@ -234,6 +250,16 @@ final class AlarmEditor {
             tvSource.setVisibility(View.VISIBLE);
         };
         refreshTime[0].run();
+
+        rowShiftFollow.setOnClickListener(v -> {
+            if (global.shifts == null || global.shifts.length == 0) return;
+            ShiftPickDialog.show(activity, java.util.Arrays.asList(global.shifts),
+                    followIds[0], followOffset[0], (ids, off) -> {
+                        followIds[0] = ids;
+                        followOffset[0] = off;
+                        refreshTime[0].run();
+                    });
+        });
 
         // 自绘「时 / 分」双列滚轮选择器：澎湃 OS 会无视框架 TimePicker 的 spinner
         // 主题设置、强制渲染成表盘拨轮，因此不再依赖 TimePickerDialog
@@ -401,12 +427,20 @@ final class AlarmEditor {
                                 true, onceStr);
                         created.ringtone = ringtoneString(ring[0]);
                         created.silent = silent[0];
+                        if (mode == Alarm.Mode.WORKDAY) {
+                            created.shiftIds = followIds[0];
+                            created.offsetMin = followOffset[0];
+                        }
                         if (ownRule != null) created.applyOwnRule(ownRule);
                         alarms.add(created);
                     } else {
                         // 铃声不属于「改完就开」那套业务规则，直接写字段即可
                         target.ringtone = ringtoneString(ring[0]);
                         target.silent = silent[0];
+                        // v1.8.0：切回「每天」「仅休息日」时把挂靠关系清掉，
+                        // 否则数据里留着一条指向班次的线，下次切回来会莫名其妙生效
+                        target.shiftIds = mode == Alarm.Mode.WORKDAY ? followIds[0] : null;
+                        target.offsetMin = mode == Alarm.Mode.WORKDAY ? followOffset[0] : 0;
                         // v0.91.8：改了时间就把这一轮的小睡、计数、那条「N 分钟后再次响铃」
                         // 通知一起作废。原来一样都不清，于是真机上出现了：通知栏同时挂着
                         // 「12:41 再次响铃」和「即将响铃 12:38」，12:38 响的时候全屏页
@@ -558,9 +592,49 @@ final class AlarmEditor {
      * {@link Alarm#timeOn} 每次都会退回自己的时间。
      */
     static boolean canFollow(WeekSchedule.Rule g) {
-        if (g == null || !g.mode.isCycle() || g.cycleTimes == null) return false;
+        if (g == null || !g.mode.isCycle()) return false;
+        // v1.8.0：班次表成立就算能跟，不再依赖「逐日时刻」——那套字段只服务老数据
+        if (g.shiftCycle != null && g.shifts != null && g.shifts.length > 0) return true;
+        if (g.cycleTimes == null) return false;
         for (int m : g.cycleTimes) if (m >= 0) return true;
         return false;
+    }
+
+    /**
+     * 今天这条闹钟按班次几点响（v1.8.0）；{@link Alarm#NO_TIME} 表示今天不响。
+     *
+     * <p>和 {@code Alarm.timeOn} 同一条算法，只是这条闹钟还没落盘（新建时），
+     * 不能为了预览先造一个 Alarm 对象。
+     */
+    static int previewTime(LocalDate d, WeekSchedule.Rule g, int[] ids, int offset) {
+        Shift s = WeekSchedule.shiftOn(d, g);
+        if (s == null) return Alarm.NO_TIME;
+        if (ids != null && ids.length > 0) {
+            boolean hit = false;
+            for (int id : ids) if (id == s.id) hit = true;
+            if (!hit) return Alarm.NO_TIME;
+        }
+        return s.start + offset;
+    }
+
+    /** 「白班、夜班 · 开始前 1 小时 30 分」——一行说清跟谁、差多久。 */
+    static String shiftFollowText(WeekSchedule.Rule g, int[] ids, int offset) {
+        StringBuilder sb = new StringBuilder();
+        if (g == null || g.shifts == null) return sb.append("全部班次").toString();
+        if (ids == null || ids.length == 0) {
+            sb.append("全部班次");
+        } else {
+            int i = 0;
+            for (Shift s : g.shifts) {
+                boolean hit = false;
+                for (int id : ids) if (id == s.id) hit = true;
+                if (!hit) continue;
+                if (i > 0) sb.append("、");
+                sb.append(s.name);
+                i++;
+            }
+        }
+        return sb.append(" · ").append(ShiftPickDialog.offsetText(offset)).toString();
     }
 
     /**

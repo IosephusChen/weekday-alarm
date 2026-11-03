@@ -122,6 +122,26 @@ public final class Alarm {
     public boolean silent;
 
     /**
+     * 这条闹钟挂在哪些班次上（v1.8.0）；{@code null} / 空数组 = 不跟轮班。
+     *
+     * <p>一条闹钟可以同时管白班和夜班（都勾上），这样「开始前 1 小时 30 分」
+     * 只写一遍，白班那天 06:30、夜班那天 18:30 自动各响各的——这正是用户
+     * 2026-11-03 说的「明天我上夜班」的落地方式。
+     *
+     * <p>休息日没有班次，这条自然不响；不需要再定义「休息日响不响」。
+     */
+    public int[] shiftIds;
+
+    /**
+     * 相对班次<b>开始</b>时刻的偏移（分钟，v1.8.0）。
+     *
+     * <p>负值 = 提前（起床），正值 = 延后（午休结束、下班）。
+     * 只锚定「开始」，不锚定「结束」：下班不用提醒，提醒也没有可执行的动作
+     * （用户 2026-11-03 定，见 {@code docs/项目状态.md} 6.1 D 节）。
+     */
+    public int offsetMin;
+
+    /**
      * 这条闹钟在 {@code d} 这天的响铃时刻（v1.7.0）。
      *
      * <p>只有 {@link Mode#WORKDAY} 会读班表的逐日时间——「跟随我的班表」这四个字
@@ -138,23 +158,75 @@ public final class Alarm {
      * 逐日时间，那些用户一直走的是回退分支，行为与 v1.5.0 逐字一致。
      */
     /**
-     * 这条闹钟的时间是否由 {@code rule} 的逐日时刻决定（v1.7.0）。
+     * 这条闹钟的时间是否由 {@code rule} 决定（v1.7.0，v1.8.0 扩到班次）。
      *
      * <p>列表和编辑页都要回答「这条跟不跟班表」，判定必须只有一处，
      * 否则总有一边先对不上。
      */
     public boolean timeFromRule(WeekSchedule.Rule rule) {
-        if (mode != Mode.WORKDAY || rule == null || rule.cycleTimes == null) return false;
+        if (mode != Mode.WORKDAY || rule == null) return false;
+        if (rule.shiftCycle != null && shiftIds != null && shiftIds.length > 0) return true;
+        if (rule.cycleTimes == null) return false;
         for (int m : rule.cycleTimes) if (m >= 0) return true;
         return false;
     }
 
-    public LocalTime timeOn(LocalDate d, WeekSchedule.Rule rule) {
-        if (mode == Mode.WORKDAY) {
+    /** {@link #timeOn} 的「这天不响」。不能用 -1：提前量跨到前一天时，-1 是合法时刻。 */
+    public static final int NO_TIME = Integer.MIN_VALUE;
+
+    /**
+     * 这条闹钟在 {@code d} 这天的响铃时刻（v1.8.0 改为返回分钟数）。
+     *
+     * <p><b>为什么不再返回 {@code LocalTime}</b>：班次 00:30、提前 1 小时 30 分落在
+     * 前一天 23:00；班次 20:00、开始后 4 小时 30 分落在次日 00:30。两头都装不进
+     * 一个「一天之内」的类型。返回「当天第几分钟」并允许负值与 ≥1440，
+     * 调用方一律用 {@code plusMinutes} 落地，正负都吃得下，不用分支。
+     *
+     * @return 当天第几分钟；{@link #NO_TIME} 表示这天不响
+     */
+    public int timeOn(LocalDate d, WeekSchedule.Rule rule) {
+        return timeOn(d, rule, false);
+    }
+
+    /**
+     * @param overtime 这天是否被个人标为「加班」。休息日标加班后，跟班表的闹钟照响——
+     *                 但那天没有班次，时刻只能退回自己的 {@code hour/minute}
+     *                 （挂了班次的退到第一个勾选的班次）。这是 v1.8.0 的已知边界，
+     *                 正解是「这天加哪个班」，见 {@code docs/项目状态.md} 6.1 H。
+     */
+    public int timeOn(LocalDate d, WeekSchedule.Rule rule, boolean overtime) {
+        if (mode == Mode.WORKDAY && rule != null) {
+            if (rule.shiftCycle != null) {
+                Shift s = WeekSchedule.shiftOn(d, rule);
+                if (s == null) {
+                    if (!overtime) return NO_TIME;
+                    if (shiftIds == null || shiftIds.length == 0) return hour * 60 + minute;
+                    s = rule.shiftById(shiftIds[0]);
+                    if (s == null) return NO_TIME;
+                } else if (shiftIds != null && shiftIds.length > 0 && !containsShift(shiftIds, s.id)) {
+                    return NO_TIME;
+                }
+                return s.start + offsetMin;
+            }
             int m = WeekSchedule.cycleTimeOf(d, rule);
-            if (m >= 0) return LocalTime.of(m / 60, m % 60);
+            if (m >= 0) return m;
+            // 老路径（逐日时刻）分两种情况：上班但那天没填时刻 → 退回自己的数；
+            // 休息日 → 不响。两者 cycleTimeOf 都返回 -1，必须再判一次，
+            // 否则休息日会响在一个谁也没为这天设过的时刻上
+            if (!WeekSchedule.isWorkday(d, rule) && !overtime) return NO_TIME;
         }
-        return LocalTime.of(hour, minute);
+        return hour * 60 + minute;
+    }
+
+    private static boolean containsShift(int[] ids, int id) {
+        for (int v : ids) if (v == id) return true;
+        return false;
+    }
+
+    /** 这条闹钟是不是「挂在班次上」的（v1.8.0）。 */
+    public boolean followsShifts(WeekSchedule.Rule rule) {
+        return mode == Mode.WORKDAY && rule != null && rule.shiftCycle != null
+                && shiftIds != null && shiftIds.length > 0;
     }
 
     /** 把任意整数收敛到合法的配色下标。 */
@@ -449,7 +521,17 @@ public final class Alarm {
                 return WeekSchedule.isWorkday(d, r) || overtime;
             case WORKDAY:
             default:
-                return WeekSchedule.isWorkday(d, r) || overtime;
+                if (!(WeekSchedule.isWorkday(d, r) || overtime)) return false;
+                // v1.8.0：挂了班次的还要看「这天是不是我勾的那几个班」。
+                // 不判这一句，一条只勾白班的午休闹钟会在夜班那天也响
+                if (rule != null && rule.shiftCycle != null
+                        && shiftIds != null && shiftIds.length > 0) {
+                    Shift s = WeekSchedule.shiftOn(d, rule);
+                    // 加班日没有班次：放行，时刻在 timeOn 里退到第一个勾选的班次
+                    if (s == null) return overtime;
+                    return containsShift(shiftIds, s.id);
+                }
+                return true;
         }
     }
 
@@ -485,6 +567,14 @@ public final class Alarm {
                     o.put("cycleMask", a.cycleMask);
                     if (a.cycleStart != null) o.put("cycleStart", a.cycleStart.toString());
                     if (a.cycleHoliday) o.put("cycleHoliday", true);
+                }
+                // v1.8.0：挂在班次上的闹钟。空数组不落盘，老备份读不到这两个键时
+                // shiftIds 为空 → 退回逐日时刻，行为与 v1.7 一致
+                if (a.shiftIds != null && a.shiftIds.length > 0) {
+                    JSONArray ids = new JSONArray();
+                    for (int id : a.shiftIds) ids.put(id);
+                    o.put("shiftIds", ids);
+                    if (a.offsetMin != 0) o.put("offsetMin", a.offsetMin);
                 }
                 arr.put(o);
             } catch (Exception ignore) {
@@ -537,6 +627,9 @@ public final class Alarm {
                             : 0L;
                     a.cycleStart = parseDate(o.optString("cycleStart", null));
                     a.cycleHoliday = o.optBoolean("cycleHoliday", false);
+                    // v1.8.0：挂班次。缺字段 / 空数组 = 不跟轮班，退回上面的老路径
+                    a.shiftIds = parseShiftIds(o.optJSONArray("shiftIds"));
+                    a.offsetMin = clamp(o.optInt("offsetMin", 0), -1440, 2880);
                     out.add(a);
                 } catch (Exception skip) {
                     // 单条坏数据跳过，别连带丢掉其余闹钟
@@ -560,5 +653,17 @@ public final class Alarm {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** 解析班次 id 数组；坏数据返回 null（= 不跟轮班），绝不让一条脏数据毁掉整条闹钟。 */
+    private static int[] parseShiftIds(JSONArray arr) {
+        if (arr == null || arr.length() == 0) return null;
+        int[] out = new int[arr.length()];
+        for (int i = 0; i < arr.length(); i++) {
+            int id = arr.optInt(i, -1);
+            if (id < 0) return null;
+            out[i] = id;
+        }
+        return out;
     }
 }

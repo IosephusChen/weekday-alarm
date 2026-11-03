@@ -9,7 +9,6 @@ import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.List;
-
 /**
  * 闹钟列表的显示顺序（v0.91.9）：按时间升序，同一时刻保持创建顺序。
  *
@@ -64,5 +63,46 @@ public class AlarmListOrderTest {
         assertEquals("同一时刻按创建顺序排，不能因为排序把两条并行的闹钟来回换位",
                 Arrays.asList("起床", "吃药", "叫娃"),
                 Arrays.asList(out.get(0).label, out.get(1).label, out.get(2).label));
+    }
+
+    // ================= v1.7.1：跟班表的按「今天真实时刻」排 =================
+
+    /** 4 天一轮：第 1、2 天上班（08:00 / 20:00），第 3、4 天休息。 */
+    private static WeekSchedule.Rule fourDayRule(java.time.LocalDate start) {
+        return WeekSchedule.Rule.cycle(4, 0b0011L, start,
+                new int[]{8 * 60, 20 * 60, -1, -1}, false);
+    }
+
+    @Test
+    public void followsRule_sortedByTodayRealTime() {
+        java.time.LocalDate day = java.time.LocalDate.of(2026, 11, 3);
+        // cycleStart = 昨天 → 今天是第 2 天，班表 20:00
+        WeekSchedule.Rule rule = fourDayRule(day.minusDays(1));
+
+        Alarm follows = at(1, 7, 30, "起床");     // 自带 07:30，今天实际 20:00
+        follows.mode = Alarm.Mode.WORKDAY;
+        Alarm daily = at(2, 19, 0, "吃药");        // 每天 19:00
+
+        List<Alarm> out = AlarmRowRenderer.sortedByTime(Arrays.asList(follows, daily), rule, day);
+
+        assertEquals("按今天真实时刻排：19:00 在 20:00 前面，不能按闹钟自带的 07:30 排",
+                "吃药", out.get(0).label);
+        assertEquals("起床", out.get(1).label);
+    }
+
+    @Test
+    public void followsRule_restingDayFallsLast() {
+        java.time.LocalDate day = java.time.LocalDate.of(2026, 11, 3);
+        // cycleStart = 两天前 → 今天是第 3 天，休息
+        WeekSchedule.Rule rule = fourDayRule(day.minusDays(2));
+
+        Alarm follows = at(1, 7, 30, "起床");
+        follows.mode = Alarm.Mode.WORKDAY;
+        Alarm daily = at(2, 23, 0, "睡前");
+
+        List<Alarm> out = AlarmRowRenderer.sortedByTime(Arrays.asList(follows, daily), rule, day);
+
+        assertEquals("今天不响的沉底：23:00 那条在它前面", "睡前", out.get(0).label);
+        assertEquals("起床", out.get(1).label);
     }
 }

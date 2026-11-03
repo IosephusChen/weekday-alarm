@@ -148,10 +148,13 @@ public final class Prefs {
 
     /** 打包成一次判断所需的全部上下文；调度、日历、小组件、睡前提醒统一用它。 */
     public static WeekSchedule.Rule getRule(Context c) {
+        int[] shiftCycle = getShiftCycle(c);
+        List<Shift> defs = shiftCycle == null ? null : getShifts(c);
         return new WeekSchedule.Rule(
                 getWeekMode(c), getAnchor(c), isSmallRestSat(c),
                 getCycleLen(c), getCycleMask(c), getCycleStart(c),
-                getCycleTimes(c), isCycleHoliday(c));
+                getCycleTimes(c), isCycleHoliday(c),
+                shiftCycle, defs == null || defs.isEmpty() ? null : defs.toArray(new Shift[0]));
     }
 
     // ================= 自定义 / 轮班（v1.1.0）=================
@@ -256,6 +259,82 @@ public final class Prefs {
             sb.append(times[i]);
         }
         sp(c).edit().putString(KEY_CYCLE_TIMES, sb.toString()).apply();
+    }
+
+    // ================= 班次（v1.8.0）=================
+
+    public static final String KEY_SHIFT_DEFS = "shift_defs";
+    public static final String KEY_SHIFT_CYCLE = "shift_cycle";
+
+    /** 用户定义的班次（白 / 夜 / 值班…）。没配过返回空表，不返回 null。 */
+    public static List<Shift> getShifts(Context c) {
+        return Shift.fromJson(sp(c).getString(KEY_SHIFT_DEFS, null));
+    }
+
+    public static void setShifts(Context c, List<Shift> shifts) {
+        sp(c).edit().putString(KEY_SHIFT_DEFS, Shift.toJson(shifts)).apply();
+    }
+
+    /** 下一个可用的班次 id：取现有最大值 +1，删掉的 id 不复用（老闹钟不会指错人）。 */
+    public static int nextShiftId(Context c) {
+        int max = 0;
+        for (Shift s : getShifts(c)) {
+            if (s.id > max) max = s.id;
+        }
+        return max + 1;
+    }
+
+    /**
+     * 循环里每天是哪个班次，{@code -1} = 休息；没配过返回 {@code null}。
+     *
+     * <p>长度必须等于当前周期，否则当没配——宁可退回「逐日时刻」的老路径，
+     * 也不要拿一张长度对不上的表去索引，那样会算出别人那天的班。
+     */
+    public static int[] getShiftCycle(Context c) {
+        String s = sp(c).getString(KEY_SHIFT_CYCLE, null);
+        if (s == null || s.isEmpty()) return null;
+        String[] parts = s.split(",");
+        int len = getCycleLen(c);
+        if (parts.length != len) return null;
+        int[] out = new int[len];
+        try {
+            for (int i = 0; i < len; i++) {
+                out[i] = Integer.parseInt(parts[i].trim());
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return out;
+    }
+
+    /**
+     * 存「每天哪个班」，同时把「上不上班」的位掩码一起写掉。
+     *
+     * <p>两个字段必须同源：日历、小组件、{@code dayType} 只读 mask，闹钟时刻只读
+     * shift cycle。分开写就会出现「日历说上班、闹钟说休息」，而这种错只有到那天
+     * 早上才会被发现。
+     */
+    public static void setShiftCycle(Context c, int[] cycle) {
+        if (cycle == null || cycle.length == 0) {
+            sp(c).edit().remove(KEY_SHIFT_CYCLE).apply();
+            return;
+        }
+        long mask = 0;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cycle.length; i++) {
+            if (i > 0) sb.append(',');
+            sb.append(cycle[i]);
+            if (cycle[i] >= 0 && i < WeekSchedule.Rule.MAX_CYCLE_LEN) mask |= (1L << i);
+        }
+        sp(c).edit()
+                .putString(KEY_SHIFT_CYCLE, sb.toString())
+                .putLong(KEY_CYCLE_MASK, mask)
+                .apply();
+    }
+
+    /** 是否已经配过班次表（有定义 + 有循环）。 */
+    public static boolean hasShifts(Context c) {
+        return getShiftCycle(c) != null && !getShifts(c).isEmpty();
     }
 
     /**

@@ -25,8 +25,10 @@ public class WeekScheduleActivity extends AppCompatActivity {
 
     private WeekGrid grid;
     private TextView tvVerdict, tvHint, tvRotationTitle, tvRotationSub, tvRotationTimes, tvHolidaySub;
+    private TextView tvShiftsSub;
     private SwitchCompat swBiweekly, swHoliday;
     private View cardRotation, rowBiweekly, rowHoliday, rowRotation, rowBackWeek;
+    private View rowShifts;
 
     /** 正在看两周（勾了「两周不一样」）。 */
     private boolean biweekly;
@@ -47,6 +49,8 @@ public class WeekScheduleActivity extends AppCompatActivity {
         tvRotationSub = findViewById(R.id.tv_rotation_sub);
         tvRotationTimes = findViewById(R.id.tv_rotation_times);
         tvHolidaySub = findViewById(R.id.tv_holiday_sub);
+        tvShiftsSub = findViewById(R.id.tv_shifts_sub);
+        rowShifts = findViewById(R.id.row_shifts);
         swBiweekly = findViewById(R.id.sw_biweekly);
         swHoliday = findViewById(R.id.sw_holiday);
         cardRotation = findViewById(R.id.card_rotation);
@@ -69,6 +73,9 @@ public class WeekScheduleActivity extends AppCompatActivity {
         });
         cardRotation.setOnClickListener(v -> openRotation());
         rowRotation.setOnClickListener(v -> openRotation());
+        // v1.8.0：班次本身（名字 + 起止）。排循环在下面那张卡
+        rowShifts.setOnClickListener(v ->
+                ShiftBookDialog.show(this, this::reschedule));
         rowBackWeek.setOnClickListener(v -> backToWeek());
 
         render();
@@ -97,9 +104,15 @@ public class WeekScheduleActivity extends AppCompatActivity {
             tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
             tvRotationSub.setText(Prefs.isCycleHoliday(this)
                     ? "春节、国庆按放假跳过" : "春节也照上班");
-            // v1.7.0：把填过的时刻回显出来。以前这张卡只写「14 天一轮 · 上12休2」，
-            // 用户填完时刻回到首页，中间那一步完全不可见，会以为填了等于没填
-            String times = timesSummary(rule);
+            // v1.8.0：班次表回显。没有班次时这张卡只留一句指路，不装出「已经排好了」的样子
+            java.util.List<Shift> shifts = Prefs.getShifts(this);
+            rowShifts.setVisibility(View.VISIBLE);
+            tvShiftsSub.setText(shifts.isEmpty()
+                    ? "还没有班次。先建一个「白班 08:00 – 20:00」。"
+                    : shiftsSummary(shifts));
+            // 每天哪个班：整轮的形状，一眼看得出白/夜各几天
+            String cycleText = shiftCycleSummary(Prefs.getShiftCycle(this), shifts);
+            String times = cycleText != null ? cycleText : timesSummary(rule);
             tvRotationTimes.setVisibility(times == null ? View.GONE : View.VISIBLE);
             if (times != null) tvRotationTimes.setText(times);
             cardRotation.setVisibility(View.VISIBLE);
@@ -107,15 +120,16 @@ public class WeekScheduleActivity extends AppCompatActivity {
             grid.setVisibility(View.GONE);
             rowBiweekly.setVisibility(View.GONE);
             rowRotation.setVisibility(View.GONE);
-            // 有时刻却没有任何闹钟在读它，就是这个功能最容易被以为「坏了」的地方：
+            // 排了班却没有任何闹钟在读它，就是这个功能最容易被以为「坏了」的地方：
             // 填了半天，到点不响。指路写在这里而不是卡片里，卡片的行已经够多了
             tvHint.setText(times != null && !anyoneFollows(rule)
-                    ? "上面这些时刻还没有闹钟在用——去闹钟里选「跟随我的班表」，它就跟着走。"
+                    ? "这张表还没有闹钟在用——去闹钟里选「跟随我的班表」，它就跟着走。"
                     : "这几天是怎么排的，点上面那张卡改。");
             return;
         }
 
         cardRotation.setVisibility(View.GONE);
+        rowShifts.setVisibility(View.GONE);
         rowBackWeek.setVisibility(View.GONE);
         grid.setVisibility(View.VISIBLE);
         rowBiweekly.setVisibility(View.VISIBLE);
@@ -188,9 +202,18 @@ public class WeekScheduleActivity extends AppCompatActivity {
         reschedule();
     }
 
-    /** 打开 N 天一轮的编辑器。它自己写 Prefs，回来 onResume 会重画。 */
+    /**
+     * 打开轮班编辑（v1.8.0 起是「每天选哪个班」）。
+     *
+     * <p>还没有班次定义时先去建班次——排班页留着也排不出东西，早一步跳过去比
+     * 让用户在空表上点半天好。
+     */
     private void openRotation() {
-        CycleEditor.show(this, Prefs.CYCLE_KIND_ROTATION, this::reschedule);
+        if (Prefs.getShifts(this).isEmpty()) {
+            ShiftBookDialog.show(this, this::reschedule);
+        } else {
+            ShiftCycleSheet.show(this, this::reschedule);
+        }
     }
 
     /** 从 N 天一轮改回按周：按当前规则的前 7 天展开，改不动就退回双休。 */
@@ -234,6 +257,34 @@ public class WeekScheduleActivity extends AppCompatActivity {
             i++;
         }
         return sb.toString();
+    }
+
+    /**
+     * 班次一句话：「白班 / 夜班 / 值班」，超过三个收成「等 N 个」。
+     *
+     * <p>只写名字不写时段：这张卡已经有两行了，再塞「08:00 – 20:00」会换行；
+     * 时段在班次页里看，那里每行一个。
+     */
+    static String shiftsSummary(java.util.List<Shift> shifts) {
+        if (shifts == null || shifts.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        for (Shift s : shifts) {
+            if (i == 3) {
+                sb.append(" 等 ").append(shifts.size()).append(" 个");
+                break;
+            }
+            if (i > 0) sb.append(" · ");
+            sb.append(s.name);
+            i++;
+        }
+        return sb.toString();
+    }
+
+    /** 整轮里各上几天：「共 4 天 · 白班 2 · 夜班 2」。没有班次表返回 null。 */
+    static String shiftCycleSummary(int[] cycle, java.util.List<Shift> shifts) {
+        if (cycle == null || shifts == null || shifts.isEmpty()) return null;
+        return ShiftCycleSheet.summaryOf(cycle, shifts);
     }
 
     /** 有没有闹钟在按这张表的时间响（v1.7.0）。不看开关：关着的那条也算在用。 */

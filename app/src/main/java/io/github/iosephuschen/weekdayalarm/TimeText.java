@@ -58,6 +58,18 @@ final class TimeText {
         return String.format(Locale.US, "%02d:%02d", hour, minute);
     }
 
+    /**
+     * 从「当天第几分钟」出文本（v1.8.0）。
+     *
+     * <p>班次的时刻可能落到前一天（负）或次日（≥1440），显示时一律绕回 00:00~23:59：
+     * 用户看到的是「那天几点响」，不是「第几天几点」。负数的取模在 Java 里是负的，
+     * 必须用 {@code floorMod}，不能写 {@code m % 1440}。
+     */
+    static String clockOfMinutes(int minutes) {
+        int v = Math.floorMod(minutes, 1440);
+        return clock(v / 60, v % 60);
+    }
+
     /** 解析「HH:mm」；解析不了返回 null（调用方决定兜底值，不在这里猜）。 */
     static LocalTime parseClock(String text) {
         if (text == null || text.isEmpty()) return null;

@@ -192,6 +192,33 @@ public class BedtimeTest {
         assertFalse(BedtimeReminder.computeModel(ctx(), workday).hasAlarm);
     }
 
+    /**
+     * v1.7.1：闹钟跟班表时，通知里的时刻必须是**明天真实会响的那个**。
+     *
+     * <p>旧版读 {@code a.hour/min}，于是明天 22:00 上班，通知照旧写「明早 07:30 会响」——
+     * 这个提醒的全部价值就在这句话准不准上。
+     */
+    @Test
+    public void model_followsRule_reportsRealTimeNotFixedTime() {
+        LocalDate tomorrow = LocalDate.of(2026, 11, 4);
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleMask(ctx(), 0b0011L);           // 第 1、2 天上班
+        Prefs.setCycleStart(ctx(), tomorrow);         // 明天 = 第 1 天
+        Prefs.setCycleTimes(ctx(), new int[]{22 * 60, 22 * 60, -1, -1});
+
+        List<Alarm> list = new ArrayList<>();
+        list.add(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
+        putAlarms(list);
+
+        BedtimeReminder.Model m = BedtimeReminder.computeModel(ctx(), tomorrow);
+        assertTrue(m.hasAlarm);
+        assertEquals(22, m.alarmHour);
+        assertEquals(0, m.alarmMinute);
+        assertTrue("应报班表上的 22:00", m.text.contains("22:00"));
+        assertFalse("不能写闹钟自带的 07:30", m.text.contains("07:30"));
+    }
+
     // ================= 一键「明天请假」 =================
 
     @Test

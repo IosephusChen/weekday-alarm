@@ -105,6 +105,57 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12" />
 
+        <!-- v1.8.0：班次。轮班的人先定义「白班 08:00–20:00」「夜班 20:00–次日 08:00」，
+             再回到下面那张表把每天指派给某个班次。两行分开，是因为它们是两种动作：
+             定义班次不常改，排循环每月都要动一次。 -->
+        <LinearLayout
+            android:id="@+id/row_shifts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:background="@drawable/bg_dialog_row"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="13dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="班次"
+                    android:textColor="@color/ink"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_shifts_sub"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:text="白班 08:00 – 20:00 · 夜班 20:00 – 次日 08:00"
+                    android:textColor="@color/sub"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="改 ›"
+                android:textColor="@color/sub"
+                android:textSize="12.5sp" />
+        </LinearLayout>
+
         <!-- 按 N 天一轮：七格表达不了 62 天的表，换成一张摘要卡 -->
         <LinearLayout
             android:id="@+id/card_rotation"

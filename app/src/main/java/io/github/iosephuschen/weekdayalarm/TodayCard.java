@@ -20,9 +20,24 @@ final class TodayCard {
 
     /** 大字段：今天请假 / 今天加班 / 今天上班 / 今天休息。 */
     static String statusText(boolean vacation, boolean overtime, boolean work) {
+        return statusText(vacation, overtime, work, null);
+    }
+
+    /**
+     * 同上，但有班次时写「今天夜班」（v1.8.0）。
+     *
+     * <p>这是班次模型带来的唯一一处「大字变多」：以前只有「上班」两个字，
+     * 现在能说出上哪个班。用户脑子里本来就是「今天夜班」，不是「今天上班」。
+     *
+     * <p>班次名截到 2 字：这块是 4×2 小组件公用的大字，超过 4 个字会换行或缩字号。
+     */
+    static String statusText(boolean vacation, boolean overtime, boolean work, String shiftName) {
         if (vacation) return "今天请假";
         if (overtime) return "今天加班";
-        return work ? "今天上班" : "今天休息";
+        if (!work) return "今天休息";
+        if (shiftName == null || shiftName.trim().isEmpty()) return "今天上班";
+        String n = shiftName.trim();
+        return "今天" + (n.length() > 2 ? n.substring(0, 2) : n);
     }
 
     /** 角标：「小周 · 休1天」这类周次说明（{@link WeekSchedule#describe} 的薄包装）。 */

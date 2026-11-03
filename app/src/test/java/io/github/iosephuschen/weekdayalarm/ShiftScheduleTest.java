@@ -215,4 +215,24 @@ public class ShiftScheduleTest {
         assertEquals("开始后 4 小时", ShiftPickDialog.offsetText(240));
         assertEquals("班次开始那一刻", ShiftPickDialog.offsetText(0));
     }
+
+    /**
+     * 切回「双休 / 大小周」之后不能再按班次算（v1.8.1）。
+     *
+     * <p>`shift_cycle` 和 `shift_defs` 切回去时没人清，全留在 Prefs 里。不挡的话
+     * `cycleIndex` 会拿旧的 N 天表取班次，于是「今天明明双休休息」，
+     * 闹钟还按「白班 08:00 + 偏移」响。这条守住 mode 这一道闸。
+     */
+    @Test
+    public void backToWeekly_ignoresLeftoverShifts() {
+        WeekSchedule.Rule weekly = new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST, null, false,
+                4, 0b0011L, START, null, false,
+                new int[]{1, 2, -1, -1},
+                twoShifts().toArray(new Shift[0]));
+
+        assertNull("按周排时 shiftOn 必须返回 null", WeekSchedule.shiftOn(START, weekly));
+        Alarm a = alarm(new int[]{1, 2}, 0);
+        // 07:30 自己的时刻，不是白班 08:00
+        assertEquals(7 * 60 + 30, a.timeOn(START, weekly));
+    }
 }

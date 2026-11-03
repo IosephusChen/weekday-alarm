@@ -370,6 +370,21 @@
                     android:textColor="@color/indigo"
                     android:textSize="14sp" />
 
+                <!-- v1.8.1：轮班态下说清这个时刻是怎么来的。
+                     白班 08:00 的人，上面那个 06:30 是「班次开始前 1 小时 30 分」，
+                     换班次时间它会跟着平移——不写这一行，用户会以为 06:30 是写死的。 -->
+                <TextView
+                    android:id="@+id/tv_shift_preview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_2"
+                    android:gravity="center"
+                    android:lineSpacingExtra="2dp"
+                    android:text="白班 06:30 · 夜班 18:30"
+                    android:textColor="@color/sub"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
                 <!-- v1.2.0：这一条闹钟多久响一次。引导页原来只让改时间，
                      于是想设「只在工作日响」的人得先走完四页、再去主界面找到它改一遍。 -->
                 <LinearLayout

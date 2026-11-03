@@ -1189,4 +1189,101 @@ public class GuideTest {
         assertFalse("不该带「按这两周排：」，实际：" + v, v.contains("按这两周排"));
         assertFalse("不该带「按这张表排：」，实际：" + v, v.contains("按这张表排"));
     }
+
+    // ================= 第一页：轮班态（v1.8.1） =================
+
+    /** 把班表切成「8 天一轮、白班 08:00 / 夜班 20:00」。 */
+    private void seedRotation() {
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleStart(ctx(), LocalDate.now());
+        Prefs.setCycleMask(ctx(), 0b0011L);
+        Prefs.setShifts(ctx(), java.util.Arrays.asList(
+                new Shift(1, "白班", 8 * 60, 20 * 60, 0),
+                new Shift(2, "夜班", 20 * 60, 8 * 60, 0)));
+        Prefs.setShiftCycle(ctx(), new int[]{1, 2, -1, -1});
+    }
+
+    /**
+     * 轮班态下页面不能再留「按周」那三句（v1.8.1）。
+     *
+     * <p>原来只藏了七格和「两周不一样」，结论条还写着「双休」，标题还问
+     * 「这一周你哪几天上班？」——页面上一半说双休、一半说 8 天一轮，人当然犯迷糊。
+     */
+    @Test
+    public void rotationPage_dropsWeeklyTexts() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        assertEquals("格子已经收起来了，结论条不能还挂着",
+                View.GONE, visibility(a, R.id.tv_week_verdict));
+        assertEquals(View.GONE, visibility(a, R.id.box_week));
+        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
+        assertFalse("标题不该还问「这一周」",
+                text(a, R.id.tv_week_title).contains("这一周"));
+        assertFalse("副标题不该还让人点格子",
+                text(a, R.id.tv_week_sub).contains("点一下切换"));
+    }
+
+    /** 对照组：按周排时三句话照旧，别为了修轮班把这页弄没了。 */
+    @Test
+    public void weeklyPage_keepsVerdict() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        GuideActivity a = launch();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.tv_week_verdict));
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_week));
+        assertEquals(View.GONE, visibility(a, R.id.card_rotation));
+        assertTrue(text(a, R.id.tv_week_title).contains("这一周"));
+    }
+
+    /**
+     * 第 2 页的大字必须和实际响铃对得上（v1.8.1）。
+     *
+     * <p>这是 v1.8.0 留下的错：闹钟挂在班次上时，真正决定响铃的是
+     * 「班次开始 + offsetMin」，而大字还写着预置的 07:30、偏移还是 0——
+     * 页面上 07:30，实际白班 08:00 响、夜班 20:00 响。
+     */
+    @Test
+    public void rotationSecondPage_timeIsShiftStartMinus90() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        assertEquals("白班 08:00 提前一小时半该是 06:30", "06:30", text(a, R.id.tv_time));
+        Alarm first = Prefs.getAlarms(ctx()).get(0);
+        assertEquals("偏移要一起落盘，否则大字改了也不生效", -90, first.offsetMin);
+        assertEquals(6 * 60 + 30, first.hour * 60 + first.minute);
+        assertEquals("轮班态要说清这个时刻在别的班上分别几点",
+                View.VISIBLE, visibility(a, R.id.tv_shift_preview));
+        assertTrue(text(a, R.id.tv_shift_preview).contains("夜班"));
+    }
+
+    /** 拨一次时间，偏移要跟着改——这是「改时间真的生效」的唯一保证。 */
+    @Test
+    public void rotationSecondPage_pickingTimeUpdatesOffset() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        a.setTime(7, 0);
+        Alarm first = Prefs.getAlarms(ctx()).get(0);
+        assertEquals("07:00 比白班 08:00 早一小时", -60, first.offsetMin);
+        assertEquals(7 * 60, first.hour * 60 + first.minute);
+    }
+
+    /** 对照组：没排班次时第 2 页照旧 07:30，不冒预览行。 */
+    @Test
+    public void weeklySecondPage_keepsDefaultTime() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        GuideActivity a = launch();
+
+        assertEquals("07:30", text(a, R.id.tv_time));
+        assertEquals(View.GONE, visibility(a, R.id.tv_shift_preview));
+        assertEquals(0, Prefs.getAlarms(ctx()).get(0).offsetMin);
+    }
 }

@@ -368,6 +368,10 @@ public final class WeekSchedule {
      */
     public static Shift shiftOn(LocalDate d, Rule rule) {
         if (rule == null || rule.shiftCycle == null || rule.shifts == null) return null;
+        // v1.8.1：切回「双休 / 大小周」之后 shift_cycle 还留在 Prefs 里（没人清），
+        // 不挡住的话 cycleIndex 会按旧的 N 天表取班次，于是那天明明休息，
+        // 闹钟却还按「白班 08:00 + 偏移」响
+        if (rule.mode != Mode.CYCLE) return null;
         if (!isWorkday(d, rule)) return null;
         int idx = cycleIndex(d, rule);
         if (idx < 0 || idx >= rule.shiftCycle.length) return null;

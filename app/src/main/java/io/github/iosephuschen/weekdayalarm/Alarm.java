@@ -196,7 +196,8 @@ public final class Alarm {
      */
     public int timeOn(LocalDate d, WeekSchedule.Rule rule, boolean overtime) {
         if (mode == Mode.WORKDAY && rule != null) {
-            if (rule.shiftCycle != null) {
+            // 同上：只有班表当前真的是「N 天一轮」时才认班次，否则退回下面的老路径
+            if (rule.mode.isCycle() && rule.shiftCycle != null) {
                 Shift s = WeekSchedule.shiftOn(d, rule);
                 if (s == null) {
                     if (!overtime) return NO_TIME;
@@ -574,8 +575,11 @@ public final class Alarm {
                     JSONArray ids = new JSONArray();
                     for (int id : a.shiftIds) ids.put(id);
                     o.put("shiftIds", ids);
-                    if (a.offsetMin != 0) o.put("offsetMin", a.offsetMin);
                 }
+                // v1.8.1：偏移必须和 shiftIds 分开判断。原来写在上面那个 if 里，
+                // 于是「全部班次」（shiftIds 为空）的闹钟偏移永远存不下来——
+                // 引导页排完班次显示 06:30，落盘却是 0（上班时刻响），读回来还对不上
+                if (a.offsetMin != 0) o.put("offsetMin", a.offsetMin);
                 arr.put(o);
             } catch (Exception ignore) {
             }

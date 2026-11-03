@@ -79,6 +79,9 @@ public class GuideActivity extends AppCompatActivity {
      */
     private static final String HINT_OTHER_PERMS = "去开启 · 在「其他权限」里";
 
+    /** 预置第一条闹钟的时刻（07:30）。判断「用户还没动过」要用它。 */
+    static final int DEFAULT_ALARM_MIN = 7 * 60 + 30;
+
     private ViewFlipper flipper;
     private LinearLayout dots;
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
@@ -105,6 +108,10 @@ public class GuideActivity extends AppCompatActivity {
     private LinearLayout ringDetail;
     private TextView tvRingHint, tvRingArrow, ivRingChevron, tvRingSummary;
     private TextView tvRepeat;
+    /** 第 2 页轮班态那行小字：这个时刻在别的班次上分别是几点（v1.8.1）。 */
+    private TextView tvShiftPreview;
+    /** 基准班次的开始时刻（当天第几分钟）；未排班次时为 -1。 */
+    private int shiftBaseStart = -1;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
 
@@ -292,9 +299,16 @@ public class GuideActivity extends AppCompatActivity {
         cardRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
         boxWeek.setVisibility(rotation ? View.GONE : View.VISIBLE);
         rowBiweekly.setVisibility(rotation ? View.GONE : View.VISIBLE);
+        // v1.8.1：结论条也得跟着走。原来它只算「按周」那一套，切到轮班后
+        // 「双休」还留在页面上，和下面「8 天一轮 · 上 6 休 2」同屏打架
+        tvWeekVerdict.setVisibility(rotation ? View.GONE : View.VISIBLE);
         linkRotation.setText(rotation ? "改成按周排 ›" : "我是几天一轮的班（上二休二）›");
         if (rotation) {
             WeekSchedule.Rule rule = Prefs.getRule(this);
+            // 标题和副标题同样要换：格子已经收起来了，还写着「点一下切换班和休」
+            // 就是让人去点一个不存在的东西
+            tvWeekTitle.setText("你几天一轮、怎么倒？");
+            tvWeekSub.setText("点下面那张卡改。休息日不用填时刻。");
             tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
             // v1.8.0：班次建了没有、排了几天，在这一行说清；没有班次时直接指路
             java.util.List<Shift> shifts = Prefs.getShifts(this);
@@ -447,6 +461,10 @@ public class GuideActivity extends AppCompatActivity {
         // v0.43.0：改用自绘「时 / 分」滚轮，与主界面、睡前提醒同一套。
         // 原来这里还是框架的 TimePickerDialog——澎湃 OS 会无视主题把 spinner 渲染成表盘拨轮，
         // 于是同一个 App 里选时间出现两种完全不同的交互，引导页反而最花哨。
+        tvShiftPreview = findViewById(R.id.tv_shift_preview);
+        // v1.8.1：排了班次就得先说清「上面那个数是怎么来的」，再让用户去拨
+        syncTimeFromShift();
+
         View.OnClickListener pick = v -> TimeWheelDialog.show(this, "第一个闹钟", hour, minute,
                 (h, m) -> setTime(h, m));
         tvTime.setOnClickListener(pick);
@@ -539,6 +557,7 @@ public class GuideActivity extends AppCompatActivity {
         Alarm target;
         if (alarms.isEmpty()) {
             target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班", mode, true);
+            applyShiftOffset(target);
             alarms.add(target);
         } else {
             target = alarms.get(0);
@@ -546,6 +565,10 @@ public class GuideActivity extends AppCompatActivity {
         }
         target.hour = hour;
         target.minute = minute;
+        // 轮班态下偏移才是真正决定响铃的数；切回「每天」「仅休息日」时要清掉，
+        // 否则数据里留着一条用不上的偏移
+        if (mode == Alarm.Mode.WORKDAY) applyShiftOffset(target);
+        else target.offsetMin = 0;
         if (mode.isOwnRule()) {
             target.applyOwnRule(ownRule != null ? ownRule : AlarmEditor.defaultOwn(mode));
         } else {
@@ -569,6 +592,80 @@ public class GuideActivity extends AppCompatActivity {
 
     private void updateTimeText() {
         tvTime.setText(TimeText.clock(hour, minute));
+        refreshShiftPreview();
+    }
+
+    /**
+     * 轮班态下把「这个时刻在各班次上分别是几点」写出来（v1.8.1）。
+     *
+     * <p>不写这一行，上面那个 06:30 看着像写死的数：班次从 08:00 改成 09:00，
+     * 用户不知道它会不会跟着动。写了就一句话：跟着动，这是「上班前 1 小时 30 分」。
+     *
+     * <p>只列前三个班次：这一行是说明，不是表格，超过三个就换行了。
+     */
+    private void refreshShiftPreview() {
+        if (tvShiftPreview == null) return;
+        List<Shift> shifts = Prefs.getShifts(this);
+        if (shiftBaseStart < 0 || shifts.isEmpty()) {
+            tvShiftPreview.setVisibility(View.GONE);
+            return;
+        }
+        int offset = hour * 60 + minute - shiftBaseStart;
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        for (Shift sh : shifts) {
+            if (i == 3) break;
+            if (i > 0) sb.append(" · ");
+            sb.append(sh.name).append(" ").append(TimeText.clockOfMinutes(sh.start + offset));
+            i++;
+        }
+        if (shifts.size() > 3) sb.append(" 等 ").append(shifts.size()).append(" 个");
+        if (offset == 0) sb.append("（上班就响）");
+        tvShiftPreview.setText(sb.toString());
+        tvShiftPreview.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * 把大字对齐到「基准班次开始前 1 小时 30 分」（v1.8.1）。
+     *
+     * <p>为什么需要这一步：班次排好之后，第 2 页那个预置的 07:30 与实际响铃无关——
+     * {@code Alarm.timeOn} 取的是「班次开始 + 偏移」，偏移还是 0，于是白班 08:00 响、
+     * 夜班 20:00 响，而页面上写着 07:30。数字和实际对不上，是这个 App 最不能出的错。
+     *
+     * <p>只在「还是预置值」时改：07:30 且偏移 0。用户拨过的（偏移非 0，或时段换了）
+     * 一律不动，否则重看引导会把他改过的时间又拉回去。
+     */
+    private void syncTimeFromShift() {
+        List<Shift> shifts = Prefs.getShifts(this);
+        shiftBaseStart = shifts.isEmpty() ? -1 : shifts.get(0).start;
+        if (shiftBaseStart < 0) return;
+
+        List<Alarm> alarms = Prefs.getAlarms(this);
+        if (alarms.isEmpty()) {
+            // 还没有闹钟：大字直接按基准班次倒推，收尾时 ensureAlarm 会用它建一条
+            int m0 = Math.floorMod(shiftBaseStart - 90, 1440);
+            hour = m0 / 60;
+            minute = m0 % 60;
+            return;
+        }
+        Alarm first = alarms.get(0);
+        boolean untouched = first.mode == Alarm.Mode.WORKDAY && first.offsetMin == 0
+                && first.hour * 60 + first.minute == DEFAULT_ALARM_MIN;
+        if (!untouched) return;
+
+        int m = Math.floorMod(shiftBaseStart - 90, 1440);
+        hour = m / 60;
+        minute = m % 60;
+        first.hour = hour;
+        first.minute = minute;
+        first.offsetMin = -90;
+        Prefs.setAlarms(this, alarms);
+    }
+
+    /** 轮班态给新建的闹钟补上「相对基准班次的偏移」；非轮班态什么也不做。 */
+    private void applyShiftOffset(Alarm a) {
+        if (a == null || shiftBaseStart < 0 || a.mode != Alarm.Mode.WORKDAY) return;
+        a.offsetMin = hour * 60 + minute - shiftBaseStart;
     }
 
     /** 改时间时如果已经有闹钟，直接改第一个，避免「改了却没生效」。 */
@@ -578,6 +675,11 @@ public class GuideActivity extends AppCompatActivity {
         Alarm first = alarms.get(0);
         first.hour = hour;
         first.minute = minute;
+        // v1.8.1：轮班态下真正决定响铃的是偏移，光改 hour/minute 等于没改——
+        // timeOn 走的是「班次开始 + offsetMin」，大字只是个展示
+        if (shiftBaseStart >= 0 && first.mode == Alarm.Mode.WORKDAY) {
+            first.offsetMin = hour * 60 + minute - shiftBaseStart;
+        }
         Prefs.setAlarms(this, alarms);
         Reschedule.run(this, null);
     }
@@ -595,8 +697,10 @@ public class GuideActivity extends AppCompatActivity {
         List<Alarm> alarms = Prefs.getAlarms(this);
         boolean created = false;
         if (alarms.isEmpty()) {
-            alarms.add(new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班",
-                    Alarm.Mode.WORKDAY, true));
+            Alarm a = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班",
+                    Alarm.Mode.WORKDAY, true);
+            applyShiftOffset(a);
+            alarms.add(a);
             Prefs.setAlarms(this, alarms);
             created = true;
         }
@@ -1015,6 +1119,12 @@ public class GuideActivity extends AppCompatActivity {
         flipper.setOutAnimation(this, forward ? R.anim.guide_out_left : R.anim.guide_out_right);
         flipper.setDisplayedChild(target);
         index = target;
+        // v1.8.1：从第 1 页排完班次过来时，第 2 页的大字要按新班次重算一遍——
+        // 它是在 bindTime 里算的，翻页不会重建页面
+        if (target == 1) {
+            syncTimeFromShift();
+            updateTimeText();
+        }
         // 每翻一页就落盘：进程随时可能被杀，等 onPause 再写就晚了
         Prefs.setGuidePage(this, target);
         updateChrome();

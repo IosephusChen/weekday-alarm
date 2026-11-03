@@ -1,14 +1,14 @@
 {
-  "versionCode": 259,
-  "versionName": "1.8.0",
+  "versionCode": 260,
+  "versionName": "1.8.1",
   "published": "2026-11-03",
-  "title": "轮班能分清白班夜班了",
+  "title": "轮班时不再同时写双休",
   "notes": [
-    "「我的班表」多了「班次」：白班 08:00–20:00、夜班 20:00–次日 08:00",
-    "每天点一下，选那天上哪个班；休息日不用填",
-    "闹钟勾哪几个班、提前多久，白班夜班各响各的",
-    "睡前提醒与列表按当天真实时刻，休息日不再显示假时刻"
+    "选了轮班，「我的班表」就不再同时挂着「双休」",
+    "引导页第二步按班次倒推：白班 08:00 就显示 06:30",
+    "下方一行小字写清夜班那天几点响",
+    "「跟随我的班表」的提前量原来存不下来，改完时间点就恢复原样，已修"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.0/weekday-alarm-1.8.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.1/weekday-alarm-1.8.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.1"
 }

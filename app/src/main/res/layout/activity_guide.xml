@@ -82,15 +82,15 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         android:contentDescription="班表"
                         android:src="@drawable/ic_guide_calendar" />
@@ -260,7 +260,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:background="@drawable/bg_guide_link"
                     android:clickable="true"
                     android:focusable="true"
                     android:paddingStart="@dimen/space_8"
@@ -279,7 +279,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_16"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:background="@drawable/bg_guide_link"
                     android:clickable="true"
                     android:focusable="true"
                     android:paddingStart="@dimen/space_8"
@@ -309,14 +309,14 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         android:contentDescription="闹钟"
                         android:src="@drawable/ic_guide_bell" />
@@ -737,15 +737,15 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         android:contentDescription="设置"
                         android:src="@drawable/ic_guide_tune" />
@@ -1170,15 +1170,15 @@
                 android:paddingBottom="@dimen/space_8">
 
                 <FrameLayout
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_6"
                     android:background="@drawable/bg_guide_badge">
 
                     <ImageView
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center"
                         android:contentDescription="试听"
                         android:src="@drawable/ic_guide_bell" />

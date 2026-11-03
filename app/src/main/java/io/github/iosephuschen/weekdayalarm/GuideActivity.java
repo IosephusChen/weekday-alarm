@@ -465,9 +465,7 @@ public class GuideActivity extends AppCompatActivity {
         // v1.8.2：轮班默认「春节也照上班」，副标题却写「节假日自动跳过」——
         // 页面在承诺一件不会发生的事。跟着班表实际设置走
         TextView tvAlarmSub = findViewById(R.id.tv_alarm_sub);
-        boolean rotationNow = Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
-                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
-        if (rotationNow) {
+        if (isRotationNow()) {
             tvAlarmSub.setText(Prefs.isCycleHoliday(this)
                     ? "只在上班日响，休息日和节假日自动跳过。"
                     : "只在上班日响，休息日跳过。");
@@ -606,6 +604,19 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
+     * 现在是「轮班」吗。
+     *
+     * <p>v1.8.3：班次定义和「用不用班次」是两件事——用户在轮班里建了白/中/夜，
+     * 再点「改成按周排」勾成双休，班次还留在 Prefs 里。第 2 页原来只看
+     * 「班次列表空不空」，于是双休态也按白班 08:00 倒推出 06:30，还列出三个班次。
+     * 所有跟班次有关的计算都必须先过这道闸门。
+     */
+    private boolean isRotationNow() {
+        return Prefs.getWeekMode(this) == WeekSchedule.Mode.CYCLE
+                && Prefs.getCycleKind(this) == Prefs.CYCLE_KIND_ROTATION;
+    }
+
+    /**
      * 轮班态下把「这个时刻在各班次上分别是几点」写出来（v1.8.1）。
      *
      * <p>不写这一行，上面那个 06:30 看着像写死的数：班次从 08:00 改成 09:00，
@@ -616,7 +627,7 @@ public class GuideActivity extends AppCompatActivity {
     private void refreshShiftPreview() {
         if (tvShiftPreview == null) return;
         List<Shift> shifts = Prefs.getShifts(this);
-        if (shiftBaseStart < 0 || shifts.isEmpty()) {
+        if (!isRotationNow() || shiftBaseStart < 0 || shifts.isEmpty()) {
             tvShiftPreview.setVisibility(View.GONE);
             return;
         }
@@ -672,6 +683,11 @@ public class GuideActivity extends AppCompatActivity {
      */
     private void syncTimeFromShift() {
         List<Shift> shifts = Prefs.getShifts(this);
+        // v1.8.3：双休 / 单休 / 大小周不吃班次，哪怕 Prefs 里还留着上次建的班次定义
+        if (!isRotationNow()) {
+            shiftBaseStart = -1;
+            return;
+        }
         shiftBaseStart = shifts.isEmpty() ? -1 : shifts.get(0).start;
         if (shiftBaseStart < 0) return;
 
@@ -699,7 +715,8 @@ public class GuideActivity extends AppCompatActivity {
 
     /** 轮班态给新建的闹钟补上「相对基准班次的偏移」；非轮班态什么也不做。 */
     private void applyShiftOffset(Alarm a) {
-        if (a == null || shiftBaseStart < 0 || a.mode != Alarm.Mode.WORKDAY) return;
+        if (a == null || !isRotationNow() || shiftBaseStart < 0
+                || a.mode != Alarm.Mode.WORKDAY) return;
         a.offsetMin = hour * 60 + minute - shiftBaseStart;
     }
 

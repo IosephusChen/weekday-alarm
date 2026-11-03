@@ -44,12 +44,24 @@ public final class ShiftBookDialog {
 
     private static final Typeface MEDIUM = Typeface.create("sans-serif-medium", Typeface.NORMAL);
 
+    /**
+     * 当前还开着的班次列表（v1.8.3）。
+     *
+     * <p>保存 / 删除后要「关掉这一层、重开一层新的」，原来只调了 {@link #show}，
+     * 旧列表没关——编辑几次就叠几层「班次」，用户点「完成」只关掉最上面那层，
+     * 下面还压着三张一模一样的。用弱引用：列表关掉之后不该拴着 Activity。
+     */
+    private static java.lang.ref.WeakReference<androidx.appcompat.app.AlertDialog> current =
+            new java.lang.ref.WeakReference<>(null);
+
     private ShiftBookDialog() {
     }
 
     /** 打开班次列表。 */
     public static void show(Context ctx, OnChanged cb) {
         if (ctx == null) return;
+        androidx.appcompat.app.AlertDialog old = current.get();
+        if (old != null && old.isShowing()) old.dismiss();
         List<Shift> shifts = new ArrayList<>(Prefs.getShifts(ctx));
 
         LinearLayout box = new LinearLayout(ctx);
@@ -90,15 +102,16 @@ public final class ShiftBookDialog {
         add.setOnClickListener(v -> edit(ctx, null, cb));
         box.addView(add, alp);
 
-        new RoundedDialog.Builder(ctx)
+        androidx.appcompat.app.AlertDialog d = new RoundedDialog.Builder(ctx)
                 .setTitle("班次")
                 .setView(box)
                 // 只有「完成」回调一次：每次保存都回调会让引导页在建第二个班次时
                 // 被硬拉去排循环，用户还没建完就被打断
-                .setNegativeButton("完成", (d, w) -> {
+                .setNegativeButton("完成", (dlg, w) -> {
                     if (cb != null) cb.onChanged();
                 })
                 .show();
+        current = new java.lang.ref.WeakReference<>(d);
     }
 
     /** 一行卡片：色点 + 名字 / 时段 + 箭头。点进去编辑，长按删除。 */
@@ -295,6 +308,8 @@ public final class ShiftBookDialog {
             String label = name.getText().toString().trim();
             if (label.isEmpty()) label = isNew ? "班次" : base.name;
             save(ctx, base, label, start[0], noEnd[0] ? Shift.END_UNKNOWN : end[0]);
+            // 先关自己再开列表：不然新列表会开在这张编辑页下面，一闪而过
+            d.dismiss();
             show(ctx, cb);
         });
         // v1.8.2：删除原来是长按——没有入口提示，等于只有开发者知道。
@@ -424,6 +439,7 @@ public final class ShiftBookDialog {
                         touched = true;
                     }
                     if (touched) Prefs.setAlarms(ctx, alarms);
+                    d.dismiss();
                     show(ctx, cb);
                 })
                 .show();

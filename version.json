@@ -1,14 +1,14 @@
 {
-  "versionCode": 261,
-  "versionName": "1.8.2",
+  "versionCode": 262,
+  "versionName": "1.8.3",
   "published": "2026-11-03",
-  "title": "班次那三个弹窗重做了",
+  "title": "双休不再被班次带着走",
   "notes": [
-    "新建班次、班次列表、第几天上哪个班，都换成卡片行",
-    "编辑完班次点「完成」没反应：一次点开就把回调弄丢了，已修",
-    "删除班次后，跟它的闹钟会一起摘干净，不再静默失效",
-    "引导页第二步的小字说清 06:30 的来历：比上班早 1 小时 30 分"
+    "勾成双休后，第二步不再按白班倒推出 06:30，也不再列三个班次",
+    "「我的班表」里编辑班次，不会再叠出一摞一样的窗口",
+    "引导页两个文字链接按下时不再冒出一个大灰圆",
+    "引导页顶部的圆形图标收小一号"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.2/weekday-alarm-1.8.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.8.3/weekday-alarm-1.8.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.8.3"
 }

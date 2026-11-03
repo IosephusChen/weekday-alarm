@@ -1286,4 +1286,47 @@ public class GuideTest {
         assertEquals(View.GONE, visibility(a, R.id.tv_shift_preview));
         assertEquals(0, Prefs.getAlarms(ctx()).get(0).offsetMin);
     }
+
+    /**
+     * 双休 + Prefs 里还留着上次建的班次：第 2 页不许理它们（v1.8.3）。
+     *
+     * <p>用户实测路径：先在轮班里建了白 / 中 / 夜三个班次，再回第一页勾成双休。
+     * 班次定义不会删（下次切回轮班还要用），但第 2 页原来只看「班次空不空」，
+     * 于是双休态照样按白班 08:00 倒推出 06:30，还列出「白班 06:30 · 中班 14:30 ·
+     * 夜班 22:30」——页面上写着双休，却在给三个班次算时刻。
+     */
+    @Test
+    public void weeklyWithLeftoverShifts_ignoresThem() {
+        wipe();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        Prefs.setShifts(ctx(), java.util.Arrays.asList(
+                new Shift(1, "白班", 8 * 60, 16 * 60, 0),
+                new Shift(2, "中班", 16 * 60, 0, 1),
+                new Shift(3, "夜班", 0, 8 * 60, 2)));
+        GuideActivity a = launch();
+
+        assertEquals("双休态不该按班次倒推大字", "07:30", text(a, R.id.tv_time));
+        assertEquals("双休态不该出现班次预览", View.GONE, visibility(a, R.id.tv_shift_preview));
+        assertEquals("跟班次无关的模式不该往闹钟里写偏移",
+                0, Prefs.getAlarms(ctx()).get(0).offsetMin);
+    }
+
+    /** 轮班切回按周后，第 2 页的班次预览同样要收掉（v1.8.3）。 */
+    @Test
+    public void backToWeekly_hidesShiftPreview() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+        assertEquals(View.VISIBLE, visibility(a, R.id.tv_shift_preview));
+
+        a.findViewById(R.id.link_rotation).performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals("点完「改成按周排」就该切回按周",
+                View.VISIBLE, visibility(a, R.id.box_week));
+
+        a.findViewById(R.id.btn_next).performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals("切回按周后不能再写三个班次的时刻",
+                View.GONE, visibility(a, R.id.tv_shift_preview));
+    }
 }

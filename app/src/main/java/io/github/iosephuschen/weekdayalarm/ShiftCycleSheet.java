@@ -47,13 +47,23 @@ final class ShiftCycleSheet {
         if (ctx == null) return;
 
         List<Shift> shifts = new ArrayList<>(Prefs.getShifts(ctx));
-        int len = Prefs.getCycleLen(ctx);
-        LocalDate start = Prefs.getCycleStart(ctx);
         int[] cycle = Prefs.getShiftCycle(ctx);
+        boolean fresh = cycle == null;
+        int len;
         if (cycle == null) {
+            // v1.9.1：第一次排轮班，默认 4 天、每天先铺第一个班次。
+            // 原来直接沿用 Prefs 里的 7 / 14 天，且每天都是「休」——用户进来
+            // 看到一排「休」，等于要先把「你几天一轮」在脑子里数一遍，再一天天点。
+            // 4 天是「上二休二」这类常见节奏的起点；先铺满第一个班次，
+            // 用户只需要把休息的那几天点掉，比从全休开始点得少一半。
+            len = 4;
             cycle = new int[len];
-            for (int i = 0; i < len; i++) cycle[i] = -1;
+            int first = shifts.isEmpty() ? -1 : shifts.get(0).id;
+            for (int i = 0; i < len; i++) cycle[i] = first;
+        } else {
+            len = Prefs.getCycleLen(ctx);
         }
+        LocalDate start = Prefs.getCycleStart(ctx);
         cycle = fit(cycle, len);
 
         View view = View.inflate(ctx, R.layout.dialog_schedule_sheet, null);
@@ -68,7 +78,9 @@ final class ShiftCycleSheet {
         ViewGroup list = view.findViewById(R.id.list_days);
         SwitchKit.style(ctx, swHoliday);
 
-        tvSub.setText("第 1 天定下来，往后按 N 天一轮排。每天点一下，选那天上哪个班。");
+        tvSub.setText(fresh && !shifts.isEmpty()
+                ? "已经先按「" + shifts.get(0).name + "」铺满了，把休息的那几天点掉就行。"
+                : "第 1 天定下来，往后按 N 天一轮排。每天点一下，选那天上哪个班。");
         tvHint.setText(shifts.isEmpty()
                 ? "还没有班次。先回上一页建一个，再回来排。"
                 : "点哪天，选那天上哪个班；不上班就选休息。");

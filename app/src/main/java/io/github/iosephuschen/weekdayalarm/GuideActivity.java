@@ -91,7 +91,9 @@ public class GuideActivity extends AppCompatActivity {
     private WeekGrid weekGrid;
     private LinearLayout cardRotation, rowBiweekly;
     private androidx.appcompat.widget.SwitchCompat swBiweekly;
-    private TextView tvWeekSub, tvRotationTitle, tvRotationSub, tvBiweeklyHint, linkRotation;
+    private TextView tvWeekSub, tvRotationTitle, tvRotationSub, tvBiweeklyHint;
+    /** 「改成按周排」：v1.9.1 起是整行卡片，不是一行小字。 */
+    private View linkRotation;
     /** 第一页的标题与结论条（v1.3.0）：标题跟着「一周 / 两周」变，结论条报出认出的是哪种班。 */
     private TextView tvWeekTitle, tvWeekVerdict;
     /** 这一周（或两周）的班：true = 上班。v1.2.0 */

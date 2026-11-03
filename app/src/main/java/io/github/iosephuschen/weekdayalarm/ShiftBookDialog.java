@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -69,15 +70,17 @@ public final class ShiftBookDialog {
         int pad = dp(ctx, 20);
         box.setPadding(pad, dp(ctx, 8), pad, dp(ctx, 8));
 
-        if (shifts.isEmpty()) {
-            TextView empty = new TextView(ctx);
-            empty.setText("还没有班次。先建一个「白班 08:00 – 20:00」，再把它排进循环。");
-            empty.setTextSize(13);
-            empty.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
-            empty.setLineSpacing(dp(ctx, 4), 1f);
-            empty.setPadding(0, 0, 0, dp(ctx, 12));
-            box.addView(empty);
-        }
+        // v1.9.1：标题下补一句。长按删除是这个弹窗里唯一没有视觉线索的动作，
+        // 不写出来没人试得出来（v1.8.2 之前删除只能长按，用户反馈过「找不到删除」）
+        TextView sub = new TextView(ctx);
+        sub.setText(shifts.isEmpty()
+                ? "先建一个「白班 08:00 – 20:00」，再回到循环里排。"
+                : "点一行改时间，长按删除。");
+        sub.setTextSize(13);
+        sub.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
+        sub.setLineSpacing(dp(ctx, 4), 1f);
+        sub.setPadding(0, 0, 0, dp(ctx, 12));
+        box.addView(sub);
 
         for (Shift s : shifts) {
             // 编辑完直接重开列表：对话框栈不叠三层，用户点「完成」就回到班表页。
@@ -93,7 +96,9 @@ public final class ShiftBookDialog {
         add.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
         add.setGravity(Gravity.CENTER);
         add.setPadding(0, dp(ctx, 14), 0, dp(ctx, 14));
-        add.setBackground(rippleCard(ctx));
+        // v1.9.1：白卡 → 浅靛底。它和上面几张是两种东西：上面是「已有数据」，
+        // 这张是「去建一条」。同一个白卡模子时，第三张读起来像第三个班次。
+        add.setBackground(rippleSoft(ctx));
         add.setClickable(true);
         add.setFocusable(true);
         LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
@@ -130,9 +135,20 @@ public final class ShiftBookDialog {
         g.setShape(GradientDrawable.OVAL);
         g.setColor(ShiftColors.of(ctx, s.color));
         dot.setBackground(g);
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(ctx, 9), dp(ctx, 9));
+        // v1.9.1：9dp 实心点 → 22dp 淡色圆底 + 9dp 实心点。
+        // 单颗小点在白卡里几乎没有分量，一眼扫过去只看到两行灰字；
+        // 一层 20% 的同色底把「这条是哪个班」变成能扫读的色标。
+        FrameLayout badge = new FrameLayout(ctx);
+        View halo = new View(ctx);
+        GradientDrawable hg = new GradientDrawable();
+        hg.setShape(GradientDrawable.OVAL);
+        hg.setColor((ShiftColors.of(ctx, s.color) & 0x00FFFFFF) | 0x33000000);
+        halo.setBackground(hg);
+        badge.addView(halo, new FrameLayout.LayoutParams(dp(ctx, 22), dp(ctx, 22)));
+        badge.addView(dot, new FrameLayout.LayoutParams(dp(ctx, 9), dp(ctx, 9), Gravity.CENTER));
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(ctx, 22), dp(ctx, 22));
         dlp.setMarginEnd(dp(ctx, 12));
-        row.addView(dot, dlp);
+        row.addView(badge, dlp);
 
         LinearLayout mid = new LinearLayout(ctx);
         mid.setOrientation(LinearLayout.VERTICAL);
@@ -156,9 +172,11 @@ public final class ShiftBookDialog {
         mid.addView(span);
         row.addView(mid);
 
+        // v1.9.1：光秃秃的「›」→「改 ›」。班表页每一行都写「改 ›」，
+        // 一个符号在这里反而说不清是「看详情」还是「编辑」
         TextView arrow = new TextView(ctx);
-        arrow.setText("›");
-        arrow.setTextSize(17);
+        arrow.setText("改 ›");
+        arrow.setTextSize(12.5f);
         arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
         row.addView(arrow);
 
@@ -356,6 +374,7 @@ public final class ShiftBookDialog {
         value.setTypeface(MEDIUM);
         value.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
 
+        // 编辑页这几行是「左标签右值」，箭头只是提示可点，不用写「改」
         TextView arrow = new TextView(ctx);
         arrow.setText("›");
         arrow.setTextSize(17);
@@ -388,6 +407,21 @@ public final class ShiftBookDialog {
         g.setStroke(dp(ctx, 1), ContextCompat.getColor(ctx, R.color.line));
         g.setCornerRadius(dp(ctx, 14));
         return new RippleDrawable(ColorStateList.valueOf(0x16000000), g, null);
+    }
+
+    /**
+     * 浅靛底圆角卡，给「＋ 新建班次」用（v1.9.1）。
+     *
+     * <p>和 {@link #rippleCard} 的区别只在底色：那是「一条已经存在的班次」，
+     * 这是「去建一条」。同一个白卡模子时，第三张读起来像第三个班次。
+     * 底色借 {@code @color/verdict_bg}——它本来就是「这句话/这块比周围重要」的浅靛，
+     * 夜间版有对应深靛，不用另加一个色名。
+     */
+    private static RippleDrawable rippleSoft(Context ctx) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(ContextCompat.getColor(ctx, R.color.verdict_bg));
+        g.setCornerRadius(dp(ctx, 14));
+        return new RippleDrawable(ColorStateList.valueOf(0x204F46E5), g, null);
     }
 
     private static void save(Context ctx, Shift base, String name, int start, int end) {

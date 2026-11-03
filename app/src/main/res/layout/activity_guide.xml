@@ -276,25 +276,40 @@
                         android:textSize="12.5sp" />
                 </LinearLayout>
 
-                <!-- 退出入口，只在轮班态出现。它是「改回按周」而不是主入口，
-                     所以留成一行小字——和上面的卡片不是一类动作。 -->
-                <TextView
+                <!-- 退出入口，只在轮班态出现。v1.9.1：从一行紫色小字改成卡片行——
+                     「我的班表」里这一项（row_back_week）就是卡片，两页同一件事
+                     两种长相，切过去又会看到「原地换了张脸」。 -->
+                <LinearLayout
                     android:id="@+id/link_rotation"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_guide_link"
+                    android:background="@drawable/bg_dialog_row"
                     android:clickable="true"
                     android:focusable="true"
-                    android:paddingStart="@dimen/space_8"
-                    android:paddingTop="@dimen/space_6"
-                    android:paddingEnd="@dimen/space_8"
-                    android:paddingBottom="@dimen/space_6"
-                    android:text="改成按周排 ›"
-                    android:textColor="@color/indigo"
-                    android:textSize="12.5sp"
-                    android:visibility="gone" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="@dimen/space_16"
+                    android:paddingBottom="14dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="改成按周排"
+                        android:textColor="@color/ink"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="›"
+                        android:textColor="@color/sub"
+                        android:textSize="14sp" />
+                </LinearLayout>
 
                 <!-- 从旧手机迁移（v0.83.0 从顶栏挪到这里）：它回答的是「我有旧配置」，
                      与顶栏那个「我不想设」的跳过不是一类动作。放正文末尾，看得见但不抢戏。 -->

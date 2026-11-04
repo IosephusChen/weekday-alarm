@@ -233,7 +233,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_dialog_row"
+                    android:background="@drawable/bg_action_emphasis"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
@@ -254,8 +254,9 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="几天一轮的班"
-                            android:textColor="@color/ink"
-                            android:textSize="14sp" />
+                            android:textColor="@color/indigo"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/tv_rotation_sub"
@@ -280,7 +281,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_dialog_row"
+                    android:background="@drawable/bg_action_emphasis"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
@@ -296,8 +297,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="改成按周排"
-                        android:textColor="@color/ink"
-                        android:textSize="14sp" />
+                        android:textColor="@color/indigo"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <TextView style="@style/SettingsChevron" />
                 </LinearLayout>

@@ -335,6 +335,10 @@ public class GuideActivity extends AppCompatActivity {
         linkRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
         if (rotation) {
             WeekSchedule.Rule rule = draft.rule(Prefs.getShifts(this));
+            // v1.11.4：轮班态这张卡退成「当前班表」的摘要，主角是下面那张
+            // 「改成按周排」——两张淡紫卡上下相邻会让人以为有两个并列的主入口。
+            cardRotation.setBackgroundResource(R.drawable.bg_dialog_row);
+            tvRotationTitle.setTextColor(ContextCompat.getColor(this, R.color.ink));
             // 标题和副标题同样要换：格子已经收起来了，还写着「点一下切换班和休」
             // 就是让人去点一个不存在的东西
             tvWeekTitle.setText("你几天一轮、怎么倒？");
@@ -360,7 +364,11 @@ public class GuideActivity extends AppCompatActivity {
         tvRotationTitle.setText("几天一轮的班");
         // 从轮班切回来要复位：同一张 TextView 上一步可能还是 15sp bold
         tvRotationTitle.setTextSize(14);
-        tvRotationTitle.setTypeface(null, android.graphics.Typeface.NORMAL);
+        // v1.11.4：按周态它是这一页唯一的「换排法」入口，跟班表页那张一样用
+        // 淡靛蓝底 + 主色粗字，从上面几张白卡里跳出来。轮班态已在上面的分支退回白卡。
+        cardRotation.setBackgroundResource(R.drawable.bg_action_emphasis);
+        tvRotationTitle.setTextColor(ContextCompat.getColor(this, R.color.indigo));
+        tvRotationTitle.setTypeface(null, android.graphics.Typeface.BOLD);
         tvRotationSub.setText("四班三倒、上二休二点这里");
 
         biweekly = draft.isTwoWeeks();

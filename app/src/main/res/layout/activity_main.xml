@@ -47,10 +47,16 @@
                     android:textSize="19sp"
                     android:textStyle="bold" />
 
+                <!-- v1.11.4：把「轮班」补进这一行。它列的是「这个闹钟认得哪些班表」，
+                     漏掉轮班就等于告诉用户「轮班不归它管」，而首页 hero 卡里正写着
+                     「12 天一轮 · 上 10 休 2」——两处自相矛盾。
+                     宽度只够四个模式加一句收尾，所以「系统级」三个字让出来：
+                     那是实现口径（走 setAlarmClock，不被系统清掉），使用说明里讲，
+                     标题栏这一行要回答的是「支不支持我的排班」。 -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="大小周 / 双休 / 单休 · 上班日系统级响铃"
+                    android:text="大小周 / 双休 / 单休 / 轮班 · 上班日响铃"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
             </LinearLayout>

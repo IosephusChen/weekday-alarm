@@ -226,7 +226,7 @@ final class CalendarPanel {
                     lp.height = cellHeight;
                     cell.setLayoutParams(lp);
                 }
-                // 灰字格子是上 / 下月的日期。点它会弹出「把 9月28日 标记为请假」，
+                // 灰字格子是上 / 下月的日期。点它会弹出「把 9月28日 设为请假」的菜单，
                 // 而那一格在当前月里根本不显示标签，标记完什么也看不见。点灰字直接翻到那个月。
                 cell.setOnClickListener(v -> {
                     if (!inMonth) {
@@ -432,9 +432,12 @@ final class CalendarPanel {
         List<String> items = new ArrayList<>();
         List<String> subs = new ArrayList<>();
         List<Runnable> actions = new ArrayList<>();
-        // 请假项：上班日给；已有标记时也给，用来取消
+        // 请假项：上班日给；已有标记时也给，用来取消。
+        // v1.11.4：三项一律两字——「请假 / 调班 / 加班」。原来「标记为请假」五字、
+        // 「调班」两字，同一个弹窗里两种长度，读起来像两种控件。动作名只说到「做什么」，
+        // 「会怎样」交给副标题（每项都有一行）。
         if (work || hasV) {
-            items.add(hasV ? "取消请假" : "标记为请假");
+            items.add(hasV ? "取消请假" : "请假");
             subs.add(vacationSub(work, past, hasV));
             actions.add(() -> toggleVacation(d, work, past));
         }
@@ -444,11 +447,11 @@ final class CalendarPanel {
         // 点了直接记一笔，不问班次——v1.11.0 在这里问过头了
         if (hasShifts) {
             items.add(hasO ? (work ? "取消调班" : "取消加班")
-                    : (work ? "调班" : "标记为加班"));
+                    : (work ? "调班" : "加班"));
             subs.add(overtimeSub(work, past, hasO));
             actions.add(() -> onOvertimeClick(d, work, past));
         } else if (!work) {
-            items.add(hasO ? "取消加班" : "标记为加班");
+            items.add(hasO ? "取消加班" : "加班");
             subs.add(hasO ? "删掉这一天的加班记录"
                     : (past ? "补记一下，不影响闹钟" : "当天按上班日排程"));
             actions.add(() -> onOvertimeClick(d, work, past));

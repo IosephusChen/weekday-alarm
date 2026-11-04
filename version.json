@@ -1,14 +1,14 @@
 {
-  "versionCode": 272,
-  "versionName": "1.11.3",
+  "versionCode": 273,
+  "versionName": "1.11.4",
   "published": "2026-11-04",
-  "title": "改错了班表，能改回来",
+  "title": "一套说法，入口亮起来",
   "notes": [
-    "切去双休看一眼再切回轮班，原来那张「上 12 休 2」还在，不用重排",
-    "自定义里逐日填的时刻也不会再被清掉",
-    "只勾星期的「自定义」不再冒出「调班」，它本来就没有班可调",
-    "班次定义、按天标记照旧一条不删"
+    "菜单三项统一成两字：请假 / 调班 / 加班，取消项统一「取消 X」",
+    "「改成几天一轮」在班表页和引导页换成淡靛蓝卡，一眼看得到",
+    "首页副标题补上轮班；设置里那组改回「排班与节假日」",
+    "帮助页删掉「同一天都标写假加」——v1.11.0 起没这回事了"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.3/weekday-alarm-1.11.3.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.11.3"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.4/weekday-alarm-1.11.4.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.11.4"
 }

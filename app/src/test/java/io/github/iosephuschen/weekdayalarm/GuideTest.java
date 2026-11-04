@@ -1246,6 +1246,14 @@ public class GuideTest {
         assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
         assertEquals("几天一轮的班", text(a, R.id.tv_rotation_title));
         assertEquals("四班三倒、上二休二点这里", text(a, R.id.tv_rotation_sub));
+        // v1.11.4：这张卡是这一页唯一的「换排法」入口，字要粗、要主色，
+        // 从上面几张白卡里跳出来（用户反馈「不显眼」）
+        TextView rotTitle = a.findViewById(R.id.tv_rotation_title);
+        // 用 getStyle 判粗细：Robolectric 的 Typeface.isBold() 没接 native，恒为 false
+        assertTrue("按周态的入口卡要加粗", rotTitle.getTypeface() != null
+                && rotTitle.getTypeface().getStyle() == android.graphics.Typeface.BOLD);
+        assertEquals("按周态的入口卡用主色", ContextCompat.getColor(a, R.color.indigo),
+                rotTitle.getCurrentTextColor());
         // 「改成按周排」是退出入口，按周态没有可退的地方
         assertEquals(View.GONE, visibility(a, R.id.link_rotation));
         assertTrue(text(a, R.id.tv_week_title).contains("这一周"));
@@ -1267,6 +1275,10 @@ public class GuideTest {
         // 同一张卡，标题从「几天一轮的班」换成排班摘要——不是换另一个控件
         assertFalse("轮班态不该还写着入口那句",
                 text(a, R.id.tv_rotation_title).equals("几天一轮的班"));
+        // v1.11.4：轮班态它是「当前班表」的摘要，主角换成下面「改成按周排」，
+        // 退回正文色——两张强调卡上下相邻会让人以为有两个并列的主入口
+        assertEquals("摘要卡不抢主色", ContextCompat.getColor(a, R.color.ink),
+                ((TextView) a.findViewById(R.id.tv_rotation_title)).getCurrentTextColor());
     }
 
     /**

@@ -308,7 +308,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:background="@drawable/bg_dialog_row"
+            android:background="@drawable/bg_action_emphasis"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center_vertical"
@@ -318,13 +318,16 @@
             android:paddingEnd="16dp"
             android:paddingBottom="14dp">
 
+            <!-- v1.11.4：这一行是整页唯一会改变表结构的动作，改成淡靛蓝卡 + 主色字，
+                 从上面几张白卡的序列里跳出来（用户反馈「不显眼」）。 -->
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="改成几天一轮"
-                android:textColor="@color/ink"
-                android:textSize="14sp" />
+                android:textColor="@color/indigo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <!-- v1.5.0：右侧从光秃秃的「›」改成「改 ›」，和上面那张旋转摘要卡
                  用同一套说法；括号里的两个例子也删了——上一张卡的副标题刚说过
@@ -337,7 +340,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:background="@drawable/bg_dialog_row"
+            android:background="@drawable/bg_action_emphasis"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center_vertical"
@@ -353,8 +356,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="改成按周排"
-                android:textColor="@color/ink"
-                android:textSize="14sp" />
+                android:textColor="@color/indigo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <TextView style="@style/SettingsChevron" />
         </LinearLayout>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「改排班模式」这类关键动作的卡片底（v1.11.4）。
+
+     用在四处：班表页 row_rotation / row_back_week、引导页 card_rotation / link_rotation。
+     这四张卡说的是同一件事——「换一种班表排法」，而它们是各自页面上唯一会改变
+     整张表结构的动作。原来与普通白卡同底同边，用户反馈「不显眼」。
+
+     淡靛蓝底 + 同色描边 + @color/indigo 的字与箭头。不加大图标、不加阴影：
+     这两页已经各有一个实心主按钮（保存 / 下一步），再加重的会是第三个焦点。
+
+     与 bg_dialog_row 的区别只在底色与描边色，圆角同为 radius_row——
+     混在同一列里时轮廓不会错位。 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1F4F46E5">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/action_bg" />
+            <corners android:radius="@dimen/radius_row" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/action_line" />
+        </shape>
+    </item>
+</ripple>

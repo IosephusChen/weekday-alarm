@@ -199,4 +199,24 @@ public class WordingTest {
         assertTrue("得说清小爱那类智慧铃声读不到", text.contains("小爱"));
         assertTrue("得说清列表里是底层那条", text.contains("底层"));
     }
+
+    /**
+     * 首页标题下那行，列的是「这个闹钟认得哪些班表」（v1.11.4）。
+     *
+     * <p>轮班 v1.9 就做出来了，这行一直写「大小周 / 双休 / 单休」。首页 hero 卡里
+     * 正显示着「12 天一轮 · 上 10 休 2」，两处对不上——列不全等于告诉轮班用户
+     * 「你的排班不归它管」。这行只有一行宽，四个模式并列后放不下「系统级」，
+     * 那三个字是实现口径（走 setAlarmClock），挪到使用说明里讲。
+     */
+    @Test
+    public void homeSubtitle_listsEveryScheduleMode() {
+        String xml = read("app/src/main/res/layout/activity_main.xml");
+        int from = xml.indexOf("大小周 / 双休");
+        assertTrue("找不到首页副标题（应从「大小周 / 双休」写起）", from >= 0);
+        String line = xml.substring(from, xml.indexOf('"', from));
+        for (String mode : new String[]{"双休", "单休", "大小周", "轮班"}) {
+            assertTrue("首页副标题漏了「" + mode + "」：" + line, line.contains(mode));
+        }
+        assertTrue("这行还得说清「只在上班日响」：" + line, line.contains("上班日"));
+    }
 }

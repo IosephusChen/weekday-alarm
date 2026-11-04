@@ -29,7 +29,10 @@
     <string name="settings_ringtone_title">铃声</string>
     <string name="settings_ringtone_default">系统默认</string>
     <string name="settings_more_ring_title">响铃方式</string>
-    <string name="settings_section_schedule">周休与节假日</string>
+    <!-- v1.11.4：从「周休与节假日」改成「排班与节假日」。
+         里面有「我的班表」一行，N 天一轮的轮班既不按周、也不叫「休」，
+         写「周休」等于把这半用户排除在这组之外。 -->
+    <string name="settings_section_schedule">排班与节假日</string>
     <string name="settings_week_mode_title">我的班表</string>
     <string name="settings_week_mode_default">大小周</string>
     <string name="settings_holiday_data_title">节假日数据</string>
@@ -103,7 +106,9 @@
 
     <string name="help_s1_title">排班与日历</string>
     <string name="help_s1_b1">日历就在首页，格子里四个字：班＝上班、休＝休息、假＝法定假、补＝调休补班</string>
-    <string name="help_s1_b2">「请假」「加班」是你自己标的，同一天都标写「假加」</string>
+    <!-- v1.11.4：「同一天都标写「假加」」是 v1.11.0 之前的事实——
+         现在一天只有一个结果，后标的顶掉先标的，格子上不会再出现「假加」。 -->
+    <string name="help_s1_b2">「请假」「调班」「加班」是你自己标的，一天只有一个结果，后标的顶掉先标的</string>
     <string name="help_s1_b3">点灰字的上月 / 下月日期翻月，翻乱了点「回本月」</string>
 
     <string name="help_s2_title">闹钟</string>
@@ -120,7 +125,7 @@
     <string name="help_s3_title">临时请假 / 加班</string>
     <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点一下就是请假或加班</string>
     <string name="help_s3_b2">点完按钮变成「已请假 / 已加班」，再点一次撤销</string>
-    <string name="help_s3_b3">别的日子：在首页日历里点那一天，选标记为请假 / 加班</string>
+    <string name="help_s3_b3">别的日子：在首页日历里点那一天，选「请假」或「加班」——按 N 天一轮排的班，上班日那项叫「调班」，点完接着选上哪个班</string>
     <string name="help_s3_b4">标错了点那一天取消；没有批量清除（一次删全部太容易误伤）</string>
 
     <string name="help_s4_title">桌面小组件</string>

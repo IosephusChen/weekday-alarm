@@ -4,8 +4,8 @@
 
 **按你的周休制度推算上班日，只在上班日响的闹钟。**
 
-双休、单休（周日休 / 周六休）、大小周都支持；轮班和自定义排班也能设——
-上二休二、上四休二、每周固定休周三，按 N 天一轮自己标哪天上班，最长 62 天。
+双休、单休（周日休 / 周六休）、大小周，以及上二休二、上四休二、每周固定休周三
+这类轮班都支持——按 N 天一轮自己标哪天上班，最长 62 天。
 轮班还能定义**班次**（白班 08:00–20:00、夜班 20:00–次日 08:00），闹钟挂在班次上：
 「开始前 1 小时 30 分」一条同时管白班和夜班，白班那天 06:30、夜班那天 18:30。
 法定节假日与调休补班自动算进去，不管哪种排班，都不用再手动改闹钟。
@@ -51,7 +51,7 @@
 
 ## 下载
 
-**v1.11.3（2026-11-04）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.3/weekday-alarm-1.11.3.apk)
+**v1.11.4（2026-11-04）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.4/weekday-alarm-1.11.4.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。

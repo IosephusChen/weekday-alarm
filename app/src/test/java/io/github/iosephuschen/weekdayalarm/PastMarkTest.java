@@ -175,7 +175,7 @@ public class PastMarkTest {
         assertNotNull("过去的日子也该弹出选项", d);
         String[] items = itemsOf(d);
         assertEquals("双休的上班日只有请假一项", 1, items.length);
-        assertEquals("标记为请假", items[0]);
+        assertEquals("请假", items[0]);
         CharSequence title = titleOf(d);
         assertNotNull("对话框应有标题", title);
         assertTrue("标题应标明已过去，实际：" + title, title.toString().contains("已过去"));
@@ -193,7 +193,7 @@ public class PastMarkTest {
 
         String[] items = itemsOf(latestDialog());
         assertEquals("轮班的上班日给两项", 2, items.length);
-        assertEquals("标记为请假", items[0]);
+        assertEquals("请假", items[0]);
         assertEquals("第二项叫调班", "调班", items[1]);
     }
 
@@ -205,7 +205,7 @@ public class PastMarkTest {
         LocalDate past = dayOf(true, true);
 
         clickDay(panelOf(a), past);
-        clickItem(latestDialog(), 0);   // 「标记为请假」
+        clickItem(latestDialog(), 0);   // 「请假」
 
         assertTrue("过去的日子应能补记请假", Prefs.isVacation(ctx(), past));
         String toast = ShadowToast.getTextOfLatestToast();
@@ -293,11 +293,11 @@ public class PastMarkTest {
         assertNotNull("上班日应弹出选项", d);
         String[] items = itemsOf(d);
         assertEquals("双休的上班日只有请假一项", 1, items.length);
-        assertEquals("标记为请假", items[0]);
+        assertEquals("请假", items[0]);
     }
 
     /**
-     * 双休的休息日：点「标记为加班」直接记一笔，不问上哪个班（v1.11.2）。
+     * 双休的休息日：点「加班」直接记一笔，不问上哪个班（v1.11.2）。
      *
      * <p>班次表里还留着以前建的白班，但那不是双休的班——双休只有「去」和「不去」，
      * 没有「几点去」。问了反而逼用户在两个早已不用的班次里做选择。
@@ -332,7 +332,7 @@ public class PastMarkTest {
         assertNotNull(d);
         String[] items = itemsOf(d);
         assertEquals("休息日只给一项", 1, items.length);
-        assertEquals("标记为加班", items[0]);
+        assertEquals("加班", items[0]);
     }
 
     /**
@@ -349,10 +349,10 @@ public class PastMarkTest {
         LocalDate rest = dayOf(false, false);
 
         clickDay(panelOf(a), rest);
-        clickItem(latestDialog(), 0);   // 休息日第一项「标记为加班」
+        clickItem(latestDialog(), 0);   // 休息日第一项「加班」
 
         AlertDialog pick = latestDialog();
-        assertNotNull("选完「标记为加班」应接着问上哪个班", pick);
+        assertNotNull("选完「加班」应接着问上哪个班", pick);
         assertTrue("第二层标题要写清问的是什么",
                 String.valueOf(titleOf(pick)).contains("上哪个班"));
         assertEquals("两个班次都列出来", 2, itemsOf(pick).length);
@@ -381,7 +381,7 @@ public class PastMarkTest {
         assertFalse("但它不是请假", Prefs.isVacation(ctx(), work));
     }
 
-    /** 上班日点「标记为请假」后，再点同一天，选项应变成「取消请假」。 */
+    /** 上班日点「请假」后，再点同一天，选项应变成「取消请假」。 */
     @Test
     public void markedDay_showsCancelOption() throws Exception {
         resetPrefs();
@@ -389,7 +389,7 @@ public class PastMarkTest {
         LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
-        clickItem(latestDialog(), 0);   // 「标记为请假」
+        clickItem(latestDialog(), 0);   // 「请假」
         assertTrue(Prefs.isVacation(ctx(), work));
 
         clickDay(panelOf(a), work);

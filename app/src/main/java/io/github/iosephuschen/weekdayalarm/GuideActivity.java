@@ -359,8 +359,9 @@ public class GuideActivity extends AppCompatActivity {
         }
 
         // 按周态：这张卡降级成入口，说清「什么人来点它」。
-        // 不写「轮班」两个字是有意的——「我是几天一轮的班」比术语好认，
-        // 班表页那张卡也是同一种说法（按 N 天一轮排）。
+        // 不写「轮班」两个字是有意的——「我是几天一轮的班」比术语好认。
+        // v1.11.5：班表页那张卡原来叫「改成几天一轮」，同一个入口两个名字；
+        // 现在两页逐字相同，改这边的话要连 WeekScheduleActivity 的布局一起看。
         tvRotationTitle.setText("几天一轮的班");
         // 从轮班切回来要复位：同一张 TextView 上一步可能还是 15sp bold
         tvRotationTitle.setTextSize(14);

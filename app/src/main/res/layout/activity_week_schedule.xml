@@ -318,20 +318,43 @@
             android:paddingEnd="16dp"
             android:paddingBottom="14dp">
 
-            <!-- v1.11.4：这一行是整页唯一会改变表结构的动作，改成淡靛蓝卡 + 主色字，
-                 从上面几张白卡的序列里跳出来（用户反馈「不显眼」）。 -->
-            <TextView
+            <!-- v1.11.5：这一行原来叫「改成几天一轮」，引导页同一件事叫「几天一轮的班」，
+                 同一个入口两个名字。统一到引导页那个说法——「几天一轮的班」是人话，
+                 「轮班」是术语，而且它是名词短语，跟上面两张开关卡的标题读起来是一类。
+                 「改成」想交代的「这是一次修改」由下面的副标题接手。 -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="改成几天一轮"
-                android:textColor="@color/indigo"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_rotation_entry_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="几天一轮的班"
+                    android:textColor="@color/indigo"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <!-- v1.11.5：补副标题。原来只有一行标题，比上面两张白卡矮一截，
+                     而且没说「什么人来点它」。这句跟引导页逐字相同。 -->
+                <TextView
+                    android:id="@+id/tv_rotation_entry_sub"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="四班三倒、上二休二点这里"
+                    android:textColor="@color/sub"
+                    android:textSize="11sp" />
+            </LinearLayout>
 
             <!-- v1.5.0：右侧从光秃秃的「›」改成「改 ›」，和上面那张旋转摘要卡
-                 用同一套说法；括号里的两个例子也删了——上一张卡的副标题刚说过
-                 「上四休二」，隔 8dp 再说一遍是啰嗦。 -->
+                 用同一套说法。
+                 v1.11.5：v1.5.0 时这里写的是「括号里的两个例子也删了——上一张卡的
+                 副标题刚说过『上四休二』」。这条理由其实站不住：上面那张摘要卡
+                 （card_rotation）只在轮班态出现，而这张卡只在按周态出现，两者从不同屏。
+                 现在例子加回来了，跟引导页逐字一致。 -->
             <TextView style="@style/SettingsChevron" />
         </LinearLayout>
 

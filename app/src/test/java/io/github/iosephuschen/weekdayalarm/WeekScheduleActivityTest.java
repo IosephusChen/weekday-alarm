@@ -211,6 +211,22 @@ public class WeekScheduleActivityTest {
                 Prefs.getCycleKind(ctx()) == Prefs.CYCLE_KIND_ROTATION);
     }
 
+    /**
+     * 轮班入口在两页说同一句话（v1.11.5）。
+     *
+     * <p>原来班表页叫「改成几天一轮」、引导页叫「几天一轮的班」，同一个入口两个名字。
+     * 这条用例跟 {@code GuideTest#weeklyPage_keepsVerdict} 互相钉住——只改一边会红。
+     */
+    @Test
+    public void rotationEntry_saysSameWordsAsGuide() {
+        WeekScheduleActivity a = openDoubleRest();
+
+        assertEquals("按周态这张卡要露出来",
+                View.VISIBLE, a.findViewById(R.id.row_rotation).getVisibility());
+        assertEquals("几天一轮的班", text(a, R.id.tv_rotation_entry_title));
+        assertEquals("四班三倒、上二休二点这里", text(a, R.id.tv_rotation_entry_sub));
+    }
+
     /** 结论条随格子变：改完不用退出去也能确认系统认成了什么。 */
     @Test
     public void verdict_followsTheGrid() {

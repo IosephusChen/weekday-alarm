@@ -16,9 +16,11 @@ import java.util.List;
  * {@link #commit(Context)} 才落到 Prefs 并触发重排。同一份草稿也给引导页用，
  * 那边是「点开始使用」时提交。
  *
- * <p><b>顺手清残留</b>：切回按周时把 {@code shift_cycle} 一起清掉。v1.8.1 那次
- * 「切回双休后休息日还按白班响」就是因为旧表没人清、各处靠判断挡。这里从数据源头
- * 断掉：不是轮班就没有班次表，判断写漏了也不会错。
+ * <p><b>切模式不丢东西（v1.11.3）</b>：切回按周时仍然要清 {@code shift_cycle}——
+ * 一张 7 天的轮班表碰上同样 7 天的按周表长度正好相等，{@code getShiftCycle} 会把它
+ * 读出来，按周态又按班次算时刻（v1.8.1 那个坑）。但清之前先存一份备份，切回轮班时
+ * 当默认值用；逐日时刻则干脆不删了，轮班态本来就不读它。两条都守同一个原则：
+ * <b>数据留着，不生效</b>。
  */
 final class ScheduleDraft {
 
@@ -31,6 +33,15 @@ final class ScheduleDraft {
     boolean cycleHoliday;
     int[] shiftCycle;
     int kind = Prefs.CYCLE_KIND_WEEK;
+
+    /**
+     * 进页面时那张轮班表（v1.11.3）。
+     *
+     * <p>{@link #setDays} 一动就把 {@link #shiftCycle} 置空了，而「改成按周排」正是走
+     * 那条路——等到 {@link #commit} 想备份时，原表已经不在草稿里。所以进来时先存一份。
+     */
+    private int[] savedRotation;
+    private LocalDate savedRotationStart;
 
     /** 有没有改过。没改过退出不弹「放弃修改」。 */
     boolean dirty;
@@ -48,6 +59,8 @@ final class ScheduleDraft {
         d.cycleStart = Prefs.getCycleStart(c);
         d.cycleHoliday = Prefs.isCycleHoliday(c);
         d.shiftCycle = Prefs.getShiftCycle(c);
+        d.savedRotation = d.shiftCycle;
+        d.savedRotationStart = d.cycleStart;
         d.kind = Prefs.getCycleKind(c);
         return d;
     }
@@ -138,11 +151,18 @@ final class ScheduleDraft {
             Prefs.setCycleMask(c, cycleMask);
             Prefs.setCycleHoliday(c, cycleHoliday);
             Prefs.setShiftCycle(c, rotation() ? shiftCycle : null);
-            if (rotation()) {
-                // 班次表建立了，逐日时刻就不再被读；留着会造成「两套数据都在」的错觉
-                Prefs.setCycleTimes(c, null);
-            }
+            // v1.11.3：这里原来还要 setCycleTimes(null)，把自定义里逐日填的时刻一起删掉。
+            // 那一步同样是想「只留一套数据」，但轮班态压根不读 cycleTimes
+            // （{@code cycleTimeOf} 见 shiftCycle 非空就先返回），删了只剩副作用：
+            // 从自定义切去轮班看一眼再切回来，那七个时刻全没了。留着不读，与
+            // 按天覆盖表同一个原则。
         } else {
+            // v1.11.3：把这张轮班表存一份再清。清是必须的——一张 7 天的轮班表碰上
+            // 同样 7 天的按周表，长度正好相等，getShiftCycle 会把它读出来，
+            // 按周态又按班次算时刻了（v1.8.1 那个坑）。备份不参与计算，只做默认值。
+            if (savedRotation != null && savedRotation.length >= 2) {
+                Prefs.saveRotationBackup(c, savedRotationStart, savedRotation);
+            }
             Prefs.setAnchor(c, anchor != null ? anchor : LocalDate.now());
             Prefs.setSmallRestSat(c, smallRestSat);
             // 按周态也留着这个开关（页面上一直有），所以这里同样要写

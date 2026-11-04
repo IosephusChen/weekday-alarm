@@ -1,14 +1,14 @@
 {
-  "versionCode": 271,
-  "versionName": "1.11.2",
+  "versionCode": 272,
+  "versionName": "1.11.3",
   "published": "2026-11-04",
-  "title": "双休单休大小周，没有班次",
+  "title": "改错了班表，能改回来",
   "notes": [
-    "上班日只剩「标记为请假」：双休没有班可调，那个入口撤掉了",
-    "休息日标加班不再问上哪个班，直接记一笔",
-    "从轮班切回双休，以前标的夜班不再写在格子上、也不改闹钟",
-    "切回轮班，这些标记原样恢复，一条不丢"
+    "切去双休看一眼再切回轮班，原来那张「上 12 休 2」还在，不用重排",
+    "自定义里逐日填的时刻也不会再被清掉",
+    "只勾星期的「自定义」不再冒出「调班」，它本来就没有班可调",
+    "班次定义、按天标记照旧一条不删"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.2/weekday-alarm-1.11.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.11.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.11.3/weekday-alarm-1.11.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.11.3"
 }

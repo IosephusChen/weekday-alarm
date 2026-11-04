@@ -54,6 +54,18 @@ final class ShiftCycleSheet {
 
         List<Shift> shifts = new ArrayList<>(Prefs.getShifts(ctx));
         int[] cycle = draft != null ? draft.shiftCycle : null;
+        LocalDate start = draft != null && draft.cycleStart != null
+                ? draft.cycleStart : LocalDate.now();
+        // v1.11.3：这次不是从轮班切来的（draft.shiftCycle 为空），但以前排过——
+        // 把那张表捡回来当起点。否则「切出去看一眼再切回来」等于重排一遍轮班，
+        // 而它正是用户最不愿重做的东西。
+        if (cycle == null) {
+            Prefs.Rotation bk = Prefs.getRotationBackup(ctx);
+            if (bk != null) {
+                cycle = bk.cycle;
+                if (bk.start != null) start = bk.start;
+            }
+        }
         boolean fresh = cycle == null;
         int len;
         if (fresh) {
@@ -67,10 +79,8 @@ final class ShiftCycleSheet {
             int first = shifts.isEmpty() ? -1 : shifts.get(0).id;
             for (int i = 0; i < len; i++) cycle[i] = first;
         } else {
-            len = Math.max(1, draft.cycleLen);
+            len = Math.max(1, cycle.length);
         }
-        LocalDate start = draft != null && draft.cycleStart != null
-                ? draft.cycleStart : LocalDate.now();
         cycle = fit(cycle, len);
 
         View view = View.inflate(ctx, R.layout.dialog_schedule_sheet, null);

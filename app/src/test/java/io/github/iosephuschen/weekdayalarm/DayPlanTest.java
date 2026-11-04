@@ -40,15 +40,22 @@ public class DayPlanTest {
     /**
      * 轮班 + 一张覆盖表 + 若干班次。
      *
-     * <p>v1.11.2 起，班次只属于「自定义 / N 天一轮」的班表：双休、单休、大小周
-     * 没有「几点上班」这一维，覆盖表里的班次 id 在那里一律不生效。所以这些用例
-     * 换成 7 天一轮——周一到周五上班、周六日休，与双休的日期分布一致，
-     * 断言不用跟着改。cycleHoliday 开着，好让「覆盖高于法定节假日」那条仍测得到。
+     * <p>v1.11.2 起，班次只属于真的排了轮班表的班表（v1.11.3 起判据从「模式是
+     * N 天一轮」收窄到「{@code shiftCycle} 非空」）：双休、单休、大小周、以及
+     * 只勾星期的「自定义」都没有「几点上班」这一维，覆盖表里的班次 id 在那儿
+     * 一律不生效。所以这里必须把 {@code shiftCycle} 也铺出来——只给 {@code dayShifts}
+     * 兜底的话，{@code hasShifts()} 为 false，这些用例测的就成了另一件事。
+     *
+     * <p>表的内容与 {@link #MON_FRI} 对齐：周一到周五上第一个班次，周六日休。
      */
     private static WeekSchedule.Rule rule(Map<LocalDate, Integer> days, Shift... shifts) {
+        Shift[] defs = shifts.length == 0 ? null : shifts;
+        int[] cycle = new int[7];
+        int first = defs == null ? -1 : defs[0].id;
+        for (int i = 0; i < 7; i++) cycle[i] = i < 5 ? first : -1;
         return new WeekSchedule.Rule(WeekSchedule.Mode.CYCLE, null, false,
-                7, MON_FRI, CYCLE_START, NO_TIMES, true, null, null,
-                days, shifts.length == 0 ? null : shifts);
+                7, MON_FRI, CYCLE_START, NO_TIMES, true, cycle, defs,
+                days, defs);
     }
 
     private static Map<LocalDate, Integer> days(LocalDate d, int value) {
@@ -170,27 +177,47 @@ public class DayPlanTest {
     }
 
     /**
-     * 没有轮班表时，全局班次表也要活着（v1.11.1）。
+     * 没有轮班表时，班次定义仍然留在规则里，但覆盖不生效（v1.11.1 立、v1.11.3 改口）。
      *
-     * <p>上面两条用 {@link #rule} 把班次塞进 {@code dayShifts}（第 13 个参数），
-     * {@code shiftById} 靠兜底表查得到，于是「构造函数一见 shiftCycle 为 null
-     * 就把 shifts 置空」这个缺陷被遮住了。{@code Prefs.getRule} 现在正好也把全局表
-     * 传给 dayShifts，所以真机上还没露头；但正确性不该挂在这张兜底表上。
-     * 这条按 {@code Prefs.getRule} 的形状构造：shiftCycle 为 null、shifts 有值、dayShifts 为 null。
-     *
-     * <p>v1.11.2 补一句：这张表活着，不等于它一定生效——双休 / 单休 / 大小周下
-     * {@code hasShifts()} 为 false，覆盖表里的 id 照样不算数（见下一条用例）。
+     * <p>v1.11.1 这条原本断言「shiftCycle 为 null 也要按 20:00 响」，理由是班次定义
+     * 不该跟着轮班表一起丢。定义确实不该丢——但那不等于覆盖该生效：没有轮班表，
+     * 就没有「几点上班」这一维，覆盖表里那个 id 只是一段没人认的残影。
+     * 现在分开断言：定义在（{@code shiftById} 查得到），生效与否看
+     * {@code hasShifts()}。
      */
     @Test
-    public void globalShiftTable_survivesWithoutShiftCycle() {
+    public void shiftDefinitions_survive_withoutShiftCycle() {
         Shift night = shift(2, "夜班", 20 * 60);
         WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.CYCLE,
                 null, false, 7, MON_FRI, CYCLE_START, NO_TIMES, false,
                 null, new Shift[]{night}, days(SAT, 2), null);
 
-        assertEquals("班次表不随「有没有轮班」一起丢", night, r.shiftById(2));
-        assertEquals("标了夜班，时刻就该是 20:00", 20 * 60,
-                new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(SAT, r, true));
+        assertEquals("班次定义不随「有没有轮班表」一起丢", night, r.shiftById(2));
+        assertFalse("但没有班次表就没有「几点上班」这一维", r.hasShifts());
+        assertEquals("那天还是休息日", WeekSchedule.DayType.REST, WeekSchedule.dayType(SAT, r));
+        assertNull("覆盖不成立", WeekSchedule.shiftOn(SAT, r));
+    }
+
+    /**
+     * 只勾星期的「自定义」也没有班次（v1.11.3）。
+     *
+     * <p>{@code Mode.CYCLE} 装着两样东西：自定义（勾周一到周日 + 逐日时刻）和轮班
+     * （N 天循环 + 班次表）。判断只看模式的话，自定义会被当成有班次，点休息日就冒出
+     * 「上哪个班」——而它根本没有班可选。这条按自定义的真实形状构造：
+     * {@code shiftCycle} 为 null、逐日时刻有值、班次表里有定义。
+     */
+    @Test
+    public void customWeek_hasNoShifts() {
+        Shift night = shift(2, "夜班", 20 * 60);
+        int[] times = {8 * 60, 8 * 60, 8 * 60, 8 * 60, 8 * 60, -1, -1};
+        WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.CYCLE,
+                null, false, 7, MON_FRI, CYCLE_START, times, false,
+                null, new Shift[]{night}, days(SAT, 2), new Shift[]{night});
+
+        assertFalse("自定义是按周勾格子，没有班次", r.hasShifts());
+        assertNull("所以覆盖里的班次 id 不算数", WeekSchedule.shiftOn(SAT, r));
+        assertEquals("那天仍是休息日", WeekSchedule.DayType.REST, WeekSchedule.dayType(SAT, r));
+        assertEquals("逐日时刻照旧生效", 8 * 60, WeekSchedule.cycleTimeOf(FRI, r));
     }
 
     /**

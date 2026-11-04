@@ -45,6 +45,9 @@ public class FrozenKeysTest {
         // 后者是「每天哪个班」。改名等于让所有轮班用户重排一遍班。
         PREFS_KEYS.put("KEY_SHIFT_DEFS", "shift_defs");
         PREFS_KEYS.put("KEY_SHIFT_CYCLE", "shift_cycle");
+        // v1.11.3 切模式时存下的「上次那张轮班表」。丢了不影响正确性（下次从默认值
+        // 重排），但用户会以为是 App 把班给清了——所以名字同样不能动
+        PREFS_KEYS.put("KEY_ROTATION_BACKUP", "rotation_backup");
         PREFS_KEYS.put("KEY_WEEK_START", "week_start");
         PREFS_KEYS.put("KEY_ALARM_HOUR", "alarm_hour");
         PREFS_KEYS.put("KEY_ALARM_MIN", "alarm_min");

@@ -1,7 +1,9 @@
 package io.github.iosephuschen.weekdayalarm;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -276,6 +278,9 @@ public class DayPlanPrefsTest {
         Prefs.setCycleLen(ctx(), 7);
         Prefs.setCycleMask(ctx(), 0b0011111L);                 // 周一到周五上班
         Prefs.setCycleStart(ctx(), LocalDate.of(2026, 11, 2)); // 周一
+        // v1.11.3：生效的判据是「有没有这张轮班表」，所以要把表铺出来。
+        // 只设 mode=CYCLE 不够——自定义也是 CYCLE，但没有班次。
+        Prefs.setShiftCycle(ctx(), new int[]{3, 3, 3, 3, 3, -1, -1});
         LocalDate sat = LocalDate.of(2026, 11, 7);
         Prefs.setDayShift(ctx(), sat, 3);
 
@@ -284,5 +289,68 @@ public class DayPlanPrefsTest {
         assertEquals("日历写「夜班」", "夜班", WeekSchedule.shiftOn(sat, r).name);
         assertEquals("闹钟按 20:00 响", 20 * 60,
                 new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(sat, r, true));
+    }
+
+    /**
+     * 切到按周再切回轮班，那张表原样还在（v1.11.3）。
+     *
+     * <p>这是这一版真正要修的东西：以前 {@code ScheduleDraft.commit} 切到按周时
+     * 直接 {@code remove(shift_cycle)}，用户辛苦排的「上 12 休 2」就没了，切回来
+     * 从「4 天、铺满第一个班次」重排。现在切成两份——生效的那份照旧清（留着会
+     * 让按周态按班次算时刻），另存一份只做下次的默认值。
+     */
+    @Test
+    public void rotationSurvivesRoundTripThroughWeekMode() {
+        reset();
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleStart(ctx(), LocalDate.of(2026, 11, 2));
+        int[] rotation = {3, 3, -1, -1};                       // 上二休二
+        Prefs.setShiftCycle(ctx(), rotation);
+
+        ScheduleDraft draft = ScheduleDraft.load(ctx());
+        // 周一到周五上班、周末休 —— 反推结果一定是双休
+        draft.setDays(new boolean[]{true, true, true, true, true, false, false}, false);
+        draft.commit(ctx());
+
+        assertEquals("切到了按周", WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
+        assertNull("生效的那份照旧清掉", Prefs.getShiftCycle(ctx()));
+        assertFalse("按周态没有班次", Prefs.getRule(ctx()).hasShifts());
+
+        Prefs.Rotation bk = Prefs.getRotationBackup(ctx());
+        assertNotNull("但那张表留了备份", bk);
+        assertArrayEquals("一天不差", rotation, bk.cycle);
+        assertEquals("起始日也留着", LocalDate.of(2026, 11, 2), bk.start);
+    }
+
+    /**
+     * 切到轮班时，自定义里逐日填的时刻不再被删（v1.11.3）。
+     *
+     * <p>原来 {@code commit} 在轮班分支里 {@code setCycleTimes(null)}，理由是
+     * 「两套数据都在会让人糊涂」。可轮班态压根不读它（{@code cycleTimeOf} 见
+     * shiftCycle 非空就先返回），删了只剩副作用：从自定义切去轮班看一眼再切回来，
+     * 七个时刻全没了。
+     */
+    @Test
+    public void customTimes_surviveTripThroughRotation() {
+        reset();
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleStart(ctx(), LocalDate.of(2026, 11, 2));
+        int[] times = {8 * 60, 9 * 60, 8 * 60, 8 * 60, 8 * 60, -1, -1};
+        Prefs.setCycleTimes(ctx(), times);
+
+        ScheduleDraft draft = ScheduleDraft.load(ctx());
+        draft.setRotation(4, LocalDate.of(2026, 11, 2), new int[]{3, 3, -1, -1});
+        draft.commit(ctx());
+
+        // 链路上不删了，但读出来还差一步：getCycleTimes 要求长度等于当前周期，
+        // 而此刻周期是 4 天。所以先看盘上，再把周期调回 7 天看能不能读出来。
+        assertEquals("盘上还是那七个数",
+                "480,540,480,480,480,-1,-1", sp().getString(Prefs.KEY_CYCLE_TIMES, null));
+        Prefs.setCycleLen(ctx(), 7);
+        assertArrayEquals("周期对上了就原样读回来", times, Prefs.getCycleTimes(ctx()));
     }
 }

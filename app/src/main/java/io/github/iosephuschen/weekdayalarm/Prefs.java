@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.time.LocalDate;
@@ -349,6 +350,67 @@ public final class Prefs {
     /** 是否已经配过班次表（有定义 + 有循环）。 */
     public static boolean hasShifts(Context c) {
         return getShiftCycle(c) != null && !getShifts(c).isEmpty();
+    }
+
+    // ================= 轮班表备份（v1.11.3）=================
+
+    public static final String KEY_ROTATION_BACKUP = "rotation_backup";
+
+    /**
+     * 上一次排好的轮班表（「上 12 休 2」那张）。
+     *
+     * <p><b>为什么要有这份备份</b>：切回按周时必须把 {@code shift_cycle} 清掉——
+     * 留着的话，一张 7 天的轮班表碰上同样 7 天的自定义班表长度正好相等，
+     * {@code getShiftCycle} 会把它读出来，按周态又按班次算时刻了（v1.8.1 那个坑）。
+     * 但清掉之后用户辛苦排的表就没了，切回来只能从「4 天、铺满第一个班次」重排。
+     *
+     * <p>所以切成两份：生效的那份照旧清，另存一份在这里只做默认值。它不参与
+     * 任何计算——日历、闹钟、小组件都不读它，只在 {@code ShiftCycleSheet} 打开时
+     * 当初始值用。这也是 v1.11.2「数据不删、残影不生效」的同一条原则。
+     */
+    public static final class Rotation {
+        public final int len;
+        public final LocalDate start;
+        public final int[] cycle;
+
+        Rotation(int len, LocalDate start, int[] cycle) {
+            this.len = len;
+            this.start = start;
+            this.cycle = cycle;
+        }
+    }
+
+    public static void saveRotationBackup(Context c, LocalDate start, int[] cycle) {
+        if (cycle == null || cycle.length < 2) return;
+        try {
+            JSONObject o = new JSONObject();
+            o.put("len", cycle.length);
+            o.put("start", start == null ? "" : start.toString());
+            JSONArray a = new JSONArray();
+            for (int v : cycle) a.put(v);
+            o.put("cycle", a);
+            sp(c).edit().putString(KEY_ROTATION_BACKUP, o.toString()).apply();
+        } catch (Exception ignored) {
+            // 备份坏了大不了下次从默认值开始重排，绝不能让它影响保存本身
+        }
+    }
+
+    /** 上次的轮班表；没排过或数据坏了返回 {@code null}。 */
+    public static Rotation getRotationBackup(Context c) {
+        String s = sp(c).getString(KEY_ROTATION_BACKUP, null);
+        if (s == null || s.isEmpty()) return null;
+        try {
+            JSONObject o = new JSONObject(s);
+            JSONArray a = o.optJSONArray("cycle");
+            if (a == null || a.length() < 2) return null;
+            int[] cycle = new int[a.length()];
+            for (int i = 0; i < a.length(); i++) cycle[i] = a.optInt(i, -1);
+            String startStr = o.optString("start", "");
+            LocalDate start = startStr.isEmpty() ? null : LocalDate.parse(startStr);
+            return new Rotation(a.length(), start, cycle);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

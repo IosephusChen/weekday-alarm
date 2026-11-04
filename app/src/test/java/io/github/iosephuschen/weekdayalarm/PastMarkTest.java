@@ -83,6 +83,9 @@ public class PastMarkTest {
         Prefs.setShifts(ctx(), Arrays.asList(
                 new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0),
                 new Shift(2, "夜班", 20 * 60, Shift.END_UNKNOWN, 0)));
+        // v1.11.3：只有 mode=CYCLE 还不够——自定义也是 CYCLE，但没有班次。
+        // 「有没有班次」看的是这张 N 天表在不在，所以得把它铺出来。
+        Prefs.setShiftCycle(ctx(), new int[]{1, 1, 1, 1, 1, -1, -1});
     }
 
     /** 拿到首页内嵌的日历面板，用于直接触发某一天的点击。 */

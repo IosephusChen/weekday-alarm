@@ -220,4 +220,31 @@ public class DayPlanPrefsTest {
         assertFalse(DayOffAction.isMarked(ctx(), sat));
         assertNull(Prefs.getDayShift(ctx(), sat));
     }
+
+    /**
+     * 双休 + 建过班次：标了夜班，{@code Prefs.getRule} 组装出来的规则要认得出这个班次（v1.11.1）。
+     *
+     * <p>这条盯的是组装，不是构造函数——{@code getRule} 必须把全局班次表递进规则，
+     * 否则双休用户（没有轮班表）标了夜班，{@code shiftById} 查不到，{@code timeOn}
+     * 退回闹钟自己的 07:00：日历上写着「夜班」，闹钟还在早上响。
+     *
+     * <p>v1.11.0 靠第 13 个参数（dayShifts 兜底表）把这件事蒙对了；v1.11.1 把构造函数
+     * 解耦之后，这条路径不再依赖兜底，但测试留着——它是「日历标记真的会改响铃时刻」
+     * 唯一一条从 Prefs 一路走到 Alarm 的端到端断言。
+     */
+    @Test
+    public void doubleRestWithShifts_recognizesMarkedShift() {
+        reset();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        LocalDate sat = LocalDate.of(2026, 11, 7);   // 周六，本来休息
+        Prefs.setDayShift(ctx(), sat, 3);
+
+        WeekSchedule.Rule r = Prefs.getRule(ctx());
+        assertEquals("班次定义不能跟着「没有轮班表」一起丢掉", "夜班",
+                r.shiftById(3).name);
+
+        Alarm a = new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true);
+        assertEquals("标了夜班就该按 20:00 响，不是 07:00", 20 * 60, a.timeOn(sat, r, true));
+    }
 }

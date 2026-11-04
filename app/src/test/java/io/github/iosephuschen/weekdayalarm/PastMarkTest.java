@@ -137,7 +137,7 @@ public class PastMarkTest {
 
     // ---------- 过去：可以补记 ----------
 
-    /** 点昨天的上班日：正常弹出「请假 / 加班」两项，不再被「已经过去」挡回去。 */
+    /** 点昨天的上班日：正常弹出「请假 / 调班」两项，不再被「已经过去」挡回去。 */
     @Test
     public void pastWorkday_offersBothOptions() throws Exception {
         resetPrefs();
@@ -151,7 +151,7 @@ public class PastMarkTest {
         String[] items = itemsOf(d);
         assertEquals("上班日给两项", 2, items.length);
         assertEquals("标记为请假", items[0]);
-        assertEquals("标记为加班", items[1]);
+        assertEquals("上班日第二项叫调班", "调班", items[1]);
         CharSequence title = titleOf(d);
         assertNotNull("对话框应有标题", title);
         assertTrue("标题应标明已过去，实际：" + title, title.toString().contains("已过去"));
@@ -223,7 +223,7 @@ public class PastMarkTest {
 
         MainActivity a = launch();
         clickDay(panelOf(a), past);
-        clickItem(latestDialog(), 1);   // 上班日第二项「标记为加班」
+        clickItem(latestDialog(), 1);   // 上班日第二项「调班」
 
         assertFalse("请假应被顶掉", Prefs.isVacation(ctx(), past));
         assertTrue("加班补上了", Prefs.isOvertime(ctx(), past));
@@ -232,7 +232,7 @@ public class PastMarkTest {
 
     // ---------- 今天及以后：照旧 ----------
 
-    /** 上班日给「请假」「加班」两项（v0.51.0 的核心修复，不能被这次改动带回去）。 */
+    /** 上班日给「请假」「调班」两项（v0.51.0 的核心修复，不能被这次改动带回去）。 */
     @Test
     public void workday_offersBothOptions() throws Exception {
         resetPrefs();
@@ -246,7 +246,7 @@ public class PastMarkTest {
         String[] items = itemsOf(d);
         assertEquals("上班日给两项", 2, items.length);
         assertEquals("标记为请假", items[0]);
-        assertEquals("标记为加班", items[1]);
+        assertEquals("上班日第二项叫调班", "调班", items[1]);
     }
 
     /** 休息日只给「加班」——休息日本来就不上班，标请假没有意义。 */
@@ -302,7 +302,7 @@ public class PastMarkTest {
         LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
-        clickItem(latestDialog(), 1);   // 「标记为加班」
+        clickItem(latestDialog(), 1);   // 「调班」
 
         assertTrue("工作日加班应能记上", Prefs.isOvertime(ctx(), work));
         assertFalse("它只是「这天上了哪个班」的记录，不该让首页按钮显示「已加班 / 已请假」",
@@ -324,7 +324,7 @@ public class PastMarkTest {
         clickDay(panelOf(a), work);
         String[] items = itemsOf(latestDialog());
         assertEquals("取消请假", items[0]);
-        assertEquals("加班项照旧", "标记为加班", items[1]);
+        assertEquals("上班日的第二项叫调班", "调班", items[1]);
     }
 
     /** 今天和明天照常能标。 */

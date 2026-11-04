@@ -234,8 +234,14 @@ public final class WeekSchedule {
             this.cycleHoliday = cycleHoliday;
             this.shiftCycle = (shiftCycle != null && shiftCycle.length == Math.max(1, cycleLen))
                     ? shiftCycle : null;
-            this.shifts = (this.shiftCycle == null || shifts == null || shifts.length == 0)
-                    ? null : shifts;
+            // v1.11.1：班次字典不再跟着「有没有启用轮班」一起置空。
+            // 这里原来写着 shiftCycle == null → shifts = null，于是双休 / 单休 / 大小周
+            // 规则里的 shifts 永远是 null。目前之所以没出事，是因为 Prefs.getRule 把全局
+            // 班次表同时传给了 dayShifts，shiftById() 靠那张兜底表查得到——功能是对的，
+            // 但正确性挂在一个隐式兜底上：任何只传全局表的调用点（测试、以后的编辑器预览）
+            // 都会立刻丢掉班次，timeOn 退回闹钟自己的时刻。班次定义是全局的（切模式不删），
+            // 只要定义还在，就不该因为「没有轮班表」而被丢弃。
+            this.shifts = (shifts == null || shifts.length == 0) ? null : shifts;
             // 空表统一成 null：{@code days == null} 与 {@code isEmpty()} 是同一个意思，
             // 让调用方只判一种情况
             this.days = (days == null || days.isEmpty())

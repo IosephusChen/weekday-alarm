@@ -398,8 +398,10 @@ final class CalendarPanel {
     /**
      * 点日历某一天（v0.52.0 起过去也能标）。
      *
-     * <p>菜单只有一套：上班日给「请假 / 加班」，休息日只给「加班」（休息日本来就不上班，
-     * 标请假没有意义）。过去的日子用同一套菜单——用户补记「上周三请了假」时，不该被一句
+     * <p>菜单按「这天本来上不上班」分，不按「请假 / 加班」分（v1.11.1 定案）：上班日能做的
+     * 只有两件事——不去了（请假）、换成别的班（调班）；休息日只有一件——去上班（加班）。
+     * 「加班」这个词只在休息日成立，上班日的同类操作在 HR 里叫调班，写「加班」既不准确，
+     * 也会让人以为标了要算工时。休息日本来就不上班，标请假没有意义。过去的日子用同一套菜单——用户补记「上周三请了假」时，不该被一句
      * 「已经过去，不用再标」挡回去，那是记录，不是开关。
      *
      * <p>过去与未来的差别只在两处措辞：标题多一个「· 已过去」，Toast 说「补记」而不是
@@ -430,9 +432,11 @@ final class CalendarPanel {
             subs.add(vacationSub(work, past, hasV));
             actions.add(() -> toggleVacation(d, work, past));
         }
-        // 加班项：任何日子都给。v1.11.0 起点了会先问「上哪个班」。
+        // 换班项：任何日子都给。v1.11.0 起点了会先问「上哪个班」。
+        // v1.11.1：上班日叫「调班」，休息日才叫「加班」——同一次操作，两个场景两个词。
         // DialogKit 已改为「先关弹窗再回调」，这里可以直接接着弹下一层
-        items.add(hasO ? "取消加班" : "标记为加班");
+        items.add(hasO ? (work ? "取消调班" : "取消加班")
+                : (work ? "调班" : "标记为加班"));
         subs.add(overtimeSub(work, past, hasO));
         actions.add(() -> onOvertimeClick(d, work, past));
 
@@ -440,7 +444,7 @@ final class CalendarPanel {
                 dateText + " · " + (work ? "上班日" : "休息日")
                         + (past ? " · 已过去" : ""),
                 past ? "这一天已经过了，标记只作记录，不影响闹钟"
-                        : (work ? "请假会跳过当天的闹钟，加班只作记录"
+                        : (work ? "请假会跳过当天的闹钟，调班按新班次的时刻响"
                         : "选了班次，当天就按它的时刻排程"),
                 items.toArray(new String[0]), subs.toArray(new String[0]),
                 -1, which -> actions.get(which).run());
@@ -453,9 +457,9 @@ final class CalendarPanel {
         return work ? "当天闹钟跳过" : "只是留个记录";
     }
 
-    /** 加班选项的副标题：v1.11.0 起点了不是直接生效，而是先问「上哪个班」。 */
+    /** 换班选项的副标题：v1.11.0 起点了不是直接生效，而是先问「上哪个班」。 */
     private static String overtimeSub(boolean work, boolean past, boolean hasO) {
-        if (hasO) return "删掉这一天的加班记录";
+        if (hasO) return work ? "恢复这一天原来的班次" : "删掉这一天的加班记录";
         if (past) return "补记一下，不影响闹钟";
         return work ? "换成别的班，当天按它的时刻排程" : "选一个班次，当天按它的时刻排程";
     }
@@ -479,7 +483,8 @@ final class CalendarPanel {
     }
 
     /**
-     * 标加班 / 取消加班（v1.11.0）。
+     * 换班 / 取消换班（v1.11.0 起要先问班次；v1.11.1 按场景换词：上班日叫调班、
+     * 休息日叫加班）。
      *
      * <p><b>标加班现在要多问一句「上哪个班」</b>：从前它只是一个布尔标记，App 只知道
      * 「这天要去」，不知道几点去——起床闹钟只能退回第一个勾选的班次，白班的人标一个
@@ -496,7 +501,8 @@ final class CalendarPanel {
         if (ov != null && ov != WeekSchedule.DAY_LEAVE) {
             Prefs.clearDayShift(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + " 已取消加班记录", Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, dateText + (work ? " 已恢复原班次" : " 已取消加班记录"),
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -505,8 +511,8 @@ final class CalendarPanel {
             Prefs.addOvertime(host, d);
             onChanged.run();
             Toast.makeText(host, dateText + (past
-                            ? " 已补记加班（那天已过去，不影响闹钟）"
-                            : (work ? " 已记录加班（当天闹钟不受影响）"
+                            ? " 已补记（那天已过去，不影响闹钟）"
+                            : (work ? " 已记录（当天按原时刻，闹钟不变）"
                             : " 已标记加班，当天按上班日排程")),
                     Toast.LENGTH_SHORT).show();
             return;

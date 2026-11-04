@@ -155,6 +155,28 @@ public class DayPlanTest {
         assertEquals(22 * 60, a.timeOn(FRI, r, true));
     }
 
+    /**
+     * 没有轮班表时，全局班次表也要活着（v1.11.1）。
+     *
+     * <p>上面两条用 {@link #rule} 把班次塞进 {@code dayShifts}（第 13 个参数），
+     * {@code shiftById} 靠兜底表查得到，于是「构造函数一见 shiftCycle 为 null
+     * 就把 shifts 置空」这个缺陷被遮住了。{@code Prefs.getRule} 现在正好也把全局表
+     * 传给 dayShifts，所以真机上还没露头；但正确性不该挂在这张兜底表上——
+     * 任何只传全局表的调用点都会让双休用户的班次凭空消失。
+     * 这条按 {@code Prefs.getRule} 的形状构造：shiftCycle 为 null、shifts 有值、dayShifts 为 null。
+     */
+    @Test
+    public void globalShiftTable_survivesWithoutShiftCycle() {
+        Shift night = shift(2, "夜班", 20 * 60);
+        WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST,
+                null, false, 0, 0L, null, null, false,
+                null, new Shift[]{night}, days(SAT, 2), null);
+
+        assertEquals("班次表不随「有没有轮班」一起丢", night, r.shiftById(2));
+        assertEquals("标了夜班，时刻就该是 20:00", 20 * 60,
+                new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(SAT, r, true));
+    }
+
     /** 请假日一律不响，连「每天」的闹钟也一样（由调用方按 vacation 跳过）。 */
     @Test
     public void leave_hasNoAlarmTime() {

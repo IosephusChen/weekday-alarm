@@ -271,7 +271,7 @@ public class SettingsLayoutTest {
                 "关闭",
                 ((TextView) off.findViewById(R.id.tv_bedtime_value)).getText().toString());
         assertEquals("关掉时副标题退回功能说明",
-                "到点发一条安静的通知",
+                "到点发送通知，不响铃",
                 ((TextView) off.findViewById(R.id.tv_bedtime)).getText().toString());
 
         ctl.pause().stop().destroy();

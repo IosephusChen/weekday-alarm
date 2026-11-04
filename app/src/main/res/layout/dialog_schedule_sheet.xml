@@ -26,7 +26,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:lineSpacingMultiplier="1.35"
-        android:text="第 1 天定下来，往后按这个顺序循环。"
+        android:text="首日班次确定后，按此顺序循环。"
         android:textColor="@color/sub"
         android:textSize="12sp" />
 

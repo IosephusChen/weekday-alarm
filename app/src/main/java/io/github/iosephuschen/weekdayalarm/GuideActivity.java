@@ -370,7 +370,7 @@ public class GuideActivity extends AppCompatActivity {
         cardRotation.setBackgroundResource(R.drawable.bg_action_emphasis);
         tvRotationTitle.setTextColor(ContextCompat.getColor(this, R.color.indigo));
         tvRotationTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvRotationSub.setText("四班三倒、上二休二点这里");
+        tvRotationSub.setText("四班三倒、上二休二");
 
         biweekly = draft.isTwoWeeks();
         weekDays = ScheduleInfer.expand(draft.rule(Prefs.getShifts(this)), mondayOfWeek(),
@@ -412,7 +412,7 @@ public class GuideActivity extends AppCompatActivity {
         // v1.10.1：原来写「大小周、上四休二都勾这里」——上四休二是 6 天一轮，
         // 勾这个开关只会得到一张对不上的 14 天表。开关管的是「隔周多休一天」，
         // 说成「隔周双休」才和它实际做的事一致。
-        tvBiweeklyHint.setText("大小周、隔周双休点这里");
+        tvBiweeklyHint.setText("大小周、隔周双休");
     }
 
     /** 点一格：翻转 → 反推 → 落盘 → 重画。反推是幂等的，连点两下正好回到原样。 */
@@ -1263,7 +1263,7 @@ public class GuideActivity extends AppCompatActivity {
      * 展开 / 收起「响铃细节」（v0.83.0）。
      *
      * <p>这几项一设好基本不动，摆在第一次打开的人面前等于先做五次选择——默认收起，
-     * 只留一行「按默认就好」。想调的人点开，不想调的人连看都不用看。
+     * 只留一行「默认已设好，需要时再调整」。想调的人点开，不想调的人连看都不用看。
      */
     private void toggleRingDetail() {
         boolean open = ringDetail.getVisibility() != View.VISIBLE;
@@ -1283,7 +1283,7 @@ public class GuideActivity extends AppCompatActivity {
      * 收起时转 90° 指下（还能展开），展开时转 -90° 指上（可以收起来）。
      * 用同一个「›」字形旋转，不依赖字体里有没有上/下箭头。
      *
-     * <p>副标题也跟着换（v1.0.5）：收起时那句「按默认就好，想调再点开」是在劝人别点，
+     * <p>副标题也跟着换（v1.0.5）：收起时那句「默认已设好，需要时再调整」是在劝人别点，
      * 展开之后这些行就摊在下面，再说「想调再点开」等于让用户再点一次。展开态换成
      * 「这些设置对所有闹钟都生效」——这是用户点开时真正会问的那件事（只改这一个还是全部）。
      * 用的是替换而不是隐藏：头卡高度不变，来回切换时下半个卡片不会上下跳。
@@ -1297,7 +1297,7 @@ public class GuideActivity extends AppCompatActivity {
         if (tvRingArrow != null) tvRingArrow.setText(open ? "收起" : "展开");
         if (ivRingChevron != null) ivRingChevron.setRotation(open ? -90f : 90f);
         if (tvRingSummary != null) {
-            tvRingSummary.setText(open ? "这些设置对所有闹钟都生效" : "按默认就好，想调再点开");
+            tvRingSummary.setText(open ? "这些设置对所有闹钟都生效" : "默认已设好，需要时再调整");
         }
     }
 

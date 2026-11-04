@@ -71,8 +71,8 @@ public final class ScheduleSheet {
         String sub() {
             if (rotation) {
                 return forAlarm
-                        ? "第 1 天定下来，往后按这个顺序循环，只对这一条闹钟生效。"
-                        : "第 1 天定下来，往后按这个顺序循环。";
+                        ? "首日班次确定后，按此顺序循环，只对这一条闹钟生效。"
+                        : "首日班次确定后，按此顺序循环。";
             }
             return forAlarm
                     ? "勾哪天上班、哪天休息，只对这一条闹钟生效。"

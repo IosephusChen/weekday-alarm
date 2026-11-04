@@ -204,7 +204,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_2"
-                            android:text="大小周、隔周双休点这里"
+                            android:text="大小周、隔周双休"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -263,7 +263,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_2"
-                            android:text="四班三倒、上二休二点这里"
+                            android:text="四班三倒、上二休二"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -509,7 +509,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="按默认就好，想调再点开"
+                            android:text="默认已设好，需要时再调整"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -738,7 +738,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="渐响会从静音用 30 秒升到设定音量。响铃前提醒会在闹钟响之前先在通知栏露一面，嫌吵就关掉。"
+                    android:text="渐响会从静音用 30 秒升到设定音量。响铃前提醒会先在通知栏提示一次，可关闭。"
                     android:textColor="@color/sub"
                     android:textSize="12sp"
                     android:visibility="gone" />
@@ -783,7 +783,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
-                    android:text="别让它哑掉"
+                    android:text="权限检查"
                     android:textColor="@color/ink"
                     android:textSize="22sp"
                     android:textStyle="bold" />
@@ -1353,7 +1353,7 @@
                     android:layout_marginTop="@dimen/space_12"
                     android:gravity="center"
                     android:lineSpacingExtra="3dp"
-                    android:text="没响？回到上一步把权限开齐，再试一次。"
+                    android:text="未响铃时，回到上一步补齐权限后重试。"
                     android:textColor="@color/sub"
                     android:textSize="12sp" />
 

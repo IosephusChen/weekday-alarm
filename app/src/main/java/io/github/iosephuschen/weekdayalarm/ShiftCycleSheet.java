@@ -97,7 +97,7 @@ final class ShiftCycleSheet {
 
         tvSub.setText(fresh && !shifts.isEmpty()
                 ? "已经先按「" + shifts.get(0).name + "」铺满了，把休息的那几天点掉就行。"
-                : "第 1 天定下来，往后按这个顺序循环。每天点一下，选那天上哪个班。");
+                : "首日班次确定后，按此顺序循环。每天点一下，选那天上哪个班。");
         tvHint.setText(shifts.isEmpty()
                 ? "还没有班次。先回上一页建一个，再回来排。"
                 : "点哪天，选那天上哪个班；不上班就选休息。");

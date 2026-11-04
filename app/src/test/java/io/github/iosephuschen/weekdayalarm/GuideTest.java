@@ -410,7 +410,8 @@ public class GuideTest {
     /**
      * 展开之后那句副标题要跟着换（v1.0.5）。
      *
-     * <p>收起时写「按默认就好，想调再点开」，是在劝人别点；展开之后这几行已经
+     * <p>收起时写「默认已设好，需要时再调整」（v1.12 前是「按默认就好，想调再点开」），
+     * 是在劝人别点；展开之后这几行已经
      * 摊在下面，同一句话就变成「再点一次」，自相矛盾。用户 2026-11-01 截图问
      * 「这个效果是不是你想要的」，指的就是这里。
      *
@@ -421,13 +422,13 @@ public class GuideTest {
     @Test
     public void ringSummary_changesWhenOpened() {
         GuideActivity a = fresh();
-        assertEquals("按默认就好，想调再点开", text(a, R.id.tv_ring_summary));
+        assertEquals("默认已设好，需要时再调整", text(a, R.id.tv_ring_summary));
 
         a.findViewById(R.id.ring_toggle).performClick();
         assertEquals("这些设置对所有闹钟都生效", text(a, R.id.tv_ring_summary));
 
         a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("收回去要复原", "按默认就好，想调再点开",
+        assertEquals("收回去要复原", "默认已设好，需要时再调整",
                 text(a, R.id.tv_ring_summary));
     }
 
@@ -1245,7 +1246,7 @@ public class GuideTest {
         // 不再是「一切按周就消失、只剩一行紫色小字」
         assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
         assertEquals("几天一轮的班", text(a, R.id.tv_rotation_title));
-        assertEquals("四班三倒、上二休二点这里", text(a, R.id.tv_rotation_sub));
+        assertEquals("四班三倒、上二休二", text(a, R.id.tv_rotation_sub));
         // v1.11.4：这张卡是这一页唯一的「换排法」入口，字要粗、要主色，
         // 从上面几张白卡里跳出来（用户反馈「不显眼」）
         TextView rotTitle = a.findViewById(R.id.tv_rotation_title);

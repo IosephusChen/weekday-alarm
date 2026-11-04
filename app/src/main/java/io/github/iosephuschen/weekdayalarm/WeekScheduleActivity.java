@@ -183,8 +183,8 @@ public class WeekScheduleActivity extends AppCompatActivity {
             }
         }
         tvHint.setText(anyRest
-                ? "点格子改，点下面的「保存」才生效。"
-                : "这张表没有休息日，保存后闹钟每天都会响。点一格改成休息。");
+                ? "点日期即可修改，点「保存」后生效。"
+                : "这张表没有休息日，保存后闹钟每天都会响。点日期改为休息。");
 
         // 回填开关时别再触发一次监听，否则刚设的班表会被「重新反推」一遍
         swBiweekly.setOnCheckedChangeListener(null);

@@ -224,7 +224,7 @@ public class WeekScheduleActivityTest {
         assertEquals("按周态这张卡要露出来",
                 View.VISIBLE, a.findViewById(R.id.row_rotation).getVisibility());
         assertEquals("几天一轮的班", text(a, R.id.tv_rotation_entry_title));
-        assertEquals("四班三倒、上二休二点这里", text(a, R.id.tv_rotation_entry_sub));
+        assertEquals("四班三倒、上二休二", text(a, R.id.tv_rotation_entry_sub));
     }
 
     /** 结论条随格子变：改完不用退出去也能确认系统认成了什么。 */

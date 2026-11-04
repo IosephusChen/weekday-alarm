@@ -199,7 +199,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="第 1 天定下来，往后按这个顺序循环"
+                    android:text="首日班次确定后，按此顺序循环"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
 
@@ -250,7 +250,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="大小周、隔周双休点这里"
+                    android:text="大小周、隔周双休"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -344,7 +344,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="四班三倒、上二休二点这里"
+                    android:text="四班三倒、上二休二"
                     android:textColor="@color/sub"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -392,7 +392,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"
             android:lineSpacingExtra="3dp"
-            android:text="点格子就改。改完立刻重排，日历、闹钟、小部件一起跟着变。"
+            android:text="点日期即可修改，点「保存」后生效。"
             android:textColor="@color/sub"
             android:textSize="11.5sp" />
     </LinearLayout>

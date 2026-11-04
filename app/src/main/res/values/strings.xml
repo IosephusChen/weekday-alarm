@@ -40,7 +40,7 @@
     <string name="settings_section_remind">提醒</string>
     <string name="settings_bedtime_title">睡前提醒</string>
     <string name="settings_bedtime_default">关闭</string>
-    <string name="settings_bedtime_hint">到点发一条安静的通知</string>
+    <string name="settings_bedtime_hint">到点发送通知，不响铃</string>
     <string name="settings_bedtime_workday">仅明天上班</string>
     <string name="settings_bedtime_daily">每天提醒</string>
     <string name="settings_pre_notice_title">响铃前提醒</string>
@@ -55,7 +55,7 @@
     <string name="more_fade_in_title">铃声渐响</string>
     <string name="more_fade_in_summary">从静音逐渐变大，约 30 秒到设定音量</string>
     <string name="more_vibrate_title">响铃时震动</string>
-    <string name="more_vibrate_summary">响铃时持续震动，静音的闹钟也照震</string>
+    <string name="more_vibrate_summary">响铃时持续震动，静音闹钟同样震动</string>
     <!-- v0.82.0：稍后提醒搬回主页，键名跟着改（值不变） -->
     <string name="settings_snooze_title">稍后提醒</string>
     <string name="more_snooze_default">5 分钟 × 3 次</string>
@@ -109,28 +109,28 @@
     <!-- v1.11.4：「同一天都标写「假加」」是 v1.11.0 之前的事实——
          现在一天只有一个结果，后标的顶掉先标的，格子上不会再出现「假加」。 -->
     <string name="help_s1_b2">「请假」「调班」「加班」是你自己标的，一天只有一个结果，后标的顶掉先标的</string>
-    <string name="help_s1_b3">点灰字的上月 / 下月日期翻月，翻乱了点「回本月」</string>
+    <string name="help_s1_b3">点灰字的上月 / 下月日期翻月，回到本月点「回本月」</string>
 
     <string name="help_s2_title">闹钟</string>
     <string name="help_s2_b1">「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」</string>
-    <string name="help_s2_b2">每条右侧有自己的开关，拨一下就单独停掉它</string>
-    <string name="help_s2_b3">铃声、音量这些改完即时生效；「我的班表」要点「保存」才算数</string>
+    <string name="help_s2_b2">每条右侧有自己的开关，关闭后仅停用该条</string>
+    <string name="help_s2_b3">铃声、音量这些改完即时生效；「我的班表」需点「保存」才写入</string>
     <string name="help_s2_b4">锁屏响铃只亮屏、解锁才看到界面 → 系统里「锁屏显示」没开</string>
     <!-- v1.10.1：关机这条问得多，而且容易被当成 Bug（设了闹钟没响）。
          两句分开写：前一句是事实边界，后一句是给人一条能走的路。
          不写「重启后不补响」——那是更冷门的分支，写进来只会让这一条变长。 -->
-    <string name="help_s2_b5">手机彻底关机时不会响。第三方 App 做不到——能响的只有厂商自带时钟里的「关机闹钟」</string>
-    <string name="help_s2_b6">不想被打扰又要闹钟：开飞行模式 + 勿扰就行，闹钟照响，一晚掉电很少</string>
+    <string name="help_s2_b5">手机彻底关机时不会响。第三方应用无法实现，仅厂商自带时钟的「关机闹钟」可用</string>
+    <string name="help_s2_b6">不想被打扰又要闹钟：开启飞行模式与勿扰，闹钟仍会响，整夜耗电极少</string>
 
     <string name="help_s3_title">临时请假 / 加班</string>
-    <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点一下就是请假或加班</string>
+    <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点击即标记请假或加班</string>
     <string name="help_s3_b2">点完按钮变成「已请假 / 已加班」，再点一次撤销</string>
     <string name="help_s3_b3">别的日子：在首页日历里点那一天，选「请假」或「加班」——按 N 天一轮排的班，上班日那项叫「调班」，点完接着选上哪个班</string>
-    <string name="help_s3_b4">标错了点那一天取消；没有批量清除（一次删全部太容易误伤）</string>
+    <string name="help_s3_b4">标记有误时点该日取消。不提供批量清除，避免误删全部</string>
 
     <string name="help_s4_title">桌面小组件</string>
     <string name="help_s4_b1">三个组件：今天状态（下次闹钟 + 本周班表）、本月班表 · 完整、本月班表 · 极简</string>
-    <string name="help_s4_b2">添加路径：长按桌面空白处 →「小部件」→ 找「打工人闹钟」</string>
+    <string name="help_s4_b2">添加路径：长按桌面空白处 →「小部件」→ 选择「打工人闹钟」</string>
     <string name="help_s4_b3">本月班表底部也能点「今天 / 明天不上班」，不用先打开 App</string>
 
     <string name="help_s5_title">设置与备份</string>
@@ -139,7 +139,7 @@
     <string name="help_s5_b3">日历想清爽点：「节日与节气」里关掉农历节日 / 节气 / 基督教节日</string>
 
     <!-- v1.1.0：删掉了 4 条 help_jump_*（页尾「打开设置 / 去查看」两行路径）。 -->
-    <string name="help_footer">说明随版本更新 · 有不清楚的地方，去设置里逐项看一遍比翻说明快</string>
+    <string name="help_footer">说明随版本更新 · 设置页各项均有解释，可对照查看</string>
 
 
     <!-- ===== 关于页（v0.87.1）=====
@@ -245,7 +245,7 @@
     <string name="dialog_calendar_content_solar_sub">立春、清明、霜降、冬至…</string>
     <string name="dialog_calendar_content_christian_sub">圣诞、复活节、诸圣…</string>
     <string name="dialog_bedtime_title">睡前提醒</string>
-    <string name="dialog_bedtime_message">到点发一条安静的通知，可一键标记明天请假。</string>
+    <string name="dialog_bedtime_message">到点发送通知，不响铃，可一键标记明天请假。</string>
     <string name="dialog_bedtime_off">关闭</string>
     <string name="dialog_bedtime_2130">21:30</string>
     <string name="dialog_bedtime_2200">22:00</string>

@@ -219,4 +219,24 @@ public class WordingTest {
         }
         assertTrue("这行还得说清「只在上班日响」：" + line, line.contains("上班日"));
     }
+
+    /**
+     * 常驻文案里不写「点这里」「点一下」（v1.12.0）。
+     *
+     * <p>可点性由视觉承担：这两页的入口是淡靛蓝强调卡 + 箭头，格子是方格本身，
+     * 都已经在说「这里能点」。写进文案有两个代价：一是副标题被占满，说不清
+     * 「这是给谁用的」；二是同一个入口在引导页和班表页各写一遍，很容易只改一处
+     * （v1.11.4 → v1.11.5 就是这么漂开的）。
+     *
+     * <p>只守这两页。别处的「点这里」是另一回事——崩溃提示「点这里导出日志」、
+     * 闹钟页「还没设班表，点这里填」，那里确实只有一个可点对象，提示有用。
+     */
+    @Test
+    public void guidancePages_doNotSayClickHere() {
+        for (String f : new String[]{"activity_guide.xml", "activity_week_schedule.xml"}) {
+            String xml = read("app/src/main/res/layout/" + f);
+            assertFalse(f + " 又写回了「点这里」", xml.contains("点这里"));
+            assertFalse(f + " 又写回了「点一下」", xml.contains("点一下"));
+        }
+    }
 }

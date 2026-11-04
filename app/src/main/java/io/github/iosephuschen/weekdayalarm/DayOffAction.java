@@ -81,6 +81,9 @@ final class DayOffAction {
     static boolean isMarked(Context ctx, LocalDate day) {
         Integer ov = Prefs.getDayShift(ctx, day);
         if (ov == null) return false;
+        // v1.11.2：双休 / 单休 / 大小周的班次残影不算标记——格子不显示它，
+        // 闹钟也不看它，按钮却说「已加班」就是假话
+        if (ov >= 0 && !Prefs.getRule(ctx).hasShifts()) return false;
         return isWorkDay(typeOf(ctx, day))
                 ? ov == WeekSchedule.DAY_LEAVE
                 : ov != WeekSchedule.DAY_LEAVE;
@@ -98,6 +101,9 @@ final class DayOffAction {
      */
     static boolean toggle(Context ctx, LocalDate day) {
         Integer ov = Prefs.getDayShift(ctx, day);
+        // v1.11.2：没有班次的班表，正数 id 是残影，按「没标记」处理——
+        // 否则点一下只是把它清掉，按钮却没变，看着像没反应
+        if (ov != null && ov >= 0 && !Prefs.getRule(ctx).hasShifts()) ov = null;
         if (isWorkDay(typeOf(ctx, day))) {
             if (ov != null && ov == WeekSchedule.DAY_LEAVE) {
                 Prefs.clearDayShift(ctx, day);

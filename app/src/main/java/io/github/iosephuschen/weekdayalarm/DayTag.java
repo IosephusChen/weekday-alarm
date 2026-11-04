@@ -62,7 +62,8 @@ final class DayTag {
      * @return 没有班次（老数据 / 班次被删）返回 {@code null}，由调用方退回「加班」
      */
     static String shiftName(WeekSchedule.Rule rule, Integer ov, int maxChars) {
-        if (rule == null || ov == null || ov < 0) return null;
+        // v1.11.2：双休 / 单休 / 大小周没有班次，残留的 id 不该写成格子上的班次名
+        if (rule == null || !rule.hasShifts() || ov == null || ov < 0) return null;
         Shift s = rule.shiftById(ov);
         if (s == null || s.name == null || s.name.isEmpty()) return null;
         return s.name.length() > maxChars ? s.name.substring(0, maxChars) : s.name;

@@ -164,6 +164,9 @@ final class CalendarPanel {
                 // 「假加」这个状态从此不存在——以前它是两个日期集合各自独立判断拼出来的，
                 // 用户点开那天会看到两个互相矛盾的记录，取消时还得想删哪个。
                 Integer ov = inMonth ? plan.get(d) : null;
+                // v1.11.2：双休 / 单休 / 大小周没有班次，正数 id 是切模式留下的残影，
+                // 当作没有标记——否则格子上会挂一个「加班」，闹钟却不认它
+                if (ov != null && ov >= 0 && !rule.hasShifts()) ov = null;
                 boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
                 boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
                 if (inMonth && MonthStats.countsAsWork(type, vacation, overtime)) workDays++;
@@ -418,6 +421,9 @@ final class CalendarPanel {
         // 用户就再也取消不掉自己的请假了
         boolean work = DayOffAction.isWorkDay(DayOffAction.typeOf(host, d));
         boolean past = d.isBefore(LocalDate.now());
+        // v1.11.2：菜单、格子、响铃三处共用一个判断——当前班表有没有班次。
+        // 双休 / 单休 / 大小周没有，班次定义表里那些只是切模式留下的残影
+        boolean hasShifts = Prefs.getRule(host).hasShifts();
         Integer ov = Prefs.getDayShift(host, d);
         boolean hasV = ov != null && ov == WeekSchedule.DAY_LEAVE;
         boolean hasO = ov != null && ov != WeekSchedule.DAY_LEAVE;
@@ -432,20 +438,30 @@ final class CalendarPanel {
             subs.add(vacationSub(work, past, hasV));
             actions.add(() -> toggleVacation(d, work, past));
         }
-        // 换班项：任何日子都给。v1.11.0 起点了会先问「上哪个班」。
-        // v1.11.1：上班日叫「调班」，休息日才叫「加班」——同一次操作，两个场景两个词。
-        // DialogKit 已改为「先关弹窗再回调」，这里可以直接接着弹下一层
-        items.add(hasO ? (work ? "取消调班" : "取消加班")
-                : (work ? "调班" : "标记为加班"));
-        subs.add(overtimeSub(work, past, hasO));
-        actions.add(() -> onOvertimeClick(d, work, past));
+        // 换班项：只有有班次的班表才给（v1.11.2）。
+        // 轮班：上班日叫「调班」，休息日叫「加班」，点了先问上哪个班；
+        // 其余班表：上班日没有这一项（没班可换，只有请假）；休息日只有「加班」，
+        // 点了直接记一笔，不问班次——v1.11.0 在这里问过头了
+        if (hasShifts) {
+            items.add(hasO ? (work ? "取消调班" : "取消加班")
+                    : (work ? "调班" : "标记为加班"));
+            subs.add(overtimeSub(work, past, hasO));
+            actions.add(() -> onOvertimeClick(d, work, past));
+        } else if (!work) {
+            items.add(hasO ? "取消加班" : "标记为加班");
+            subs.add(hasO ? "删掉这一天的加班记录"
+                    : (past ? "补记一下，不影响闹钟" : "当天按上班日排程"));
+            actions.add(() -> onOvertimeClick(d, work, past));
+        }
 
         DialogKit.showPick(host,
                 dateText + " · " + (work ? "上班日" : "休息日")
                         + (past ? " · 已过去" : ""),
                 past ? "这一天已经过了，标记只作记录，不影响闹钟"
-                        : (work ? "请假会跳过当天的闹钟，调班按新班次的时刻响"
-                        : "选了班次，当天就按它的时刻排程"),
+                        : (work ? (hasShifts ? "请假会跳过当天的闹钟，调班按新班次的时刻响"
+                        : "会跳过当天的闹钟")
+                        : (hasShifts ? "选了班次，当天就按它的时刻排程"
+                        : "当天按上班日排程，闹钟照常响")),
                 items.toArray(new String[0]), subs.toArray(new String[0]),
                 -1, which -> actions.get(which).run());
     }
@@ -506,8 +522,10 @@ final class CalendarPanel {
             return;
         }
 
+        // v1.11.2：没有班次的班表（双休 / 单休 / 大小周）直接记一笔就走，
+        // 不问「上哪个班」——它们的班次表只是切模式留下的残影
         List<Shift> shifts = Prefs.getShifts(host);
-        if (shifts.isEmpty()) {
+        if (!Prefs.getRule(host).hasShifts() || shifts.isEmpty()) {
             Prefs.addOvertime(host, d);
             onChanged.run();
             Toast.makeText(host, dateText + (past

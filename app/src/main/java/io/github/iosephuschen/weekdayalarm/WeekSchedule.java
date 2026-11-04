@@ -260,6 +260,20 @@ public final class WeekSchedule {
             return days == null || d == null ? null : days.get(d);
         }
 
+        /**
+         * 当前班表有没有「班次」这个概念（v1.11.2）。
+         *
+         * <p>只有「自定义 / N 天一轮」才有：双休、单休、大小周只分上不上班，没有
+         * 「几点上班」这一维。班次定义表在切模式时不删（切回轮班还要用），所以
+         * 「表里有东西」不等于「当前班表有班次」——判断只能看模式。
+         *
+         * <p>覆盖表里存的正数 id 也要过这一关：从轮班切回双休后，那些标记不该再让
+         * 日历显示「夜班」、也不该再改响铃时刻。数据不删，切回轮班自动恢复。
+         */
+        public boolean hasShifts() {
+            return mode.isCycle();
+        }
+
         /** 按 id 找班次；找不到返回 null（班次被删了，那天就当作没有班）。 */
         public Shift shiftById(int id) {
             Shift s = find(shifts, id);
@@ -365,7 +379,10 @@ public final class WeekSchedule {
             if (ov == DAY_LEAVE) return DayType.LEAVE;
             // 班次被删了（用户整理过班次表）：这条覆盖已经没有意义，落回规则算，
             // 总比显示「上班」但没有任何班次、闹钟全不响要好
-            if (rule.shiftById(ov) != null) return DayType.WORK;
+            //
+            // v1.11.2：双休 / 单休 / 大小周没有班次，覆盖表里残留的正数 id 一律不算数
+            // ——不然从轮班切回双休后，格子还写着「夜班」，人却按双休作息走
+            if (rule.hasShifts() && rule.shiftById(ov) != null) return DayType.WORK;
         }
 
         // v1.1.0：自定义 / 轮班先分流，且**必须在这两行节假日判断之前**。
@@ -469,8 +486,9 @@ public final class WeekSchedule {
         if (rule == null) return null;
         // v1.11.0：覆盖表优先。加班日从此有确定的班次——这正是 v1.8.0 那条
         // 「加班日没有班次，时刻只能退回第一个勾选的班次」的补丁
+        // v1.11.2：只对「有班次」的班表成立；双休 / 单休 / 大小周的残留 id 不算
         Integer ov = rule.overrideOf(d);
-        if (ov != null) {
+        if (ov != null && rule.hasShifts()) {
             if (ov == DAY_LEAVE) return null;
             if (ov == DAY_OVERTIME_ANY) return null;   // 老数据：沿用旧行为
             Shift s = rule.shiftById(ov);
@@ -512,7 +530,8 @@ public final class WeekSchedule {
         if (ov != null) {
             if (ov == DAY_LEAVE) return false;
             if (ov == DAY_OVERTIME_ANY) return true;          // 老数据：标了加班就是要上班
-            if (rule.shiftById(ov) != null) return true;
+            // v1.11.2：双休 / 单休 / 大小周没有班次，残留 id 不改变「班表口径的上班日」
+            if (rule.hasShifts() && rule.shiftById(ov) != null) return true;
         }
         if (rule.mode.isCycle()) return isCycleWorkday(d, rule);
 

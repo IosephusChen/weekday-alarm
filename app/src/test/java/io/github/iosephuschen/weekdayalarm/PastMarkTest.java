@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -66,6 +67,22 @@ public class PastMarkTest {
 
     private MainActivity launch() {
         return Robolectric.buildActivity(MainActivity.class).setup().get();
+    }
+
+    /**
+     * 切成 7 天一轮（周一到周五上班），并建两个班次。
+     *
+     * <p>v1.11.2 起「班次」只属于轮班：双休 / 单休 / 大小周的菜单里没有调班，
+     * 休息日的加班也不问上哪个班。要测那套交互，班表必须先是轮班。
+     */
+    private void useCycle() {
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), 0b0011111L);
+        Prefs.setCycleStart(ctx(), LocalDate.of(2026, 11, 2));   // 周一
+        Prefs.setShifts(ctx(), Arrays.asList(
+                new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0),
+                new Shift(2, "夜班", 20 * 60, Shift.END_UNKNOWN, 0)));
     }
 
     /** 拿到首页内嵌的日历面板，用于直接触发某一天的点击。 */
@@ -137,9 +154,14 @@ public class PastMarkTest {
 
     // ---------- 过去：可以补记 ----------
 
-    /** 点昨天的上班日：正常弹出「请假 / 调班」两项，不再被「已经过去」挡回去。 */
+    /**
+     * 点昨天的上班日：正常弹出「请假」，不再被「已经过去」挡回去。
+     *
+     * <p>双休没有班次（v1.11.2），上班日只有「不去了」这一个动作——
+     * 想换几点起，那是轮班的事。
+     */
     @Test
-    public void pastWorkday_offersBothOptions() throws Exception {
+    public void pastWorkday_offersLeaveOnly() throws Exception {
         resetPrefs();
         MainActivity a = launch();
         LocalDate past = dayOf(true, true);
@@ -149,12 +171,27 @@ public class PastMarkTest {
         AlertDialog d = latestDialog();
         assertNotNull("过去的日子也该弹出选项", d);
         String[] items = itemsOf(d);
-        assertEquals("上班日给两项", 2, items.length);
+        assertEquals("双休的上班日只有请假一项", 1, items.length);
         assertEquals("标记为请假", items[0]);
-        assertEquals("上班日第二项叫调班", "调班", items[1]);
         CharSequence title = titleOf(d);
         assertNotNull("对话框应有标题", title);
         assertTrue("标题应标明已过去，实际：" + title, title.toString().contains("已过去"));
+    }
+
+    /** 轮班下上班日才有「调班」——班次是轮班的东西。 */
+    @Test
+    public void pastWorkdayInCycleMode_offersLeaveAndShift() throws Exception {
+        resetPrefs();
+        useCycle();
+        MainActivity a = launch();
+        LocalDate past = dayOf(true, true);
+
+        clickDay(panelOf(a), past);
+
+        String[] items = itemsOf(latestDialog());
+        assertEquals("轮班的上班日给两项", 2, items.length);
+        assertEquals("标记为请假", items[0]);
+        assertEquals("第二项叫调班", "调班", items[1]);
     }
 
     /** 补记昨天的请假：真的写进 Prefs，Toast 用「补记」而不是「当天闹钟跳过」。 */
@@ -218,12 +255,14 @@ public class PastMarkTest {
     @Test
     public void pastDay_overtimeReplacesLeave() throws Exception {
         resetPrefs();
+        useCycle();
         LocalDate past = dayOf(true, true);
         Prefs.addVacation(ctx(), past);
 
         MainActivity a = launch();
         clickDay(panelOf(a), past);
         clickItem(latestDialog(), 1);   // 上班日第二项「调班」
+        clickItem(latestDialog(), 1);   // 上哪个班 → 夜班
 
         assertFalse("请假应被顶掉", Prefs.isVacation(ctx(), past));
         assertTrue("加班补上了", Prefs.isOvertime(ctx(), past));
@@ -232,9 +271,15 @@ public class PastMarkTest {
 
     // ---------- 今天及以后：照旧 ----------
 
-    /** 上班日给「请假」「调班」两项（v0.51.0 的核心修复，不能被这次改动带回去）。 */
+    /**
+     * 双休的上班日只有「请假」（v1.11.2）。
+     *
+     * <p>v0.51.0 起这里一直是两项，第二项叫过「加班」、v1.11.1 改成「调班」。
+     * 但双休根本没有班可调，那个入口从头到尾都是错的——现在收掉。
+     * 「上班日能标一件事」这条 v0.51.0 的底线仍然守着。
+     */
     @Test
-    public void workday_offersBothOptions() throws Exception {
+    public void workday_offersLeaveOnly() throws Exception {
         resetPrefs();
         MainActivity a = launch();
         LocalDate work = dayOf(true, false);
@@ -244,9 +289,31 @@ public class PastMarkTest {
         AlertDialog d = latestDialog();
         assertNotNull("上班日应弹出选项", d);
         String[] items = itemsOf(d);
-        assertEquals("上班日给两项", 2, items.length);
+        assertEquals("双休的上班日只有请假一项", 1, items.length);
         assertEquals("标记为请假", items[0]);
-        assertEquals("上班日第二项叫调班", "调班", items[1]);
+    }
+
+    /**
+     * 双休的休息日：点「标记为加班」直接记一笔，不问上哪个班（v1.11.2）。
+     *
+     * <p>班次表里还留着以前建的白班，但那不是双休的班——双休只有「去」和「不去」，
+     * 没有「几点去」。问了反而逼用户在两个早已不用的班次里做选择。
+     */
+    @Test
+    public void restDayOvertime_withoutShiftModel_justRecords() throws Exception {
+        resetPrefs();
+        Prefs.setShifts(ctx(), Arrays.asList(
+                new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0)));
+        MainActivity a = launch();
+        LocalDate rest = dayOf(false, false);
+
+        clickDay(panelOf(a), rest);
+        assertEquals("休息日只有加班一项", 1, itemsOf(latestDialog()).length);
+        clickItem(latestDialog(), 0);
+
+        assertEquals("不问班次，记成「加班（未指定班次）」",
+                Integer.valueOf(WeekSchedule.DAY_OVERTIME_ANY), Prefs.getDayShift(ctx(), rest));
+        assertNull("不该弹出第二层", ShadowAlertDialog.getLatestAlertDialog());
     }
 
     /** 休息日只给「加班」——休息日本来就不上班，标请假没有意义。 */
@@ -274,9 +341,7 @@ public class PastMarkTest {
     @Test
     public void restDayOvertime_asksWhichShift_thenStoresIt() throws Exception {
         resetPrefs();
-        Prefs.setShifts(ctx(), Arrays.asList(
-                new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0),
-                new Shift(2, "夜班", 20 * 60, Shift.END_UNKNOWN, 0)));
+        useCycle();
         MainActivity a = launch();
         LocalDate rest = dayOf(false, false);
 
@@ -295,14 +360,17 @@ public class PastMarkTest {
                 WeekSchedule.shiftOn(rest, Prefs.getRule(ctx())).name);
     }
 
-    /** 工作日的加班能标上，并且算一条「和排班不一样」的例外（v1.11.0 起一天只有一条记录）。 */
+    /** 轮班的工作日能换成别的班，并且算一条「和排班不一样」的例外（一天只有一条记录）。 */
     @Test
-    public void workdayOvertime_canBeMarked_asException() throws Exception {        resetPrefs();
+    public void workdayShift_canBeMarked_asException() throws Exception {
+        resetPrefs();
+        useCycle();
         MainActivity a = launch();
         LocalDate work = dayOf(true, false);
 
         clickDay(panelOf(a), work);
-        clickItem(latestDialog(), 1);   // 「调班」
+        clickItem(latestDialog(), 1);   // 上班日第二项「调班」
+        clickItem(latestDialog(), 1);   // 上哪个班 → 夜班
 
         assertTrue("工作日加班应能记上", Prefs.isOvertime(ctx(), work));
         assertFalse("它只是「这天上了哪个班」的记录，不该让首页按钮显示「已加班 / 已请假」",
@@ -324,7 +392,7 @@ public class PastMarkTest {
         clickDay(panelOf(a), work);
         String[] items = itemsOf(latestDialog());
         assertEquals("取消请假", items[0]);
-        assertEquals("上班日的第二项叫调班", "调班", items[1]);
+        assertEquals("双休没有调班这一项", 1, items.length);
     }
 
     /** 今天和明天照常能标。 */

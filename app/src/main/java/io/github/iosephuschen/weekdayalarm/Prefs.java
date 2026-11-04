@@ -837,8 +837,15 @@ public final class Prefs {
     /** 全部加班日期（含「加班但没指定班次」的老数据）。 */
     public static Set<LocalDate> getOvertimeDates(Context c) {
         Set<LocalDate> out = new HashSet<>();
+        // v1.11.2：双休 / 单休 / 大小周没有班次，表里残留的正数 id 是切模式留下的残影，
+        // 不算加班——否则从轮班切回双休后，那天会莫名其妙响一次闹钟。
+        // 用 getWeekMode 而不是 getRule：这里只要一个模式判断，不必把整张班次表读出来
+        boolean hasShifts = getWeekMode(c).isCycle();
         for (Map.Entry<LocalDate, Integer> e : getDayPlan(c).entrySet()) {
-            if (e.getValue() != null && e.getValue() != WeekSchedule.DAY_LEAVE) out.add(e.getKey());
+            Integer v = e.getValue();
+            if (v == null || v == WeekSchedule.DAY_LEAVE) continue;
+            if (v >= 0 && !hasShifts) continue;
+            out.add(e.getKey());
         }
         return out;
     }
@@ -860,7 +867,9 @@ public final class Prefs {
     /** 某天是否被标记为个人加班（休息日标记后「仅上班日」闹钟当天照响）。 */
     public static boolean isOvertime(Context c, LocalDate d) {
         Integer v = getDayShift(c, d);
-        return v != null && v != WeekSchedule.DAY_LEAVE;
+        if (v == null || v == WeekSchedule.DAY_LEAVE) return false;
+        // v1.11.2：双休 / 单休 / 大小周没有班次，表里残留的正数 id 是切模式留下的残影
+        return v < 0 || getWeekMode(c).isCycle();
     }
 
     /**
@@ -871,8 +880,10 @@ public final class Prefs {
      * {@link WeekSchedule#DAY_OVERTIME_ANY}，行为与旧版一致；日历里可以再改。
      */
     public static void addOvertime(Context c, LocalDate d) {
-        List<Shift> shifts = getShifts(c);
-        int value = shifts.size() == 1 && shifts.get(0) != null
+        // v1.11.2：没有班次的班表一律记 -2。不判模式的话，一个只建过白班的
+        // 双休用户会被写成「白班」，而那个 id 在双休下不生效——标了等于没标
+        List<Shift> shifts = getWeekMode(c).isCycle() ? getShifts(c) : null;
+        int value = shifts != null && shifts.size() == 1 && shifts.get(0) != null
                 ? shifts.get(0).id : WeekSchedule.DAY_OVERTIME_ANY;
         setDayShift(c, d, value);
     }

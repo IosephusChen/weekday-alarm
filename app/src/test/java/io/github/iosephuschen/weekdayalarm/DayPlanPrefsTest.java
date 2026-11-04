@@ -126,6 +126,8 @@ public class DayPlanPrefsTest {
     @Test
     public void setDayShift_overwritesSameDay() {
         reset();
+        // 正数 id 只在有班次的班表上算数（v1.11.2），所以先切轮班
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
         LocalDate d = LocalDate.of(2026, 11, 6);
         Prefs.addVacation(ctx(), d);
         assertTrue(Prefs.isVacation(ctx(), d));
@@ -136,14 +138,35 @@ public class DayPlanPrefsTest {
         assertEquals(Integer.valueOf(4), Prefs.getDayShift(ctx(), d));
     }
 
+    /** 轮班 + 只有一个班次：直接用它，不必再问。 */
     @Test
     public void addOvertime_singleShift_usesItsId() {
         reset();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
         setShifts(new Shift(7, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
         LocalDate d = LocalDate.of(2026, 11, 7);
 
         Prefs.addOvertime(ctx(), d);
         assertEquals("只有一个班次就别再问用户了", Integer.valueOf(7), Prefs.getDayShift(ctx(), d));
+    }
+
+    /**
+     * 双休 + 表里还留着一个班次：仍然记 -2（v1.11.2）。
+     *
+     * <p>「只有一个班次就用它」这条便利只对轮班成立。双休没有班次，
+     * 存成那个 id 会在日历上显示成「加班」但其实不生效——看着标上了，闹钟不管。
+     */
+    @Test
+    public void addOvertime_onDoubleRest_ignoresLeftoverShifts() {
+        reset();
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
+        setShifts(new Shift(7, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        LocalDate d = LocalDate.of(2026, 11, 7);
+
+        Prefs.addOvertime(ctx(), d);
+        assertEquals("双休没有班次，记成「未指定班次」",
+                Integer.valueOf(WeekSchedule.DAY_OVERTIME_ANY), Prefs.getDayShift(ctx(), d));
+        assertTrue("但它仍算一条加班记录", Prefs.isOvertime(ctx(), d));
     }
 
     @Test
@@ -222,18 +245,13 @@ public class DayPlanPrefsTest {
     }
 
     /**
-     * 双休 + 建过班次：标了夜班，{@code Prefs.getRule} 组装出来的规则要认得出这个班次（v1.11.1）。
+     * 双休 + 历史班次：表里查得到，但日历和闹钟都不认（v1.11.2）。
      *
-     * <p>这条盯的是组装，不是构造函数——{@code getRule} 必须把全局班次表递进规则，
-     * 否则双休用户（没有轮班表）标了夜班，{@code shiftById} 查不到，{@code timeOn}
-     * 退回闹钟自己的 07:00：日历上写着「夜班」，闹钟还在早上响。
-     *
-     * <p>v1.11.0 靠第 13 个参数（dayShifts 兜底表）把这件事蒙对了；v1.11.1 把构造函数
-     * 解耦之后，这条路径不再依赖兜底，但测试留着——它是「日历标记真的会改响铃时刻」
-     * 唯一一条从 Prefs 一路走到 Alarm 的端到端断言。
+     * <p>从轮班切回双休时，班次定义和覆盖表里的 id 都不删（切回去还要用）。
+     * 只要当前班表没有班次，它们就不该让格子写「夜班」、也不该改响铃时刻。
      */
     @Test
-    public void doubleRestWithShifts_recognizesMarkedShift() {
+    public void doubleRestWithShifts_ignoresThem() {
         reset();
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
@@ -241,10 +259,30 @@ public class DayPlanPrefsTest {
         Prefs.setDayShift(ctx(), sat, 3);
 
         WeekSchedule.Rule r = Prefs.getRule(ctx());
-        assertEquals("班次定义不能跟着「没有轮班表」一起丢掉", "夜班",
-                r.shiftById(3).name);
+        assertEquals("班次定义仍留着，切回轮班还要用", "夜班", r.shiftById(3).name);
+        assertFalse("但双休下它不算加班", Prefs.getOvertimeDates(ctx()).contains(sat));
+        assertNull("日历不显示班次", WeekSchedule.shiftOn(sat, r));
 
         Alarm a = new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true);
-        assertEquals("标了夜班就该按 20:00 响，不是 07:00", 20 * 60, a.timeOn(sat, r, true));
+        assertEquals("闹钟按自己的 07:00，不跟着夜班走", 7 * 60, a.timeOn(sat, r, true));
+    }
+
+    /** 同样一份数据，切回轮班就生效——不迁数据，只换模式。 */
+    @Test
+    public void sameShifts_becomeEffectiveInCycleMode() {
+        reset();
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), 0b0011111L);                 // 周一到周五上班
+        Prefs.setCycleStart(ctx(), LocalDate.of(2026, 11, 2)); // 周一
+        LocalDate sat = LocalDate.of(2026, 11, 7);
+        Prefs.setDayShift(ctx(), sat, 3);
+
+        WeekSchedule.Rule r = Prefs.getRule(ctx());
+        assertTrue("轮班下它是一条加班记录", Prefs.getOvertimeDates(ctx()).contains(sat));
+        assertEquals("日历写「夜班」", "夜班", WeekSchedule.shiftOn(sat, r).name);
+        assertEquals("闹钟按 20:00 响", 20 * 60,
+                new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(sat, r, true));
     }
 }

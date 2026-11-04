@@ -31,10 +31,23 @@ public class DayPlanTest {
         return new Shift(id, name, start, Shift.END_UNKNOWN, 0);
     }
 
-    /** 双休 + 一张覆盖表 + 若干班次。 */
+    /** 7 天一轮的起点：2026-11-02 周一。 */
+    private static final LocalDate CYCLE_START = LocalDate.of(2026, 11, 2);
+    /** 周一到周五上班、周六日休。工作日没填逐日时刻，全部 -1。 */
+    private static final long MON_FRI = 0b0011111L;
+    private static final int[] NO_TIMES = {-1, -1, -1, -1, -1, -1, -1};
+
+    /**
+     * 轮班 + 一张覆盖表 + 若干班次。
+     *
+     * <p>v1.11.2 起，班次只属于「自定义 / N 天一轮」的班表：双休、单休、大小周
+     * 没有「几点上班」这一维，覆盖表里的班次 id 在那里一律不生效。所以这些用例
+     * 换成 7 天一轮——周一到周五上班、周六日休，与双休的日期分布一致，
+     * 断言不用跟着改。cycleHoliday 开着，好让「覆盖高于法定节假日」那条仍测得到。
+     */
     private static WeekSchedule.Rule rule(Map<LocalDate, Integer> days, Shift... shifts) {
-        return new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST, null, false,
-                0, 0L, null, null, false, null, null,
+        return new WeekSchedule.Rule(WeekSchedule.Mode.CYCLE, null, false,
+                7, MON_FRI, CYCLE_START, NO_TIMES, true, null, null,
                 days, shifts.length == 0 ? null : shifts);
     }
 
@@ -131,12 +144,13 @@ public class DayPlanTest {
     /**
      * 双休用户标「周六加班 · 夜班」，起床闹钟就该 20:00 响。
      *
-     * <p>这条以前是错的：{@code timeOn} 只在「N 天一轮」模式下认班次，双休 / 大小周
+     * <p>这条以前是错的：{@code timeOn} 只在「N 天一轮」模式下认班次，其它模式
      * 一律退回闹钟自己的 08:00——用户明明选了夜班，闹钟还在早上响。这也正是
-     * 「8h / 12h 下班点不齐」那个缺口的根。
+     * 「8h / 12h 下班点不齐」那个缺口的根。v1.11.2 起班次只属于轮班，
+     * 这条用例的班表也换成 7 天一轮。
      */
     @Test
-    public void overtimeShift_drivesAlarmTime_outsideCycleMode() {
+    public void overtimeShift_drivesAlarmTime() {
         Shift night = shift(2, "夜班", 20 * 60);
         WeekSchedule.Rule r = rule(days(SAT, 2), night);
         Alarm a = new Alarm(1, 8, 0, "起床", Alarm.Mode.WORKDAY, true);
@@ -161,19 +175,42 @@ public class DayPlanTest {
      * <p>上面两条用 {@link #rule} 把班次塞进 {@code dayShifts}（第 13 个参数），
      * {@code shiftById} 靠兜底表查得到，于是「构造函数一见 shiftCycle 为 null
      * 就把 shifts 置空」这个缺陷被遮住了。{@code Prefs.getRule} 现在正好也把全局表
-     * 传给 dayShifts，所以真机上还没露头；但正确性不该挂在这张兜底表上——
-     * 任何只传全局表的调用点都会让双休用户的班次凭空消失。
+     * 传给 dayShifts，所以真机上还没露头；但正确性不该挂在这张兜底表上。
      * 这条按 {@code Prefs.getRule} 的形状构造：shiftCycle 为 null、shifts 有值、dayShifts 为 null。
+     *
+     * <p>v1.11.2 补一句：这张表活着，不等于它一定生效——双休 / 单休 / 大小周下
+     * {@code hasShifts()} 为 false，覆盖表里的 id 照样不算数（见下一条用例）。
      */
     @Test
     public void globalShiftTable_survivesWithoutShiftCycle() {
         Shift night = shift(2, "夜班", 20 * 60);
-        WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST,
-                null, false, 0, 0L, null, null, false,
+        WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.CYCLE,
+                null, false, 7, MON_FRI, CYCLE_START, NO_TIMES, false,
                 null, new Shift[]{night}, days(SAT, 2), null);
 
         assertEquals("班次表不随「有没有轮班」一起丢", night, r.shiftById(2));
         assertEquals("标了夜班，时刻就该是 20:00", 20 * 60,
+                new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(SAT, r, true));
+    }
+
+    /**
+     * 双休 / 单休 / 大小周：班次表里的定义一个都不生效（v1.11.2）。
+     *
+     * <p>从轮班切回双休时，班次定义和覆盖表里的 id 都还留着（切回去还要用）。
+     * 但只要当前班表没有班次，它们就不该让日历写「夜班」、也不该改响铃时刻——
+     * 否则用户看到的是一张双休班表上挂着一格夜班，而那天的闹钟真的按夜班响。
+     */
+    @Test
+    public void doubleRest_ignoresShiftOverrides() {
+        Shift night = shift(2, "夜班", 20 * 60);
+        WeekSchedule.Rule r = new WeekSchedule.Rule(WeekSchedule.Mode.DOUBLE_REST,
+                null, false, 0, 0L, null, null, false,
+                null, new Shift[]{night}, days(SAT, 2), new Shift[]{night});
+
+        assertNull("双休下没有班次，覆盖不成立", WeekSchedule.shiftOn(SAT, r));
+        assertEquals("那天还是休息日", WeekSchedule.DayType.REST, WeekSchedule.dayType(SAT, r));
+        assertNull("格子也不该写班次名", DayTag.shiftName(r, 2, 2));
+        assertEquals("闹钟按自己的时刻，不跟着夜班走", 7 * 60,
                 new Alarm(1, 7, 0, "起床", Alarm.Mode.WORKDAY, true).timeOn(SAT, r, true));
     }
 

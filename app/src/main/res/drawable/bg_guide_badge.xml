@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 新手引导页顶部大圆：indigo → violet 斜向渐变，与主界面 hero 卡同色系 -->
+<!-- 新手引导页顶部图标底（v1.15.0：退回实心渐变圆）。
+
+     v1.13.0 把它改成淡靛底，理由是「48dp 的实心紫会压过 22sp 的标题，
+     视线先落在圆上」。这个判断只在标题偏小的时候成立——原版的标题是 28sp 加粗，
+     实心圆和它配平，谁也没压过谁；v1.13.0 同时把标题缩到 24sp，圆才显得重。
+     v1.15.0 两样一起退回去：圆 56dp 实心渐变，标题 28sp。
+
+     渐变的两个端点取主色和 violet，和首页 hero 卡同一套，四屏之间不换色。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <gradient
         android:angle="315"
         android:endColor="@color/violet"
-        android:startColor="@color/indigo" />
+        android:startColor="@color/indigo"
+        android:type="linear" />
 </shape>

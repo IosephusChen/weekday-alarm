@@ -255,6 +255,54 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- v1.19.0：跳过法定节假日搬到一级行，和「铃声」平级。
+         原来藏在「自己排一周 → 自定义弹窗」最上面那行（ScheduleSheet 的 row_holiday），
+         选「跟随我的班表」时更是完全没有入口。用户「藏太深，要放图 4 里」。
+         读写的是这条闹钟自己的 Alarm.cycleHoliday（拍板「开关管单条」），
+         不碰全局 Prefs.KEY_CYCLE_HOLIDAY。 -->
+    <LinearLayout
+        android:id="@+id/row_holiday_alarm"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_field_outline"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="11dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="跳过法定节假日"
+                android:textColor="@color/ink"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_alarm_holiday_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="春节、国庆自动标成「休」，只对这一条生效"
+                android:textColor="@color/sub"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sw_alarm_holiday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
     <!-- v0.88.0：这条闹钟单独用的铃声。默认「跟随设置」，点开复用自绘铃声选择器。
          放在「哪一天」之后、删除之前：规则讲究了，才轮到声音。 -->
     <TextView

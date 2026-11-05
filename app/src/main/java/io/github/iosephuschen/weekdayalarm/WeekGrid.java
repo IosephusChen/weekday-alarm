@@ -35,9 +35,18 @@ public class WeekGrid extends LinearLayout {
         void onDayClick(int index);
     }
 
-    private static final int GAP_DP = 4;
-    /** 格子最小高度（两行字 + 上下 padding）。46 只放得下一行，见类注释。 */
-    private static final int CELL_H_DP = 54;
+    /**
+     * 格子最小高度（两行字 + 上下 padding）。46 只放得下一行，见类注释。
+     *
+     * <p>v1.13.0 只把「间隙」搬去了 {@code space_8}，这一个留在类里：
+     * {@code DesignTokenTest#dimensDefinesTheScale} 把 dimens 当封闭集合
+     * （七档圆角 + 九档间距），54dp 既不是间距也不是圆角，塞进去只会让那套比例
+     * 多出一个没人复用的档位。它只服务这张表，写在这里才找得到。
+     */
+    private static final int CELL_MIN_HEIGHT_DP = 54;
+
+    /** 间隙改读全局间距档（v1.13.0：4 → 8dp），见 {@code space_8}。 */
+    private final int gapPx;
 
     private final LinearLayout firstBox = new LinearLayout(getContext());
     private final TextView firstLabel = new TextView(getContext());
@@ -58,6 +67,7 @@ public class WeekGrid extends LinearLayout {
 
     public WeekGrid(Context context, AttributeSet attrs) {
         super(context, attrs);
+        gapPx = getResources().getDimensionPixelSize(R.dimen.space_8);
         setOrientation(VERTICAL);
         buildShell();
     }
@@ -225,7 +235,7 @@ public class WeekGrid extends LinearLayout {
             }
             tv.setGravity(Gravity.CENTER);
             LayoutParams lp = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
-            if (i > 0) lp.setMarginStart(dp(GAP_DP));
+            if (i > 0) lp.setMarginStart(gapPx);
             box.addView(tv, lp);
         }
     }
@@ -243,7 +253,7 @@ public class WeekGrid extends LinearLayout {
             LinearLayout cell = new LinearLayout(getContext());
             cell.setOrientation(VERTICAL);
             cell.setGravity(Gravity.CENTER);
-            cell.setMinimumHeight(dp(CELL_H_DP));
+            cell.setMinimumHeight(dp(CELL_MIN_HEIGHT_DP));
             cell.setPadding(0, dp(7), 0, dp(7));
             cell.setBackgroundResource(work
                     ? R.drawable.bg_day_cell_work : R.drawable.bg_day_cell_rest);
@@ -279,7 +289,7 @@ public class WeekGrid extends LinearLayout {
             cell.addView(date, dateLp);
 
             LayoutParams lp = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
-            if (i > 0) lp.setMarginStart(dp(GAP_DP));
+            if (i > 0) lp.setMarginStart(gapPx);
             cell.setLayoutParams(lp);
 
             if (!readOnly) {

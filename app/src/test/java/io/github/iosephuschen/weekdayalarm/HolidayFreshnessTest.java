@@ -141,7 +141,7 @@ public class HolidayFreshnessTest {
                 HolidayData.nextYearPendingHint(LocalDate.of(2027, 12, 1)));
     }
 
-    /** 已拿到次年数据就不提示——这时那行该显示「2027 年 · 在线 · …发布」。 */
+    /** 已拿到次年数据就不提示——这时那行该显示「2027 年 · 在线」（v1.20.0：不带发布日）。 */
     @Test
     public void hint_silentOnceNextYearArrives() {
         assertTrue(HolidayData.applyHolidayCnJson(cn2027()));
@@ -168,5 +168,20 @@ public class HolidayFreshnessTest {
         assertTrue(HolidayData.applyHolidayCnJson(cn2027()));
         String label = SettingsActivity.holidayDataLabel(LocalDate.of(2026, 12, 2));
         assertTrue("拿到数据后应显示在线年份，实际：" + label, label.startsWith("2027 年 · 在线"));
+    }
+
+    /**
+     * v1.20.0：holiday-cn 的 2027.json 没有发布日期字段，effectivePublished() 会兜底
+     * 回退到内置的 2025-11-04（那是 2026 年安排的发布日）。在线文案不能再把它拼出来——
+     * 数据源没有的字段就不编，只报「年份 · 在线」。
+     */
+    @Test
+    public void label_onlineNeverShowsBuiltInPublishDate() {
+        assertTrue(HolidayData.applyHolidayCnJson(cn2027()));
+        String label = SettingsActivity.holidayDataLabel(LocalDate.of(2026, 12, 2));
+        assertEquals("在线文案只报年份与来源，不带发布日期", "2027 年 · 在线", label);
+        assertFalse("不该再出现内置发布日 2025-11-04（2026 年安排的发布日）",
+                label.contains("2025-11-04"));
+        assertFalse("不该再出现「发布」字样", label.contains("发布"));
     }
 }

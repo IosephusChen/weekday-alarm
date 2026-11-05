@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 引导页第 3 屏「权限进度」的未开部分（v1.13.0）。见 bg_guide_progress_on.xml。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/line" />
+    <corners android:radius="@dimen/radius_hairline" />
+</shape>

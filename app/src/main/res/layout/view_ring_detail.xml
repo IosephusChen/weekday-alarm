@@ -1,0 +1,235 @@
+<!-- 响铃细节弹层（v1.19.0 美化：整张卡自绘）。
+
+     历史上这一块改过四次，每次都绕着「五行摊开撑不撑得下」打转：
+     - v0.83.0 页内展开 / 收起；v1.13.2 改成弹窗让页面高度恒定；
+     - v1.17.0 页头搬出 ViewPager 后又回到页内展开（行高 48→40dp）；
+     - v1.18.0 用户「点开后闹钟时间会跳」，五行再回弹层，页面高度恒定。
+
+     v1.19.0 只改这一层弹窗的排版，不动功能与数据：
+     原来用 RoundedDialog 的 setTitle / setMessage / setPositiveButton，标题区到第一行
+     有约 60dp 固定空白（message 与 custom view 的系统间距叠上 view 自身 padding），
+     「完成」又是系统按钮栏里一颗右下角描边块。系统 title/message/button 的间距和样式
+     都改不动，所以把它们全部收进这张自绘卡：标题、副标题、五行、底部整行实心按钮
+     都在同一个 LinearLayout 里，间距完全由这里控制。
+
+     视觉严格沿用 App 现有 token，没有引入新风格（v1.16 照搬外部皮肤被否）：
+     白卡 = RoundedDialog 的 bg_dialog（24dp 圆角）；主色 @color/indigo；
+     文字 @color/ink / @color/sub；分隔线 @color/line 左右内缩 16dp；
+     「完成」= @drawable/bg_guide_btn（indigo 实心 14dp 圆角），与「保存 / 下一步」同一套。
+
+     行高仍是 minHeight 48dp + wrap_content，不能写死 layout_height —— 系统字体放大到
+     1.5 倍时高度要跟着长，LargeFontLayoutTest 守着这条。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/space_20"
+    android:paddingTop="@dimen/space_20"
+    android:paddingEnd="@dimen/space_20"
+    android:paddingBottom="@dimen/space_20">
+
+    <!-- 标题与副标题自绘：到第一行只留 16dp，不再有系统 message 的 60dp 空档。 -->
+    <TextView
+        android:id="@+id/tv_ring_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="响铃细节"
+        android:textColor="@color/ink"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_ring_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_2"
+        android:text="对所有闹钟都生效"
+        android:textColor="@color/sub"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:id="@+id/box_ring_rows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_16"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/row_volume"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="响铃音量"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_volume"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="80%"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView style="@style/RingChevron" />
+        </LinearLayout>
+
+        <View style="@style/RingDivider" />
+
+        <LinearLayout
+            android:id="@+id/row_fade"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="渐响"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_fade"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="关"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView style="@style/RingChevron" />
+        </LinearLayout>
+
+        <View style="@style/RingDivider" />
+
+        <LinearLayout
+            android:id="@+id/row_vibrate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="响铃时震动"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_vibrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="开"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView style="@style/RingChevron" />
+        </LinearLayout>
+
+        <View style="@style/RingDivider" />
+
+        <!-- 稍后提醒与提前提醒（v0.40.0 搬进来）：这两项决定「响铃后还能再眯几次」
+             和「响之前要不要先来一条通知」，是闹钟最核心的体验。 -->
+        <LinearLayout
+            android:id="@+id/row_snooze"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="稍后提醒"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_snooze"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5 分钟 × 3 次"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView style="@style/RingChevron" />
+        </LinearLayout>
+
+        <View style="@style/RingDivider" />
+
+        <LinearLayout
+            android:id="@+id/row_prenotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="响铃前提醒"
+                android:textColor="@color/ink"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_prenotice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="提前 1 小时"
+                android:textColor="@color/indigo"
+                android:textSize="14sp" />
+
+            <TextView style="@style/RingChevron" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 整行实心主按钮，和「保存 / 下一步」同一套 bg_guide_btn。
+         自绘而不是系统 positive button：系统按钮在私有 AlertController 布局里右对齐，
+         做不成通栏；这里点一下 dismiss 弹窗（见 GuideActivity.showRingSheet）。 -->
+    <TextView
+        android:id="@+id/btn_ring_done"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_20"
+        android:background="@drawable/bg_guide_btn"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:text="完成"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>

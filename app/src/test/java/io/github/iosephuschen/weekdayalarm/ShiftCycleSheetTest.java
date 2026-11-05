@@ -2,10 +2,13 @@ package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Dialog;
 import android.content.Context;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -20,17 +23,19 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowDialog;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * 「轮班」排循环弹窗的默认值（v1.9.1）。
+ * 轮班「班次选择器」的共享逻辑（v1.20.0 抽出 showShiftPicker，v1.20.1 精简）。
  *
- * <p>起因是用户真机上一打开就愣住：14 天、每天都是「休」。他得先在心里把
- * 「我几天一轮」数一遍，再从全休开始一天天点上班——弹窗问的「循环周期」
- * 其实只有他自己知道，默认值给 14 天帮不上任何忙。
+ * <p>v1.20.1 清技术债：整个 {@code ShiftCycleSheet.show()} 弹层在 v1.20.0 撤入口后
+ * 生产 0 调用方，已删除；原来测它默认值（4 天预填第一个班次、老表原样带出）的两条
+ * 用例随之删掉——那些是死代码的行为，留着只会把已删的实现又钉回来。
  *
- * <p>现在第一次打开是 4 天、每天先铺第一个班次。用户只需要把休息的那几天
- * 点掉，动作从「点上班」变成「点休息」，少一半。已经有逐日表的老数据不动——
- * 那是他自己排过的，覆盖掉比给错默认值更糟。
+ * <p>现在只测仍活着的 {@link ShiftCycleSheet#showShiftPicker}：列表是「休息 + 各班次」，
+ * 点一项回调选中的班次 id。v1.20.1 用户拍板「图 2 弹窗不需管理班次入口，图 1 有就行」，
+ * 所以这里同时守住「列表里不再出现管理班次 ›」——班次管理收敛到轮班卡底部常驻那行。
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 34, application = Application.class)
@@ -46,51 +51,88 @@ public class ShiftCycleSheetTest {
                 .edit().clear().commit();
     }
 
-    private LinearLayout openList() {
-        WeekScheduleActivity host =
-                Robolectric.buildActivity(WeekScheduleActivity.class).setup().get();
-        ShiftCycleSheet.show(host, ScheduleDraft.load(host), null);
+    private WeekScheduleActivity host() {
+        return Robolectric.buildActivity(WeekScheduleActivity.class).setup().get();
+    }
+
+    private static final List<Shift> TWO_SHIFTS = Arrays.asList(
+            new Shift(1, "白班", 8 * 60, 17 * 60, 0),
+            new Shift(2, "夜班", 17 * 60, 8 * 60, 1));
+
+    /** 列表恰好「休息 + 两个班次」三项，不再挂「管理班次 ›」。 */
+    @Test
+    public void shiftPicker_isRestAndShiftsOnly_noManageEntry() {
+        ShiftCycleSheet.showShiftPicker(host(), "周一上哪个班", TWO_SHIFTS, 1, null);
         Dialog d = ShadowDialog.getLatestDialog();
-        assertNotNull("弹层应已显示", d);
-        return d.findViewById(R.id.list_days);
+        assertNotNull("应弹出选择列表", d);
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertNotNull("自绘列表容器应在", list);
+
+        assertEquals("休息 + 2 个班次 = 3 项", 3, list.getChildCount());
+        assertTrue("第一项是「休息」", hasText(list, "休息"));
+        assertTrue("有「白班」", hasText(list, "白班"));
+        assertTrue("有「夜班」", hasText(list, "夜班"));
+        assertNull("不能有「管理班次 ›」（② 收敛到图 1 常驻入口）",
+                findText(list, "管理班次 ›"));
     }
 
-    private String stateOf(LinearLayout list, int i) {
-        TextView state = list.getChildAt(i).findViewById(R.id.tv_state);
-        return state.getText().toString();
-    }
-
-    /** 第一次打开：4 天，且每天先填第一个班次。 */
+    /** 点「夜班」回调它的真实 id（2），不是任何哨兵值。 */
     @Test
-    public void firstOpen_presetsFourDaysWithFirstShift() {
-        Prefs.setShifts(ctx(), Arrays.asList(
-                new Shift(1, "白班", 8 * 60, 17 * 60, 0),
-                new Shift(2, "夜班", 17 * 60, 8 * 60, 1)));
-        // 故意留一个不相干的周期长度：默认值不该跟着它走
-        Prefs.setCycleLen(ctx(), 14);
+    public void shiftPicker_pickingShiftReturnsItsId() {
+        final int[] picked = {-99};
+        ShiftCycleSheet.showShiftPicker(host(), "周一上哪个班", TWO_SHIFTS, -1,
+                id -> picked[0] = id);
+        Dialog d = ShadowDialog.getLatestDialog();
+        assertNotNull(d);
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
 
-        LinearLayout list = openList();
+        View nightCard = findCardWithText(list, "夜班");
+        assertNotNull("列表里该能点到「夜班」", nightCard);
+        nightCard.performClick();
+        assertEquals("点夜班应回调它的 id 2", 2, picked[0]);
+    }
 
-        assertEquals("第一次打开应是 4 天", 4, list.getChildCount());
-        for (int i = 0; i < 4; i++) {
-            assertEquals("第 " + (i + 1) + " 天应预填第一个班次", "白班", stateOf(list, i));
+    /** 空班次时列表只有「休息」，不是死路——图 1 常驻行负责「去建一个」。 */
+    @Test
+    public void shiftPicker_emptyShifts_stillOffersRest() {
+        ShiftCycleSheet.showShiftPicker(host(), "周一上哪个班",
+                Collections.<Shift>emptyList(), -1, null);
+        Dialog d = ShadowDialog.getLatestDialog();
+        assertNotNull(d);
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertNotNull(list);
+
+        assertEquals("空班次只有「休息」一项", 1, list.getChildCount());
+        assertTrue(hasText(list, "休息"));
+        assertNull("空班次也不塞「管理班次 ›」", findText(list, "管理班次 ›"));
+    }
+
+    /** 在一棵子树里找文字恰好等于 target 的 TextView。 */
+    private static TextView findText(View v, String target) {
+        if (v instanceof TextView) {
+            CharSequence t = ((TextView) v).getText();
+            if (t != null && target.contentEquals(t)) return (TextView) v;
         }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                TextView hit = findText(g.getChildAt(i), target);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
     }
 
-    /** 已经排过的表原样带出来，不被默认值改写。 */
-    @Test
-    public void existingCycle_isKeptAsIs() {
-        Prefs.setShifts(ctx(), Arrays.asList(
-                new Shift(1, "白班", 8 * 60, 17 * 60, 0),
-                new Shift(2, "夜班", 17 * 60, 8 * 60, 1)));
-        Prefs.setCycleLen(ctx(), 3);
-        Prefs.setShiftCycle(ctx(), new int[]{1, 1, -1});
+    private static boolean hasText(View v, String target) {
+        return findText(v, target) != null;
+    }
 
-        LinearLayout list = openList();
-
-        assertEquals(3, list.getChildCount());
-        assertEquals("白班", stateOf(list, 0));
-        assertEquals("白班", stateOf(list, 1));
-        assertEquals("休", stateOf(list, 2));
+    /** 找到含 target 文字的那张卡片（顶层子 View），点它才触发 OnPick。 */
+    private static View findCardWithText(LinearLayout list, String target) {
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View c = list.getChildAt(i);
+            if (hasText(c, target)) return c;
+        }
+        return null;
     }
 }

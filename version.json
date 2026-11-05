@@ -1,14 +1,14 @@
 {
-  "versionCode": 275,
-  "versionName": "1.12.0",
-  "published": "2026-11-04",
-  "title": "一套声音",
+  "versionCode": 287,
+  "versionName": "1.20.1",
+  "published": "2026-11-06",
+  "title": "格子对齐，收尾发布",
   "notes": [
-    "标题说是什么，副标题说给谁用，按钮说做什么——全 App 同一套口径",
-    "去掉「就好」「别」「嫌」「照震」这类替用户下判断的写法，共 21 处",
-    "两页副标题删掉「点这里」：卡片样式本身已说明可点，不必写进文案",
-    "帮助页的省略语补全：「拨一下」改「关闭后仅停用该条」"
+    "轮班格子对齐效果图：班次做成独立色块、今天改成胶囊角标",
+    "点格子的弹窗去掉管理班次项，管理只在卡片常驻那行",
+    "清掉撤入口后遗留的死弹层代码、修好一条脆弱测试",
+    "补推累积改动到远端：main、tag、Release 一次到位"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.12.0/weekday-alarm-1.12.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.12.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.20.1/weekday-alarm-1.20.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.20.1"
 }

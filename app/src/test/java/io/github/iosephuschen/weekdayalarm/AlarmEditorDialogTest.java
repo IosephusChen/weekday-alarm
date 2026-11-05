@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -284,6 +285,47 @@ public class AlarmEditorDialogTest {
         assertNotNull("自己排一周必须有班表，否则文案和实际对不上", saved.ownRule());
         assertEquals("默认按周排", 7, saved.cycleLen);
         assertTrue("按周排默认跟节假日", saved.cycleHoliday);
+    }
+
+    /**
+     * v1.19.0 ⑤：「跳过法定节假日」搬到编辑弹窗一级行，管的是单条闹钟的
+     * {@code cycleHoliday}——不再藏在自定义弹窗三层深。拨一下再保存，值要跟着变，
+     * 且不能被 {@code own[0]} 那份旧 Rule 的 holiday 覆盖回去。
+     */
+    @Test
+    public void holidaySwitch_isFirstLevelRow_andStoresPerAlarm() {
+        MainActivity a = launch();
+        List<Alarm> list = new ArrayList<>();
+        AlertDialog d = openEditor(a, null, list);
+
+        SwitchCompat sw = d.findViewById(R.id.sw_alarm_holiday);
+        assertNotNull("编辑弹窗一级要有节假日开关", sw);
+        assertNotNull("开关那一行要在", d.findViewById(R.id.row_holiday_alarm));
+        assertTrue("新建默认跟节假日", sw.isChecked());
+
+        sw.setChecked(false);   // 关掉「跳过法定节假日」
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(1, list.size());
+        assertFalse("开关关掉后，这条闹钟的 cycleHoliday 要落成 false",
+                list.get(0).cycleHoliday);
+    }
+
+    /** 编辑已有闹钟时，一级开关要回显它存下来的值，不能一律显示成默认开。 */
+    @Test
+    public void holidaySwitch_reflectsSavedAlarm() {
+        MainActivity a = launch();
+        Alarm alarm = new Alarm(1, 7, 30, "起床", Alarm.Mode.CUSTOM, true);
+        alarm.applyOwnRule(WeekSchedule.Rule.cycle(7, 0b0011111L,
+                LocalDate.now(), null, false));   // 存的是 false
+        List<Alarm> list = new ArrayList<>();
+        list.add(alarm);
+
+        AlertDialog d = openEditor(a, alarm, list);
+        SwitchCompat sw = d.findViewById(R.id.sw_alarm_holiday);
+        assertNotNull(sw);
+        assertFalse("已有闹钟存的是 false，开关要照实回显", sw.isChecked());
     }
 
     /** 切回「仅上班日」时要把自带班表清掉，不能留一张看不见的旧表。 */

@@ -168,6 +168,27 @@ final class AlarmEditor {
          */
         final WeekSchedule.Rule[] own = {target != null ? target.ownRule() : null};
 
+        // v1.19.0 ⑤：「跳过法定节假日」从三层深的自定义弹窗搬到本页一级行
+        // （和「铃声」平级），读写的是这条闹钟自己的 Alarm.cycleHoliday——
+        // 用户拍板「开关管单条」，不碰全局 Prefs.KEY_CYCLE_HOLIDAY，也不改数据模型。
+        // 用本地状态存着：own[0] 那份 Rule 里的 holiday 是编辑开始时的旧值，
+        // 保存时 applyOwnRule(ownRule) 会把它写进去，所以要在那之后统一覆盖，
+        // 否则用户刚拨的开关会被旧值盖掉。
+        SwitchCompat swHoliday = view.findViewById(R.id.sw_alarm_holiday);
+        TextView tvHolidayHint = view.findViewById(R.id.tv_alarm_holiday_hint);
+        final boolean[] holiday = {target != null ? target.cycleHoliday : true};
+        SwitchKit.style(activity, swHoliday);
+        swHoliday.setChecked(holiday[0]);
+        tvHolidayHint.setText(holiday[0]
+                ? "春节、国庆自动标成「休」，只对这一条生效"
+                : "春节、国庆也照常上班，只对这一条生效");
+        swHoliday.setOnCheckedChangeListener((b, checked) -> {
+            holiday[0] = checked;
+            tvHolidayHint.setText(checked
+                    ? "春节、国庆自动标成「休」，只对这一条生效"
+                    : "春节、国庆也照常上班，只对这一条生效");
+        });
+
         /**
          * 全局那张班表（v1.6.0）。对话框是模态的，打开期间用户改不了班表，
          * 所以只读一次；每刷一次文案都去反序列化一遍 Prefs 没有意义。
@@ -396,6 +417,10 @@ final class AlarmEditor {
                             created.offsetMin = followOffset[0];
                         }
                         if (ownRule != null) created.applyOwnRule(ownRule);
+                        // v1.19.0 ⑤：一级开关是唯一真值，applyOwnRule 带的可能是
+                        // own[0] 的旧 holiday，统一覆盖。跟全局的闹钟也照实存值
+                        // （不参与它的响铃判定，是 PLAN.md 第六节记下的既有边界）。
+                        created.cycleHoliday = holiday[0];
                         alarms.add(created);
                     } else {
                         // 铃声不属于「改完就开」那套业务规则，直接写字段即可
@@ -428,6 +453,11 @@ final class AlarmEditor {
                         if (tip != null) {
                             Toast.makeText(activity, tip, Toast.LENGTH_LONG).show();
                         }
+                        // v1.19.0 ⑤：applyEdit 里的 applyOwnRule 会把 cycleHoliday
+                        // 写成 own[0] 的旧值（非自带班表模式甚至是 false），
+                        // 一级开关才是真值。放在 sameRule 判断之后覆盖，
+                        // 免得「只拨了节假日」被当成改了班表去清小睡。
+                        target.cycleHoliday = holiday[0];
                     }
                     Prefs.setAlarms(activity, alarms);
                     onChanged.run();

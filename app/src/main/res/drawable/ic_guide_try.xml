@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 新手引导第 4 页图标：三条高低不一的音柱（v1.13.0）。
+
+     原来复用第 2 页的铃铛。可这一页做的是「当场听一声」，铃铛说的是「这是个闹钟」，
+     和第 2 页重复；音柱至少画出「正在响」这件事。三条不等高也顺带说明了
+     「声音有大小」，和第 2 页的音量设置对得上。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M6,10 L6,14"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.2" />
+    <path
+        android:pathData="M12,6.5 L12,17.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.2" />
+    <path
+        android:pathData="M18,10 L18,14"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.2" />
+</vector>

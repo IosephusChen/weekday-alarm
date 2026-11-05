@@ -478,8 +478,10 @@ public class SettingsActivity extends AppCompatActivity {
         String pending = HolidayData.nextYearPendingHint(today);
         if (pending != null) return pending;
         if (HolidayData.hasRemote()) {
-            return HolidayData.effectiveYear() + " 年 · 在线 · "
-                    + HolidayData.effectivePublished() + " 发布";
+            // v1.20.0：holiday-cn 数据源没有「发布日期」字段，effectivePublished()
+            // 会兜底回退到内置的 2025-11-04（那是 2026 年安排发布日），贴到 2027 在线数据
+            // 上差整整一年。数据源没有的字段就不编——只报「年份 · 在线」。
+            return HolidayData.effectiveYear() + " 年 · 在线";
         }
         return HolidayData.BUILT_IN_FIRST_YEAR + "–" + HolidayData.BUILT_IN_YEAR + " 年 · 内置";
     }
@@ -502,9 +504,9 @@ public class SettingsActivity extends AppCompatActivity {
                     break;
                 case ALREADY_LATEST:
                     refreshAll();
+                    // v1.20.0：同 holidayDataLabel()，在线数据不带发布日期，别拼内置兜底值
                     Toast.makeText(this, "已是最新（" + HolidayData.effectiveYear()
-                            + " 年 · " + HolidayData.effectivePublished() + " 发布）",
-                            Toast.LENGTH_SHORT).show();
+                            + " 年 · 在线）", Toast.LENGTH_SHORT).show();
                     break;
                 default:
                     refreshAll();

@@ -1,12 +1,15 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.content.Context;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +42,9 @@ public final class ScheduleSheet {
 
     private static final String[] WEEK_NAMES =
             {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+
+    /** v1.19.0 ⑥：横排七格的单字，和引导页第一页「自定义」卡一致（周一 → 周日）。 */
+    private static final String[] CELL_NAMES = {"一", "二", "三", "四", "五", "六", "日"};
 
     /**
      * 谁在用这张表：决定标题、副标题、露不露「周期 / 起点」、露不露时刻。
@@ -131,25 +137,24 @@ public final class ScheduleSheet {
         TextView tvSub = view.findViewById(R.id.tv_sub);
         TextView tvLen = view.findViewById(R.id.tv_len);
         TextView tvStart = view.findViewById(R.id.tv_start);
-        TextView tvHolidayHint = view.findViewById(R.id.tv_holiday_hint);
         TextView tvSummary = view.findViewById(R.id.tv_summary);
         TextView tvHint = view.findViewById(R.id.tv_hint);
-        SwitchCompat swHoliday = view.findViewById(R.id.sw_holiday);
         ScrollView scroll = view.findViewById(R.id.scroll_days);
         ViewGroup list = view.findViewById(R.id.list_days);
+        ViewGroup cells = view.findViewById(R.id.box_week_cells);
+
+        // v1.19.0 ⑥：只把「闹钟·按周」换成横排七格，其余三个 Role（全局周、
+        // 全局轮班、闹钟轮班）仍是逐日列表——轮班最多 62 天，七格根本放不下。
+        final boolean sevenCells = role == Role.ALARM_WEEK;
+        scroll.setVisibility(sevenCells ? View.GONE : View.VISIBLE);
+        cells.setVisibility(sevenCells ? View.VISIBLE : View.GONE);
 
         tvSub.setText(role.sub());
         tvHint.setText(role.hint());
         view.findViewById(R.id.box_params).setVisibility(role.rotation ? View.VISIBLE : View.GONE);
-        // v1.9.2：全局班表（我的班表 → 自定义 / 轮班）不再露这个开关——它已经在
-        // 「我的班表」占一行，同一个值出现在两处，而且弹窗里按「取消」不保存、
-        // 班表页点一下立刻生效，两种提交语义。单条闹钟保留：cycleHoliday 是
-        // 这条闹钟自己的字段，别处没有入口。
-        view.findViewById(R.id.row_holiday)
-                .setVisibility(role.forAlarm ? View.VISIBLE : View.GONE);
-        // 开关统一成 App 的配色：ROM 默认把「关」画成黑拇指，整张卡里最重的元素
-        // 会变成那个没打开的开关
-        SwitchKit.style(ctx, swHoliday);
+        // v1.19.0 ⑤：节假日开关整行从这张弹窗删掉，搬到「编辑闹钟」弹窗一级行。
+        // 这里只保留 Seed.holiday 的透传（cb.onSaved(s.copy()) 原样带回），
+        // 不再有第二个控件改它——全局 CycleEditor 仍要靠这个值写 Prefs。
 
         final Runnable[] self = new Runnable[1];
         final Runnable refreshSummary = () -> tvSummary.setText(summaryOf(s.len, s.mask));
@@ -157,11 +162,13 @@ public final class ScheduleSheet {
         self[0] = () -> {
             tvLen.setText(s.len + " 天");
             tvStart.setText(startText(s.start));
-            tvHolidayHint.setText(holidayHint(s.holiday));
-            swHoliday.setChecked(s.holiday);
             refreshSummary.run();
-            buildRows(ctx, list, role, s, refreshSummary, self);
-            fitListHeight(ctx, scroll, s.len);
+            if (sevenCells) {
+                buildWeekCells(ctx, cells, s, refreshSummary);
+            } else {
+                buildRows(ctx, list, role, s, refreshSummary, self);
+                fitListHeight(ctx, scroll, s.len);
+            }
         };
         self[0].run();
 
@@ -175,16 +182,6 @@ public final class ScheduleSheet {
                     s.start = d;
                     self[0].run();
                 }));
-        // 这个开关只改一句话，不走 self[0].run()：那会重画整张表并把列表滚回顶部，
-        // 而用户只是勾了一下「跟不跟节假日」。摘要也不动——它说的是这张表本身的
-        // 形状（几天上班几天休），节假日是另一层规则，改的是到时候响不响。
-        //
-        // v1.5.0 补：原来只有 `s.holiday = checked`，副标题停在打开之前那句
-        // 「春节、国庆也照常上班」，开关已经紫了、字还说照常上班。
-        swHoliday.setOnCheckedChangeListener((b, checked) -> {
-            s.holiday = checked;
-            tvHolidayHint.setText(holidayHint(checked));
-        });
 
         new RoundedDialog.Builder(ctx)
                 .setTitle(role.title)
@@ -252,8 +249,43 @@ public final class ScheduleSheet {
         return d.equals(LocalDate.now()) ? "今天（" + d.format(MD) + "）" : d.format(MD);
     }
 
-    private static String holidayHint(boolean holiday) {
-        return holiday ? "春节、国庆自动标成「休」" : "春节、国庆也照常上班";
+    /**
+     * v1.19.0 ⑥：闹钟·按周的横排七格。和引导页第一页「自定义」卡同一套画法
+     * （{@code bg_plan_day} + {@code plan_pick_text}，选中 = 紫框 = 上班），
+     * 点一下切班 / 休。只服务 {@link Role#ALARM_WEEK}，其余三种 Role 仍走
+     * {@link #buildRows} 的逐日列表——轮班最多 62 天，七格放不下。
+     *
+     * <p>格子建在 {@code box_week_cells} 容器里，不碰 {@code list_days}，
+     * 所以 {@code buildRows} / {@code fitListHeight} 那条老路径一行没改。
+     */
+    private static void buildWeekCells(Context ctx, ViewGroup box, Seed s, Runnable refresh) {
+        box.removeAllViews();
+        int gap = dp(ctx, 6);
+        for (int i = 0; i < 7; i++) {
+            TextView t = new TextView(ctx);
+            t.setText(CELL_NAMES[i]);
+            t.setTextSize(13);
+            t.setGravity(Gravity.CENTER);
+            t.setTextColor(ContextCompat.getColorStateList(ctx, R.color.plan_pick_text));
+            t.setBackgroundResource(R.drawable.bg_plan_day);
+            t.setClickable(true);
+            t.setFocusable(true);
+            t.setMinHeight(dp(ctx, 40));
+            t.setPadding(0, dp(ctx, 9), 0, dp(ctx, 9));
+            t.setSelected(((s.mask >>> i) & 1L) == 1L);
+            final int day = i;
+            t.setOnClickListener(v -> {
+                boolean work = ((s.mask >>> day) & 1L) == 0L;
+                if (work) s.mask |= (1L << day);
+                else s.mask &= ~(1L << day);
+                v.setSelected(work);
+                if (refresh != null) refresh.run();
+            });
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) lp.setMarginStart(gap);
+            box.addView(t, lp);
+        }
     }
 
     // ================= 列表 =================

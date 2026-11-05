@@ -87,6 +87,11 @@
     <!-- 非当月格子数字：压暗但可辨 -->
     <color name="day_dim_text">#454B70</color>
 
+    <!-- 「班」格底色（v1.13.0）。日间是 indigo-600，夜间不用 indigo-400：
+         那个紫在白字下只有 2.96:1。这里换成更沉的一档，5.5:1。
+         见 values/colors.xml 同一组注释。 -->
+    <color name="work_cell_bg">#5A52EA</color>
+
     <!-- 班表「休」格与结论条（v1.5.0）。见 values/colors.xml 同一组注释。
          休格要比 card(#1C1F35) 亮一档、又别亮过 line(#2A2E47) 太多——
          它是一块「关着的格子」，不是又一根分隔线。 -->

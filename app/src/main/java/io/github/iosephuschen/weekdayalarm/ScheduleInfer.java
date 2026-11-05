@@ -177,7 +177,9 @@ public final class ScheduleInfer {
      */
     public static boolean[] expand(WeekSchedule.Rule rule, LocalDate monday, int len) {
         LocalDate base = monday != null ? monday : LocalDate.now();
-        int n = Math.max(1, Math.min(len, 14));
+        // v1.18.0：上限从 14 抬到 62。这一层早先卡在 14 是因为「班表页只画两周」，
+        // 但 Alarm / Prefs 一直支持 62 天，引导页也要铺 62 格——一处硬编码卡死三处调用方。
+        int n = Math.max(1, Math.min(len, WeekSchedule.Rule.MAX_CYCLE_LEN));
         boolean[] out = new boolean[n];
         for (int i = 0; i < n; i++) {
             out[i] = rule != null && WeekSchedule.isScheduledWorkday(base.plusDays(i), rule);

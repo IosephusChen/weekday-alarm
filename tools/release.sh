@@ -26,6 +26,33 @@ CODE=$(grep -m1 'versionCode' app/build.gradle | tr -dc '0-9')
 NAME=$(grep -m1 'versionName' app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
 echo "== 版本 v$NAME / $CODE =="
 
+# -- 方案闸门（2026-11-05）--
+# 用户反复要求「先出方案、确认之后再动代码」，但写进 AGENTS.md 的规则在长会话里会被
+# 上下文压缩冲掉——那次用户说「在旧版基础上微调」，我顺手多改了顶栏措辞和进度条样式，
+# 都没单列确认。规则靠自觉会失效，挂在唯一的发版出口上才拦得住。
+# 判据是文件，不是记忆：哪怕我全忘了，脚本也会把我弹回去。
+echo "-- 方案闸门 --"
+if [ ! -f PLAN.md ]; then
+    echo "  FAIL 仓库根没有 PLAN.md —— 先写方案，等用户点头再补状态"
+    exit 1
+fi
+if ! grep -qF '状态：**已批准**' PLAN.md; then
+    echo "  FAIL PLAN.md 状态不是「已批准」"
+    grep -m1 '^> 状态：' PLAN.md || echo "       （连状态行都没有）"
+    echo "       方案没确认就不出包。"
+    exit 1
+fi
+PLAN_VER=$(grep -m1 '^> 目标版本：' PLAN.md | sed 's/.*目标版本：//' | tr -dc '0-9' || true)
+if [ -z "$PLAN_VER" ]; then
+    echo "  ok   方案已批准（未指定目标版本，视为不占版本）"
+elif [ "$PLAN_VER" != "$CODE" ]; then
+    echo "  FAIL PLAN.md 目标版本 $PLAN_VER ≠ build.gradle 的 $CODE"
+    echo "       版本变了等于方案变了，旧批准作废——回去问用户，别自己往下走。"
+    exit 1
+else
+    echo "  ok   方案已批准（目标版本 $PLAN_VER 与 build.gradle 一致）"
+fi
+
 fail=0
 need() {  # need <文件> <必须包含的字串> <说明>
     if grep -qF "$2" "$1"; then
@@ -164,6 +191,24 @@ else:
     p.write_text(s2, encoding="utf-8")
     print("  ok  v%s / %s" % (name, new))
 PY
+
+echo
+# 出包即作废本次批准（2026-11-05）。闸门只能证明「这份方案被点过头」，不能证明
+# 「它没被用第二次」——同一份批准连着出两个包，第二个包就没人看过了。
+# 出完包立刻把状态打回未批准态，下次想再出，必须重写方案、重新问。
+if [ "$CHECK_ONLY" -eq 0 ]; then
+    python3 - <<'PY'
+import datetime, pathlib, re
+p = pathlib.Path("PLAN.md")
+s = p.read_text(encoding="utf-8")
+stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+s2 = re.sub(r"> 状态：\*\*已批准\*\*",
+            "> 状态：**已出包 · 批准已作废**\n> 出包：" + stamp + "（再出包须重写方案并重新确认）",
+            s, count=1)
+p.write_text(s2, encoding="utf-8")
+print("  ok   PLAN.md 批准已作废，下次出包要重写方案")
+PY
+fi
 
 echo
 # v1.0.10：这里原来只写「还要做两件事：commit / 灾备包不动」。

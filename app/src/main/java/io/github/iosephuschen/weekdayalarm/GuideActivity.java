@@ -7,17 +7,20 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +36,7 @@ import java.util.List;
  * </ol>
  *
  * <p>「看完」的定义也改了：v0.23.0 是拉起引导前就写标记，用户中途退出就再也看不到；
- * 现在只有点「开始使用」或「跳过」才写，半路退下次还会出现。
+ * 现在只有点「开始使用」或「稍后设置」才写，半路退下次还会出现。
  *
  * <p>刻意不引 ViewPager2：三页静态内容用 ViewFlipper + 补间动画就够，
  * 少一个依赖也少一类生命周期问题。
@@ -45,6 +48,19 @@ public class GuideActivity extends AppCompatActivity {
 
     /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
     private static final int PAGE_PERMISSIONS = 2;
+
+    /**
+     * 四屏页头的步骤名与图标（v1.14.0）。下标与 {@link #PAGES} 同一套。
+     *
+     * <p>文案放在代码里而不是 xml：页头只有一份，四页共用，翻页时由
+     * {@link #renderHeader()} 现场写。抄成四份到布局里，就又会回到「改了标题
+     * 忘了副标题」那种半拉子修改。
+     */
+    private static final int[] STEP_ICONS = {
+            R.drawable.ic_guide_calendar, R.drawable.ic_guide_bell,
+            R.drawable.ic_guide_tune, R.drawable.ic_guide_try
+    };
+    private static final String[] STEP_ICON_DESC = {"班表", "闹钟", "设置", "试听"};
 
     /** 重建时把页码带过去（v1.0.3）。 */
     private static final String STATE_PAGE = "state_page";
@@ -87,21 +103,19 @@ public class GuideActivity extends AppCompatActivity {
     private TextView btnNext, btnPrev, btnSkip, btnImport, tvTime;
     /** 导入旧备份（v0.57.0）：与设置页共用 {@link BackupImporter}。 */
     private ActivityResultLauncher<String[]> importLauncher;
-    private LinearLayout boxWeek;
-    private WeekGrid weekGrid;
-    private LinearLayout cardRotation, rowBiweekly;
-    private androidx.appcompat.widget.SwitchCompat swBiweekly;
-    private TextView tvWeekSub, tvRotationTitle, tvRotationSub, tvBiweeklyHint;
-    /** 「改成按周排」：v1.9.1 起是整行卡片，不是一行小字。 */
-    private View linkRotation;
-    /** 第一页的标题与结论条（v1.3.0）：标题跟着「一周 / 两周」变，结论条报出认出的是哪种班。 */
-    private TextView tvWeekTitle, tvWeekVerdict;
-    /** 这一周（或两周）的班：true = 上班。v1.2.0 */
-    private boolean[] weekDays;
-    /** 是否展开第二周（隔周换一次）。和 {@link #weekDays} 一起决定格子画几行。 */
-    private boolean biweekly;
-    /** 当前是不是「轮班」形态：七格表达不了 N 天一轮的表，换成一行摘要。 */
-    private boolean rotation;
+    /** 第 1 页的五张制度卡（v1.18.0 抽成 {@link PlanCardsView}，和「我的班表」共用一份布局）。 */
+    private PlanCardsView planCards;
+    /**
+     * 四屏共用的页头（v1.14.0）：步骤名、图标、标题、副标题。
+     *
+     * <p>这四件原来各写一份在每页的 ScrollView 里，跟着内容垂直居中——内容高的页
+     * （开权限）整块往上跑、矮的页往下沉，四屏的标题能差 79dp。提到 Flipper 外面
+     * 之后位置钉死，页里只剩身体在换，见 {@link #renderHeader()}。
+     */
+    private TextView tvGuideTitle, tvGuideSub;
+    private ImageView ivStep;
+    /** 第 3 页的权限计数（v1.14.0 并进副标题）：显示几行，分母就是几。 */
+    private int permOn, permTotal = 3;
     /**
      * 这一遍引导里改的班表（v1.10.0）。
      *
@@ -122,15 +136,36 @@ public class GuideActivity extends AppCompatActivity {
      */
     private boolean timeTouched;
 
-    private TextView tvVolume, tvFade, tvVibrate, tvSnooze, tvPreNotice;
     /** 盯着系统闹钟音量（v0.91.1），见 {@link VolumeWatcher}。 */
     private VolumeWatcher volumeWatcher;
-    /** 响铃细节折叠区（v0.83.0）：默认收起，点标题展开。 */
-    private LinearLayout ringDetail;
-    private TextView tvRingHint, tvRingArrow, ivRingChevron, tvRingSummary;
+    /**
+     * 响铃细节弹窗里那棵子树的根（v1.13.2）。
+     *
+     * <p>五行从页内搬进弹窗后，{@code tvVolume} 这些控件不再属于 Activity，
+     * 每次弹窗都要重新 find。用字段存一下当前打开的那份，回调里好刷值；
+     * 弹窗关闭时置空，避免刷到一个已经 detach 的树。
+     */
+    /**
+     * 响铃五行（v1.17.0 回到页内）。收起时 GONE，展开时 VISIBLE。
+     *
+     * <p>v1.13.2 至 v1.16.0 这里是弹窗里的那棵树，关掉就置 null；
+     * 现在它常驻在布局里，{@code refreshRing()} 随时可以刷。
+     */
+    private View ringDetailRoot;
     private TextView tvRepeat;
     /** 第 2 页轮班态那行小字：这个时刻在别的班次上分别是几点（v1.8.1）。 */
     private TextView tvShiftPreview;
+    /** 第 2 页「下次响铃：明天 · 11月06日」（v1.13.1），见 {@link #refreshNextRing()}。 */
+    private TextView tvNextRing;
+    /**
+     * 第 4 页试过的三件事（v1.13.1）。
+     *
+     * <p>存控件 id 而不是布尔字段：三行长得一样，加一个就多一个字段；存 id 之后
+     * {@link #markTried(int)} 一套逻辑管三行。只活在内存里——这三件事都是
+     * 「这一次翻到这一页做了没有」，退出 App 不存在「还记得」的意义，
+     * 而引导页本身也只有首次启动才出现。
+     */
+    private final java.util.Set<Integer> tried = new java.util.HashSet<>();
     /** 基准班次的开始时刻（当天第几分钟）；未排班次时为 -1。 */
     private int shiftBaseStart = -1;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
@@ -155,6 +190,12 @@ public class GuideActivity extends AppCompatActivity {
         importLauncher = BackupImporter.register(this, this::onImportedFromBackup, true);
         tvTime = findViewById(R.id.tv_time);
 
+        // v1.14.0：页头在 Flipper 外面，四屏共用一份。文案由 renderHeader 按页号写，
+        // 所以这里只取控件；此时 index 还没定（下面才从 Prefs 读），先不写文字。
+        ivStep = findViewById(R.id.iv_step);
+        tvGuideTitle = findViewById(R.id.tv_guide_title);
+        tvGuideSub = findViewById(R.id.tv_guide_sub);
+
         stNotif = findViewById(R.id.st_notif);
         stFsi = findViewById(R.id.st_fsi);
         stOverlay = findViewById(R.id.st_overlay);
@@ -163,13 +204,9 @@ public class GuideActivity extends AppCompatActivity {
         rowExact = findViewById(R.id.perm_exact);
         dividerExact = findViewById(R.id.divider_exact);
 
-        ringDetail = findViewById(R.id.ring_detail);
-        tvRingHint = findViewById(R.id.tv_ring_hint);
-        tvRingArrow = findViewById(R.id.tv_ring_arrow);
-        ivRingChevron = findViewById(R.id.iv_ring_chevron);
-        tvRingSummary = findViewById(R.id.tv_ring_summary);
-        findViewById(R.id.ring_toggle).setOnClickListener(v -> toggleRingDetail());
-        syncRingArrow(false);   // 默认收起：箭头先指下
+        // v1.18.0：五行回到弹层，页内不再常驻。点这一行弹出来，页面高度恒定，
+        // 时间那三行不会因为展开而整体上移（用户 18:47：「点开后闹钟时间位置会变」）。
+        findViewById(R.id.ring_toggle).setOnClickListener(v -> showRingSheet());
 
         // v1.10.0：草稿要在 bindTime 之前载入——第 2 页的「跟着班次倒推」要问它
         // 现在是不是轮班态，晚一步就会读到 null，大字停在预置的 07:30
@@ -185,18 +222,17 @@ public class GuideActivity extends AppCompatActivity {
         }
 
         bindTime();
-        bindRing();
         bindPermissions();
 
         btnNext.setOnClickListener(v -> {
             if (index < PAGES - 1) {
                 goTo(index + 1);
             } else {
-                complete();
+                complete(false);
             }
         });
         btnPrev.setOnClickListener(v -> goTo(index - 1));
-        btnSkip.setOnClickListener(v -> complete());
+        btnSkip.setOnClickListener(v -> complete(true));
         btnImport.setOnClickListener(v -> {
             if (!BackupImporter.pick(importLauncher)) {
                 Toast.makeText(this, "没有可用的文件管理器，无法导入", Toast.LENGTH_LONG).show();
@@ -228,7 +264,7 @@ public class GuideActivity extends AppCompatActivity {
             draft.mode = WeekSchedule.Mode.DOUBLE_REST;
         }
 
-        bindWeekGrid();
+        bindPlanCards();
         updateTimeText();
         renderDots();
         updateChrome();
@@ -263,9 +299,10 @@ public class GuideActivity extends AppCompatActivity {
         // v0.91.1：这一页原来在 onResume 里完全不碰音量。用户按音量键调了「闹钟」，
         // 或者去系统设置里拖过，切回来数字还是进页面那一刻的——而这一页恰恰是新手
         // 第一次看到音量在哪、是多少的地方，显示错了比不显示更糟。
-        refreshRing();
+        // v1.13.2：五行只在弹窗开着时才存在，所以刷的是弹窗那棵树；没开就什么都不做
+        refreshRing(ringDetailRoot);
         if (volumeWatcher == null) {
-            volumeWatcher = VolumeWatcher.start(this, this::refreshRing);
+            volumeWatcher = VolumeWatcher.start(this, () -> refreshRing(ringDetailRoot));
         }
     }
 
@@ -278,235 +315,22 @@ public class GuideActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    // ================= 第 1 页：对班表（v1.2.0 重做） =================
+    // ================= 第 1 页：选周休制度（v1.16.0 制度卡） =================
 
-    /**
-     * 绑定第一页。
-     *
-     * <p>v1.2.0 把「五张制度卡」换成了「七格班表」。旧版让用户在一排术语里挑一个，
-     * 而很多人答不上来自己属于哪一类——上二休二的护士看到「大小周 / 双休 / 单休 /
-     * 自定义 / 轮班」根本不知道点哪个，点「轮班」还要回答「几天一轮」。
-     * 新版只问「这一周你哪几天上班」，点完由 {@link ScheduleInfer} 反推制度。
-     */
-    private void bindWeekGrid() {
-        boxWeek = findViewById(R.id.box_week);
-        weekGrid = findViewById(R.id.week_grid);
-        tvWeekTitle = findViewById(R.id.tv_week_title);
-        tvWeekVerdict = findViewById(R.id.tv_week_verdict);
-        cardRotation = findViewById(R.id.card_rotation);
-        rowBiweekly = findViewById(R.id.row_biweekly);
-        swBiweekly = findViewById(R.id.sw_biweekly);
-        tvWeekSub = findViewById(R.id.tv_week_sub);
-        tvRotationTitle = findViewById(R.id.tv_rotation_title);
-        tvRotationSub = findViewById(R.id.tv_rotation_sub);
-        tvBiweeklyHint = findViewById(R.id.tv_biweekly_hint);
-        linkRotation = findViewById(R.id.link_rotation);
-        // 和「我的班表」同一个配色：不 style 的话开关长什么样全看 ROM
-        SwitchKit.style(this, swBiweekly);
-
-        weekGrid.setOnDayClick(this::toggleDay);
-        cardRotation.setOnClickListener(v -> openRotation());
-        rowBiweekly.setOnClickListener(v -> setBiweekly(!biweekly));
-        // 只剩「改成按周排」一个动作：卡片自己就是入口，这里不用再判 direction
-        linkRotation.setOnClickListener(v -> backToWeek());
-
-        reloadWeek();
+    /** 第 1 页的五张制度卡（v1.18.0）。绑定、交互、渲染全在 {@link PlanCardsView}。 */
+    private void bindPlanCards() {
+        planCards = new PlanCardsView(this, findViewById(R.id.guide_page1), draft,
+                this::onPlanChanged);
     }
 
-    /**
-     * 从 Prefs 重新展开格子。
-     *
-     * <p>导入备份、从轮班切回按周、从设置页改了班表再回来，都要走它——
-     * 页面上任何一个「班表可能变了」的时机都调这个，不要在别处自己拼格子。
-     */
-    private void reloadWeek() {
-        rotation = draft.rotation();
-
-        // 轮班：七格表达不了 N 天一轮的表，换一张摘要卡。
-        // v1.9：这张卡改成常驻——按周态是入口、轮班态是摘要，同一张卡换文案，
-        // 不再「一按周就缩成一行紫色小字」。
-        cardRotation.setVisibility(View.VISIBLE);
-        boxWeek.setVisibility(rotation ? View.GONE : View.VISIBLE);
-        rowBiweekly.setVisibility(rotation ? View.GONE : View.VISIBLE);
-        // v1.8.1：结论条也得跟着走。原来它只算「按周」那一套，切到轮班后
-        // 「双休」还留在页面上，和下面「8 天一轮 · 上 6 休 2」同屏打架
-        tvWeekVerdict.setVisibility(rotation ? View.GONE : View.VISIBLE);
-        // 「改成按周排」是退出入口，只在轮班态有；按周态没有可退的地方
-        linkRotation.setVisibility(rotation ? View.VISIBLE : View.GONE);
-        if (rotation) {
-            WeekSchedule.Rule rule = draft.rule(Prefs.getShifts(this));
-            // v1.11.4：轮班态这张卡退成「当前班表」的摘要，主角是下面那张
-            // 「改成按周排」——两张淡紫卡上下相邻会让人以为有两个并列的主入口。
-            cardRotation.setBackgroundResource(R.drawable.bg_dialog_row);
-            tvRotationTitle.setTextColor(ContextCompat.getColor(this, R.color.ink));
-            // 标题和副标题同样要换：格子已经收起来了，还写着「点一下切换班和休」
-            // 就是让人去点一个不存在的东西
-            tvWeekTitle.setText("你几天一轮、怎么倒？");
-            tvWeekSub.setText("点下面那张卡改。休息日不用填时刻。");
-            tvRotationTitle.setText(WeekSchedule.describe(rule, LocalDate.now()));
-            // 轮班态这张卡是「摘要」，跟班表页那张摘要卡同一个规格：15sp bold。
-            // 按周态它只是入口，14sp 常规，和上面「大小周」那行平起平坐——
-            // 同一页两张并列的卡，一粗一细会让人以为轮班比大小周更当紧。
-            tvRotationTitle.setTextSize(15);
-            tvRotationTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-            // v1.8.0：班次建了没有、排了几天，在这一行说清；没有班次时直接指路
-            java.util.List<Shift> shifts = Prefs.getShifts(this);
-            String summary = WeekScheduleActivity.shiftsSummary(shifts);
-            tvRotationSub.setText(summary == null
-                    ? "还没建班次。点这里建一个「白班 08:00 – 20:00」。"
-                    : summary + (draft.cycleHoliday ? " · 按放假跳过" : " · 照常上班"));
-            return;
-        }
-
-        // 按周态：这张卡降级成入口，说清「什么人来点它」。
-        // 不写「轮班」两个字是有意的——「我是几天一轮的班」比术语好认。
-        // v1.11.5：班表页那张卡原来叫「改成几天一轮」，同一个入口两个名字；
-        // 现在两页逐字相同，改这边的话要连 WeekScheduleActivity 的布局一起看。
-        tvRotationTitle.setText("几天一轮的班");
-        // 从轮班切回来要复位：同一张 TextView 上一步可能还是 15sp bold
-        tvRotationTitle.setTextSize(14);
-        // v1.11.4：按周态它是这一页唯一的「换排法」入口，跟班表页那张一样用
-        // 淡靛蓝底 + 主色粗字，从上面几张白卡里跳出来。轮班态已在上面的分支退回白卡。
-        cardRotation.setBackgroundResource(R.drawable.bg_action_emphasis);
-        tvRotationTitle.setTextColor(ContextCompat.getColor(this, R.color.indigo));
-        tvRotationTitle.setTypeface(null, android.graphics.Typeface.BOLD);
-        tvRotationSub.setText("四班三倒、上二休二");
-
-        biweekly = draft.isTwoWeeks();
-        weekDays = ScheduleInfer.expand(draft.rule(Prefs.getShifts(this)), mondayOfWeek(),
-                biweekly ? 14 : 7);
-        renderWeek();
+    /** 包级可见：单测拿卡片对象，绕开滚轮弹窗直接改周期。 */
+    PlanCardsView planCardsForTest() {
+        return planCards;
     }
 
-    /**
-     * 把 {@link #weekDays} 画到格子上：格子、标题、结论条、副标题。
-     *
-     * <p>v1.3.0：格子交给 {@link WeekGrid}，这里只负责「说什么」。
-     * 标题跟着一周 / 两周改——原来勾了隔周还写「这一周」，副标题却说「两周」，
-     * 一句话里两个答案，用户不知道该点 7 格还是 14 格。
-     */
-    private void renderWeek() {
-        weekGrid.setDays(weekDays, mondayOfWeek());
-        // 开关只跟着状态走，不设 OnCheckedChangeListener：整行才是点击目标。
-        // 两边都接的话，点开关时先弹 listener、再冒泡到行，状态翻两次回到原样。
-        swBiweekly.setChecked(biweekly);
-
-        LocalDate mon = mondayOfWeek();
-        String span = md(mon) + " – " + md(mon.plusDays(biweekly ? 13 : 6));
-        tvWeekTitle.setText(biweekly ? "这两周你哪几天上班？" : "这一周你哪几天上班？");
-        // v1.10.1：「点一下切换班和休」说的是动作，没说清点的是什么。
-        // 这一行只交代怎么用，结论条就在下面，不用在这里重复「会跟着变」。
-        tvWeekSub.setText(biweekly
-                ? span + " · 两周点成不一样就是大小周"
-                : span + " · 点格子切换「班」和「休」");
-
-        // 结论条：说清系统从这张表里认出了什么。格子每变一次都重算，反推是幂等的。
-        //
-        // v1.5.0：去掉「按这两周排：」「按这张表排：」这两个前缀。
-        // 勾了两周、但两周排得一样时，v1.4.0 的 describe 会折回一周来说，
-        // 于是句子成了「按这两周排：每周固定 · 休1天」——前半句说按两周，
-        // 后半句说每周固定，自己跟自己打架。前缀想交代的「依据」已经在
-        // 上面的格子和日期区间里了，这里只该出现结论本身。
-        String verdict = WeekSchedule.describe(draft.rule(Prefs.getShifts(this)), LocalDate.now());
-        tvWeekVerdict.setText(verdict);
-        // v1.10.1：原来写「大小周、上四休二都勾这里」——上四休二是 6 天一轮，
-        // 勾这个开关只会得到一张对不上的 14 天表。开关管的是「隔周多休一天」，
-        // 说成「隔周双休」才和它实际做的事一致。
-        tvBiweeklyHint.setText("大小周、隔周双休");
-    }
-
-    /** 点一格：翻转 → 反推 → 落盘 → 重画。反推是幂等的，连点两下正好回到原样。 */
-    private void toggleDay(int idx) {
-        if (weekDays == null || idx < 0 || idx >= weekDays.length) return;
-        weekDays[idx] = !weekDays[idx];
-        applyDraft();
-    }
-
-    /**
-     * 勾 / 取消「隔周换一次」。
-     *
-     * <p>勾上时不立刻反推：第二周是复制来的，两周一模一样，反推会判成「双休」，
-     * 第二行当场消失——用户根本来不及填。等到真正改了某一格（{@link #toggleDay}）
-     * 或取消勾选时才算。
-     */
-    private void setBiweekly(boolean on) {
-        if (on == biweekly || weekDays == null) return;
-        biweekly = on;
-        if (on) {
-            boolean[] d = new boolean[14];
-            for (int i = 0; i < 14; i++) d[i] = weekDays[i % 7];
-            weekDays = d;
-        } else {
-            boolean[] d = new boolean[7];
-            System.arraycopy(weekDays, 0, d, 0, 7);
-            weekDays = d;
-        }
-        applyDraft();
-    }
-
-    /**
-     * 反推，但保留「隔周」这个意图。
-     *
-     * <p>用户勾了隔周、两周又填成一样，反推会说「这是双休」。直接照它落盘的话，
-     * 第二行下次进来就没了，他得重新勾一遍。所以这里把结果改写成 14 天周期——
-     * 班表内容不变，只是「两周一起看」这个视图被记住了。
-     */
-    /** 把这一页的格子交给草稿——只改内存，点「开始使用」才落盘（v1.10.0）。 */
-    private void applyDraft() {
-        draft.setDays(weekDays, biweekly);
-        renderWeek();
-    }
-
-    /**
-     * 打开轮班编辑（v1.8.0：先有班次，再排循环）。保存后回到这一页重新展开。
-     *
-     * <p>还没有班次时先跳去建班次：空表上排不出东西，而「上二休二」这类人
-     * 第一步本来就该说清「白班几点到几点」。
-     */
-    private void openRotation() {
-        if (!Prefs.getShifts(this).isEmpty()) {
-            pickRotation();
-            return;
-        }
-        // 第一次进来：先建班次。建完直接接着排循环——让用户自己再点一次
-        // 「我是几天一轮的班」，等于把刚说的话再问一遍
-        ShiftBookDialog.show(this, () -> {
-            if (Prefs.getShifts(this).isEmpty()) {
-                reloadWeek();
-                return;
-            }
-            pickRotation();
-        });
-    }
-
-    /** 排循环：结果只进草稿，和格子一样等「开始使用」才落盘（v1.10.0）。 */
-    private void pickRotation() {
-        ShiftCycleSheet.show(this, draft, (len, start, cycle) -> {
-            draft.setRotation(len, start, cycle);
-            reloadWeek();
-        });
-    }
-
-    /**
-     * 从轮班切回按周：把当前轮班的头七天摊出来当起点。
-     *
-     * <p>不清空重来——用户点了「改成按周排」多半只是想换个视图看看，
-     * 直接把他上一周的班抹掉，他得从头再点七下。
-     */
-    private void backToWeek() {
-        boolean[] d = ScheduleInfer.expand(draft.rule(Prefs.getShifts(this)), mondayOfWeek(), 7);
-        draft.setDays(d, false);
-        biweekly = false;
-        reloadWeek();
-    }
-
-    /** 这一周的周一。{@code with(MONDAY)} 落回同一个 ISO 周，周日不会跳到下周一。 */
-    static LocalDate mondayOfWeek() {
-        return LocalDate.now().with(java.time.DayOfWeek.MONDAY);
-    }
-
-    private String md(LocalDate d) {
-        return d.getMonthValue() + "月" + d.getDayOfMonth() + "日";
+    /** 卡片状态变了（选制度、改周期、点格子）。目前没有联动项，留着给以后。 */
+    private void onPlanChanged() {
+        // 空实现：展开区高度变化由布局自己处理。
     }
 
     private int dp(int v) {
@@ -520,14 +344,9 @@ public class GuideActivity extends AppCompatActivity {
         // 原来这里还是框架的 TimePickerDialog——澎湃 OS 会无视主题把 spinner 渲染成表盘拨轮，
         // 于是同一个 App 里选时间出现两种完全不同的交互，引导页反而最花哨。
         tvShiftPreview = findViewById(R.id.tv_shift_preview);
+        tvNextRing = findViewById(R.id.tv_next_ring);
         // v1.8.2：轮班默认「春节也照上班」，副标题却写「节假日自动跳过」——
-        // 页面在承诺一件不会发生的事。跟着班表实际设置走
-        TextView tvAlarmSub = findViewById(R.id.tv_alarm_sub);
-        if (isRotationNow()) {
-            tvAlarmSub.setText(Prefs.isCycleHoliday(this)
-                    ? "只在上班日响，休息日和节假日自动跳过。"
-                    : "只在上班日响，休息日跳过。");
-        }
+        // 页面在承诺一件不会发生的事。v1.14.0 起这句归页头，见 headerSub()
         // v1.10.0：重复规则也先进草稿。原来选完就写盘，用户改主意退出也回不去
         Alarm seed = firstAlarm();
         draftRepeat = seed == null ? Alarm.Mode.WORKDAY : seed.mode;
@@ -548,26 +367,28 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 引导页能让改的四种重复规则（v1.3.0）。
+     * 引导页能让改的三种重复规则（v1.3.0，v1.18.0 删掉「自己排一周」）。
      *
      * <p>故意没有「仅一次」：一条只在某天响的闹钟，在这里设完第二天就失效了，
      * 而用户此刻的意图是「把常用的那个定下来」。那个选项留在主界面。
      *
      * <p>也没有「按 N 天一轮」：那种表跟星期几脱钩，只能在「我的班表」里设一份。
-     * 这里留的是「自己排一周」——只想让这一条跟全局不一样时用。
+     *
+     * <p>v1.18.0 删掉「自己排一周」：用户原话「这个位置不该有了」。理由成立——
+     * 引导页只在第一次装 App 时出现，这时他还没见过班表、没建过班次，让他勾一周
+     * 等于先做一次决定；而这一屏的前提就是「跟着班表走」，多一个例外入口只会让他
+     * 怀疑默认值。闹钟页 {@link AlarmEditor} 那份不动，那里才是用了一阵之后想开小灶的地方。
      */
     private static final String[] REPEAT_NAMES = {
-            "跟随我的班表", "每天", "仅休息日", "自己排一周"
+            "跟随我的班表", "每天", "仅休息日"
     };
     private static final String[] REPEAT_SUBS = {
             "按班表走，休息日和节假日跳过",
             "每天都响",
-            "只在这周的休息日响",
-            "自己勾一周哪几天响"
+            "只在这周的休息日响"
     };
     private static final Alarm.Mode[] REPEAT_MODES = {
-            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND,
-            Alarm.Mode.CUSTOM
+            Alarm.Mode.WORKDAY, Alarm.Mode.DAILY, Alarm.Mode.WEEKEND
     };
 
     /** 第 2 页那一行「重复」显示什么：直接读第一个闹钟，没有则按默认。 */
@@ -588,6 +409,48 @@ public class GuideActivity extends AppCompatActivity {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /**
+     * 「跳过法定节假日」那一行（v1.17.0 从第 1 屏搬来）。
+     *
+     * <p>为什么不留在第 1 屏：它是「什么时候响」，不是「你是哪种班」，语义上属于
+     * 这一屏的重复规则；第 1 屏也确实塞不下了——五张卡加上三处展开之后，
+     * 最坏态 607dp，可用只有 533dp，这一行 82dp 正好是缺口。
+     *
+     * <p>默认仍是开着的，用户不点它也照样生效。
+     */
+    private View buildHolidayRow() {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setBackgroundResource(R.drawable.bg_dialog_row);
+        int p = dp(16);
+        row.setPadding(p, dp(10), p, dp(10));
+        row.setClickable(true);
+        row.setFocusable(true);
+
+        TextView label = new TextView(this);
+        label.setText("跳过法定节假日");
+        label.setTextColor(ContextCompat.getColor(this, R.color.ink));
+        label.setTextSize(14);
+        row.addView(label, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        androidx.appcompat.widget.SwitchCompat sw = new androidx.appcompat.widget.SwitchCompat(this);
+        sw.setChecked(draft.cycleHoliday);
+        sw.setClickable(false);
+        sw.setFocusable(false);
+        SwitchKit.style(this, sw);
+        row.addView(sw);
+
+        // 整行接点击、开关自己不吃事件：两边都接的话点一次会翻两下回到原样
+        row.setOnClickListener(v -> {
+            draft.cycleHoliday = !draft.cycleHoliday;
+            draft.dirty = true;
+            sw.setChecked(draft.cycleHoliday);
+        });
+        return row;
+    }
+
     private void pickRepeat() {
         int checked = 0;
         for (int i = 0; i < REPEAT_MODES.length; i++) {
@@ -596,21 +459,9 @@ public class GuideActivity extends AppCompatActivity {
                 break;
             }
         }
-        DialogKit.showPick(this, "重复规则", "只改这一条闹钟，不影响到别的",
-                REPEAT_NAMES, REPEAT_SUBS, checked, which -> {
-                    Alarm.Mode mode = REPEAT_MODES[which];
-                    if (!mode.isOwnRule()) {
-                        applyRepeat(mode, null);
-                        return;
-                    }
-                    // 自己排一周要先有那张表。第一个闹钟已经配过就沿用，
-                    // 否则按全局那张或默认形状起步
-                    WeekSchedule.Rule initial = draftOwn != null
-                            ? draftOwn
-                            : AlarmEditor.initialOwn(this, mode);
-                    AlarmCycleEditor.show(this, true, initial, rule ->
-                            applyRepeat(mode, rule));
-                });
+        DialogKit.showPickWithExtra(this, "重复规则", "只改这一条闹钟，不影响到别的",
+                null, REPEAT_NAMES, REPEAT_SUBS, checked, buildHolidayRow(),
+                which -> applyRepeat(REPEAT_MODES[which], null));
     }
 
     /**
@@ -628,6 +479,8 @@ public class GuideActivity extends AppCompatActivity {
                 ? (ownRule != null ? ownRule : AlarmEditor.defaultOwn(mode))
                 : null;
         refreshRepeatRow();
+        // 换了重复规则，「下次响铃」的日期跟着变（v1.13.1）
+        refreshNextRing();
     }
 
     /**
@@ -648,6 +501,7 @@ public class GuideActivity extends AppCompatActivity {
     private void updateTimeText() {
         tvTime.setText(TimeText.clock(hour, minute));
         refreshShiftPreview();
+        refreshNextRing();
     }
 
     /**
@@ -706,6 +560,42 @@ public class GuideActivity extends AppCompatActivity {
         }
         tvShiftPreview.setText(text);
         tvShiftPreview.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * 第 2 页那行「下次响铃：明天 · 11月06日」（v1.13.1）。
+     *
+     * <p><b>为什么不是写「明天」两个字</b>：这一屏光秃秃一个 07:30，而它响不响由第 1 页
+     * 排的那张班表决定。配一张「明后天都休息」的表，「仅上班日」的闹钟第一次可能在
+     * 三天后——写死「明天」就是在替班表下一个它未必认可的结论。
+     *
+     * <p><b>为什么借 {@link ScheduleManager#nextRing}</b>：草稿此刻还没落库
+     * （{@link ScheduleDraft} 要等「开始使用」才提交），所以不能读 Prefs 里那批闹钟。
+     * 但 nextRing 接受外部传入的闹钟列表与班表规则——喂它一个「按当前草稿构造的假闹钟」
+     * 就行。这样算出来的口径与首页倒计时、桌面部件是同一份：
+     * 请在两天后，这行也跟着说两天后。
+     *
+     * <p>算不出来就整行不显示，不留半句：{@link Alarm.Mode#ONCE} 的日期在草稿里
+     * 是空的（引导页不提供一次性的入口，只有重看时才可能从旧数据带上），
+     * 这种状态下 nextRing 返回 null，宁可不写。
+     */
+    private void refreshNextRing() {
+        if (tvNextRing == null || draft == null) return;
+        Alarm probe = new Alarm(-1, hour, minute, "预览", draftRepeat, true);
+        if (draftRepeat.isOwnRule() && draftOwn != null) probe.applyOwnRule(draftOwn);
+        ScheduleManager.NextAlarm next = ScheduleManager.nextRing(
+                java.util.Collections.singletonList(probe),
+                draft.rule(Prefs.getShifts(this)),
+                Prefs.getVacationDates(this), Prefs.getOvertimeDates(this),
+                Prefs.getSkipOnce(this), LocalDateTime.now(), Prefs.getHorizonDays(this));
+        if (next == null) {
+            tvNextRing.setVisibility(View.GONE);
+            return;
+        }
+        // 日期用 Alarm.dayLabel 那个统一出口：「明天 · 11月06日」/「10月30日 周五」。
+        // 时间不重复写——正上方 62sp 就是它
+        tvNextRing.setText("下次响铃：" + Alarm.dayLabel(next.when.toLocalDate(), LocalDate.now()));
+        tvNextRing.setVisibility(View.VISIBLE);
     }
 
     /** 「1 小时 30 分」；整点时不写「0 分」。 */
@@ -801,44 +691,34 @@ public class GuideActivity extends AppCompatActivity {
 
     // ================= 第 2 页：响铃方式（音量 / 渐响）=================
 
-    private void bindRing() {
-        tvVolume = findViewById(R.id.tv_volume);
-        tvFade = findViewById(R.id.tv_fade);
-        tvVibrate = findViewById(R.id.tv_vibrate);
-        tvSnooze = findViewById(R.id.tv_snooze);
-        tvPreNotice = findViewById(R.id.tv_prenotice);
-        findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
-        findViewById(R.id.row_fade).setOnClickListener(v -> {
-            Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
-            refreshRing();
-        });
-        // v0.84.0：震动搬进来。它决定「静音时还叫不叫得醒」，和音量是同一件事的两半，
-        // 原来只藏在设置页 → 更多响铃设置里。音量行在 0 时的文案也依赖它。
-        findViewById(R.id.row_vibrate).setOnClickListener(v -> {
-            Prefs.setVibrate(this, !Prefs.isVibrate(this));
-            refreshRing();
-        });
-        // v0.40.0：这两个对话框与设置页共用同一份（PrefDialogs），
-        // 免得两处各自维护「档位 ↔ 存值」的映射，哪天加一档就漏一处
-        findViewById(R.id.row_snooze).setOnClickListener(
-                v -> PrefDialogs.showSnooze(this, this::refreshRing));
-        findViewById(R.id.row_prenotice).setOnClickListener(
-                v -> PrefDialogs.showPreNotice(this, this::refreshRing));
-        refreshRing();
+    /** 包级可见：单测拿这五行。按当前设置重刷一遍再返回那棵树。 */
+    View openRingDetailForTest() {
+        if (ringDetailRoot == null) {
+            ringDetailRoot = getLayoutInflater().inflate(R.layout.view_ring_detail, null);
+            bindRingRows(ringDetailRoot);
+        }
+        refreshRing(ringDetailRoot);
+        return ringDetailRoot;
     }
 
-    /** 包级可见：单测直接触发一次回显刷新，不必去驱动对话框。 */
-    void refreshRingForTest() {
-        refreshRing();
+    private static void setRowText(View root, int id, String value) {
+        TextView tv = root.findViewById(id);
+        if (tv != null) tv.setText(value);
     }
 
-    private void refreshRing() {
+    /**
+     * 把当前值填回弹窗里的五行（v1.13.2 改为按 root 取控件）。
+     *
+     * <p>{@code root} 为空说明弹窗已经关了——这时不用刷，也不能刷。
+     */
+    private void refreshRing(View root) {
+        if (root == null) return;
         // v0.91.0：显示的是系统 STREAM_ALARM 的真实档位，不再是 App 内部乘数
-        tvVolume.setText(AlarmVolume.percent(this) + "%");
-        tvFade.setText(Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
-        if (tvVibrate != null) tvVibrate.setText(Prefs.isVibrate(this) ? "开" : "关");
-        tvSnooze.setText(PrefDialogs.snoozeText(this));
-        tvPreNotice.setText(PrefDialogs.preNoticeText(this));
+        setRowText(root, R.id.tv_volume, AlarmVolume.percent(this) + "%");
+        setRowText(root, R.id.tv_fade, Prefs.isFadeIn(this) ? "开 · 30 秒渐响" : "关");
+        setRowText(root, R.id.tv_vibrate, Prefs.isVibrate(this) ? "开" : "关");
+        setRowText(root, R.id.tv_snooze, PrefDialogs.snoozeText(this));
+        setRowText(root, R.id.tv_prenotice, PrefDialogs.preNoticeText(this));
     }
 
     /**
@@ -877,7 +757,7 @@ public class GuideActivity extends AppCompatActivity {
                 .setView(view)
                 .setPositiveButton("确定", (d, w) -> {
                     AlarmVolume.setLevel(this, seek.getProgress() + AlarmVolume.min(this));
-                    refreshRing();
+                    refreshRing(ringDetailRoot);
                 })
                 .setNegativeButton("取消", null)
                 .show();
@@ -947,6 +827,65 @@ public class GuideActivity extends AppCompatActivity {
         full.putExtra(AlarmActivity.EXTRA_TEST, true);
         full.putExtra(AlarmActivity.EXTRA_LABEL, "试听");
         startActivity(full);
+        markTried(R.id.try_state_ring);
+    }
+
+    /**
+     * 第 4 页做过一行之后，把右侧那句小字换成「勾 + 试过了」（v1.13.1）。
+     *
+     * <p>包级可见，单测直接调它，不必去驱动通知权限或那个两级对话框
+     * ——和 {@link #setTime(int, int)} 同一个理由。
+     *
+     * <p><b>为什么不是「已通过」</b>：这三行都是「试一试」，试的结果不在 App 手里——
+     * 锁屏那条试出来是绿的还是红的，通知那条到没到，都不改变「你做过这一步」。
+     * 写「已通过」等于替一个没发生的检查签字；而且在第 3 页刚说完「权限已授予」的
+     * 语境里，再把「通过」二字按在测试行上，用户会以为这是同一类状态。
+     * 「试过了」只陈述动作，两种结果下都成立。
+     *
+     * <p><b>为什么带文字而不只是一个绿勾</b>：勾是视觉语言，读屏软件念不出来，
+     * 色弱用户也分不清它和左边那行灰字。符号配字，两种通道都能拿到。
+     *
+     * <p><b>勾为什么用 {@link R.drawable#ic_check_mini} 而不是字符 ✓</b>：这条
+     * 项目里已经踩过一次——{@code activity_lock_probe.xml} 记着「裸字符最大的问题是
+     * 各 ROM 字体不同、粗细基线全不一样，有的还会被 emoji 字体接走」。而且第 3 屏
+     * 权限清单已经在用这枚 12dp 矢量勾，同一个引导流程里放两种画法的勾，
+     * 用户会觉得是两回事。
+     *
+     * <p>重试不改回原文案：这一行点了还能再点（真要再试一次），
+     * 但状态一旦有过就不再退回——「做过」是不可逆的。
+     */
+    void markTried(int labelId) {
+        if (!tried.add(labelId)) return;
+        TextView label = findViewById(labelId);
+        if (label == null) return;
+        int color = ContextCompat.getColor(this, R.color.success_text);
+        label.setText("试过了");
+        label.setTextColor(color);
+        android.graphics.drawable.Drawable d =
+                ContextCompat.getDrawable(this, R.drawable.ic_check_mini);
+        if (d == null) return;
+        d = d.mutate();
+        androidx.core.graphics.drawable.DrawableCompat.setTint(d, color);
+        label.setCompoundDrawablePadding(Math.round(
+                4 * getResources().getDisplayMetrics().density));
+        label.setCompoundDrawablesRelativeWithIntrinsicBounds(d, null, null, null);
+    }
+
+    /**
+     * 通知这条路通不通（2026-11-05 从 {@link #tryNotify()} 抽出来）。
+     *
+     * <p>两道都要过：POST_NOTIFICATIONS 是「授权」，areNotificationsEnabled 还包含
+     * 用户在系统里把本应用的通知总开关关掉的情况。lint 只认 checkSelfPermission。
+     *
+     * <p>抽出来是因为 {@link #complete(boolean)} 也要问同一个问题：从「稍后设置」
+     * 出去时权限没开，闹钟照样排上了，只是第二天不会响——那句话得说出来。
+     */
+    private boolean canNotify() {
+        boolean granted = android.os.Build.VERSION.SDK_INT < 33
+                || ContextCompat.checkSelfPermission(this,
+                        android.Manifest.permission.POST_NOTIFICATIONS)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        return granted && NotificationManagerCompat.from(this).areNotificationsEnabled();
     }
 
     /**
@@ -955,15 +894,14 @@ public class GuideActivity extends AppCompatActivity {
      * <p>试听响铃其实也会发通知，但那条只在响铃过程中存在，还带一个全屏页——
      * 只想验「通知权限有没有给」的人，不该被迫听一遍闹钟再手动关掉。
      * 这条不响、不跳页：下拉能看到就说明通。
+     *
+     * <p>2026-11-05：权限判断搬进 {@link #canNotify()} 之后，lint 的流分析看不见了。
+     * 它只认同一个方法里 `checkSelfPermission(...) == GRANTED` 那个写法，
+     * 跨方法返回 boolean 就当没查过——所以这里显式压掉，判据确实在上面那次调用里。
      */
+    @SuppressLint("MissingPermission")
     private void tryNotify() {
-        // 两道都要过：POST_NOTIFICATIONS 是「授权」，areNotificationsEnabled 还包含
-        // 用户在系统里把本应用的通知总开关关掉的情况。lint 只认 checkSelfPermission。
-        boolean granted = android.os.Build.VERSION.SDK_INT < 33
-                || ContextCompat.checkSelfPermission(this,
-                        android.Manifest.permission.POST_NOTIFICATIONS)
-                == android.content.pm.PackageManager.PERMISSION_GRANTED;
-        if (!granted || !NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+        if (!canNotify()) {
             Toast.makeText(this, "通知权限还没开，先回上一页点「通知权限」", Toast.LENGTH_LONG).show();
             return;
         }
@@ -994,6 +932,7 @@ public class GuideActivity extends AppCompatActivity {
         try {
             NotificationManagerCompat.from(this).notify(9401, nb.build());
             Toast.makeText(this, "已发出，下拉通知栏看看", Toast.LENGTH_SHORT).show();
+            markTried(R.id.try_state_notify);
         } catch (Exception e) {
             // 个别 ROM 会因「通知总开关」拒绝；这里不静默吞掉，给一句人话
             Toast.makeText(this, "系统拒绝了这条通知，检查一下通知权限", Toast.LENGTH_LONG).show();
@@ -1019,6 +958,8 @@ public class GuideActivity extends AppCompatActivity {
     private void refreshPermissions() {
         boolean notif = NotificationManagerCompat.from(this).areNotificationsEnabled();
         boolean fsi = ScheduleManager.canUseFullScreenIntent(this);
+        boolean overlay = Settings.canDrawOverlays(this);
+        boolean exact = ScheduleManager.canScheduleExactAlarms(this);
         setPermState(stNotif, notif);
         // 通知不是「有更好」：关掉后通知栏没有「停止」按钮。但响铃页与首页兜底行
         // 还能停，所以 v0.73.5 起不再叫「必需」，只说清后果
@@ -1030,13 +971,46 @@ public class GuideActivity extends AppCompatActivity {
         // 后台弹出界面与锁屏显示跳的是同一个页面（ACTION_APPLICATION_DETAILS_SETTINGS
         // 落到「应用信息 → 权限」，目标都在下一层的「其他权限」里），所以位置指引
         // 必须一字不差——两行说法不同，用户会以为要跑两个地方（v0.89.5 统一）
-        stFsi.setText(fsi ? "已开启 · 锁屏也能弹" : HINT_OTHER_PERMS);
+        // v1.14.0：开了就只说「已开启」。原来写「已开启 · 锁屏也能弹」，可锁屏弹不弹
+        // 由下一张卡的「后台弹出界面」和「锁屏显示」决定，悬浮窗管的是「在其他应用
+        // 上方显示」。一句话把功劳记在别的开关上，还和最后一行撞词。
+        stFsi.setText(fsi ? "已开启" : HINT_OTHER_PERMS);
         // v0.58.2：电池优化整行删除——实测自启动开着、电池优化受限时闹钟照响
         // （setAlarmClock 不受 Doze 限制）。一个「你不需要管」的开关放在检查清单里
         // 只会让人以为还有事没做，和删「闹钟总开关」是同一个判断标准。
-        setPermState(stOverlay, Settings.canDrawOverlays(this));
+        setPermState(stOverlay, overlay);
         refreshExactState();
         refreshLockState();
+        renderPermProgress(notif, fsi, overlay, exact);
+    }
+
+    /**
+     * 「已开启 N / 总数项」计数（v1.13.0，v1.13.2 改分母，v1.14.0 并进副标题，
+     * v1.19.0 删掉那根 4dp 进度条）。
+     *
+     * <p>只数系统读得到的那四项。自启动、锁屏显示两行自己就写着「系统读不到」，
+     * 把它们算进分母，数字永远差 2——用户会以为有两项怎么点都开不了。
+     *
+     * <p><b>v1.13.2：分母跟着行数走，不写死 4。</b>「精确闹钟」那一行在权限已给时是
+     * {@code GONE}（见 {@link #refreshExactState()}），写死 4 就会出现屏幕上一个绿勾、
+     * 数字说「2 / 4」——差的那一项在界面上根本不存在，用户会去找「第二项在哪」。
+     * 一个对不上眼睛的数字比没有数字更糟，所以：显示几行，分母就是几。
+     *
+     * <p>注意 {@code on} 只累加前三项，不加 {@code exact}：这一行只要显示出来就一定是
+     * 未开启（红字），它永远不贡献分子。加了会算出 4 / 3。
+     *
+     * <p><b>v1.14.0：这句写进副标题，不再单独占一行。</b>原来自成一行 11sp 灰字 + 10dp
+     * 间距，可它和副标题说的是同一件事（这一页现在什么状态），并起来省 23dp——正好是
+     * 第 3 屏装下六行清单的那 17dp 缺口的余量。数字必须是动态的，所以整句由这里拼。
+     */
+    private void renderPermProgress(boolean notif, boolean fsi, boolean overlay, boolean exact) {
+        permOn = (notif ? 1 : 0) + (fsi ? 1 : 0) + (overlay ? 1 : 0);
+        permTotal = exact ? 3 : 4;
+        // 计数在页头副标题里（见 headerSub），这里只更新数字。
+        // 只有正停在这一页时才回写，否则会把别的页的副标题改成权限计数。
+        // v1.19.0：那根 4dp 进度条连同它的 weight 刷新一并删掉（用户只说删进度条，
+        // 副标题「已开启 N / 总数项」保留）。这里剩下的活就是把计数喂给页头。
+        if (index == PAGE_PERMISSIONS) renderHeader();
     }
 
     /**
@@ -1180,6 +1154,8 @@ public class GuideActivity extends AppCompatActivity {
         refreshLockState();
         Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
                 Toast.LENGTH_LONG).show();
+        // 点「开始测试」才算试过。只点开说明弹窗就取消，什么也没发生（v1.13.1）
+        markTried(R.id.try_state_lock);
     }
 
     private void openNotificationSettings() {
@@ -1222,33 +1198,92 @@ public class GuideActivity extends AppCompatActivity {
         updateChrome();
     }
 
-    /** 圆点指示：当前页 = indigo 长条，其余 = 淡灰小圆。 */
+    /**
+     * 进度圆点（v1.15.0：四段胶囊退回四个点）。
+     *
+     * <p>v1.13.0 换四段条，图的是「一眼看出还剩几步」。可那条 3dp 的横条把顶栏
+     * 变成了一条仪表盘，配上每页顶部的「第 N 步 · 选班表」，四屏都顶着一块说明文字，
+     * 像个多步表单。用户看完原版截图后的原话是「不如原来」——原版只有四个 6dp 的点，
+     * 扫一眼知道第几步，视线立刻回到标题。
+     *
+     * <p>只亮当前这一颗，走过的回灰：旧版就是这个口径。四颗全亮会把「你现在在哪」
+     * 藏起来，反而要数。总步数交给每页的标题和最后那页的「开始使用」去交代。
+     */
     private void renderDots() {
         dots.removeAllViews();
         float density = getResources().getDisplayMetrics().density;
+        int size = (int) (6 * density);
         for (int i = 0; i < PAGES; i++) {
-            boolean active = i == index;
             GradientDrawable d = new GradientDrawable();
-            d.setShape(GradientDrawable.RECTANGLE);
-            d.setCornerRadius(3 * density);
+            d.setShape(GradientDrawable.OVAL);
             d.setColor(ContextCompat.getColor(this,
-                    active ? R.color.indigo : R.color.line));
+                    i == index ? R.color.indigo : R.color.line));
 
             View dot = new View(this);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                    (int) ((active ? 20 : 7) * density), (int) (7 * density));
-            if (i > 0) lp.setMarginStart((int) (7 * density));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+            if (i > 0) lp.setMarginStart((int) (6 * density));
             dot.setLayoutParams(lp);
             dot.setBackground(d);
             dots.addView(dot);
         }
     }
 
-    /** 末页按钮改「开始使用」并隐藏「跳过」；第一页隐藏「上一步」。 */
+    /**
+     * 页头：步骤名、图标、标题、副标题（v1.14.0）。
+     *
+     * <p>四屏共用一份，翻页时按 {@link #index} 现拼。这样做的唯一目的是让四屏的
+     * 标题落在同一条基线上——原来每页自己一份、跟着内容垂直居中，内容高的页
+     * （开权限）整块往上跑、矮的页往下沉，四屏标题能差 79dp，切页时像页面在抖。
+     *
+     * <p>副标题不写成常量数组，因为它跟着状态走：第 1 页报日期区间和「一周 / 两周」，
+     * 第 2 页报节假日跳不跳，第 3 页报权限计数。都从当前状态现算，翻回来看见的是
+     * 最新值，不会留着上一轮的旧句。
+     */
+    private void renderHeader() {
+        int i = Math.max(0, Math.min(index, PAGES - 1));
+        ivStep.setImageResource(STEP_ICONS[i]);
+        ivStep.setContentDescription(STEP_ICON_DESC[i]);
+        tvGuideTitle.setText(headerTitle());
+        tvGuideSub.setText(headerSub());
+    }
+
+    private String headerTitle() {
+        switch (index) {
+            case 0:
+                // v1.16.0：回到制度卡，标题用旧版原话。不再按「一周 / 两周」现拼——
+                // 五张卡里的「大小周」已经替用户回答了「要不要看两周」
+                return "你的周休制度是哪一种？";
+            case 1:
+                return "先设一个起床闹钟";
+            case 2:
+                return "权限检查";
+            default:
+                return "当场试一遍，再开始用";
+        }
+    }
+
+    private String headerSub() {
+        switch (index) {
+            case 0:
+                // 一句「选一次就行」把这一页的承诺说清：不用每周调，选错了以后能改。
+                // 旧版副标题报的是「11月3日 – 11月9日 · 点格子切换」，那是格子时代的话
+                return "选一次就行，之后每周的班自动排。";
+            case 1:
+                // v1.8.2：轮班默认「春节也照上班」，不能还说「节假日自动跳过」
+                if (isRotationNow() && !Prefs.isCycleHoliday(this)) return "只在上班日响，休息日跳过。";
+                return "只在上班日响，休息日和节假日自动跳过。";
+            case 2:
+                return "已开启 " + permOn + " / " + permTotal + " 项 · 决定闹钟响不响、准不准";
+            default:
+                return "只是试一下，不占正式排班。";
+        }
+    }
+
+    /** 末页按钮改「开始使用」并隐藏「稍后设置」；第一页隐藏「上一步」。 */
     private void updateChrome() {
         boolean last = index == PAGES - 1;
         btnNext.setText(last ? "开始使用" : "下一步");
-        // v0.85.3：末页的「跳过」用 INVISIBLE 而不是 GONE——GONE 会让顶栏塌掉，
+        // v0.85.3：末页的「稍后设置」用 INVISIBLE 而不是 GONE——GONE 会让顶栏塌掉，
         // 整页内容跟着上移约 44dp，看上去就是「最后一页比前三页高」。留占位不显示，
         // 四页的图标、标题、卡片就都从同一条基线开始。
         btnSkip.setVisibility(last ? View.INVISIBLE : View.VISIBLE);
@@ -1256,49 +1291,77 @@ public class GuideActivity extends AppCompatActivity {
         // 「导入」只在第 1 页：那里才是用户犹豫「要不要重填」的时刻；
         // 后面两页再放，等于承认第 1 页没讲清楚
         btnImport.setVisibility(index == 0 ? View.VISIBLE : View.GONE);
+        renderHeader();
         renderDots();
     }
 
     /**
-     * 展开 / 收起「响铃细节」（v0.83.0）。
+     * 展开 / 收起响铃五行（v1.17.0）。
      *
-     * <p>这几项一设好基本不动，摆在第一次打开的人面前等于先做五次选择——默认收起，
-     * 只留一行「默认已设好，需要时再调整」。想调的人点开，不想调的人连看都不用看。
+     * <p>这一段在版本之间来回搬过两趟，两趟的理由都记在这儿，免得再绕：
+     *
+     * <p>v0.83.0 收起来（页内展开），v1.13.2 改成弹窗，理由是「五行约 250dp，
+     * 展开就到 95%，标题被顶到进度条上」。那次判断是对的——**但根因不是五行太多，
+     * 是页头当时还在页内跟着内容跑**。v1.14.0 把页头提出 Flipper 之后，第 2 屏的
+     * 可用高度从约 430dp 涨到 516dp，五行按 40dp 一行摊开只要 204dp，装得下。
+     *
+     * <p>行高从 48 压到 40 是这一版唯一的牺牲：五行按 48 算需要 244dp，
+     * 加上这一屏原有内容 302dp 就是 546dp，超 30dp 会滚。
+     *
+     * <p>展开时把副标题那行「默认已设好，需要时再调整」换掉——已经摊开了，
+     * 这句话的任务完成了。改成一行的当前值摘要，收起时再变回来。
      */
-    private void toggleRingDetail() {
-        boolean open = ringDetail.getVisibility() != View.VISIBLE;
-        ringDetail.setVisibility(open ? View.VISIBLE : View.GONE);
-        if (tvRingHint != null) tvRingHint.setVisibility(open ? View.VISIBLE : View.GONE);
-        // v1.0.5：头与内容之间的那条线跟着一起显示，否则展开后两半直接贴在一起
-        View divider = findViewById(R.id.ring_divider);
-        if (divider != null) divider.setVisibility(open ? View.VISIBLE : View.GONE);
-        syncRingArrow(open);
+    /**
+     * 响铃细节（v1.18.0 回到弹层）。
+     *
+     * <p>页内展开会把第 2 屏撑高 87dp，而那一屏是 {@code fillViewport + center_vertical}
+     * 居中的——展开后居中基准变了，时间那三行整段上移约 33dp。用户 18:47：
+     * 「响铃细节点开后，闹钟时间位置会变，感觉很突然，给它找个合适的地方定住不要动」。
+     *
+     * <p>加动画治不了这个：那只是让它平滑地跳。真正的解法是让页面高度不变，
+     * 所以五行搬进弹层，和上面的「重复」同构——这一页的东西就地改，另一件事弹出来改。
+     */
+    private void showRingSheet() {
+        View body = getLayoutInflater().inflate(R.layout.view_ring_detail, null);
+        bindRingRows(body);
+        refreshRing(body);
+        ringDetailRoot = body;
+        // v1.19.0 美化：标题、副标题、五行、完成按钮全在 view_ring_detail.xml 里自绘，
+        // 不再用系统的 setTitle/setMessage/setPositiveButton。这样标题区到第一行压到 16dp，
+        // 「完成」做成整行实心按钮（系统按钮栏只给右下角一颗，做不成通栏）。
+        AlertDialog dialog = new RoundedDialog.Builder(this)
+                .setView(body)
+                .show();
+        body.findViewById(R.id.btn_ring_done).setOnClickListener(v -> dialog.dismiss());
+        // 点外部 / 返回键关闭时也要清掉这棵树，否则音量监听会一直刷一个已销毁的 view
+        dialog.setOnDismissListener(d -> ringDetailRoot = null);
     }
 
     /**
-     * 「展开 / 收起」右侧那枚箭头（v1.0.4）。
+     * 绑这五行的点击（v1.13.2 从 {@code bindRing} 搬来，v1.17.0 起常驻页内）。
      *
-     * <p>原来箭头写在文字里、永远指右：展开之后那一栏写着「收起 ›」，
-     * 箭头还在往右指，读不出「已经打开」。现在箭头单独一个 View，
-     * 收起时转 90° 指下（还能展开），展开时转 -90° 指上（可以收起来）。
-     * 用同一个「›」字形旋转，不依赖字体里有没有上/下箭头。
-     *
-     * <p>副标题也跟着换（v1.0.5）：收起时那句「默认已设好，需要时再调整」是在劝人别点，
-     * 展开之后这些行就摊在下面，再说「想调再点开」等于让用户再点一次。展开态换成
-     * 「这些设置对所有闹钟都生效」——这是用户点开时真正会问的那件事（只改这一个还是全部）。
-     * 用的是替换而不是隐藏：头卡高度不变，来回切换时下半个卡片不会上下跳。
-     *
-     * <p>为什么不写「这五项」（v1.0.6）：这组设置是会长的——v0.40.0 把「稍后提醒」
-     * 和「响铃前提醒」搬进来，行数从三变五，而副标题一直写着「四项」，直到装上真机
-     * 被人数出来。写死数字就等于每次加行都得回来改一句话，而这句话不会报错、不会崩、
-     * 只在用户眼前错。改成不依赖计数的说法，行数怎么变都不用动。
+     * <p>控件不存字段：刷新一律从 {@code root} 现取。多写几次 findViewById，
+     * 换掉一份「什么时候会失效」的维护。
      */
-    private void syncRingArrow(boolean open) {
-        if (tvRingArrow != null) tvRingArrow.setText(open ? "收起" : "展开");
-        if (ivRingChevron != null) ivRingChevron.setRotation(open ? -90f : 90f);
-        if (tvRingSummary != null) {
-            tvRingSummary.setText(open ? "这些设置对所有闹钟都生效" : "默认已设好，需要时再调整");
-        }
+    private void bindRingRows(View root) {
+        root.findViewById(R.id.row_volume).setOnClickListener(v -> showVolumeDialog());
+        root.findViewById(R.id.row_fade).setOnClickListener(v -> {
+            Prefs.setFadeIn(this, !Prefs.isFadeIn(this));
+            refreshRing(root);
+        });
+        // v0.84.0：震动搬进来。它决定「静音时还叫不叫得醒」，和音量是同一件事的两半，
+        // 原来只藏在设置页 → 更多响铃设置里。音量行在 0 时的文案也依赖它。
+        root.findViewById(R.id.row_vibrate).setOnClickListener(v -> {
+            Prefs.setVibrate(this, !Prefs.isVibrate(this));
+            refreshRing(root);
+        });
+        // v0.40.0：这两个对话框与设置页共用同一份（PrefDialogs），
+        // 免得两处各自维护「档位 ↔ 存值」的映射，哪天加一档就漏一处
+        root.findViewById(R.id.row_snooze).setOnClickListener(
+                v -> PrefDialogs.showSnooze(this, () -> refreshRing(root)));
+        root.findViewById(R.id.row_prenotice).setOnClickListener(
+                v -> PrefDialogs.showPreNotice(this, () -> refreshRing(root)));
+        refreshRing(root);
     }
 
     /**
@@ -1326,17 +1389,36 @@ public class GuideActivity extends AppCompatActivity {
         }
         // 导入已经写盘，草稿必须重新从 Prefs 取一次，否则「开始使用」会把导入结果盖掉
         draft = ScheduleDraft.load(this);
-        reloadWeek();
+        planCards.reload();
         refreshRepeatRow();
         // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，
         // 不是送去测试。用常量而不是 PAGES-1，免得下次再拆页又跑偏。
         goTo(PAGE_PERMISSIONS);
-        Toast.makeText(this, result.message + "。下一步把权限开一下",
-                Toast.LENGTH_LONG).show();
+        // v1.19.0：那不是弹窗，是 Toast。result.message 本身是「已导入 1 个闹钟、
+        // 1 天请假、0 天加班，其余设置也已恢复」，再拼一句指引就超过系统 Toast 的
+        // 行数上限，MIUI 截成两行气泡、末尾「下一步把权限开一下」被吃掉，还盖住
+        // 「锁屏显示」那行下半截。改成：Toast 只留一句短的，完整摘要留在权限页顶部
+        // 那张常驻提示卡里——导入后本来就要跳到这一页，信息留在这里比飘两秒更合理。
+        Toast.makeText(this, "已导入 " + result.alarmCount + " 个闹钟",
+                Toast.LENGTH_SHORT).show();
+        View card = findViewById(R.id.card_import_hint);
+        if (card != null) {
+            ((TextView) card.findViewById(R.id.tv_import_summary)).setText(
+                    "闹钟 " + result.alarmCount + " 个 · 请假 " + result.vacationDays
+                            + " 天 · 加班 " + result.overtimeDays + " 天，其余设置也已恢复");
+            card.findViewById(R.id.btn_import_dismiss)
+                    .setOnClickListener(v -> card.setVisibility(View.GONE));
+            card.setVisibility(View.VISIBLE);
+        }
     }
 
-    /** 完成（或跳过）：落库、排程、写标记，然后关闭。 */
-    private void complete() {
+    /**
+     * 完成（或点「稍后设置」）：落库、排程、写标记，然后关闭。
+     *
+     * @param fromSkip true = 顶栏那个出口。它和「开始使用」做的事完全一样（班表落库、
+     *                 建闹钟、排程），区别只在这句 Toast：权限没开时得把后果说出来。
+     */
+    private void complete(boolean fromSkip) {
         boolean firstRun = !Prefs.isOnboardDone(this);
         // v1.10.0：班表与闹钟到这一刻才落盘——没点「开始使用」就退出，什么都没改
         draft.commit(this);
@@ -1348,11 +1430,21 @@ public class GuideActivity extends AppCompatActivity {
         // 那条「点它应回到刚才那一页」会一直挂在通知栏里——引导都做完了，它没有意义了。
         NotificationManagerCompat.from(this).cancel(9401);
         // 轮班态下这一个数只对应基准班次，说「06:30 会响」会漏掉夜班那天的 18:30
-        final String tip = firstRun
-                ? (isRotationNow() && shiftBaseStart >= 0
-                        ? "已排好班，跟着班次走"
-                        : "已排好班，" + TimeText.clock(hour, minute) + " 会响")
-                : "设置已更新";
+        //
+        // 2026-11-05：从「稍后设置」出去、通知又没开时，必须把「不会响」说出来。
+        // 那个出口以前叫「跳过」，用户心理上是「我放弃了」；现在叫「稍后设置」，
+        // 心理上是「先这样，回头再说」——而他回头之前，闹钟一声都不会响。
+        // 别的路径不换文案：第 4 页刚验过通知，再说一遍是噪音。
+        final String tip;
+        if (fromSkip && !canNotify()) {
+            tip = "已排好班。通知权限没开，闹钟不会响";
+        } else if (firstRun) {
+            tip = isRotationNow() && shiftBaseStart >= 0
+                    ? "已排好班，跟着班次走"
+                    : "已排好班，" + TimeText.clock(hour, minute) + " 会响";
+        } else {
+            tip = "设置已更新";
+        }
         // v0.74.3：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
         // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App
         // 前不会知道。这是一次性点击，阻塞几百毫秒无感；ANR 风险来自反复操作，
@@ -1364,7 +1456,7 @@ public class GuideActivity extends AppCompatActivity {
 
     /**
      * 返回键 = 中途退出，不写标记：下次启动还会出现。
-     * 想彻底关掉，点「跳过」——那才算「我知道了」。
+     * 想彻底关掉，点「稍后设置」——那也算「我知道了」。
      */
     @SuppressLint("MissingSuperCall") // 返回键 = 中途退出，不写「已引导」标记
     @Override

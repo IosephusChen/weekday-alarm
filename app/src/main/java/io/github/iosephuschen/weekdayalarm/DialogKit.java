@@ -195,6 +195,21 @@ public final class DialogKit {
     public static void showPickWithTip(Context c, String title, String sub, String tip,
                                        String[] items, String[] subs, int checked,
                                        OnPick onPick) {
+        showPickWithExtra(c, title, sub, tip, items, subs, checked, null, onPick);
+    }
+
+    /**
+     * 同上，但在选项列表末尾多挂一块自定义内容（v1.17.0）。
+     *
+     * <p>为「重复规则」弹窗加的：它底下要跟一行「跳过法定节假日」开关。
+     * 那个开关是重复规则的补充——「周六周日不算，法定假日也不算」——放进单选列表
+     * 会变成第五个选项，用户点了会以为那是一套独立规则。
+     *
+     * <p>{@code extra} 为 null 时，行为与 {@link #showPickWithTip} 完全一致。
+     */
+    public static void showPickWithExtra(Context c, String title, String sub, String tip,
+                                         String[] items, String[] subs, int checked,
+                                         View extra, OnPick onPick) {
         View view = LayoutInflater.from(c).inflate(R.layout.dialog_pick, null);
         TextView tvTitle = view.findViewById(R.id.tv_pick_title);
         TextView tvSub = view.findViewById(R.id.tv_pick_sub);
@@ -224,6 +239,15 @@ public final class DialogKit {
             if (i > 0) lp.topMargin = dp(c, 10);
             row.setLayoutParams(lp);
             list.addView(row);
+        }
+
+        if (extra != null) {
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            lp.topMargin = dp(c, 10);
+            extra.setLayoutParams(lp);
+            list.addView(extra);
         }
 
         addTip(c, list, tip);

@@ -31,6 +31,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowToast;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +52,7 @@ import java.util.regex.Pattern;
  *       单休顺手把「休周日 / 休周六」定对</li>
  *   <li>第二页默认 07:30，改时间改的是第一个闹钟，不能凭空多出一个</li>
  *   <li>第三页四项权限状态跟系统真实状态一致</li>
- *   <li>「看过」的标记只在点「开始使用 / 跳过」时写，返回键退出不写</li>
+ *   <li>「看过」的标记只在点「开始使用 / 稍后设置」时写，返回键退出不写</li>
  * </ol>
  *
  * <p>注意一个容易踩空的前提：{@link Prefs#getAlarms} 首次读取会预置两条闹钟
@@ -109,10 +110,37 @@ public class GuideTest {
         ShadowLooper.idleMainLooper();
     }
 
+    private static void tap(View root, int id) {
+        View v = root.findViewById(id);
+        assertNotNull("找不到控件 " + id, v);
+        v.performClick();
+        ShadowLooper.idleMainLooper();
+    }
+
     private static String text(GuideActivity a, int id) {
         TextView tv = a.findViewById(id);
         assertNotNull("找不到控件 " + id, tv);
         return tv.getText().toString();
+    }
+
+    /** 从任意一棵子树取文案（v1.13.2：响铃五行搬进弹窗后不再属于 Activity）。 */
+    private static String text(View root, int id) {
+        TextView tv = root.findViewById(id);
+        assertNotNull("找不到控件 " + id, tv);
+        return tv.getText().toString();
+    }
+
+    /**
+     * 点开「响铃细节」并返回弹窗那棵树（v1.13.2）。
+     *
+     * <p>v1.13.2 之前五行在页内展开，测试直接 {@code a.findViewById} 就能取到；
+     * 现在它们在 {@code dialog_ring_detail} 里，是另一棵 view 树。
+     */
+    /** 响铃五行那棵树（v1.18.0：它又回到弹层，是另一棵 view 树，不再常驻页内）。 */
+    private static View ringDetail(GuideActivity a) {
+        View root = a.openRingDetailForTest();
+        assertNotNull("五行没找到", root);
+        return root;
     }
 
     private static int visibility(GuideActivity a, int id) {
@@ -126,112 +154,318 @@ public class GuideTest {
 
     // ================= 第一页：对班表（v1.2.0） =================
 
-    /** 第 1 页的格子：0~6 是第一周，7~13 是第二周。 */
-    private View cell(GuideActivity a, int idx) {
-        return grid(a).cellAt(idx);
+    // ================= 第一页：选周休制度（v1.16.0 制度卡） =================
+
+    private static void assertSelected(GuideActivity a, int id, boolean on) {
+        assertEquals("卡片选中态 " + id, on, a.findViewById(id).isSelected());
     }
 
-    private static WeekGrid grid(GuideActivity a) {
-        WeekGrid g = a.findViewById(R.id.week_grid);
-        assertNotNull("格子组件应在（v1.3.0 收进 WeekGrid）", g);
-        return g;
-    }
-
-    /** 格子里的「班 / 休」。v1.6.0 起格子是竖排两行，第一行才是状态。 */
-    private static String cellText(View v) {
-        return ((TextView) ((LinearLayout) v).getChildAt(0)).getText().toString();
+    private static View dayBox(GuideActivity a, int i) {
+        LinearLayout box = a.findViewById(R.id.box_plan_custom);
+        return box.getChildAt(i);
     }
 
     /**
-     * 全新安装按双休起步。
+     * 全新安装按双休起步，第一张卡选中。
      *
      * <p>Prefs 的缺省值仍是大小周（老用户升级不能变），但新用户没有历史班表，
-     * 让他第一眼看到一张对得上的七天表，比先看到「大周 / 小周」两行省事。
+     * 双休是最常见的形状。
      */
     @Test
-    public void freshInstall_startsWithDoubleRest() {
+    public void freshInstall_selectsDoubleRest() {
         GuideActivity a = fresh();
 
-        // v1.10.0：改草稿制后，这一刻 Prefs 还是老值；页面上的结论条才是真相
-        assertEquals("双休", text(a, R.id.tv_week_verdict));
-        assertEquals("周一上班", "班", cellText(cell(a, 0)));
-        assertEquals("周六休", "休", cellText(cell(a, 5)));
-        assertEquals("周日休", "休", cellText(cell(a, 6)));
-        assertEquals("第二周先收着", 7, grid(a).dayCount());
+        assertSelected(a, R.id.card_plan_double, true);
+        assertSelected(a, R.id.card_plan_single, false);
+        assertSelected(a, R.id.card_plan_bigsmall, false);
+        // 双休没有可展开的东西，别的两项的展开区必须是收着的
+        assertEquals(View.GONE, visibility(a, R.id.box_plan_bigsmall));
+        assertEquals(View.GONE, visibility(a, R.id.box_plan_rotation));
+        assertEquals(View.GONE, visibility(a, R.id.box_plan_custom));
     }
 
-    /** 只把周日点成上班 = 单休（休周六）。反推要认出这个最常见的形状。 */
+    /** 点「单休」：卡选中，落盘是最常见的单休（周日休）。 */
     @Test
-    public void tappingSundayCell_makesSingleRestSaturday() {
+    public void tappingSingleCard_makesSingleRestSunday() {
         GuideActivity a = fresh();
-        cell(a, 6).performClick();
-        ShadowLooper.idleMainLooper();
+        tap(a, R.id.card_plan_single);
 
-        assertEquals("单休 · 周六休", text(a, R.id.tv_week_verdict));
-        assertEquals("格子跟着变", "班", cellText(cell(a, 6)));
-    }
+        assertSelected(a, R.id.card_plan_single, true);
+        assertSelected(a, R.id.card_plan_double, false);
 
-    /** 周三也点成休息：不像任何一种具名制度，落 7 天周期。 */
-    @Test
-    public void tappingMidweekCell_fallsBackToCycle() {
-        GuideActivity a = fresh();
-        cell(a, 1).performClick();
-        ShadowLooper.idleMainLooper();
+        // v1.17.0：选中后就地展开「休哪天」，默认落在周日
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_single));
+        assertTrue("默认休周日", a.findViewById(R.id.chip_single_sun).isSelected());
+        assertFalse(a.findViewById(R.id.chip_single_sat).isSelected());
 
-        assertEquals("每周固定 · 休 3 天", text(a, R.id.tv_week_verdict));
-        // 点「开始使用」才落盘——这一步顺带验证延后提交写对了值
         for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
+        assertEquals(WeekSchedule.Mode.SINGLE_REST_SUN, Prefs.getWeekMode(ctx()));
+        assertFalse("单休默认休周日", Prefs.isSmallRestSat(ctx()));
+    }
 
+    /**
+     * 单休换成休周六（v1.17.0）。
+     *
+     * <p>用户 16:40：「单休选择不了休哪一天吗？」——以前点「单休」固定写周日休，
+     * 服务业、教培那种周六休的班得进「我的班表」再改一次。数据里
+     * {@code SINGLE_REST_SAT} 一直都在，缺的只是入口。
+     */
+    @Test
+    public void choosingSaturday_makesSingleRestSat() {
+        GuideActivity a = fresh();
+        tap(a, R.id.card_plan_single);
+        tap(a, R.id.chip_single_sat);
+
+        assertTrue(a.findViewById(R.id.chip_single_sat).isSelected());
+        assertFalse(a.findViewById(R.id.chip_single_sun).isSelected());
+
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
+        assertEquals(WeekSchedule.Mode.SINGLE_REST_SAT, Prefs.getWeekMode(ctx()));
+    }
+
+    /**
+     * 点「轮班制」就地展开（v1.17.0）。
+     *
+     * <p>以前点这张卡直接弹 ShiftCycleSheet。用户 16:40：「其他几个都是展开的，
+     * 轮班制能不能也做成展开的？」现在三行都长在卡里，不再弹窗。
+     */
+    @Test
+    public void rotationCard_expandsThreeRowsInPlace() {
+        wipe();
+        GuideActivity a = launch();
+        tap(a, R.id.card_plan_rotation);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_rotation));
+        assertNotNull("数字本身可点", a.findViewById(R.id.tv_plan_cycle));
+        assertNotNull(a.findViewById(R.id.tv_plan_start));
+        assertNotNull(a.findViewById(R.id.box_plan_cycle_days));
+        assertEquals("默认 4 天一轮", "4 天", text(a, R.id.tv_plan_cycle));
+        assertEquals("今天刚排，算第 1 天", "第 1 天", text(a, R.id.tv_plan_start));
+    }
+
+    /**
+     * 周期改到 62 天：格子跟着铺满，不再封顶两行（v1.18.0）。
+     *
+     * <p>v1.17.0 是四个 −/+ 按钮 + 14 天上限。用户 18:38「展开得太少了，不方便编辑」，
+     * 18:47「几天一轮不要用 +- 按钮，这天数多了得按累死」——改成点数字弹滚轮，
+     * 上限放开到 62。这里直接调包级方法，绕开弹窗（滚轮本身在真机上验）。
+     */
+    @Test
+    public void rotation_cycleCanReach62Days() {
+        wipe();
+        GuideActivity a = launch();
+        tap(a, R.id.card_plan_rotation);
+        assertEquals("默认 4 天一轮", "4 天", text(a, R.id.tv_plan_cycle));
+
+        a.planCardsForTest().setCycleLenForTest(62);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("上限放开到 62", "62 天", text(a, R.id.tv_plan_cycle));
+        LinearLayout box = a.findViewById(R.id.box_plan_cycle_days);
+        assertEquals("62 天 = 9 行（每行 7 格）", 9, box.getChildCount());
+        assertEquals("最后一行剩 6 格", 6,
+                ((LinearLayout) box.getChildAt(8)).getChildCount());
+
+        a.planCardsForTest().setCycleLenForTest(1);
+        ShadowLooper.idleMainLooper();
+        assertEquals("最少 1 天", "1 天", text(a, R.id.tv_plan_cycle));
+        assertEquals("1 天 = 1 行", 1, a.findViewById(R.id.box_plan_cycle_days) instanceof LinearLayout
+                ? ((LinearLayout) a.findViewById(R.id.box_plan_cycle_days)).getChildCount() : 0);
+    }
+
+    /**
+     * v1.20.0 丙：点格子不再循环切班次，改成弹「休息 + 各班次」列表，一次选到位。
+     * v1.20.1（②）：列表里不再有「管理班次 ›」——班次管理收敛到图 1 常驻那行。
+     * 这里钉住「恰好 3 项、无管理项」，并验证选「夜班」真的写回那一格。
+     */
+    @Test
+    public void rotation_tappingDayBox_opensShiftPicker() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        LinearLayout days = a.findViewById(R.id.box_plan_cycle_days);
+        LinearLayout row = (LinearLayout) days.getChildAt(0);
+        LinearLayout cell = (LinearLayout) row.getChildAt(0);
+        TextView shiftBefore = cell.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT);
+        assertEquals("第一格原本是白班", "白", shiftBefore.getText().toString());
+
+        cell.performClick();
+        ShadowLooper.idleMainLooper();
+
+        android.app.Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("点格子应弹出选择列表（不是循环切换）", d);
+        LinearLayout list = d.findViewById(R.id.dlg_pick_list);
+        assertNotNull("自绘列表容器应在", list);
+        assertNotNull("列表里要有「休息」", findText(list, "休息"));
+        assertNotNull("列表里要有「白班」", findText(list, "白班"));
+        assertNotNull("列表里要有「夜班」", findText(list, "夜班"));
+        assertEquals("休息 + 2 个班次 = 恰好 3 项", 3, list.getChildCount());
+        assertNull("② 弹窗里不再出现「管理班次 ›」", findText(list, "管理班次 ›"));
+
+        // 点「夜班」那张卡：一次选到位，写回草稿并重画格子
+        View nightCard = null;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View c = list.getChildAt(i);
+            if (findText(c, "夜班") != null) { nightCard = c; break; }
+        }
+        assertNotNull("列表里该能点到「夜班」", nightCard);
+        nightCard.performClick();
+        ShadowLooper.idleMainLooper();
+
+        LinearLayout daysAgain = a.findViewById(R.id.box_plan_cycle_days);
+        LinearLayout redrawn = (LinearLayout) ((LinearLayout) daysAgain.getChildAt(0)).getChildAt(0);
+        TextView shiftAfter = redrawn.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT);
+        assertEquals("选中夜班后这一格应写「夜」", "夜", shiftAfter.getText().toString());
+    }
+
+    /**
+     * v1.20.0 丙：格子一律只写「周X」两字，不写「第 N 天」；「今天第几天」胶囊保留、
+     * 文案不动——它存的是 cycleStart 循环锚点，不是格子序号，删了轮班对不上真实日历。
+     */
+    @Test
+    public void rotation_cycleCells_labelOnlyWeekday() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        LinearLayout row = (LinearLayout) ((ViewGroup) a.findViewById(
+                R.id.box_plan_cycle_days)).getChildAt(0);
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View c = row.getChildAt(i);
+            TextView week = c.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK);
+            assertNotNull("第 " + i + " 格要有「周X」标签", week);
+            assertTrue("标签只写两字「周X」，实际：" + week.getText(),
+                    week.getText().toString().matches("周[一二三四五六日]"));
+            assertFalse("标签里不该再写「第 N 天」",
+                    week.getText().toString().contains("第"));
+            assertNotNull("格子要有班次名", c.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
+        }
+        assertEquals("今天第几天胶囊要保留、文案不动", "第 1 天", text(a, R.id.tv_plan_start));
+    }
+
+    /**
+     * v1.20.0 丙：班表页 / 引导页都不再有「编辑这一轮的班次与时刻」入口。
+     * 查的是资源 id 是否存在——隐藏也会留下 id，只有真删掉才会归零。
+     */
+    @Test
+    public void rotation_editCycleEntry_isDeletedNotHidden() {
+        assertEquals("「编辑这一轮」入口应已删掉（不是隐藏）", 0, ctx().getResources()
+                .getIdentifier("tv_plan_edit_cycle", "id", ctx().getPackageName()));
+    }
+
+    /** 一个班次都没有时，常驻管理行给一个建班次的入口，别让人对着四个「休」发呆。 */
+    @Test
+    public void rotation_withoutShift_showsBuildEntry() {
+        wipe();
+        GuideActivity a = launch();
+        tap(a, R.id.card_plan_rotation);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.tv_plan_shift_hint));
+        assertEquals("还没有班次，去建一个 ›", text(a, R.id.tv_plan_shift_hint));
+    }
+
+    /**
+     * v1.20.0 ③：有班次之后，班次管理入口仍要常驻——恰恰是建完班次才最需要
+     * 「再建一个 / 改时间 / 删」。以前这条断言 GONE，把 bug 钉死了，现在反转。
+     */
+    @Test
+    public void rotation_withShift_stillShowsManageEntry() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.tv_plan_shift_hint));
+        assertEquals("管理班次 · 2 个 ›", text(a, R.id.tv_plan_shift_hint));
+    }
+
+    /**
+     * 点「自定义」：七格展开，改了哪一天就存哪一天。
+     *
+     * <p>关键在「不被反推成具名制度」：周一至周六上班如果走 {@code setDays}，
+     * 会被认成「单休」，用户点的是「自定义」却跳回「单休」。所以这条路直接写
+     * 7 天周期，见 {@link ScheduleDraft#setCustomWeek}。
+     */
+    @Test
+    public void tappingCustomCard_keepsSevenDayCycle() {
+        GuideActivity a = fresh();
+        tap(a, R.id.card_plan_custom);
+
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_custom));
+        assertTrue("起点是原来的双休表：周一上班", dayBox(a, 0).isSelected());
+        assertFalse("周六休息", dayBox(a, 5).isSelected());
+
+        // 把周六也点成上班 —— 这张表说不成一句话，正该留在「自定义」
+        dayBox(a, 5).performClick();
+        ShadowLooper.idleMainLooper();
+        assertTrue(dayBox(a, 5).isSelected());
+
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
         assertEquals(WeekSchedule.Mode.CYCLE, Prefs.getWeekMode(ctx()));
         assertEquals(7, Prefs.getCycleLen(ctx()));
-        assertEquals("周一三五上班", 0b0011101L, Prefs.getCycleMask(ctx()));
-        assertTrue("按周排的表默认跟法定节假日", Prefs.isCycleHoliday(ctx()));
-        assertFalse("反推出来的表不能被当成轮班入口",
+        assertEquals("周一至周六上班", 0b0111111L, Prefs.getCycleMask(ctx()));
+        assertFalse("自定义不是轮班",
                 Prefs.getCycleKind(ctx()) == Prefs.CYCLE_KIND_ROTATION);
     }
 
-    /** 勾「隔周换一次」：第二行出现，先复制第一周，用户再改。 */
+    /** 点「大小周」：展开两行胶囊，默认本周是大周。 */
     @Test
-    public void biweekly_expandsSecondWeek() {
+    public void tappingBigSmallCard_expandsChips() {
         GuideActivity a = fresh();
-        assertEquals("默认只看一周", 7, grid(a).dayCount());
+        tap(a, R.id.card_plan_bigsmall);
 
-        tap(a, R.id.row_biweekly);
-
-        assertEquals("勾上后长成两周", 14, grid(a).dayCount());
-        assertEquals("第二周先复制第一周", "休", cellText(cell(a, 13)));
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_bigsmall));
+        assertTrue("默认本周是大周", a.findViewById(R.id.chip_big_week).isSelected());
+        assertFalse(a.findViewById(R.id.chip_small_week).isSelected());
+        assertTrue("小周默认休周日", a.findViewById(R.id.chip_rest_sun).isSelected());
     }
 
-    /** 把第二周周六点成上班 = 标准大小周，anchor 落在本周六。 */
+    /** 把「本周是」切到小周：anchor 落到下一周的周六。 */
     @Test
-    public void secondWeekDifferent_makesBigSmall() {
+    public void choosingSmallWeek_movesAnchorToNextWeek() {
         GuideActivity a = fresh();
-        tap(a, R.id.row_biweekly);
-        cell(a, 12).performClick();
-        ShadowLooper.idleMainLooper();
+        tap(a, R.id.card_plan_bigsmall);
+        tap(a, R.id.chip_small_week);
 
+        assertFalse(a.findViewById(R.id.chip_big_week).isSelected());
+        assertTrue(a.findViewById(R.id.chip_small_week).isSelected());
+
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
         assertEquals(WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
-        assertEquals("大周是本周", WeekSchedule.saturdayOf(LocalDate.now()),
-                Prefs.getAnchor(ctx()));
+        assertEquals("本周是小周，下一个大周在本周六 +7",
+                WeekSchedule.saturdayOf(LocalDate.now()).plusDays(7), Prefs.getAnchor(ctx()));
         assertFalse("小周休周日", Prefs.isSmallRestSat(ctx()));
     }
 
-    /** 轮班：七格表达不了 N 天一轮，换成一行摘要。 */
+    /** 「小周休哪天」切到周六：同一张表，只换休的那一天。 */
     @Test
-    public void rotationMode_showsSummaryInsteadOfGrid() {
+    public void choosingSaturdayRest_flipsSmallRestSat() {
+        GuideActivity a = fresh();
+        tap(a, R.id.card_plan_bigsmall);
+        tap(a, R.id.chip_rest_sat);
+
+        assertTrue(a.findViewById(R.id.chip_rest_sat).isSelected());
+        assertFalse(a.findViewById(R.id.chip_rest_sun).isSelected());
+
+        for (int i = 0; i < 4; i++) tap(a, R.id.btn_next);
+        assertTrue("小周休周六", Prefs.isSmallRestSat(ctx()));
+    }
+
+    /** 轮班：选中后只给一行摘要（周期），不展开配置。 */
+    @Test
+    public void rotationMode_showsSummaryRow() {
         wipe();
-        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
-        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
-        Prefs.setCycleLen(ctx(), 4);
-        Prefs.setCycleMask(ctx(), 0b0011L);
-        Prefs.setCycleStart(ctx(), LocalDate.now());
+        seedRotation();
         GuideActivity a = launch();
 
-        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
-        assertEquals(View.GONE, visibility(a, R.id.box_week));
-        assertEquals(View.GONE, visibility(a, R.id.row_biweekly));
-        assertTrue("摘要要写出周期，实际：" + text(a, R.id.tv_rotation_title),
-                text(a, R.id.tv_rotation_title).contains("4 天一轮"));
+        assertSelected(a, R.id.card_plan_rotation, true);
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_rotation));
+        assertTrue("摘要要写出周期，实际：" + text(a, R.id.tv_plan_cycle),
+                text(a, R.id.tv_plan_cycle).contains("4 天"));
+        // 轮班不是「自定义」，七格不能同时展开
+        assertEquals(View.GONE, visibility(a, R.id.box_plan_custom));
     }
 
     /** 第 2 页的「重复」行读的是第一个闹钟，不是另存一份。 */
@@ -326,32 +560,32 @@ public class GuideTest {
         wipe();
         AlarmVolume.setLevel(ctx(), AlarmVolume.min(ctx()));
         GuideActivity a = launch();
-        assertEquals(AlarmVolume.minPercent(ctx()) + "%", text(a, R.id.tv_volume));
+        assertEquals(AlarmVolume.minPercent(ctx()) + "%", text(ringDetail(a), R.id.tv_volume));
     }
 
     /** 渐响行点一下切换，立刻写进设置并回显——不做「改完还得回设置页确认」的蠢事。 */
     @Test
     public void fadeRow_togglesAndWrites() {
         GuideActivity a = fresh();
-        a.findViewById(R.id.ring_toggle).performClick();   // v0.83.0：响铃四项默认收起
-        assertEquals("关", text(a, R.id.tv_fade));
+        View ring = ringDetail(a);   // v1.13.2：五行改在弹窗里
+        assertEquals("关", text(ring, R.id.tv_fade));
         assertFalse(Prefs.isFadeIn(ctx()));
 
-        tap(a, R.id.row_fade);
+        tap(ring, R.id.row_fade);
         assertTrue(Prefs.isFadeIn(ctx()));
         assertTrue("开了要写明是 30 秒渐响，只说「开」等于没说",
-                text(a, R.id.tv_fade).startsWith("开"));
+                text(ring, R.id.tv_fade).startsWith("开"));
 
-        tap(a, R.id.row_fade);
+        tap(ring, R.id.row_fade);
         assertFalse(Prefs.isFadeIn(ctx()));
-        assertEquals("关", text(a, R.id.tv_fade));
+        assertEquals("关", text(ring, R.id.tv_fade));
     }
 
     /** 稍后提醒：按当前默认值显示「5 分钟 × 3 次」，不给光秃秃的数字。 */
     @Test
     public void snoozeRow_showsCurrentSetting() {
         GuideActivity a = fresh();
-        assertEquals("5 分钟 × 3 次", text(a, R.id.tv_snooze));
+        assertEquals("5 分钟 × 3 次", text(ringDetail(a), R.id.tv_snooze));
     }
 
     /**
@@ -363,73 +597,38 @@ public class GuideTest {
     @Test
     public void vibrateRow_togglesAndWrites() {
         GuideActivity a = fresh();
-        a.findViewById(R.id.ring_toggle).performClick();   // v0.83.0：响铃细节默认收起
+        View ring = ringDetail(a);   // v1.13.2：五行改在弹窗里
         assertTrue("默认开", Prefs.isVibrate(ctx()));
-        assertEquals("开", text(a, R.id.tv_vibrate));
+        assertEquals("开", text(ring, R.id.tv_vibrate));
 
-        tap(a, R.id.row_vibrate);
+        tap(ring, R.id.row_vibrate);
         assertFalse("点一下应关掉", Prefs.isVibrate(ctx()));
-        assertEquals("关", text(a, R.id.tv_vibrate));
+        assertEquals("关", text(ring, R.id.tv_vibrate));
 
-        tap(a, R.id.row_vibrate);
+        tap(ring, R.id.row_vibrate);
         assertTrue(Prefs.isVibrate(ctx()));
-        assertEquals("开", text(a, R.id.tv_vibrate));
+        assertEquals("开", text(ring, R.id.tv_vibrate));
     }
 
     /**
-     * 响铃细节默认收起（v0.83.0）。
+     * 响铃五行回到页内展开（v1.17.0）。
      *
-     * <p>四项（音量 / 渐响 / 稍后 / 响前）一次设好基本不动，摆在第一次打开的人面前
-     * 等于还没听到闹钟响就先做四次选择。收起不是删掉——点标题照样能调。
+     * <p>v1.13.2 把它搬进弹窗，理由是「展开后这一屏从 45% 涨到 95%、标题被进度条压住」。
+     * 那次判断没错，但根因是页头当时还在页内——v1.14.0 把页头提出来之后，
+     * 第 2 屏可用高度涨到 516dp，五行按 40dp 一行只要 204dp。
+     *
+     * <p>这条守三件事：默认收着（不点不占高度）、点一下五行都在页内、再点一下就收起。
      */
     @Test
-    public void ringDetails_collapsedByDefault_andToggles() {
+    public void ringDetails_liveInSheet() {
         GuideActivity a = fresh();
-        View detail = a.findViewById(R.id.ring_detail);
-        View chevron = a.findViewById(R.id.iv_ring_chevron);
-        View divider = a.findViewById(R.id.ring_divider);
-        assertEquals("默认应收起", View.GONE, detail.getVisibility());
-        assertEquals("说清「想调再点开」", "展开", text(a, R.id.tv_ring_arrow));
-        // v1.0.4：箭头单独一个 View，收起时转 90° 指下
-        assertEquals("收起时箭头应指下", 90f, chevron.getRotation(), 0.1f);
-        assertEquals("收着的时候不该有那条分隔线", View.GONE, divider.getVisibility());
-
-        a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("点一下应展开", View.VISIBLE, detail.getVisibility());
-        assertEquals("展开后写「收起」", "收起", text(a, R.id.tv_ring_arrow));
-        assertEquals("展开后箭头应指上", -90f, chevron.getRotation(), 0.1f);
-        assertEquals("展开后头与内容之间要有分隔线", View.VISIBLE, divider.getVisibility());
-
-        a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("再点一下收回", View.GONE, detail.getVisibility());
-        assertEquals("收回后箭头转回指下", 90f, chevron.getRotation(), 0.1f);
-        // 收起来时那四行仍在布局里，只是不可见——值照常刷新，不会丢
-        assertNotNull(a.findViewById(R.id.tv_snooze));
-    }
-
-    /**
-     * 展开之后那句副标题要跟着换（v1.0.5）。
-     *
-     * <p>收起时写「默认已设好，需要时再调整」（v1.12 前是「按默认就好，想调再点开」），
-     * 是在劝人别点；展开之后这几行已经
-     * 摊在下面，同一句话就变成「再点一次」，自相矛盾。用户 2026-11-01 截图问
-     * 「这个效果是不是你想要的」，指的就是这里。
-     *
-     * <p>展开态换成「这些设置对所有闹钟都生效」——点开的人真正会问的是「只改这一个
-     * 还是全部」，这几行的值读的确实是全局 Prefs。措辞里刻意不带计数，理由见
-     * {@link #ringSummary_neverMiscountsTheRows()}。
-     */
-    @Test
-    public void ringSummary_changesWhenOpened() {
-        GuideActivity a = fresh();
-        assertEquals("默认已设好，需要时再调整", text(a, R.id.tv_ring_summary));
-
-        a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("这些设置对所有闹钟都生效", text(a, R.id.tv_ring_summary));
-
-        a.findViewById(R.id.ring_toggle).performClick();
-        assertEquals("收回去要复原", "默认已设好，需要时再调整",
-                text(a, R.id.tv_ring_summary));
+        View body = a.openRingDetailForTest();
+        assertNotNull("五行应在", body);
+        assertNotNull(body.findViewById(R.id.row_volume));
+        assertNotNull(body.findViewById(R.id.row_fade));
+        assertNotNull(body.findViewById(R.id.row_vibrate));
+        assertNotNull(body.findViewById(R.id.row_snooze));
+        assertNotNull(body.findViewById(R.id.row_prenotice));
     }
 
     /**
@@ -446,21 +645,28 @@ public class GuideTest {
     @Test
     public void ringSummary_neverMiscountsTheRows() {
         GuideActivity a = fresh();
-        a.findViewById(R.id.ring_toggle).performClick();
+        View ring = ringDetail(a);
         String summary = text(a, R.id.tv_ring_summary);
 
-        ViewGroup detail = a.findViewById(R.id.ring_detail);
-        int rows = 0;
-        for (int i = 0; i < detail.getChildCount(); i++) {
-            if (detail.getChildAt(i).isClickable()) rows++;
-        }
-        assertTrue("卡片里应有若干可点的行，数出 " + rows, rows >= 3);
+        int rows = countClickable(ring);
+        assertTrue("这一块里应有若干可点的行，数出 " + rows, rows >= 3);
 
         Matcher m = Pattern.compile("这([一二三四五六七八九十]+)项").matcher(summary);
         if (m.find()) {
             assertEquals("副标题写「这" + m.group(1) + "项」，实际有 " + rows + " 行",
                     rows, cnToInt(m.group(1)));
         }
+    }
+
+    /** 数一棵子树里可点且可见的 view（v1.13.2：五行藏在 include 里，不能只数根的子节点）。 */
+    private static int countClickable(View v) {
+        if (v.getVisibility() != View.VISIBLE) return 0;
+        int n = v.isClickable() ? 1 : 0;
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) n += countClickable(g.getChildAt(i));
+        }
+        return n;
     }
 
     /** 「三」「五」「十二」这类中文计数转整数，只覆盖十位以内够用的写法。 */
@@ -480,11 +686,12 @@ public class GuideTest {
     @Test
     public void preNoticeRow_showsOneHour_andCanBeTurnedOff() {
         GuideActivity a = fresh();
-        assertEquals("提前 1 小时", text(a, R.id.tv_prenotice));
+        View ring = ringDetail(a);
+        assertEquals("提前 1 小时", text(ring, R.id.tv_prenotice));
 
         Prefs.setPreNoticeMinutes(ctx(), 0);
-        a.refreshRingForTest();
-        assertEquals("关闭", text(a, R.id.tv_prenotice));
+        a.openRingDetailForTest();   // 再取一次，会按新值刷新
+        assertEquals("关闭", text(ring, R.id.tv_prenotice));
     }
 
     // ================= 第三页：权限清单 =================
@@ -569,15 +776,16 @@ public class GuideTest {
     }
 
     /**
-     * 七格必须等宽（v1.2.0 接替旧的「选项等宽」）。
+     * 自定义的七格必须等宽（v1.16.0 从整页格子缩进那张卡里）。
      *
-     * <p>格子宽度按 {@code weight=1} 平分；只要有一格被塞了固定宽度，整行就会
-     * 歪掉——而这张表是用户用来核对自己班次的，歪了会看错行。
+     * <p>宽度按 {@code weight=1} 平分；只要有一格被塞了固定宽度，整行就歪——
+     * 而这张表是用户用来核对自己班次的，歪了会看错行。
      */
     @Test
-    public void weekCells_shareSameWeight() {
+    public void customDayBoxes_shareSameWeight() {
         GuideActivity a = fresh();
-        LinearLayout row = (LinearLayout) grid(a).cellAt(0).getParent();
+        tap(a, R.id.card_plan_custom);
+        LinearLayout row = a.findViewById(R.id.box_plan_custom);
         assertEquals("应是七格", 7, row.getChildCount());
         for (int i = 0; i < row.getChildCount(); i++) {
             LinearLayout.LayoutParams lp =
@@ -674,12 +882,21 @@ public class GuideTest {
         org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
         try {
             GuideActivity a = fresh();
+            // 计数写在页头副标题里（v1.14.0），只有停在第 3 页才看得见
+            tap(a, R.id.btn_next);
+            tap(a, R.id.btn_next);
             assertEquals("权限正常时这一行不该占位置：它永远是绿勾，用户什么也改不了",
                     View.GONE, a.findViewById(R.id.perm_exact).getVisibility());
             assertEquals("分隔线要跟着一起收起，否则会留下一条孤零零的线",
                     View.GONE, a.findViewById(R.id.divider_exact).getVisibility());
+            // v1.14.0：分母跟着行数走。这行一藏，屏幕上只剩三项，写死 4 就会出现
+            // 一个绿勾都没有、数字却说「0 / 4」——差的那一项界面上根本不存在。
+            // 真机（精确闹钟安装即授予）看到的就是这一组：五项、分母 3。
+            String c = text(a, R.id.tv_guide_sub);
+            assertTrue("这一行藏起来了，分母就该是 3，实际：" + c, c.contains("/ 3 项"));
         } finally {
-            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
+            // 桌面默认是「没给」。还原成默认而不是还原成 true，测试之间才不会串。
+            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         }
     }
 
@@ -688,6 +905,8 @@ public class GuideTest {
         org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         try {
             GuideActivity a = fresh();
+            tap(a, R.id.btn_next);
+            tap(a, R.id.btn_next);
             View row = a.findViewById(R.id.perm_exact);
             assertEquals("没给权限时必须出现，否则用户查不出为什么闹钟晚了一分钟",
                     View.VISIBLE, row.getVisibility());
@@ -695,8 +914,10 @@ public class GuideTest {
             String s = text(a, R.id.st_exact);
             assertTrue("要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
             assertFalse("不能只写「去开启」——那是催人，不是告知", s.startsWith("去开启"));
+            String c = text(a, R.id.tv_guide_sub);
+            assertTrue("多出一行，分母就得跟着变成 4，实际：" + c, c.contains("/ 4 项"));
         } finally {
-            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(true);
+            org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         }
     }
 
@@ -932,24 +1153,66 @@ public class GuideTest {
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
         assertEquals("末页（第 4 页）才写「开始使用」", "开始使用", text(a, R.id.btn_next));
-        // v0.85.3：末页的「跳过」是 INVISIBLE 不是 GONE——GONE 会让顶栏塌 44dp，
+        // v0.85.3：末页的「稍后设置」是 INVISIBLE 不是 GONE——GONE 会让顶栏塌 44dp，
         // 最后一页的图标/标题就比前三页高一截（用户实测看出来的）
-        assertEquals("末页不显示「跳过」，但要留占位", View.INVISIBLE,
+        assertEquals("末页不显示「稍后设置」，但要留占位", View.INVISIBLE,
                 visibility(a, R.id.btn_skip));
 
         tap(a, R.id.btn_prev);
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));
     }
 
-    /** 点「跳过」= 我知道了：照样留下能响的闹钟、照样写标记。 */
+    /** 点「稍后设置」= 我知道了：照样留下能响的闹钟、照样写标记。 */
     @Test
     public void skip_marksOnboardAndTurnsSwitchOn() {
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
         assertTrue(Prefs.isOnboardDone(ctx()));
-        assertTrue("跳过也要有能响的闹钟", anyEnabledAlarm());
+        assertTrue("稍后设置也要有能响的闹钟", anyEnabledAlarm());
         assertTrue(a.isFinishing());
+    }
+
+    /**
+     * 「稍后设置」+ 通知没开：必须说「不会响」（2026-11-05）。
+     *
+     * <p>这个出口以前叫「跳过」，用户心理上是「我放弃了」，没响也认；改叫「稍后设置」，
+     * 变成「先这样，回头再说」——可闹钟已经排上、通知却没开，回头之前一声都不会响。
+     * 这句话不在这里说出来，用户要到第二天早上才发现。
+     */
+    @Test
+    public void later_whenNotifyOff_warnsItWontRing() {
+        // 先给授权再把系统总开关关掉：这样测的才是「通知这条路不通」，
+        // 而不是 Robolectric 默认没授 POST_NOTIFICATIONS
+        shadowOf((Application) ctx())
+                .grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        NotificationManager nm = (NotificationManager)
+                ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf(nm).setNotificationsEnabled(false);
+
+        GuideActivity a = fresh();
+        tap(a, R.id.btn_skip);
+
+        String toast = ShadowToast.getTextOfLatestToast();
+        assertTrue("要说清不会响，实际：" + toast, toast != null && toast.contains("不会响"));
+    }
+
+    /** 对照：通知开着时照旧报时间，不念那句警告——否则每次点都在重复后果。 */
+    @Test
+    public void later_whenNotifyOn_reportsTime() {
+        shadowOf((Application) ctx())
+                .grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        NotificationManager nm = (NotificationManager)
+                ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf(nm).setNotificationsEnabled(true);
+
+        GuideActivity a = fresh();
+        tap(a, R.id.btn_skip);
+
+        String toast = ShadowToast.getTextOfLatestToast();
+        assertNotNull("完成时要有反馈", toast);
+        assertTrue("要有具体时间，实际：" + toast, toast.startsWith("已排好班"));
+        assertFalse("权限开着不该念后果，实际：" + toast, toast.contains("不会响"));
     }
 
     /**
@@ -1177,23 +1440,28 @@ public class GuideTest {
     }
 
     /**
-     * 结论条里只放结论本身（v1.5.0）。
+     * 选中靠「紫边 + 加粗」，没有单选圆（v1.16.0）。
      *
-     * <p>原来拼成「按这两周排：每周固定 · 休 1 天」——勾了两周、但两周排得一样时，
-     * v1.4.0 的 describe 会折回一周来说，于是前半句说「按两周」、后半句说
-     * 「每周固定」，自己跟自己打架。依据（格子和上面的日期区间）都看得见，
-     * 这里不必再说一遍。
+     * <p>单选圆是 vivo 的语法；本 App 一直用「边框 + 底色」说选中——睡前提醒弹窗、
+     * 关于页都是。这一条钉住它，免得以后照着别人的截图又加回来。
      */
     @Test
-    public void verdict_isJustTheVerdict() {
+    public void selectedCard_isBold_andHasNoRadioCircle() {
         wipe();
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         GuideActivity a = launch();
 
-        String v = text(a, R.id.tv_week_verdict);
-        assertTrue("应报出双休，实际：" + v, v.contains("双休"));
-        assertFalse("不该带「按这两周排：」，实际：" + v, v.contains("按这两周排"));
-        assertFalse("不该带「按这张表排：」，实际：" + v, v.contains("按这张表排"));
+        TextView on = a.findViewById(R.id.tv_plan_double);
+        TextView off = a.findViewById(R.id.tv_plan_single);
+        // 用 getStyle 判粗细：Robolectric 的 Typeface.isBold() 没接 native，恒为 false
+        assertEquals(android.graphics.Typeface.BOLD, on.getTypeface().getStyle());
+        // setTypeface(null, NORMAL) 之后 getTypeface() 就是 null，两个都算「不加粗」
+        assertTrue("没选中的卡不该加粗", off.getTypeface() == null
+                || off.getTypeface().getStyle() == android.graphics.Typeface.NORMAL);
+
+        // 卡里只有「名字 + 一句描述」两个子 View，没有第三个（单选圆）
+        LinearLayout card = a.findViewById(R.id.card_plan_double);
+        assertEquals("卡片里多了一个控件，多半是又塞了单选圆", 2, card.getChildCount());
     }
 
     // ================= 第一页：轮班态（v1.8.1） =================
@@ -1212,74 +1480,134 @@ public class GuideTest {
     }
 
     /**
-     * 轮班态下页面不能再留「按周」那三句（v1.8.1）。
+     * 页头钉在 Flipper 外面（v1.14.0）。
      *
-     * <p>原来只藏了七格和「两周不一样」，结论条还写着「双休」，标题还问
-     * 「这一周你哪几天上班？」——页面上一半说双休、一半说 8 天一轮，人当然犯迷糊。
+     * <p>四屏共用一份，页里不再各存一套——这样四屏标题的纵坐标不可能随内容高度
+     * 变化。判据是「页面里找不到它」+「翻页后还是同一个实例」，比截图量像素稳。
      */
     @Test
-    public void rotationPage_dropsWeeklyTexts() {
+    public void header_isSharedAcrossPages() {
+        GuideActivity a = fresh();
+        ViewFlipper f = a.findViewById(R.id.flipper);
+        assertNull("标题还在页里：翻页时它会跟着内容一起上下跑",
+                f.findViewById(R.id.tv_guide_title));
+        assertNull("页头整个不该在 Flipper 里面", f.findViewById(R.id.guide_header));
+        assertSame("四屏必须共用一个页头",
+                a.findViewById(R.id.tv_guide_title),
+                a.findViewById(R.id.guide_header).findViewById(R.id.tv_guide_title));
+
+        tap(a, R.id.btn_next);
+        assertSame("翻页换的是页里的身体，页头不能重建",
+                a.findViewById(R.id.tv_guide_title),
+                a.findViewById(R.id.guide_header).findViewById(R.id.tv_guide_title));
+        assertEquals("第 2 页的标题要跟着换（v1.15.0 去掉步骤名，标题就是唯一的路标）",
+                "先设一个起床闹钟", text(a, R.id.tv_guide_title));
+    }
+
+    /**
+     * 换卡不换页头（v1.16.0）。
+     *
+     * <p>v1.15.0 的页头按「一周 / 两周」「轮班 / 按周」现拼过四句，翻一张卡就换一次话；
+     * 现在五张卡都在同一屏上，标题只回答一个问题：「你的周休制度是哪一种？」。
+     */
+    @Test
+    public void headerTitle_isFixedWhileSwitchingCards() {
+        GuideActivity a = fresh();
+        String title = text(a, R.id.tv_guide_title);
+        assertTrue("第 1 页该问制度，实际：" + title, title.contains("周休制度"));
+
+        tap(a, R.id.card_plan_single);
+        assertEquals(title, text(a, R.id.tv_guide_title));
+        tap(a, R.id.card_plan_bigsmall);
+        assertEquals(title, text(a, R.id.tv_guide_title));
+        assertFalse("副标题不该还教人点格子",
+                text(a, R.id.tv_guide_sub).contains("点格子"));
+    }
+
+    /** 轮班态：五张卡照旧都在，只是「轮班制」选中并展开那一行摘要。 */
+    @Test
+    public void rotationPage_selectsRotationCard() {
         wipe();
         seedRotation();
         GuideActivity a = launch();
 
-        assertEquals("格子已经收起来了，结论条不能还挂着",
-                View.GONE, visibility(a, R.id.tv_week_verdict));
-        assertEquals(View.GONE, visibility(a, R.id.box_week));
-        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
-        assertFalse("标题不该还问「这一周」",
-                text(a, R.id.tv_week_title).contains("这一周"));
-        assertFalse("副标题不该还让人点格子",
-                text(a, R.id.tv_week_sub).contains("点一下切换"));
+        assertSelected(a, R.id.card_plan_rotation, true);
+        assertEquals(View.VISIBLE, visibility(a, R.id.box_plan_rotation));
+        // 其余四张卡还在屏幕上——这一版不再靠「藏东西」表达状态
+        for (int id : new int[]{R.id.card_plan_double, R.id.card_plan_single,
+                R.id.card_plan_bigsmall, R.id.card_plan_custom}) {
+            assertEquals(View.VISIBLE, visibility(a, id));
+        }
     }
 
-    /** 对照组：按周排时三句话照旧，别为了修轮班把这页弄没了。 */
+    /**
+     * 「跳过法定节假日」搬进了「重复」弹窗（v1.17.0）。
+     *
+     * <p>第 1 屏加上三处展开之后塞不下这一行（最坏 607dp / 可用 533dp），
+     * 用户 16:45 同意搬走。语义上也更顺：它回答「什么时候响」，不是「你是哪种班」。
+     *
+     * <p>点它要真的写进草稿——这个开关一直有人用（过年那几天不想被叫醒）。
+     */
     @Test
-    public void weeklyPage_keepsVerdict() {
+    public void repeatDialog_carriesHolidaySwitch() {
+        GuideActivity a = fresh();
+        tap(a, R.id.btn_next);
+        tap(a, R.id.row_repeat);
+        ShadowLooper.idleMainLooper();
+
+        android.app.Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        assertNotNull("重复弹窗没打开", d);
+        android.view.ViewGroup root = (android.view.ViewGroup) d.findViewById(
+                android.R.id.content);
+        TextView switchLabel = findText(root, "跳过法定节假日");
+        assertNotNull("弹窗里该有「跳过法定节假日」那一行", switchLabel);
+    }
+
+    /** 在一棵子树里找文字等于 target 的 TextView。 */
+    private static TextView findText(android.view.View v, String target) {
+        if (v instanceof TextView) {
+            CharSequence t = ((TextView) v).getText();
+            if (t != null && target.contentEquals(t)) return (TextView) v;
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                TextView hit = findText(g.getChildAt(i), target);
+                if (hit != null) return hit;
+            }
+        }
+        return null;
+    }
+
+    /** 对照组：按周态五张卡齐全，「跳过法定节假日」常驻。 */
+    @Test
+    public void weeklyPage_showsAllCards() {
         wipe();
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         GuideActivity a = launch();
 
-        assertEquals(View.VISIBLE, visibility(a, R.id.tv_week_verdict));
-        assertEquals(View.VISIBLE, visibility(a, R.id.box_week));
-        // v1.9：轮班卡常驻。按周态它是入口（副标题说明什么人来点），
-        // 不再是「一切按周就消失、只剩一行紫色小字」
-        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
-        assertEquals("几天一轮的班", text(a, R.id.tv_rotation_title));
-        assertEquals("四班三倒、上二休二", text(a, R.id.tv_rotation_sub));
-        // v1.11.4：这张卡是这一页唯一的「换排法」入口，字要粗、要主色，
-        // 从上面几张白卡里跳出来（用户反馈「不显眼」）
-        TextView rotTitle = a.findViewById(R.id.tv_rotation_title);
-        // 用 getStyle 判粗细：Robolectric 的 Typeface.isBold() 没接 native，恒为 false
-        assertTrue("按周态的入口卡要加粗", rotTitle.getTypeface() != null
-                && rotTitle.getTypeface().getStyle() == android.graphics.Typeface.BOLD);
-        assertEquals("按周态的入口卡用主色", ContextCompat.getColor(a, R.color.indigo),
-                rotTitle.getCurrentTextColor());
-        // 「改成按周排」是退出入口，按周态没有可退的地方
-        assertEquals(View.GONE, visibility(a, R.id.link_rotation));
-        assertTrue(text(a, R.id.tv_week_title).contains("这一周"));
+        assertSelected(a, R.id.card_plan_double, true);
+        // 五张卡一张不少（v1.17.0：「跳过法定节假日」已搬去第 2 屏的重复弹窗，
+        // 第 1 屏只留制度选择，见 PlanCardsTest）
+        for (int id : new int[]{R.id.card_plan_double, R.id.card_plan_single,
+                R.id.card_plan_bigsmall, R.id.card_plan_rotation, R.id.card_plan_custom}) {
+            assertEquals(View.VISIBLE, visibility(a, id));
+        }
     }
 
-    /** v1.9：轮班态那张卡换成摘要，同时冒出「改成按周排」，两者必须同进同退。 */
+    /** 轮班里想回按周：直接点「双休」，不用先找「改成按周排」。 */
     @Test
-    public void rotationPage_reusesSameCardAndOffersWayBack() {
+    public void tappingWeeklyCard_leavesRotation() {
         wipe();
-        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
-        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
-        Prefs.setCycleLen(ctx(), 7);
-        Prefs.setCycleStart(ctx(), LocalDate.now());
-        Prefs.setShiftCycle(ctx(), new int[]{-1, -1, -1, -1, -1, -1, -1});
+        seedRotation();
         GuideActivity a = launch();
+        assertSelected(a, R.id.card_plan_rotation, true);
 
-        assertEquals(View.VISIBLE, visibility(a, R.id.card_rotation));
-        assertEquals(View.VISIBLE, visibility(a, R.id.link_rotation));
-        // 同一张卡，标题从「几天一轮的班」换成排班摘要——不是换另一个控件
-        assertFalse("轮班态不该还写着入口那句",
-                text(a, R.id.tv_rotation_title).equals("几天一轮的班"));
-        // v1.11.4：轮班态它是「当前班表」的摘要，主角换成下面「改成按周排」，
-        // 退回正文色——两张强调卡上下相邻会让人以为有两个并列的主入口
-        assertEquals("摘要卡不抢主色", ContextCompat.getColor(a, R.color.ink),
-                ((TextView) a.findViewById(R.id.tv_rotation_title)).getCurrentTextColor());
+        tap(a, R.id.card_plan_double);
+
+        assertSelected(a, R.id.card_plan_double, true);
+        assertSelected(a, R.id.card_plan_rotation, false);
+        assertEquals(View.GONE, visibility(a, R.id.box_plan_rotation));
     }
 
     /**
@@ -1367,14 +1695,93 @@ public class GuideTest {
         GuideActivity a = launch();
         assertEquals(View.VISIBLE, visibility(a, R.id.tv_shift_preview));
 
-        a.findViewById(R.id.link_rotation).performClick();
-        ShadowLooper.idleMainLooper();
-        assertEquals("点完「改成按周排」就该切回按周",
-                View.VISIBLE, visibility(a, R.id.box_week));
+        tap(a, R.id.card_plan_double);
+        assertEquals("点「双休」就该切回按周",
+                true, a.findViewById(R.id.card_plan_double).isSelected());
 
         a.findViewById(R.id.btn_next).performClick();
         ShadowLooper.idleMainLooper();
         assertEquals("切回按周后不能再写三个班次的时刻",
                 View.GONE, visibility(a, R.id.tv_shift_preview));
+    }
+
+    // ================= 第 2 页「下次响铃」与第 4 页「试过了」（v1.13.1）=================
+
+    /**
+     * 这一行必须跟着第 1 页排的草稿走，不能写死「明天」或某个星期几。
+     *
+     * <p>v1.20.1 真正修复「越界」：v1.20.0 出包当天这句写死
+     * {@code startsWith("下次响铃：明天")}，碰上周五清晨（今天就要上班）变红；
+     * 当时图省事把断言放宽成「只钉前缀 下次响铃：」，等于把测试废了一半——
+     * 放宽不是修复。现在改成两条都不读真实日历的强断言：
+     *
+     * <p>① 默认态：文案必须是 {@link Alarm#dayLabel} 的合法输出（相对词 + 月日，
+     * 或 月日 + 周X），证明它真的算出了一次具体响铃，而不是占位符；
+     * ② 把「自己排一周」的七格全点成休息（相对草稿构造、不写死周几），翻到第 2 页
+     * 触发 {@code refreshNextRing()}：整周没有上班日 → {@code nextRing} 返回 null
+     * → 这一行 GONE。这才是「跟着草稿走」的契约，任何一天跑都不红。
+     */
+    @Test
+    public void nextRingRow_followsTheDraftSchedule() {
+        GuideActivity a = fresh();
+        assertEquals("默认双休、这一行应在", View.VISIBLE,
+                visibility(a, R.id.tv_next_ring));
+        String before = text(a, R.id.tv_next_ring);
+        assertTrue("要给出一次具体响铃（dayLabel 的合法输出），实际：" + before,
+                before.matches("下次响铃：(今天|明天|后天) · \\d+月\\d+日")
+                        || before.matches("下次响铃：\\d+月\\d+日 周[一二三四五六日]"));
+
+        // 把自定义七格里的上班日全点成休息：只按格子选中态操作，不读今天是周几。
+        tap(a, R.id.card_plan_custom);
+        for (int i = 0; i < 7; i++) {
+            if (dayBox(a, i).isSelected()) dayBox(a, i).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        // 翻到第 2 页触发 refreshNextRing()
+        a.findViewById(R.id.btn_next).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("整周全休没有下一次响铃，这一行必须跟着草稿消失",
+                View.GONE, visibility(a, R.id.tv_next_ring));
+    }
+
+    /** 第 4 页三行的「试一次 ›」：没真做过就不许变成「试过了」。 */
+    @Test
+    public void tryRows_untriedUntilActuallyDone() {
+        GuideActivity a = fresh();
+        for (int i = 0; i < 3; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        assertEquals("试一次 ›", text(a, R.id.try_state_ring));
+
+        tap(a, R.id.btn_try);
+
+        assertEquals("试过了", text(a, R.id.try_state_ring));
+        assertEquals("没做过的那两行不能跟着打勾", "试一次 ›", text(a, R.id.try_state_lock));
+        assertEquals("没做过的那两行不能跟着打勾", "发一条 ›", text(a, R.id.try_state_notify));
+    }
+
+    /**
+     * 通知没发出去就不打勾。
+     *
+     * <p>这一行最容易骗人：权限关着时 {@code tryNotify()} 只弹一句「通知权限还没开」
+     * 就返回，什么都没发生。若在那之前就把状态改成「试过了」，用户会以为自己验过了，
+     * 第二天闹钟不响也想不到是权限。
+     */
+    @Test
+    public void notifyRow_notMarkedWhenPermissionOff() {
+        NotificationManager nm = (NotificationManager)
+                ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf(nm).setNotificationsEnabled(false);
+
+        GuideActivity a = fresh();
+        for (int i = 0; i < 3; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        tap(a, R.id.btn_notify_try);
+
+        assertEquals("没发出去不能打勾", "发一条 ›", text(a, R.id.try_state_notify));
     }
 }

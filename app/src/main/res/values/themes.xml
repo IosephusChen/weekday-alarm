@@ -183,6 +183,27 @@
         <item name="android:textSize">17sp</item>
     </style>
 
+    <!-- 响铃细节弹层（v1.19.0 美化）专用。
+         行尾箭头用次色而不是 SettingsChevron 的主色：这一层右侧数值已经是主色，
+         箭头再上主色会连成两块紫，读起来像两个入口。这里只表示「这一行能点」。 -->
+    <style name="RingChevron">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">@dimen/space_6</item>
+        <item name="android:text">›</item>
+        <item name="android:textColor">@color/sub</item>
+        <item name="android:textSize">17sp</item>
+    </style>
+
+    <!-- 分隔线左右各内缩 16dp，不再通栏顶到卡片边。五行读起来是一组，不是一张表格。 -->
+    <style name="RingDivider">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_marginStart">@dimen/space_16</item>
+        <item name="android:layout_marginEnd">@dimen/space_16</item>
+        <item name="android:background">@color/line</item>
+    </style>
+
 
     <!-- ===== 使用说明页（v0.83.0）=====
          只做版式，文案全在 strings.xml。改一句话不该再动布局。 -->

@@ -122,6 +122,50 @@ final class ScheduleDraft {
         dirty = true;
     }
 
+    /**
+     * 引导页「自定义」那张卡（v1.16.0）：一周七格，直接指定，不经过反推。
+     *
+     * <p>为什么不复用 {@link #setDays}：那条路会先反推成具名制度，把「周一至周五」
+     * 认成双休——用户明明点的是「自定义」，页面却跳回「双休」，等于否定他刚做的事。
+     * 自定义的意思就是「我这周休哪天说不成一句话」，那就别替他归类。
+     */
+    void setCustomWeek(boolean[] days) {
+        long mask = 0L;
+        for (int i = 0; i < 7 && i < days.length; i++) {
+            if (days[i]) mask |= (1L << i);
+        }
+        mode = WeekSchedule.Mode.CYCLE;
+        kind = Prefs.CYCLE_KIND_WEEK;
+        cycleLen = 7;
+        cycleMask = mask;
+        // v1.18.0 修：这里原来写的是「有就用旧的」，于是先点过「轮班制」再点「自定义」时，
+        // cycleStart 停在今天（周三），而界面第 0 格写的是「周一」——整张表错位三天，
+        // 表现就是「点周一，变的是周三」。掩码 bit0 的含义由 cycleStart 决定，
+        // 所以只要这张表是按周一画的，起始日就必须是周一，无条件归一到周一。
+        cycleStart = WeekScheduleActivity.mondayOfWeek();
+        shiftCycle = null;
+        dirty = true;
+    }
+
+    /**
+     * 取当前循环的班次 id 数组，长度至少 {@code len}（v1.17.0）。
+     *
+     * <p>给引导页那张「每天上什么班」的格子用：格子要按周期长度铺，
+     * 而 {@link #shiftCycle} 可能是空的（刚进轮班、老数据），
+     * 空的位置一律按「休」（-1）算，别让调用方各自补。
+     */
+    int[] cycleShiftIds(int len) {
+        int[] out = new int[Math.max(1, len)];
+        if (shiftCycle == null) {
+            java.util.Arrays.fill(out, -1);
+            return out;
+        }
+        for (int i = 0; i < out.length; i++) {
+            out[i] = i < shiftCycle.length ? shiftCycle[i] : -1;
+        }
+        return out;
+    }
+
     /** 从轮班弹窗改：换形态 + 换循环。 */
     void setRotation(int len, LocalDate start, int[] cycle) {
         boolean wasRotation = rotation();

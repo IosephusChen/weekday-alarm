@@ -16,9 +16,11 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
-    <!-- 顶栏只剩一个出口：跳过（末页隐藏）。
-         v0.83.0：原来这一行挤着「上一步 / 导入 / 跳过」四个小字按钮，其中「导入」
-         （我有旧配置）和「跳过」（我不想设）并列，读起来像同一类出口。 -->
+    <!-- 顶栏（v1.15.0 回到旧版形态）：只剩右上角一个出口。
+         上一版把「导入旧配置 / 上一步」塞进这条，和右下角的主按钮抢注意力，
+         四步走下来顶栏一直是满的。退回去之后顶栏只回答一件事：不想设了怎么办。
+         「上一步」回到页脚左边，跟「下一步」成对；「导入」回到第 1 页正文底部
+         ——它是第 1 页的动作，不是全局出口。 -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -26,31 +28,118 @@
         android:paddingEnd="@dimen/space_8"
         android:paddingTop="@dimen/space_6">
 
+        <!-- 导入（v1.16.0 回到顶栏左侧）：第 1 页正文全给了五张制度卡，末尾再挂一行
+             「从旧手机搬过来？导入配置」会把列表撑成六行，也会让人以为它是第六种制度。
+             它本来就是「我不想从头选」的出口，和右上角「跳过」是同一类，放回顶栏才对。
+             与 btn_skip 一左一右，只在第 1 页出现（updateChrome 按页号切换）。 -->
+        <TextView
+            android:id="@+id/btn_import"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:minHeight="44dp"
+            android:paddingStart="@dimen/space_10"
+            android:paddingEnd="@dimen/space_10"
+            android:text="导入旧配置"
+            android:textColor="@color/sub"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/btn_skip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
+            android:layout_gravity="end|center_vertical"
+            android:minHeight="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:padding="@dimen/space_10"
+            android:gravity="center"
+            android:paddingStart="@dimen/space_10"
+            android:paddingEnd="@dimen/space_10"
             android:text="跳过"
             android:textColor="@color/sub"
             android:textSize="14sp" />
     </FrameLayout>
 
-    <!-- 进度圆点（v0.83.0 从页脚移上来）：它回答「你在第几步」，不是动作，
-         不该和「下一步」挤在页脚抢同一个视觉位置。 -->
+    <!-- 进度圆点（v1.15.0 从四段胶囊退回）。
+         四段条把「一共四步」画得很清楚，可它同时也把顶栏变成了一条进度仪表盘，
+         和下面的大图标、大标题叠在一起，整页像张体检表。旧版四个小点只说
+         「你在第几个」，视线扫过去就到标题了，不抢戏。
+         点由 renderDots() 逐个填，这里只留容器。 -->
     <LinearLayout
         android:id="@+id/dots"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/space_24"
+        android:layout_marginTop="@dimen/space_6"
+        android:layout_marginEnd="@dimen/space_24"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
+        android:minHeight="8dp"
+        android:orientation="horizontal" />
+
+    <!-- 四屏共用的页头（v1.14.0）：步骤名、图标、标题、副标题。
+
+         这四件原来各写一份在每页的 ScrollView 里，跟着内容垂直居中——内容高的页
+         （开权限）整块往上跑，矮的页往下沉，四屏的标题能差 79dp；第 1 页里勾一下
+         「两周不一样」也会当场向上跳 74dp。
+
+         提到 Flipper 外面之后位置钉死，页里只剩身体在换。文案由 renderHeader()
+         按页号写——四份抄在 xml 里就会重演「改了标题没改副标题」那类半拉子修改。
+
+         注意：四页的容器必须保留 center_vertical。少了它，内容会贴顶，短的三屏
+         把几千像素的空白全堆在按钮上方，看上去像没排完版（这版第一稿就是这样，
+         量出 230dp 空白，撤掉重做的）。 -->
+    <LinearLayout
+        android:id="@+id/guide_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:orientation="vertical"
         android:paddingStart="@dimen/space_24"
-        android:paddingEnd="@dimen/space_24"
-        android:paddingBottom="@dimen/space_4" />
+        android:paddingEnd="@dimen/space_24">
+
+        <FrameLayout
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_guide_badge">
+
+            <ImageView
+                android:id="@+id/iv_step"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:contentDescription="这一步的图标"
+                android:src="@drawable/ic_guide_calendar" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_guide_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_20"
+            android:gravity="center"
+            android:text="这一周你哪几天上班？"
+            android:textColor="@color/ink"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_guide_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:gravity="center"
+            android:lineSpacingExtra="3dp"
+            android:text="点格子切换「班」和「休」"
+            android:textColor="@color/sub"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <ViewFlipper
         android:id="@+id/flipper"
@@ -58,270 +147,50 @@
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- ===================== 第 1 页：对班表（v1.2.0 重做） ===================== -->
-        <!-- 旧版标题是「你的周休制度是哪一种？」，下面五张卡。那是一道自评题，
-             而很多人答不上来：上二休二的护士看到「大小周 / 双休 / 单休 / 自定义 /
-             轮班」不知道该点哪个；点「轮班」还要回答「几天一轮」，而他脑子里没有
-             「周期」这个概念。选错了要等到某个该响的早上没响才会发现。
+        <!-- ===================== 第 1 页：选周休制度（v1.16.0 回到制度卡） ===================== -->
 
-             新版只问「这一周你哪几天上班」，用户点自己的班，ScheduleInfer 反推制度。
-             用户全程不需要知道「大小周」这三个字。
-             格子和表头都由代码填（日期要算），这里只留容器。 -->
+        <!-- 这一页改过三次，理由都留着，别再绕回去：
+
+             v1.2.0 五张制度卡 → 勾七格。理由是「让用户自评属于哪类」太难：上二休二的
+             护士看到「大小周 / 双休 / 单休 / 自定义 / 轮班」不知道该点哪个，点「轮班」
+             还要回答「几天一轮」，而他脑子里没有「周期」这个概念。
+             v1.15.0 用户反馈：「日期格子虽然一眼看上去直观，实际上挺复杂的，属于过度
+             设计」。七格要做的事（点 14 个格子对齐大小周、点 7 个格子表达周三休）确实
+             比「认领一句描述」重得多。
+
+             所以这次不是把 v1.2.0 那版抄回来，是把「让他自评」这个毛病去掉：每张卡
+             配一句规则描述（「每周六、周日都休」），用户照着描述认领，不用先给自己
+             贴标签——这一条是从 vivo 系统闹钟学的，也是卡片能成立的前提。
+
+             七格没有丢，收进「自定义」：勾不出一句话描述的班（周三休、上四休三），
+             才需要它。 -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:fillViewport="true"
             android:scrollbars="none">
 
+            <!-- center_vertical 必须留：少了它内容贴顶，短屏的空白全堆在按钮上方。
+                 这是 v1.14.0 第一稿踩过的坑，量出 230dp 空白才发现的。
+                 代价是展开区高度不同时整组会上下浮动几十 dp——固有表现，不是 bug。 -->
             <LinearLayout
+                android:id="@+id/guide_page1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
                 android:paddingStart="@dimen/space_24"
+                android:paddingTop="@dimen/space_8"
                 android:paddingEnd="@dimen/space_24"
                 android:paddingBottom="@dimen/space_8">
 
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_6"
-                    android:background="@drawable/bg_guide_badge">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="班表"
-                        android:src="@drawable/ic_guide_calendar" />
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/tv_week_title"
+                <!-- 五张制度卡（v1.18.0）：抽到 view_plan_cards.xml，「我的班表」用同一份。
+                     这一页和那一页从此是同一套控件，不会各改各的。 -->
+                <include
+                    layout="@layout/view_plan_cards"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:gravity="center"
-                    android:text="这一周你哪几天上班？"
-                    android:textColor="@color/ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:layout_height="wrap_content" />
 
-                <TextView
-                    android:id="@+id/tv_week_sub"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="点格子切换「班」和「休」"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
-
-                <!-- 按周排：七格（勾了「两周不一样」再长出一行）。
-                     v1.3.0：这一块原先由五个 LinearLayout 拼成、在 Activity 里逐个
-                     addView，和设置页、闹钟页各写了一遍。现在收成 WeekGrid 一个组件。 -->
-                <LinearLayout
-                    android:id="@+id/box_week"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:orientation="vertical">
-
-                    <io.github.iosephuschen.weekdayalarm.WeekGrid
-                        android:id="@+id/week_grid"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-
-                <!-- 结论条（v1.3.0）：系统从格子里认出的是哪种班。
-                     原来这句话塞在「隔周换一次」右边当小字，最该被看见的一句挂在
-                     最不像结论的位置；挪到格子正下方，和设置页「我的班表」同一个样子。
-
-                     v1.5.0：13sp 常规 → 15sp bold。同一句话在班表页是 15sp bold、
-                     在这里是 13sp，两页各说各的；而且它是这一页唯一的「结论」，
-                     比下面的勾选卡还轻，层级就倒了。
-
-                     v1.9：底色换 bg_verdict（浅靛），字色跟班表页一样用靛。
-                     白卡 + 黑字时它和下面三张设置卡是同一个模子，读起来像
-                     「第四项设置」；全 App 只有这里和班表页有「结论」，
-                     两处就该长成同一个样子。「现在」那个小胶囊不加：
-                     引导页是第一次用，没有「以前」可对比。 -->
-                <TextView
-                    android:id="@+id/tv_week_verdict"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_verdict"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="13dp"
-                    android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="13dp"
-                    android:text="双休 · 每周六、周日休"
-                    android:textColor="@color/indigo"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <!-- 隔周换一次（大小周）。
-
-                     v1.9：左侧空心方框换成右侧开关，跟「我的班表」同一个控件。
-                     方框只在这两处出现过，而且「点整行切换」这件事方框其实表达不了
-                     （方块有自己的点击区，点了不确定是勾它还是点行）；开关则是
-                     一看到就懂「这是个开/关」，全 App 其余四五个开关也是它。
-
-                     clickable=false：只让整行接点击，开关自己不吃事件。
-                     否则点开关时行与开关各触发一次，状态翻两下回到原样。 -->
-                <LinearLayout
-                    android:id="@+id/row_biweekly"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_dialog_row"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_10"
-                    android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="@dimen/space_10">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="两周不一样"
-                            android:textColor="@color/ink"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tv_biweekly_hint"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="大小周、隔周双休"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/sw_biweekly"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:focusable="false" />
-                </LinearLayout>
-
-                <!-- 轮班卡（v1.9）：常驻，不再「按周态是链接、轮班态才变卡」。
-
-                     原来按周态只给一行紫色小字，轮班态才换成卡片——同一个东西
-                     两种长相，用户切过去会发现入口「原地变了张脸」。而且小字
-                     和下面的「导入配置」长得一样，读起来像同一类次要操作。
-
-                     位置跟随「我的班表」：大小周在前、轮班在后。班表页里
-                     「改成按周排」也是最后一行，两页从上往下是同一个顺序。
-
-                     不是所有人在这一页都该看到七格——四班三倒的人点七格只会
-                     得到一张别扭的表，所以轮班态收起格子和大小周，只留这张卡。 -->
-                <LinearLayout
-                    android:id="@+id/card_rotation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_action_emphasis"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_12"
-                    android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="@dimen/space_12">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tv_rotation_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="几天一轮的班"
-                            android:textColor="@color/indigo"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tv_rotation_sub"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2"
-                            android:text="四班三倒、上二休二"
-                            android:textColor="@color/sub"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <TextView
-                                style="@style/SettingsChevron"
-                                android:id="@+id/tv_rotation_action" />
-                </LinearLayout>
-
-                <!-- 退出入口，只在轮班态出现。v1.9.1：从一行紫色小字改成卡片行——
-                     「我的班表」里这一项（row_back_week）就是卡片，两页同一件事
-                     两种长相，切过去又会看到「原地换了张脸」。 -->
-                <LinearLayout
-                    android:id="@+id/link_rotation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_action_emphasis"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="14dp"
-                    android:paddingEnd="@dimen/space_16"
-                    android:paddingBottom="14dp"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="改成按周排"
-                        android:textColor="@color/indigo"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView style="@style/SettingsChevron" />
-                </LinearLayout>
-
-                <!-- 从旧手机迁移（v0.83.0 从顶栏挪到这里）：它回答的是「我有旧配置」，
-                     与顶栏那个「我不想设」的跳过不是一类动作。放正文末尾，看得见但不抢戏。 -->
-                <TextView
-                    android:id="@+id/btn_import"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:background="@drawable/bg_guide_link"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:paddingStart="@dimen/space_8"
-                    android:paddingTop="@dimen/space_8"
-                    android:paddingEnd="@dimen/space_8"
-                    android:paddingBottom="@dimen/space_8"
-                    android:text="从旧手机搬过来？导入配置"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
             </LinearLayout>
         </ScrollView>
 
@@ -335,48 +204,13 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
+                android:gravity="center_horizontal|center_vertical"
                 android:orientation="vertical"
                 android:paddingStart="@dimen/space_24"
                 android:paddingEnd="@dimen/space_24"
                 android:paddingBottom="@dimen/space_8">
 
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="@dimen/space_6"
-                    android:background="@drawable/bg_guide_badge">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="闹钟"
-                        android:src="@drawable/ic_guide_bell" />
-                </FrameLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:gravity="center"
-                    android:text="先设一个起床闹钟"
-                    android:textColor="@color/ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_alarm_sub"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="只在上班日响，休息日和节假日自动跳过。"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
-
-                <TextView
+                                <TextView
                     android:id="@+id/tv_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -385,7 +219,7 @@
                     android:letterSpacing="0.02"
                     android:text="07:30"
                     android:textColor="@color/ink"
-                    android:textSize="42sp"
+                    android:textSize="62sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -404,6 +238,22 @@
                     android:textColor="@color/indigo"
                     android:textSize="14sp" />
 
+                <!-- v1.13.1：这一行回答「所以什么时候第一次响」。
+                     用户在这一屏看到的是一个光秃秃的 07:30，但决定它响不响的是第 1 页
+                     排的那张班表——「仅上班日」配上一张明后天都休息的表，第一次响
+                     可能在三天后。不写出来，他会以为明天早上就会被叫醒。
+                     日期由 ScheduleManager.nextRing 现算（口径与首页倒计时同一份），
+                     不是按「明天」写死：写死等于替班表下了个它未必认可的结论。 -->
+                <TextView
+                    android:id="@+id/tv_next_ring"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_6"
+                    android:gravity="center"
+                    android:text="下次响铃：明天 · 11月06日"
+                    android:textColor="@color/sub"
+                    android:textSize="13sp" />
+
                 <!-- v1.8.1：轮班态下说清这个时刻是怎么来的。
                      白班 08:00 的人，上面那个 06:30 是「班次开始前 1 小时 30 分」，
                      换班次时间它会跟着平移——不写这一行，用户会以为 06:30 是写死的。 -->
@@ -411,7 +261,7 @@
                     android:id="@+id/tv_shift_preview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_2"
+                    android:layout_marginTop="@dimen/space_6"
                     android:gravity="center"
                     android:lineSpacingExtra="2dp"
                     android:text="白班 06:30 · 夜班 18:30"
@@ -509,239 +359,28 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="1dp"
-                            android:text="默认已设好，需要时再调整"
+                            android:text="对所有闹钟都生效"
                             android:textColor="@color/sub"
                             android:textSize="11sp" />
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
+                    <!-- v1.18.0：五行搬回弹层，这里只剩一个 ›。
+                         页内展开会把页面撑高 87dp，ScrollView 又是居中的，时间那三行
+                         跟着上移 33dp——用户 18:47 说的「点开后闹钟时间位置会变，很突然」。
+                         改成弹层后这一屏高度恒定，时间一动不动，而且和上面的「重复」
+                         同构：这一页的东西就地改，另一件事弹出来改。 -->
+                    <TextView
+                        android:layout_width="18dp"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tv_ring_arrow"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="展开"
-                            android:textColor="@color/indigo"
-                            android:textSize="12sp" />
-
-                        <!-- 箭头单独一个 View 才好翻转（v1.0.4）。
-                             原来写在文字里「展开 ›」，展开后换成「收起 ›」——箭头永远指右，
-                             读不出「已经打开、可以收起来」。现在收起时指下、展开时指上。 -->
-                        <TextView
-                            android:id="@+id/iv_ring_chevron"
-                            android:layout_width="18dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="1dp"
-                            android:gravity="center"
-                            android:importantForAccessibility="no"
-                            android:minHeight="14dp"
-                            android:text="›"
-                            android:textColor="@color/indigo"
-                            android:textSize="15sp" />
-                    </LinearLayout>
+                        android:layout_marginStart="@dimen/space_2"
+                        android:gravity="center"
+                        android:importantForAccessibility="no"
+                        android:text="›"
+                        android:textColor="@color/indigo"
+                        android:textSize="17sp" />
                 </LinearLayout>
+            </LinearLayout>
 
-                <!-- 展开后头与内容之间的分隔线：有了它，上下两半才读成同一张卡的两部分 -->
-                <View
-                    android:id="@+id/ring_divider"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="@dimen/space_16"
-                    android:layout_marginEnd="@dimen/space_16"
-                    android:background="@color/line"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/ring_detail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingStart="@dimen/space_16"
-                    android:paddingTop="@dimen/space_4"
-                    android:paddingEnd="@dimen/space_16"
-                    android:visibility="gone">
-
-
-                    <LinearLayout
-                        android:id="@+id/row_volume"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:minHeight="48dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="响铃音量"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_volume"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="80%"
-                            android:textColor="@color/sub"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/line" />
-
-                    <LinearLayout
-                        android:id="@+id/row_fade"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:minHeight="48dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="渐响"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_fade"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="关"
-                            android:textColor="@color/sub"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/line" />
-
-                    <LinearLayout
-                        android:id="@+id/row_vibrate"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:minHeight="48dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="响铃时震动"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_vibrate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="开"
-                            android:textColor="@color/sub"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/line" />
-
-                    <!-- v0.40.0：稍后提醒与提前提醒搬进来。
-                         前者决定「响铃后还能再眯几次」，后者决定「响之前要不要先来一条通知」——
-                         两者都是闹钟最核心的体验，却都藏在设置页第三段。 -->
-                    <LinearLayout
-                        android:id="@+id/row_snooze"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:minHeight="48dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="稍后提醒"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_snooze"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="5 分钟 × 3 次"
-                            android:textColor="@color/sub"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/line" />
-
-                    <LinearLayout
-                        android:id="@+id/row_prenotice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:minHeight="48dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="响铃前提醒"
-                            android:textColor="@color/ink"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_prenotice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="提前 1 小时"
-                            android:textColor="@color/sub"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </LinearLayout>
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tv_ring_hint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="渐响会从静音用 30 秒升到设定音量。响铃前提醒会先在通知栏提示一次，可关闭。"
-                    android:textColor="@color/sub"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
             </LinearLayout>
         </ScrollView>
 
@@ -758,45 +397,78 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
                 android:paddingStart="@dimen/space_24"
                 android:paddingEnd="@dimen/space_24"
                 android:paddingBottom="@dimen/space_8">
 
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_6"
-                    android:background="@drawable/bg_guide_badge">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="设置"
-                        android:src="@drawable/ic_guide_tune" />
-                </FrameLayout>
-
-                <TextView
+                <!-- v1.19.0：权限检查进度条删掉（用户「权限检查的那个进度条删掉」）。
+                     原位置换成导入配置后的常驻提示卡：那原来是一句长 Toast，MIUI 会截成
+                     两行、末尾「下一步把权限开一下」被吃掉，还浮在权限列表上盖住「锁屏显示」
+                     那行。信息留在这一页比飘一下合理。默认 GONE——没导入过就完全不占位、
+                     不遮挡列表，只有 GuideActivity.onImportedFromBackup() 才打开。 -->
+                <LinearLayout
+                    android:id="@+id/card_import_hint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:gravity="center"
-                    android:text="权限检查"
-                    android:textColor="@color/ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    android:layout_marginTop="@dimen/space_10"
+                    android:background="@drawable/bg_guide_option"
+                    android:orientation="vertical"
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_12"
+                    android:paddingEnd="@dimen/space_12"
+                    android:paddingBottom="@dimen/space_12"
+                    android:visibility="gone">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="决定闹钟响不响、准不准。"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="已导入配置"
+                            android:textColor="@color/ink"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btn_import_dismiss"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:contentDescription="关闭导入提示"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:minHeight="32dp"
+                            android:minWidth="40dp"
+                            android:text="×"
+                            android:textColor="@color/sub"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_import_summary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:textColor="@color/body"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_6"
+                        android:text="下一步把权限开一下"
+                        android:textColor="@color/indigo"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -837,7 +509,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开的话，闹钟响时没有通知，要进 App 才能关。"
+                                    android:text="不开的话，闹钟响时没有通知。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 
@@ -1024,20 +696,14 @@
                      前三项的开关系统读得到、开了会打勾；后两项不在 AOSP 权限体系里，
                      状态只能自己进设置看。混在同一张卡里，它们看着像同一类检查，
                      用户会以为「还有两项没成功」。 -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:layout_marginBottom="@dimen/space_6"
-                    android:paddingStart="@dimen/space_4"
-                    android:paddingEnd="@dimen/space_4"
-                    android:text="这两项系统读不到，要自己确认"
-                    android:textColor="@color/sub"
-                    android:textSize="11sp" />
-
+                <!-- v1.14.0：删掉中间那句「下面两项系统读不到，只能自己确认」。
+                     它和紧挨着的「自启动 · 系统读不到 · 点开自查」说的是同一件事，
+                     两行相隔 16dp，读者一眼看到两遍；分组也已经由两张卡分隔表达。
+                     省下 36dp，正是这一屏最缺的东西。 -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_16"
                     android:background="@drawable/bg_guide_perm"
                     android:orientation="vertical">
 
@@ -1149,9 +815,9 @@
         </ScrollView>
 
         <!-- ===================== 第 4 页：当场验一下 ===================== -->
-        <!-- v0.85.3：回到与前三页一致的顶部对齐。上一版以为「这页偏高」是留白问题，
-             改成垂直居中反而跟其他三页不统一——真正的原因是末页的「跳过」被设成 GONE、
-             顶栏塌了 44dp，内容整体上移。现在靠 INVISIBLE 留位解决，这里不动。 -->
+        <!-- v1.13.0：四页统一「顶部条 + 进度 + 步骤名 + 居中内容」。
+             v0.85.3 那次之所以从居中退回顶部对齐，根子是末页的「稍后设置」被设成 GONE、
+             顶栏塌了 44dp；现在顶栏是固定 48dp，四页起点天然一致，居中不再需要迁就谁。 -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -1161,47 +827,13 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
                 android:paddingStart="@dimen/space_24"
                 android:paddingEnd="@dimen/space_24"
                 android:paddingBottom="@dimen/space_8">
 
-                <FrameLayout
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="@dimen/space_6"
-                    android:background="@drawable/bg_guide_badge">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="试听"
-                        android:src="@drawable/ic_guide_bell" />
-                </FrameLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:gravity="center"
-                    android:text="当场听一声，再开始用"
-                    android:textColor="@color/ink"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:text="这些只是试一下，不占正式排班。"
-                    android:textColor="@color/sub"
-                    android:textSize="13sp" />
-
-                <LinearLayout
+                                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_16"
@@ -1244,6 +876,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/try_state_ring"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="试一次 ›"
@@ -1290,6 +923,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/try_state_lock"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="试一次 ›"
@@ -1339,6 +973,7 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/try_state_notify"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="发一条 ›"
@@ -1408,15 +1043,18 @@
 
     </ViewFlipper>
 
-    <!-- 页脚（v0.83.0）：两个方向键收到同一行。
-         原来「上一步」在顶栏左角、「下一步」在页脚右角，翻页时眼睛和手指要跑两趟。 -->
+    <!-- 页脚（v1.15.0 回到旧版）：左「上一步」、右胶囊主按钮。
+         上一版把「上一步」提到顶栏、主按钮拉通栏，看着像两行表单工具条。
+         旧版这一行才是引导页该有的样子：两个方向左右成对，主按钮只占右下角。
+         「上一步」在第 1 页没有可回的地方，用 invisible 占位——不能用 gone，
+         否则按钮会跟着往左挪，四页的位置就不一样了。 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="@dimen/space_16"
-        android:paddingTop="@dimen/space_10"
+        android:paddingStart="@dimen/space_24"
+        android:paddingTop="@dimen/space_12"
         android:paddingEnd="@dimen/space_24"
         android:paddingBottom="@dimen/space_20">
 
@@ -1424,32 +1062,32 @@
             android:id="@+id/btn_prev"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minHeight="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:paddingStart="@dimen/space_8"
-            android:paddingTop="@dimen/space_10"
-            android:paddingEnd="@dimen/space_8"
-            android:paddingBottom="@dimen/space_10"
+            android:gravity="center"
+            android:paddingStart="@dimen/space_4"
+            android:paddingEnd="@dimen/space_16"
             android:text="上一步"
             android:textColor="@color/sub"
             android:textSize="14sp"
             android:visibility="invisible" />
 
-        <View
+        <Space
             android:layout_width="0dp"
-            android:layout_height="1dp"
+            android:layout_height="0dp"
             android:layout_weight="1" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_next"
-            android:layout_width="wrap_content"
+            android:layout_width="124dp"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_guide_btn"
             android:minHeight="48dp"
-            android:minWidth="128dp"
-            android:paddingStart="@dimen/space_24"
-            android:paddingEnd="@dimen/space_24"
+            android:background="@drawable/bg_guide_btn_pill"
+            android:minWidth="0dp"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
             android:stateListAnimator="@null"
             android:text="下一步"
             android:textAllCaps="false"

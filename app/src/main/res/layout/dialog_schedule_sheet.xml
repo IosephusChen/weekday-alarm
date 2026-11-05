@@ -118,59 +118,10 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- 节假日开关（v1.9.2：只在「单条闹钟自己排班」时露出来）
-
-         原来的问题是同一个开关出现在三处：我的班表页、按周弹窗、轮班弹窗，
-         绑的是同一个 Prefs 值。更糟的是提交语义还不一样——班表页点一下立刻写盘，
-         弹窗里要按「确定」才算，按了「取消」白改。
-
-         现在只留给单条闹钟：{@code Alarm.cycleHoliday} 是这条闹钟自己的属性，
-         别处没有入口，砍了就再也设不了。全局那两个 Role 由
-         {@link io.github.iosephuschen.weekdayalarm.ScheduleSheet} 直接 GONE。 -->
-    <LinearLayout
-        android:id="@+id/row_holiday"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:background="@drawable/bg_dialog_row"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingTop="11dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="11dp">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="法定节假日放假"
-                android:textColor="@color/ink"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_holiday_hint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="春节、国庆自动标成「休」"
-                android:textColor="@color/sub"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <!-- SwitchCompat 而不是 <Switch>：只有它吃得到 SwitchKit 的 tint，
-             ROM 自带的「关 = 黑拇指」才不会把这一行画成整张卡里最重的元素。 -->
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/sw_holiday"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
+    <!-- v1.19.0：节假日开关这一整块删掉。它搬到「编辑闹钟」弹窗（dialog_alarm.xml）
+         的一级行，和「铃声」平级——原来藏在「自己排一周 → 自定义弹窗」里三层深。
+         读写的值仍是单条闹钟的 Alarm.cycleHoliday，Seed.holiday 照旧透传
+         （全局 CycleEditor 靠它写 Prefs），只是这张弹窗里不再摆第二个开关。 -->
 
     <!-- 结论条：一行字说清这张表上几天休几天。62 天的表不靠用户自己数。
          用 section_bg 而不是白卡——弹窗本身就是白的，白压白等于没有这一条。 -->
@@ -189,6 +140,18 @@
         android:textColor="@color/ink"
         android:textSize="12sp"
         android:textStyle="bold" />
+
+    <!-- v1.19.0 ⑥：只有「闹钟·按周」这一种 Role 用横排七格（一二三四五六日），
+         和引导页第一页「自定义」卡那七格同一套 bg_plan_day / plan_pick_text。
+         格子由 ScheduleSheet.buildWeekCells() 动态建，这里只留容器、默认 GONE：
+         轮班（最多 62 天）、全局周、ShiftCycleSheet 都还走下面的逐日列表。 -->
+    <LinearLayout
+        android:id="@+id/box_week_cells"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_10"
+        android:orientation="horizontal"
+        android:visibility="gone" />
 
     <!-- 逐天列表：最多 62 行，必须能滚。
          高度由 ScheduleSheet 按实际内容夹到 [1 行, 6 行]，7 天时不留空档。 -->

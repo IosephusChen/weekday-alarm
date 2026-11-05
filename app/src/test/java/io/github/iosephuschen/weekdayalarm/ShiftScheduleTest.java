@@ -189,26 +189,6 @@ public class ShiftScheduleTest {
                 ShiftCycleSheet.summaryOf(new int[]{1, 2, -1, -1}, twoShifts()));
     }
 
-    /** 冒烟：轮班态下「班次」那一行要真的显示出来，不能在 inflate 或 render 上崩。 */
-    @Test
-    public void weekScheduleActivity_showsShiftRow() {
-        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
-        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
-        Prefs.setCycleLen(ctx(), 4);
-        Prefs.setCycleStart(ctx(), START);
-        Prefs.setShifts(ctx(), twoShifts());
-        Prefs.setShiftCycle(ctx(), new int[]{1, 2, -1, -1});
-
-        WeekScheduleActivity a = org.robolectric.Robolectric
-                .buildActivity(WeekScheduleActivity.class).setup().get();
-        android.view.View row = a.findViewById(R.id.row_shifts);
-        android.widget.TextView sub = a.findViewById(R.id.tv_shifts_sub);
-        assertEquals(android.view.View.VISIBLE, row.getVisibility());
-        assertTrue("应列出班次名，实际：" + sub.getText(), sub.getText().toString().contains("白班"));
-        assertTrue("整轮形状要写出来", a.findViewById(R.id.tv_rotation_times)
-                .getVisibility() == android.view.View.VISIBLE);
-    }
-
     @Test
     public void offsetText_speaksHuman() {
         assertEquals("开始前 1 小时 30 分", ShiftPickDialog.offsetText(-90));

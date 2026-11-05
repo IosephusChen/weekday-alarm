@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 制度卡里胶囊 / 方块的文字色（v1.16.0）：选中 = 主色，未选 = 正文次色。
+
+     跟 bg_plan_chip / bg_plan_day 一样，靠 state_selected 切换，Java 里只调
+     setSelected()。两处（大周的 chip、自定义的七格）共用一份，免得一边紫一边灰。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/indigo" />
+    <item android:color="@color/sub" />
+</selector>

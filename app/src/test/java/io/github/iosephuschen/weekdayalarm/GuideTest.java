@@ -523,6 +523,12 @@ public class GuideTest {
         assertTrue("胶囊顶边要落在格子内（相对格子 >= 0），实际 " + badgeTop
                 + "——小于 0 就是又骑出格沿了", badgeTop >= 0);
         assertTrue("胶囊底边也不许越出格子", badgeTop + badge0.getHeight() <= cell0.getHeight());
+
+        // v1.22.2：6dp 在 7 列格宽下真机看着太贴，格顶提到 8dp。这里量的是
+        // 硬指标——胶囊顶到格顶上沿的净白，不是「看起来还行」。
+        int wantTop = Math.round(8 * a.getResources().getDisplayMetrics().density);
+        assertTrue("胶囊到格顶要留 8dp 呼吸（v1.22.2 真机反馈 6dp 偏挤），实际 "
+                + badgeTop + "px，应 >= " + wantTop + "px", badgeTop >= wantTop);
     }
 
     /** v1.20.2 静态守门：bg_cycle_cell 两态 solid 必须同引一个底色，不许又分叉。 */

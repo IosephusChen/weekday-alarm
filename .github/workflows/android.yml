@@ -57,7 +57,10 @@ jobs:
         run: ./gradlew testDebugUnitTest --console=plain --stacktrace
 
       - name: Lint
-        run: ./gradlew lint --console=plain --stacktrace
+        # 只查 debug + release 两个变体。2026-11-06 加了 preview 变体（本地看手感用），
+        # 聚合任务 lint 会把三个变体各扫一遍，白多几十秒；preview 的 fatal 问题由本地
+        # assemblePreview 自带的 lintVitalPreview 兜着，CI 不必重复。
+        run: ./gradlew lintDebug lintRelease --console=plain --stacktrace
 
       # 失败时也能看到报告：条数与 XML 结果一起上传，别让 CI 只给一个红叉
       - name: Upload test and lint reports

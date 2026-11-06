@@ -54,7 +54,8 @@
 - 发版前跑 `tools/release.sh --check`：它会校验五处文档版本一致、跑全量测试、跑 lint。
 - 全量测试偶发 exit 134 时，先删 `app/core.*` 和 `app/hs_err_pid*.log` 再重跑。
 - 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。
-  `github.com` 整个不通时别反复重试 `git push`，用 `tools/push_via_api.py`——走
+  **先试一次直连 `git push`**——`github.com` 不通只是 WorkBuddy 沙箱的现象，Trae / 本机
+  直连是通的（2026-11-06 跨端实测）。直连真超时了再用 `tools/push_via_api.py`：走
   `api.github.com`，逐对象校验 SHA，不碰 `github.com`。`HTTP/1.1` 那个旧结论是错的。
 
 ## 四、产品的边界：它是闹钟，不是考勤工具
@@ -256,10 +257,13 @@ WorkBuddy 手机端、Trae 桌面端、网页 agent、CI 会同时碰到同一�
 - **禁止拿「CI 绿了」当发版依据。** CI 只证明「代码自洽」，不证明「这一版被批准过」。
   批准的证据只有 `PLAN.md` 里那一行状态，而它由 `tools/release.sh` 强校验。
 
-### 换端开工前的三句话
+### 换端开工前的四步
 
 1. `git pull --rebase`，看 `HEAD` 是不是最新
-2. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
-3. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
+2. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
+   首次 commit 会直接失败；临时用 `GIT_AUTHOR_NAME=… GIT_AUTHOR_EMAIL=… git commit`
+   也成，但那个身份会永久留在提交历史里（PR #1 就这么留下过 `trae-solo-agent`）
+3. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
+4. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
 
-三步都过了再动第一行代码。
+四步都过了再动第一行代码。

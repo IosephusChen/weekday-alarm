@@ -5,8 +5,27 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      build_release:
+        description: '同时出正式包（用 Secrets 里的 keystore，产物只作为 artifact，不建 Release）'
+        type: boolean
+        default: false
 
 jobs:
+  # 2026-11-06：版本一致性的「裁判」。这套检查原本只内联在 tools/release.sh 里，
+  # 也就是只有「出包的那台机器」跑得到——Trae / 网页 agent 改完文档不会跑它，
+  # 于是同一套规则在别处等于不存在。现在 CI 独立跑一份，不依赖 Gradle，
+  # 十几秒出结果，坏了能在合并前就看见。
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version and docs consistency
+        run: python3 tools/check_version.py
+
   test:
     name: Unit tests + lint
     runs-on: ubuntu-latest
@@ -50,3 +69,74 @@ jobs:
             app/build/reports/tests/
             app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
+
+  # 手动触发才跑。两个作用：
+  #   1. 证明 Secrets 里的 keystore 是活的——不然等到真发版那天才发现解不出来
+  #   2. 不想动本机时，产一个带正式签名的包做验收
+  # 它**不建 Release、不打 tag、不改 version.json**：发布权仍只在本机那一端。
+  # 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
+  release:
+    name: Assemble signed APK
+    needs: [ version, test ]
+    if: github.event_name == 'workflow_dispatch' && inputs.build_release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Point Gradle wrapper to official distribution
+        run: sed -i 's|mirrors.cloud.tencent.com/gradle/|services.gradle.org/distributions/|' gradle/wrapper/gradle-wrapper.properties
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+
+      # keystore.properties 里写的是相对路径 ../weekdayalarm-release.jks，
+      # 所以 jks 必须落在仓库的上一级，和本地保持一致。
+      - name: Restore keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::KEYSTORE_BASE64 为空，Secrets 没配好"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > ../weekdayalarm-release.jks
+          ls -l ../weekdayalarm-release.jks
+
+      - name: Write keystore.properties
+        env:
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: |
+          {
+            echo "storeFile=../weekdayalarm-release.jks"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+
+      - name: Assemble release
+        run: ./gradlew assembleRelease --console=plain
+
+      # 没有 keystore 时 assembleRelease 照样 BUILD SUCCESSFUL，产物是 debug 签名的。
+      # 那种包能装、却不能覆盖线上版本——所以这一步不能省。
+      - name: Verify signature
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | head -4
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

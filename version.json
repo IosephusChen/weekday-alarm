@@ -1,13 +1,13 @@
 {
-  "versionCode": 291,
-  "versionName": "1.21.0",
+  "versionCode": 292,
+  "versionName": "1.22.0",
   "published": "2026-11-06",
-  "title": "三处「改了等于没改」",
+  "title": "轮班格子按天排，不再忽宽忽窄",
   "notes": [
-    "切去双休看一眼再切回轮班，原来排好的表还在",
-    "导入旧配置后回第一页改选，这次真会生效",
-    "删掉班次后保存，不会再把删掉的班次写回去"
+    "10 天一个轮班的格子，不再前 7 个窄、后 3 个宽",
+    "每格顶上带一枚周几胶囊，格内改写成「第 5 天」",
+    "今天换 2dp 紫色外框，人人都有胶囊时也能一眼找到"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.21.0/weekday-alarm-1.21.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.21.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.22.0/weekday-alarm-1.22.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.22.0"
 }

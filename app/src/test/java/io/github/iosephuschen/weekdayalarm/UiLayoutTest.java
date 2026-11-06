@@ -124,7 +124,11 @@ public class UiLayoutTest {
         java.util.List<Alarm> alarms = new java.util.ArrayList<>(Prefs.getAlarms(ctx()));
         assertFalse("预置闹钟不该是空的", alarms.isEmpty());
         Alarm first = alarms.get(0);
-        alarms.set(0, new Alarm(first.id, 7, 0, first.label, Alarm.Mode.WORKDAY, true));
+        // 用 DAILY 而不是 WORKDAY：这条测的是「改完时间，列表与顶部一致」，与今天
+        // 是周几无关。WORKDAY 在周六日会被渲染成「—」（今天休息），于是这条断言在
+        // 周末必红——2026-11-07（周六）实测，同一份代码在 UTC 周五绿、CST 周六红。
+        // 周末两天固定假红，等于把「CI 绿」这个判据每周停用 48 小时。
+        alarms.set(0, new Alarm(first.id, 7, 0, first.label, Alarm.Mode.DAILY, true));
         Prefs.setAlarms(ctx(), alarms);
 
         ctl.pause().resume();

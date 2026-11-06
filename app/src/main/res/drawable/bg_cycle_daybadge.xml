@@ -11,7 +11,10 @@
 
      胶囊高度只有「9sp 字 + 上下各 1dp」≈ 14dp，圆角走 radius_chip(10dp)
      已经接近全圆，和 bg_cycle_today 同一档，两枚胶囊外形一致、只有轻重不同。
-     DesignTokenTest 要求形状圆角只用七档 token。 -->
+     DesignTokenTest 要求形状圆角只用七档 token。
+
+     v1.22.1：胶囊从骑沿改为格内第一层，底色压的是纯白格底（以前压在淡紫卡片上），
+     淡靛底 + 细边在白底上更容易分辨，配色不用动。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="@color/cycle_badge_bg" />

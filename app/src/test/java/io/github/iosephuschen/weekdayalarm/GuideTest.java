@@ -407,12 +407,13 @@ public class GuideTest {
      * 所以这里同时钉住：恰好一格 selected；该格胶囊用实心底（字色 {@code card}），
      * 其余格用淡靛底（字色 {@code indigo}）——两种底色不能一样，否则今天淹没在表里。
      *
-     * <p>历史约束照旧：四格统一格底（bg_cycle_cell 两态同 solid）、格内严格两层
-     * （第 N 天 + 班次色块）、胶囊挂在 slot 上而不塞进 content。v1.20.2 那三条
-     * 真机返工过的坑，一条都不许退回去。
+     * <p>历史约束照旧：四格统一格底（bg_cycle_cell 两态同 solid）；v1.22.1 起格内
+     * 三层（胶囊 + 第 N 天 + 班次色块）——胶囊不再骑在格沿上，见下面
+     * {@code rotation_cycleCells_badgeInsideCell}。v1.20.2 那三条真机返工过的坑，
+     * 一条都不许退回去。
      */
     @Test
-    public void rotation_cycleCells_unifiedGroundAndFloatingBadge() {
+    public void rotation_cycleCells_unifiedGroundAndBadgeInCell() {
         wipe();
         seedRotation();
         GuideActivity a = launch();
@@ -441,13 +442,13 @@ public class GuideTest {
             else assertEquals("四格底色同一种 drawable",
                     firstGround.getClass(), ground.getClass());
 
-            // ② 格内严格两层，且胶囊不占 content
+            // ② 格内三层：胶囊 + 第 N 天 + 班次色块（v1.22.1 胶囊进格）
             ViewGroup content = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CONTENT);
-            assertNotNull("第 " + i + " 格要有两层内容层", content);
-            assertEquals("content 恰好「第 N 天」+ 班次色块两层", 2, content.getChildCount());
+            assertNotNull("第 " + i + " 格要有内容层", content);
+            assertEquals("content 恰好「周X 胶囊 + 第 N 天 + 班次色块」三层",
+                    3, content.getChildCount());
             assertNotNull("要有第 N 天标签", content.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK));
             assertNotNull("要有班次色块", content.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
-            assertNull("周X 胶囊不该塞进格内", content.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE));
 
             // ① 每格都要有胶囊，且文案是周X
             View badge = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
@@ -456,7 +457,7 @@ public class GuideTest {
             String badgeText = ((TextView) badge).getText().toString();
             assertTrue("胶囊文案应是周X，实际：" + badgeText,
                     badgeText.matches("周[一二三四五六日]"));
-            assertSame("胶囊挂在 slot 上、与格子本体平级（骑在格沿）", slot, badge.getParent());
+            assertSame("胶囊收在格内（content 第一层），不再骑在格沿上", content, badge.getParent());
 
             boolean selected = cell.isSelected();
             if (selected) {
@@ -478,6 +479,50 @@ public class GuideTest {
                         + "胶囊人人都有之后，今天只能靠这两条区分",
                 todayBadgeColor != otherBadgeColor);
         assertEquals("「第 1 天」锚点胶囊不动", "第 1 天", text(a, R.id.tv_plan_start));
+    }
+
+    /**
+     * v1.22.1：胶囊收进格内，不再骑在格沿上。
+     *
+     * <p>v1.22.0 让每格都挂胶囊，却沿用了 v1.20.2 给「今天专属角标」写的骑沿结构——
+     * 胶囊挂在 slot 上、压住格子上沿。用户 2026-11-06 19:5x 发来真机图（19 天周期），
+     * 后果很清楚：普通格白卡的上沿被咬开一口；今天那格更糟——2dp 紫框和实心紫胶囊
+     * 同色相连，框顶边整个被吃掉，整格看着像个「烧瓶」。
+     *
+     * <p>每格都有胶囊之后，骑沿唯一的理由（角标要跳出来）已经不存在，于是把胶囊
+     * 收进 content 第一层：格子上沿恢复成一条完整圆弧，紫框四角都在。
+     */
+    @Test
+    public void rotation_cycleCells_badgeInsideCell() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        LinearLayout box = a.findViewById(R.id.box_plan_cycle_days);
+        LinearLayout row = (LinearLayout) box.getChildAt(0);
+        for (int i = 0; i < row.getChildCount(); i++) {
+            ViewGroup slot = (ViewGroup) row.getChildAt(i);
+            ViewGroup content = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CONTENT);
+            View badge = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
+            assertNotNull("第 " + i + " 格要有内容层", content);
+            assertNotNull("第 " + i + " 格要有胶囊", badge);
+            assertSame("胶囊要收进格内（content 里），不许再骑在格沿上——骑沿会把格子"
+                    + "上沿咬开一口，今天那格连紫框顶边都看不见", content, badge.getParent());
+            assertSame("胶囊排在格内第一层，压在「第 N 天」上面", badge, content.getChildAt(0));
+        }
+
+        box.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        box.layout(0, 0, 1080, box.getMeasuredHeight());
+
+        ViewGroup slot0 = (ViewGroup) row.getChildAt(0);
+        View cell0 = slot0.findViewWithTag(PlanCardsView.TAG_CYCLE_CELL);
+        ViewGroup content0 = slot0.findViewWithTag(PlanCardsView.TAG_CYCLE_CONTENT);
+        View badge0 = slot0.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
+        int badgeTop = content0.getTop() + badge0.getTop();
+        assertTrue("胶囊顶边要落在格子内（相对格子 >= 0），实际 " + badgeTop
+                + "——小于 0 就是又骑出格沿了", badgeTop >= 0);
+        assertTrue("胶囊底边也不许越出格子", badgeTop + badge0.getHeight() <= cell0.getHeight());
     }
 
     /** v1.20.2 静态守门：bg_cycle_cell 两态 solid 必须同引一个底色，不许又分叉。 */

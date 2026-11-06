@@ -297,6 +297,24 @@ commit message 以 `release:` 开头并推到 main，CI 直接在同一个 test 
 **CI 仍然只产 artifact**：tag、Release、`version.json` 由本机做。发布权只在一个端手里，
 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
 
+#### 文档提交不跑全量（2026-11-07）
+
+push 时先 `git diff` 出这次改了哪些文件：全在 `docs/` 或根目录 `.md` 里，就只跑
+`DocsConsistencyTest`，八十来秒降到二十几秒。判定保守到近乎笨——拿不到 base commit
+（dispatch / force push / 新建分支）、diff 为空、或者有一个文件不在白名单里，一律走全量。
+所以「改完文档顺手改一行代码」的提交仍会跑全量，别指望它偷懒。
+
+checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` 那个对象，
+`git cat-file` 必然失败，判断会永远退化成全量。仓库 7MB，全克隆几秒。
+
+同一轮还试了两件没成的事，别再试：
+
+- `-XX:TieredStopAtLevel=1` 省 JIT：13 条测试挂在 `Out of space in CodeCache for
+  adapters`，整轮 77 秒涨到 122 秒。Robolectric 的沙箱 classloader 要编的类太多，C1 装不下。
+- `maxParallelForks=4`：Robolectric 每个 fork 要独立初始化 android-all（5~10 秒固定
+  开销），117 个类平均每类 9 条用例，测试太短，并行净亏（1m40s vs 1m15s）。
+
+
 
 ### 规则文件的单一真相源
 

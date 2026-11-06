@@ -287,11 +287,12 @@ public class GuideTest {
 
         LinearLayout days = a.findViewById(R.id.box_plan_cycle_days);
         LinearLayout row = (LinearLayout) days.getChildAt(0);
-        LinearLayout cell = (LinearLayout) row.getChildAt(0);
-        TextView shiftBefore = cell.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT);
+        // v1.20.2：每格外层是 slot(FrameLayout)，承载骑沿角标；findViewWithTag 递归取格内班次。
+        ViewGroup slot = (ViewGroup) row.getChildAt(0);
+        TextView shiftBefore = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT);
         assertEquals("第一格原本是白班", "白", shiftBefore.getText().toString());
 
-        cell.performClick();
+        slot.performClick();
         ShadowLooper.idleMainLooper();
 
         android.app.Dialog d = org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
@@ -315,7 +316,7 @@ public class GuideTest {
         ShadowLooper.idleMainLooper();
 
         LinearLayout daysAgain = a.findViewById(R.id.box_plan_cycle_days);
-        LinearLayout redrawn = (LinearLayout) ((LinearLayout) daysAgain.getChildAt(0)).getChildAt(0);
+        ViewGroup redrawn = (ViewGroup) ((LinearLayout) daysAgain.getChildAt(0)).getChildAt(0);
         TextView shiftAfter = redrawn.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT);
         assertEquals("选中夜班后这一格应写「夜」", "夜", shiftAfter.getText().toString());
     }
@@ -343,6 +344,170 @@ public class GuideTest {
             assertNotNull("格子要有班次名", c.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
         }
         assertEquals("今天第几天胶囊要保留、文案不动", "第 1 天", text(a, R.id.tv_plan_start));
+    }
+
+    /**
+     * v1.20.2（真机逐像素比对收尾）：四格统一底色、格内严格两层、「今天」是骑沿角标。
+     *
+     * <p>用户 07:45 指出「今天格子里背景是黑的，其他格子是灰的」——根因是
+     * {@code bg_plan_day} 的 selected 换底。这里从 View 树钉住：四格同一两态 selector、
+     * 恰好一格 selected 且与角标同格、content 恰好两层（周X + 班次色块，无角标占位行）、
+     * 今天格那枚「今天」在 slot 上而不在格内；两态 solid 同色另由静态守门读 XML 钉死。
+     * 防止有人图省事又退回 INVISIBLE 占位或 selected 换底。
+     */
+    @Test
+    public void rotation_cycleCells_unifiedGroundAndFloatingBadge() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+
+        LinearLayout row = (LinearLayout) ((ViewGroup) a.findViewById(
+                R.id.box_plan_cycle_days)).getChildAt(0);
+        Drawable firstGround = null;
+        int badgeCount = 0, selectedCount = 0;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            ViewGroup slot = (ViewGroup) row.getChildAt(i);
+            View cell = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CELL);
+            assertNotNull("第 " + i + " 格要有格子本体", cell);
+
+            // ③ 四格统一底色：都用同一个两态 selector（bg_cycle_cell）。
+            // 不比 constantState 对象身份——Robolectric 下每格各自 inflate 一个新实例，
+            // 真机有资源缓存反而同一对象，拿身份判会随环境翻脸。这里钉「同类」+「恰好
+            // 一格 selected 且与角标同格」；「两态 solid 同色」由下面那条静态守门读 XML 钉死。
+            Drawable ground = cell.getBackground();
+            assertNotNull("第 " + i + " 格要有底色", ground);
+            assertTrue("底色应是两态 selector（bg_cycle_cell），不是纯色块",
+                    ground instanceof android.graphics.drawable.StateListDrawable);
+            if (firstGround == null) firstGround = ground;
+            else assertEquals("四格底色同一种 drawable",
+                    firstGround.getClass(), ground.getClass());
+
+            // ② 格内严格两层，且角标不占 content
+            ViewGroup content = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CONTENT);
+            assertNotNull("第 " + i + " 格要有两层内容层", content);
+            assertEquals("content 恰好周X + 班次色块两层", 2, content.getChildCount());
+            assertNotNull("要有周X 标签", content.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK));
+            assertNotNull("要有班次色块", content.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
+            assertNull("「今天」角标不该塞进格内",
+                    content.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE));
+
+            boolean selected = cell.isSelected();
+            if (selected) selectedCount++;
+            View badge = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
+            if (badge != null) {
+                badgeCount++;
+                assertEquals("骑沿角标文案", "今天", ((TextView) badge).getText().toString());
+                assertSame("角标挂在 slot 上、与格子本体平级（骑在格沿）",
+                        slot, badge.getParent());
+                assertTrue("有角标的格子才是今天（selected）", selected);
+            }
+        }
+        assertEquals("一周期里恰好一枚「今天」角标", 1, badgeCount);
+        assertEquals("恰好一格 selected（今天）——selected 只管描边，不许再拿它换底色",
+                1, selectedCount);
+        assertEquals("「第 1 天」锚点胶囊不动", "第 1 天", text(a, R.id.tv_plan_start));
+    }
+
+    /** v1.20.2 静态守门：bg_cycle_cell 两态 solid 必须同引一个底色，不许又分叉。 */
+    @Test
+    public void rotation_cycleCellSelector_twoStatesShareOneSolidColor() throws Exception {
+        String xml = new String(Files.readAllBytes(new File(
+                "src/main/res/drawable/bg_cycle_cell.xml").toPath()), StandardCharsets.UTF_8);
+        Matcher m = Pattern.compile("<solid android:color=\"@color/([a-z_]+)\"").matcher(xml);
+        List<String> colors = new ArrayList<>();
+        while (m.find()) colors.add(m.group(1));
+        assertEquals("selector 应有两个状态各一个 solid", 2, colors.size());
+        assertEquals("两态 solid 必须同引一个底色（今天不换底、四格统一）",
+                colors.get(0), colors.get(1));
+        assertEquals("底色应是专用的 cycle_cell_bg", "cycle_cell_bg", colors.get(0));
+    }
+
+    /**
+     * v1.20.3 静态守门：格子细边必须用自己的 token，不许再借「休」胶囊的 pill_rest_stroke。
+     *
+     * <p>为什么非要拆：pill_rest_stroke 夜里是 #2A2E47，压在选中卡片(#2A2350)上比卡片还暗，
+     * 整条 1dp 边直接被吃掉——真机 1000110845 里四格连轮廓都没有，就是这么来的。
+     * 同一个值还要给「休」胶囊当边（压在 rest_cell_bg #343956 上，那边要求"比格底深一档"），
+     * 一个方向朝下、一个方向朝上，一个名字管不了两头。
+     */
+    @Test
+    public void rotation_cycleCellStroke_isOwnToken() throws Exception {
+        String xml = new String(Files.readAllBytes(new File(
+                "src/main/res/drawable/bg_cycle_cell.xml").toPath()), StandardCharsets.UTF_8);
+        assertTrue("默认态细边应引专用的 cycle_cell_stroke",
+                xml.contains("@color/cycle_cell_stroke"));
+        assertFalse("不许再借 pill_rest_stroke——那个值在夜里比卡片还暗，边会整条消失",
+                xml.contains("@color/pill_rest_stroke"));
+    }
+
+    /**
+     * v1.20.3 守门：选中卡片底不许比轮班格底亮出一大截。
+     *
+     * <p>真机 1000110845 的根因正是这个——卡片 #2A2350 比格底 #1C1F35 亮 14 级，
+     * 四格塌成卡片里的暗洞，班次块又与卡片同色连成一片。按感知亮度
+     * （0.2126R + 0.7152G + 0.0722B）卡 5 分：现值 #232038 对 #1C1F35 只差 2.4，
+     * 旧值 #2A2350 差 7.7，会被这条挡下。
+     */
+    @Test
+    public void rotation_selectedCardGround_sinksBelowCell() throws Exception {
+        double card = luminance(colorFrom("src/main/res/values-night/colors.xml",
+                "guide_option_selected"));
+        double cell = luminance(colorFrom("src/main/res/values-night/colors.xml",
+                "cycle_cell_bg"));
+        assertTrue("选中卡片底(" + card + ")比格底(" + cell + ")亮太多：格子会塌成暗洞，"
+                        + "描边也会被吃掉（上限 5 分）",
+                card - cell <= 5);
+    }
+
+    /** v1.20.3：班次块下方要比上方松一档，别贴着格底往下坠。 */
+    @Test
+    public void rotation_cycleCell_bottomPaddingWiderThanTop() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+        LinearLayout row = (LinearLayout) ((ViewGroup) a.findViewById(
+                R.id.box_plan_cycle_days)).getChildAt(0);
+        View cell = ((ViewGroup) row.getChildAt(0))
+                .findViewWithTag(PlanCardsView.TAG_CYCLE_CELL);
+        assertNotNull("第 0 格要有格子本体", cell);
+        assertTrue("格内下方留白要比上方宽——块别贴着格底",
+                cell.getPaddingBottom() > cell.getPaddingTop());
+    }
+
+    /**
+     * v1.20.4 守门：浅色格底必须接近白，且描边能勾出轮廓。
+     *
+     * <p>用户装了 v1.20.3 发来浅色真机图（1000110850），原话「格子底色灰灰的不好看」：
+     * 采样坐实格底是 #E2E6F2——低饱和灰蓝，压在同亮度的淡紫卡片(#EEF0FE)上直接发脏；
+     * 「班」块 #E7EAFE 与「休」块 #E2E6F2 又都跟格底几乎同亮度，四格糊成一片灰。
+     * 这里钉两件事：格底够白（>0.97），描边比格底深、但别深成一根硬线。
+     */
+    @Test
+    public void rotation_cycleCellLight_cleanGroundWithVisibleStroke() throws Exception {
+        int bg = colorFrom("src/main/res/values/colors.xml", "cycle_cell_bg");
+        int st = colorFrom("src/main/res/values/colors.xml", "cycle_cell_stroke");
+        double bgLum = luminance(bg) / 255.0;
+        assertTrue("浅色格底要接近纯白（现在 " + String.format(java.util.Locale.US, "%.3f", bgLum)
+                + "）——灰蓝底压在淡紫卡上会显脏", bgLum > 0.97);
+        assertTrue("描边要比格底深，否则白格没有轮廓", luminance(st) < luminance(bg));
+        assertTrue("但别深成一根硬线", luminance(bg) - luminance(st) < 40);
+    }
+
+    /** 读 colors.xml 里某个 color 的 RGB（不含 alpha）。 */
+    private static int colorFrom(String path, String name) throws Exception {
+        String xml = new String(Files.readAllBytes(new File(path).toPath()),
+                StandardCharsets.UTF_8);
+        Matcher m = Pattern.compile("<color name=\"" + Pattern.quote(name)
+                + "\">#([0-9A-Fa-f]{6})</color>").matcher(xml);
+        assertTrue(path + " 里应有 color " + name, m.find());
+        return Integer.parseInt(m.group(1), 16);
+    }
+
+    /** 感知亮度：三条通道按人眼敏感度加权，用来比"谁更亮一档"。 */
+    private static double luminance(int rgb) {
+        return 0.2126 * ((rgb >> 16) & 0xFF)
+                + 0.7152 * ((rgb >> 8) & 0xFF)
+                + 0.0722 * (rgb & 0xFF);
     }
 
     /**

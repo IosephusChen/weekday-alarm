@@ -30,10 +30,16 @@
     <color name="float_card_icon">#FFFFFF</color>
     <color name="float_btn_outline_bg">#1FFFFFFF</color>
     <color name="float_btn_outline_line">#59FFFFFF</color>
-    <!-- 引导页选中项：同色相压暗，配 ink（近白）对比度约 9:1 -->
-    <color name="guide_option_selected">#2A2350</color>
+    <!-- 引导页 / 班表卡选中项：比 card(#1C1F35) 亮一档的靛蓝灰，配 ink（近白）对比约 9:1。
+         v1.20.3：原来取 #2A2350，比轮班格底(#1C1F35) 和格子描边(#2A2E47) 都亮——
+         真机（1000110845）逐像素采样坐实：选中轮班卡时四格塌成暗洞、1dp 描边整条被吃掉、
+         格内班次块(#2A2350) 与卡片同色连成一片。压到 #232038 后卡片与格底同档，
+         格子重新靠描边浮起来；选中感交给 1.5dp indigo 描边，不再靠"整卡发紫"。 -->
+    <color name="guide_option_selected">#232038</color>
     <!-- 「改排班模式」入口（v1.11.4）：与 guide_option_selected 同一档，
-         配 @color/indigo(#818CF8) 的字与箭头，对比约 4.7:1。 -->
+         配 @color/indigo(#818CF8) 的字与箭头，对比约 4.7:1。
+         v1.20.3 不跟 guide_option_selected 一起压暗：它是一块"可点的入口条"，
+         压在 card 上要比四周亮一点才像个按钮，同屏出现时也不会被误读成选中卡片。 -->
     <color name="action_bg">#2A2350</color>
     <color name="action_line">#4A4380</color>
     <color name="white">#FFFFFFFF</color>
@@ -96,6 +102,15 @@
          休格要比 card(#1C1F35) 亮一档、又别亮过 line(#2A2E47) 太多——
          它是一块「关着的格子」，不是又一根分隔线。 -->
     <color name="rest_cell_bg">#343956</color>
+    <!-- 轮班格子统一底（v1.20.2）：夜间对齐丙效果图的近黑 #1D1F33，取 card 同值。
+         真机 v1.20.1 的今天格是 card(#1C1F35 黑)、其他格是 rest_cell_bg(#343956 灰)，
+         用户指出「今天格背景是黑的，其他格子是灰的」——这里让四格都回到近黑。 -->
+    <color name="cycle_cell_bg">#1C1F35</color>
+    <!-- 轮班格子的细边（v1.20.3）：夜里格子靠它显形，不能借 pill_rest_stroke(#2A2E47)。
+         那个值只比格底亮 5 级、又比卡片暗——压在选中卡片上直接消失（真机采样坐实）。
+         取 #353A59：比格底亮约 26 级，在 card 与 #232038 上都勾得出来，
+         又比 line(#2A2E47) 克制，不至于让四格看着像四根分隔线。 -->
+    <color name="cycle_cell_stroke">#353A59</color>
     <color name="verdict_bg">#2A2350</color>
 
     <!-- 「班」胶囊的底：与结论条同值，夜间 #818CF8 压上去 4.9:1 -->

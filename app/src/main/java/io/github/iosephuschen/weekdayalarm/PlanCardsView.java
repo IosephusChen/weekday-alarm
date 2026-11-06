@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -310,6 +311,10 @@ final class PlanCardsView {
     /** 供单测定位格子里的「周X」标签与班次名（v1.20.0）。 */
     static final String TAG_CYCLE_WEEK = "cycleWeek";
     static final String TAG_CYCLE_SHIFT = "cycleShift";
+    /** v1.20.2：格子本体、两层内容层、今天格骑沿角标，供单测定位。 */
+    static final String TAG_CYCLE_CELL = "cycleCell";
+    static final String TAG_CYCLE_CONTENT = "cycleContent";
+    static final String TAG_CYCLE_BADGE = "cycleBadge";
 
     /**
      * 轮班第三行：每天上什么班。
@@ -323,18 +328,30 @@ final class PlanCardsView {
      *
      * <p>v1.20.1（① 对齐丙效果图）：把班次名从裸文字改成**独立圆角色块**——
      * 复用「N 天一轮」表的班 / 休胶囊 token（bg_state_work / bg_state_rest），
-     * 上班淡靛底 indigo 字、休灰底 body 字；「今天」从格子内第一行裸字改成
-     * bg_tag_today 胶囊角标。这两处是 v1.20.0 真机与丙定稿图最明显的差异：
-     * 效果图的班次是「一块」，不是三段堆叠的文字。颜色沿用 App 自身浅色主题，
+     * 上班淡靛底 indigo 字、休灰底 body 字。颜色沿用 App 自身主题语义色，
      * 不照搬效果图深色主题的实心紫（paintPill 当年特意从实心退成浅底，别改回去）。
+     *
+     * <p>v1.20.2（真机逐像素比对后收尾）：三处一起改——
+     * ①「今天」改成**骑在格子上沿外侧**的填充胶囊（bg_cycle_today 实心 indigo + 反差字），
+     *   v1.20.1 用的 bg_tag_today 在深色格底上几乎同色、胶囊根本显不出形；
+     * ② 格子内回到**两层**（周X 标签 + 班次色块），不再为角标留 INVISIBLE 占位行；
+     * ③ 四格**统一底色**（bg_cycle_cell 两态同引 cycle_cell_bg），今天只靠 1.5dp 描边 +
+     *   骑沿角标区分——原 bg_plan_day 的 selected 换底让深色下「今天黑、其他灰」。
+     *
+     * <p>结构：每格一个 {@code slot(FrameLayout)}，顶部预留半枚角标高度；格子本体
+     * {@code cell} 从预留线起画、{@code badge} 压在格沿与之重叠一半。二者都完全落在
+     * slot 边界内——不靠负 margin 画到祖先容器外，避免真机被层层 clipChildren 裁掉。
+     * 四格 slot 同高、cell 同起点，周X 严格齐平；非今天格只是少一枚 badge，不留空行。
      */
     private void renderCycleDays() {
         if (boxPlanCycleDays == null) return;
         boxPlanCycleDays.removeAllViews();
+        boxPlanCycleDays.setClipChildren(false);
         List<Shift> shifts = Prefs.getShifts(act);
         int len = Math.max(1, draft.cycleLen);
         int[] cycle = draft.cycleShiftIds(len);
         int gap = dp(6);
+        int badgeReserve = dp(9);   // slot 顶部为「今天」胶囊让出的高度（约半枚）
         LocalDate start = draft.cycleStart != null ? draft.cycleStart : LocalDate.now();
         int todayIdx = todayIndexInCycle() - 1;   // 0 起：今天落在周期第几格
         LinearLayout row = null;
@@ -342,6 +359,7 @@ final class PlanCardsView {
             if (i % 7 == 0) {
                 row = new LinearLayout(act);
                 row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setClipChildren(false);
                 LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -350,32 +368,39 @@ final class PlanCardsView {
             }
             final boolean isToday = (i == todayIdx);
 
-            LinearLayout cell = new LinearLayout(act);
-            cell.setOrientation(LinearLayout.VERTICAL);
-            cell.setGravity(Gravity.CENTER_HORIZONTAL);
-            cell.setBackgroundResource(R.drawable.bg_plan_day);
-            cell.setSelected(isToday);           // 今天：白底 + indigo 描边
-            cell.setClickable(true);
-            cell.setFocusable(true);
-            cell.setMinimumHeight(dp(58));   // LinearLayout 没有 setMinHeight，用 View 的下限
-            cell.setPadding(0, dp(4), 0, dp(5));
+            // slot：一格的完整边界，承载格子本体 + 骑沿角标；点击落在这里。
+            FrameLayout slot = new FrameLayout(act);
+            slot.setClipChildren(false);
+            slot.setClickable(true);
+            slot.setFocusable(true);
             final int day = i;
-            cell.setOnClickListener(v -> cycleNextShift(day));
+            slot.setOnClickListener(v -> cycleNextShift(day));
 
-            // 「今天」胶囊角标：复用列表页那枚小标签（bg_tag_today）。
-            // 非今天用 INVISIBLE 占位，保持所有格子等高。
-            TextView badge = new TextView(act);
-            badge.setText("今天");
-            badge.setTextSize(9);
-            badge.setTypeface(null, android.graphics.Typeface.BOLD);
-            badge.setTextColor(ContextCompat.getColor(act, R.color.indigo));
-            badge.setBackgroundResource(R.drawable.bg_tag_today);
-            badge.setGravity(Gravity.CENTER);
-            badge.setVisibility(isToday ? View.VISIBLE : View.INVISIBLE);
-            LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            cell.addView(badge, badgeLp);
+            // cell：格子本体。四格统一底色，今天仅描边加粗（bg_cycle_cell selected 态）。
+            // topMargin = badgeReserve 让出角标空间；四格起点一致 → 周X 齐平。
+            FrameLayout cell = new FrameLayout(act);
+            cell.setBackgroundResource(R.drawable.bg_cycle_cell);
+            cell.setSelected(isToday);
+            cell.setMinimumHeight(dp(58));
+            // 上下留白不对称（v1.20.3）：效果图里班次块下方比上方松一档，
+            // v1.20.2 上下都 5dp，真机看块像贴着格底往下坠。下方给到 7dp。
+            cell.setPadding(0, dp(5), 0, dp(7));
+            cell.setTag(TAG_CYCLE_CELL);
+            FrameLayout.LayoutParams cellLp = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT);
+            cellLp.topMargin = badgeReserve;
+            slot.addView(cell, cellLp);
+
+            // content：格内严格两层——周X 标签 + 班次色块，不再含角标占位。
+            LinearLayout content = new LinearLayout(act);
+            content.setOrientation(LinearLayout.VERTICAL);
+            content.setGravity(Gravity.CENTER_HORIZONTAL);
+            content.setTag(TAG_CYCLE_CONTENT);
+            FrameLayout.LayoutParams contentLp = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT);
+            cell.addView(content, contentLp);
 
             // 「周X」标签：一律两字，不写第 N 天
             TextView week = new TextView(act);
@@ -386,10 +411,9 @@ final class PlanCardsView {
                     isToday ? R.color.indigo : R.color.sub));
             if (isToday) week.setTypeface(null, android.graphics.Typeface.BOLD);
             week.setTag(TAG_CYCLE_WEEK);
-            cell.addView(week, wrapLp());
+            content.addView(week, wrapLp());
 
-            // 班次色块：独立圆角块（丙效果图），复用班 / 休胶囊 token。
-            // 不再是一行裸文字——上班淡靛底 indigo 字，休灰底 body 字。
+            // 班次色块：独立圆角块（v1.20.1 丙），复用班 / 休胶囊 token，一个字不动。
             Shift sh = findShift(shifts, cycle[i]);
             TextView t = new TextView(act);
             t.setText(sh == null ? "休" : shortName(sh.name));
@@ -406,12 +430,32 @@ final class PlanCardsView {
             shiftLp.setMarginStart(dp(6));
             shiftLp.setMarginEnd(dp(6));
             t.setPadding(0, dp(3), 0, dp(3));
-            cell.addView(t, shiftLp);
+            content.addView(t, shiftLp);
+
+            // 今天格：骑沿胶囊与 cell 平级、压在格子上沿（后加 → 绘制在上层）。
+            // 完全落在 slot 内，不需要祖先关闭裁剪。字色用 card：浅色主题下是白、
+            // 深色主题下是近黑，两套都能压在实心 indigo 底上读出。
+            if (isToday) {
+                TextView badge = new TextView(act);
+                badge.setText("今天");
+                badge.setTextSize(9);
+                badge.setTypeface(null, android.graphics.Typeface.BOLD);
+                badge.setTextColor(ContextCompat.getColor(act, R.color.card));
+                badge.setBackgroundResource(R.drawable.bg_cycle_today);
+                badge.setGravity(Gravity.CENTER);
+                badge.setPadding(dp(7), dp(1), dp(7), dp(1));
+                badge.setTag(TAG_CYCLE_BADGE);
+                FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+                slot.addView(badge, badgeLp);
+            }
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i % 7 > 0) lp.setMarginStart(gap);
-            row.addView(cell, lp);
+            row.addView(slot, lp);
         }
     }
 

@@ -51,11 +51,14 @@
 
 ## 下载
 
-**v1.20.1（2026-11-06）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.20.1/weekday-alarm-1.20.1.apk)
+**v1.20.2（2026-11-06）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.20.2/weekday-alarm-1.20.2.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
+
+> 仓库内当前在研版本为 **v1.20.4**（290），只在本地出包、尚未发布到 Releases——下载请以上面这条
+> 已发布的 v1.20.2 为准，等 v1.20.3 真发了这里再换链接。
 
 ### 安装时可能看到这个弹窗
 

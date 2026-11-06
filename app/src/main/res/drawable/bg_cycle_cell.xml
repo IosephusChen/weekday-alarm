@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 轮班格子统一底（v1.20.2）。
+
+     和 bg_plan_day.xml 的区别：那个 selector 的 selected 态会**换底色**
+     （card：浅色白 / 深色 #1C1F35 近黑），默认态是 rest_cell_bg（浅色灰 / 深色 #343956），
+     于是在深色主题下「今天格黑、其他三格灰」。用户 2026-11-06 07:45 逐格比对指出
+     丙效果图里四格是同一个底色，今天只靠描边 + 骑在格沿的「今天」角标区分。
+
+     bg_plan_day 被三处复用：轮班格子、引导页「自定义」七格、闹钟弹层「自定义」七格，
+     后两者正是靠 selected 换底色区分「选中 = 上班」，改公共 selector 会把它们一起弄坏。
+     所以这里单独给轮班格子配一套：**两态 solid 同引 @color/cycle_cell_bg，只有描边不同**。
+
+     selected（今天）1.5dp indigo 描边；默认 1dp cycle_cell_stroke 细边勾出格子轮廓。
+     圆角走 radius_chip，DesignTokenTest 要求形状只用七档 token。
+
+     v1.20.3：默认边从 pill_rest_stroke 换成专用 cycle_cell_stroke——
+     真机采样发现 #2A2E47 压在选中卡片(#2A2350)上比卡片还暗，整条边被吃掉，
+     四格连轮廓都没有（用户 2026-11-06 08:41 真机图 1000110845 就是这症状）。
+     日间值不变，夜间提到 #353A59。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/cycle_cell_bg" />
+            <stroke
+                android:width="1.5dp"
+                android:color="@color/indigo" />
+            <corners android:radius="@dimen/radius_chip" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/cycle_cell_bg" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/cycle_cell_stroke" />
+            <corners android:radius="@dimen/radius_chip" />
+        </shape>
+    </item>
+</selector>

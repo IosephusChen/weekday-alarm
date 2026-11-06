@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(292, "1.22.0", "2026/11/06", "轮班格子按天排，不再忽宽忽窄",
+                    "10 天一个轮班的格子，不再前 7 个窄、后 3 个宽",
+                    "每格顶上带一枚周几胶囊，格内改写成「第 5 天」",
+                    "今天换 2dp 紫色外框，人人都有胶囊时也能一眼找到"),
             new Entry(291, "1.21.0", "2026/11/06", "三处「改了等于没改」",
                     "切去双休看一眼再切回轮班，原来排好的表还在",
                     "导入旧配置后回第一页改选，这次真会生效",

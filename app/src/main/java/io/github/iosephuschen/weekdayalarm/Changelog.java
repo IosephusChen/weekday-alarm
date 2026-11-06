@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(294, "1.22.2", "2026/11/06", "胶囊上下多留一点白",
+                    "周几胶囊到格子上沿从 6dp 加到 8dp，不再像贴着卡沿",
+                    "格子下方同步加到 9dp，班次块照旧不会贴底"),
             new Entry(293, "1.22.1", "2026/11/06", "周几胶囊收进格子",
                     "胶囊从骑在格沿改成放进格内，白格上沿恢复成完整圆弧",
                     "今天的紫框不再被实心胶囊盖掉顶边，四个角都看得见",

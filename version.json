@@ -1,13 +1,12 @@
 {
-  "versionCode": 293,
-  "versionName": "1.22.1",
+  "versionCode": 294,
+  "versionName": "1.22.2",
   "published": "2026-11-06",
-  "title": "周几胶囊收进格子",
+  "title": "胶囊上下多留一点白",
   "notes": [
-    "胶囊从骑在格沿改成放进格内，白格上沿恢复成完整圆弧",
-    "今天的紫框不再被实心胶囊盖掉顶边，四个角都看得见",
-    "行距跟着放宽一档，几行格子不再挤成一整块"
+    "周几胶囊到格子上沿从 6dp 加到 8dp，不再像贴着卡沿",
+    "格子下方同步加到 9dp，班次块照旧不会贴底"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.22.1/weekday-alarm-1.22.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.22.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.22.2/weekday-alarm-1.22.2.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.22.2"
 }

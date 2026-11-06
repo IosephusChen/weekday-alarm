@@ -114,7 +114,7 @@ android {
         //   - 包名加 .preview → 能和正式版并存，不用卸载正式版
         //   - 签 tools/preview-debug.keystore → 跨会话签名恒定，覆盖安装不丢数据
         //   - initWith release → R8 与资源压缩照旧，观感尽量贴近正式包
-        // 它**不产 Release**：发布仍只走 release 变体 + CI 的 release job。
+        // 它**不产 Release**：发布仍只走 release 变体，由 CI 在 test job 里出包。
         preview {
             initWith release
             applicationIdSuffix ".preview"

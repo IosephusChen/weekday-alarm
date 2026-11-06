@@ -294,6 +294,15 @@ def main():
         if final != head:
             sys.exit("更新后远端是 %s，不是 %s" % (final[:7], head[:7]))
         print("远端 %s 现在指向 %s  ✓" % (branch, final[:7]))
+        # 2026-11-06：本脚本走 api.github.com 逐对象推，不经过 git 的 push，
+        # 所以本地 origin/<branch> 这个远程跟踪 ref 不会自己前进。后果是两个假信号：
+        # git status 一直显示"领先 N 个提交"，tools/release.sh 的写者自检也算错。
+        # 多端协作之后"我这棵树到底比远端新多少"是要天天看的，顺手把它对齐。
+        try:
+            git("update-ref", "refs/remotes/%s/%s" % (args.remote, branch), head)
+            print("  本地 origin/%s 已同步到 %s" % (branch, head[:7]))
+        except SystemExit:
+            print("  ! 本地 origin/%s 没能同步（不影响推送结果）" % branch)
     elif args.dry_run and commits:
         print("[dry-run] 提交全部校验通过，分支 ref 未更新")
 

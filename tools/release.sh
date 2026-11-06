@@ -53,44 +53,14 @@ else
     echo "  ok   方案已批准（目标版本 $PLAN_VER 与 build.gradle 一致）"
 fi
 
-fail=0
-need() {  # need <文件> <必须包含的字串> <说明>
-    if grep -qF "$2" "$1"; then
-        echo "  ok   $3"
-    else
-        echo "  FAIL $3 —— $1 里找不到：$2"
-        fail=1
-    fi
-}
-
-echo "-- 五处文档一致性 --"
-need app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java \
-     "new Entry($CODE, \"$NAME\"" "Changelog 首条 code/version"
-need docs/更新日志.md "### v$NAME（versionCode $CODE）" "更新日志.md 首条标题"
-need docs/打工人闹钟-使用说明.md "当前版本：**v$NAME**" "使用说明版本头"
-need docs/打工人闹钟-使用说明.md "打工人闹钟-v$NAME.apk" "使用说明安装包名"
-need docs/打工人闹钟-使用说明.md "versionCode $CODE）" "使用说明 versionCode"
-# v1.0.11：上面第 44 行只问「新名字在不在」，不问「旧名字还在不在」。
-# 1.0.10 那次头部三行都改了，第 28 行「把 xxx.apk 传到手机」还写着旧包名，
-# 检查照样全绿——用户在安装步骤里看到的是上一版的文件名。所以补一条反向检查。
-stale=$(grep -o "打工人闹钟-v[0-9][0-9.]*\.apk" docs/打工人闹钟-使用说明.md \
-        | grep -vF "v$NAME.apk" | sort -u || true)
-if [ -n "$stale" ]; then
-    echo "  FAIL 使用说明里还留着旧安装包名：$stale"
-    fail=1
-else
-    echo "  ok   使用说明无旧安装包名"
-fi
-need docs/项目状态.md "**v$NAME / versionCode $CODE**" "项目状态表"
-# v0.91.4：README 的「下载」节也会过时，而且是最容易被外人看到的一处。
-# 0.91.3 那次就漏了——检查全绿，README 还停在 v0.89.0。文档一致性不该挑文件。
-# v1.0.0：不再有「候选版」这个说法，检查改成只要 README 里出现当前版本号即可
-# （正式版那段写的是「**v1.0.0 已发布。**」）。
-need README.md "**v$NAME" "README 版本号"
-
-if [ $fail -ne 0 ]; then
+# 2026-11-06：这段原来是内联实现，只有「出包的那台机器」跑得到。多端之后 Trae / 网页
+# agent 不会跑这个脚本，CI 也看不到，同一套检查在别处等于不存在。抽成
+# tools/check_version.py，本脚本与 .github/workflows/android.yml 共用一份实现——
+# 本机能过 CI 就能过，反之亦然。
+echo "-- 版本一致性与文档一致性 --"
+if ! python3 tools/check_version.py; then
     echo
-    echo "文档没同步完，先补齐再跑（上面的 FAIL 逐条对应一处）。"
+    echo "版本 / 文档没同步完，先补齐再跑（上面的 FAIL 逐条对应一处）。"
     exit 1
 fi
 
@@ -146,6 +116,22 @@ tail -2 app/build/reports/lint-results-debug.txt | tr -d '\n'; echo
 if ! grep -q '^0 errors' <(tail -3 app/build/reports/lint-results-debug.txt); then
     echo "  lint 有 error，先修"
     exit 1
+fi
+
+echo "-- 写者自检（多端协作）--"
+# 2026-11-06 起不只一台机器能改这个仓库。git 拦得住同一个文件的并发改动，拦不住
+# 「两端各发一次版」。这里只读本地已有的 ref，不 fetch——沙箱直连 github.com 会
+# 超时两分钟，一个能挂住半天的发版脚本没人愿意跑。真落后了，下面这句会喊。
+if git rev-parse --verify --quiet origin/main >/dev/null 2>&1; then
+    ahead=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)
+    behind=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo 0)
+    echo "  HEAD 相对 origin/main：领先 $ahead，落后 $behind（本地缓存值，准不准取决于上次 fetch）"
+    if [ "$behind" -gt 0 ]; then
+        echo "  WARN 本地落后 $behind 个提交——别的端可能正在动同一处。"
+        echo "       先 git pull --rebase，再确认本版 versionCode 没被另一头占掉。"
+    fi
+else
+    echo "  跳过（没有 origin/main 引用）"
 fi
 
 if [ $CHECK_ONLY -eq 1 ]; then

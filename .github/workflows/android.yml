@@ -134,9 +134,13 @@ jobs:
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs "$APK" | head -4
 
+      # mapping.txt 一起带上：release 开了 minify，没有它崩溃栈反混淆不出来。
+      # 历次 Release 的 mapping 都是本地出包时手动补的，CI 这条路一直缺这一步。
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error

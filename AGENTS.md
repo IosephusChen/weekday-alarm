@@ -58,6 +58,12 @@
 - 密钥文件永不入库，`keystore.properties` 已被 `.gitignore` 排除，需要时手写。
 - 发版前跑 `tools/release.sh --check`：它会校验五处文档版本一致、跑全量测试、跑 lint。
 - 全量测试偶发 exit 134 时，先删 `app/core.*` 和 `app/hs_err_pid*.log` 再重跑。
+- **测试不许依赖「今天是周几」或「今天几号」。** 需要「今天」的断言，要么把构造用的
+  数据选成当日不敏感的（例如用 `Mode.DAILY` 而不是 `WORKDAY`），要么用同一个 `today`
+  算出期望值，别写死。2026-11-07 踩过：一条用「仅上班日」闹钟的布局测试把断言写死
+  `07:00`，周六日该行渲染成「—」，同一份代码 UTC 周五绿、CST 周六红。runner 跑在
+  UTC，于是北京时间周六 08:00 到周一 08:00 之间 CI 一直是红的——而「CI 绿」是发版
+  唯一的判据。CI 现在另有周末 cron 专门盯这类只在特定日子发生的红。
 - 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。
   **先试一次直连 `git push`**——`github.com` 不通只是 WorkBuddy 沙箱的现象，Trae / 本机
   直连是通的（2026-11-06 跨端实测）。直连真超时了再用 `tools/push_via_api.py`：走
@@ -280,8 +286,13 @@ PR 买到的是另外两样：合并前的那一次判定，以及**「有东西
 
 #### `release:` 提交自动出包
 
-commit message 以 `release:` 开头并推到 main，CI 的 release job 直接跑（`needs: [version, test]`
-卡着，测试红了不出包）。省掉手动 `workflow_dispatch` 那一轮——这是今天最贵的一步。
+commit message 以 `release:` 开头并推到 main，CI 直接在同一个 test job 里接着出包
+（测试与 lint 都过了才走到出包那几步）。省掉手动 `workflow_dispatch` 那一轮——这是
+今天最贵的一步。
+
+2026-11-07 起出包不再单独占一个 job：原来两个 job 各自 checkout、装 JDK、装 SDK、
+冷启 Gradle，发版那轮光启动就白等两分钟。合并后实测一轮从 359 秒降到约 207 秒
+（测试 173→90 秒靠 Gradle 缓存，出包 144→52 秒靠复用同一个 workspace 编过的产物）。
 
 **CI 仍然只产 artifact**：tag、Release、`version.json` 由本机做。发布权只在一个端手里，
 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
@@ -343,7 +354,7 @@ commit message 以 `release:` 开头并推到 main，CI 的 release job 直接�
 
 **它有一个专用的预发布位**：tag `preview`，标记为 Pre-release，每次构建覆盖同一个文件。
 它不抢 `releases/latest`、不进 `version.json`、不会被当成正式版——正式版仍只走
-`release:` 提交触发 CI 的 release job。除此之外，不要把 preview 包塞进任何正式 Release。
+`release:` 提交触发 CI 出正式包。除此之外，不要把 preview 包塞进任何正式 Release。
 
 两个包同时装着时，各自的闹钟都会响——测预览版时先把正式版的班表清掉，或者只留一个。
 

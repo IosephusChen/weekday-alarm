@@ -343,32 +343,36 @@ final class PlanCardsView {
     static final String TAG_CYCLE_CONTENT = "cycleContent";
     static final String TAG_CYCLE_BADGE = "cycleBadge";
 
+    /** 轮班格子每行最多 7 格（v1.22.0）：62 天 = 9 行 × 7 列，是上限档。 */
+    private static final int MAX_COLS_PER_ROW = 7;
+
     /**
      * 轮班第三行：每天上什么班。
      *
      * <p>格数跟周期长度走，不再封顶两行（用户 18:38：「展开得太少了，不方便编辑」）。
-     * 7 天一行，8–14 两行，15–62 全铺开——62 天是 9 行。整页随之可滚，卡内不再单独滚。
+     * 62 天是 9 行，整页随之可滚，卡内不再单独滚。
      *
-     * <p>v1.20.0（丙）：每格扩成「角标 + 周X 标签 + 班次」三层，4 格 / 7 格同一套渲染。
-     * 标签一律只写「周X」两字、不写「第 N 天」；今天那格描边 +「今天」角标。
-     * 点格子弹「休息 + 各班次」列表一次选到位。
+     * <p><b>v1.22.0 ①：网格按周期反算列数。</b>旧写法「每 7 个开一行 + 每格 weight=1」
+     * 在周期不是 7 的倍数时会跑出两种格子宽度——10 天时末行那 3 格把整行按三分之一
+     * 分掉，宽成上面 7 格的两倍多（用户 15:5x 的真机截图就是这个）。
+     * 现在 {@code rows=⌈len/7⌉}、{@code cols=⌈len/rows⌉}、末行补 INVISIBLE 占位，
+     * 同一张表里所有格子永远等宽。
      *
-     * <p>v1.20.1（① 对齐丙效果图）：把班次名从裸文字改成**独立圆角色块**——
-     * 复用「N 天一轮」表的班 / 休胶囊 token（bg_state_work / bg_state_rest），
-     * 上班淡靛底 indigo 字、休灰底 body 字。颜色沿用 App 自身主题语义色，
-     * 不照搬效果图深色主题的实心紫（paintPill 当年特意从实心退成浅底，别改回去）。
+     * <p><b>v1.22.0 ②：格内写「第 N 天」，周X 移到每格顶部那枚骑沿胶囊。</b>
+     * 用户 2026-11-06 17:43：「每一个格子都带周 x 胶囊，只有今天有紫色外框线」。
+     * 周期超过 7 天时「周X」在周期里会重复（10 天里两个周五），只有序号能定位；
+     * 周几由胶囊补回来，两边各说一件事、不重复。这推翻了 v1.20.0
+     * 「标签一律只写周X、不写第 N 天」的旧决定。
      *
-     * <p>v1.20.2（真机逐像素比对后收尾）：三处一起改——
-     * ①「今天」改成**骑在格子上沿外侧**的填充胶囊（bg_cycle_today 实心 indigo + 反差字），
-     *   v1.20.1 用的 bg_tag_today 在深色格底上几乎同色、胶囊根本显不出形；
-     * ② 格子内回到**两层**（周X 标签 + 班次色块），不再为角标留 INVISIBLE 占位行；
-     * ③ 四格**统一底色**（bg_cycle_cell 两态同引 cycle_cell_bg），今天只靠 1.5dp 描边 +
-     *   骑沿角标区分——原 bg_plan_day 的 selected 换底让深色下「今天黑、其他灰」。
+     * <p>胶囊分两种：普通格淡靛底 + 靛字（bg_cycle_daybadge），今天实心 indigo +
+     * 反白字（bg_cycle_today）。<b>胶囊人人都有之后，今天只剩紫框一条线索</b>，
+     * 所以 cell 的 selected 描边同步从 1.5dp 提到 2dp（bg_cycle_cell）。
      *
-     * <p>结构：每格一个 {@code slot(FrameLayout)}，顶部预留半枚角标高度；格子本体
-     * {@code cell} 从预留线起画、{@code badge} 压在格沿与之重叠一半。二者都完全落在
-     * slot 边界内——不靠负 margin 画到祖先容器外，避免真机被层层 clipChildren 裁掉。
-     * 四格 slot 同高、cell 同起点，周X 严格齐平；非今天格只是少一枚 badge，不留空行。
+     * <p>结构沿用 v1.20.2：每格一个 {@code slot(FrameLayout)}，顶部预留半枚胶囊高度；
+     * 格子本体 {@code cell} 从预留线起画、{@code badge} 压在格沿与之重叠一半。二者都
+     * 完全落在 slot 边界内——不靠负 margin 画到祖先容器外，避免真机被层层
+     * clipChildren 裁掉。所有 slot 同高、cell 同起点，胶囊与标签严格齐平。
+     * 那 9dp 预留原本只有今天用得上，现在每格都有胶囊，正好填满、格子不再多涨高度。
      */
     private void renderCycleDays() {
         if (boxPlanCycleDays == null) return;
@@ -378,111 +382,139 @@ final class PlanCardsView {
         int len = Math.max(1, draft.cycleLen);
         int[] cycle = draft.cycleShiftIds(len);
         int gap = dp(6);
-        int badgeReserve = dp(9);   // slot 顶部为「今天」胶囊让出的高度（约半枚）
+        int badgeReserve = dp(9);   // slot 顶部为「周X」胶囊让出的高度（约半枚）
         LocalDate start = draft.cycleStart != null ? draft.cycleStart : LocalDate.now();
         int todayIdx = todayIndexInCycle() - 1;   // 0 起：今天落在周期第几格
-        LinearLayout row = null;
-        for (int i = 0; i < len; i++) {
-            if (i % 7 == 0) {
-                row = new LinearLayout(act);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                row.setClipChildren(false);
-                LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                if (i > 0) rlp.topMargin = gap;
-                boxPlanCycleDays.addView(row, rlp);
-            }
-            final boolean isToday = (i == todayIdx);
 
-            // slot：一格的完整边界，承载格子本体 + 骑沿角标；点击落在这里。
-            FrameLayout slot = new FrameLayout(act);
-            slot.setClipChildren(false);
-            slot.setClickable(true);
-            slot.setFocusable(true);
-            final int day = i;
-            slot.setOnClickListener(v -> cycleNextShift(day));
+        // v1.22.0：先算网格再铺格子。rows 由「每行最多 7 格」反算，cols 再由 rows 反算——
+        // 10 天得 5+5、11 天得 6+5，末行最多空一格；旧写法「每 7 个开一行」在 10 天时
+        // 会排成 7+3，那 3 格被 weight 均分整行、宽成上面格子的两倍多。
+        int rows = (len + MAX_COLS_PER_ROW - 1) / MAX_COLS_PER_ROW;
+        int cols = (len + rows - 1) / rows;
+        // 「第 10 天」在 7 列（格宽约 38dp）下要压到 9sp 才不贴边。数字是半角，实际
+        // 宽度够用，仍留一档余量。不用 autoSizeTextType：Robolectric 下量不准，
+        // 部分 ROM 上重绘还会抖。
+        float dayNoSp = cols >= MAX_COLS_PER_ROW ? 9f : (cols == 6 ? 9.5f : 10f);
 
-            // cell：格子本体。四格统一底色，今天仅描边加粗（bg_cycle_cell selected 态）。
-            // topMargin = badgeReserve 让出角标空间；四格起点一致 → 周X 齐平。
-            FrameLayout cell = new FrameLayout(act);
-            cell.setBackgroundResource(R.drawable.bg_cycle_cell);
-            cell.setSelected(isToday);
-            cell.setMinimumHeight(dp(58));
-            // 上下留白不对称（v1.20.3）：效果图里班次块下方比上方松一档，
-            // v1.20.2 上下都 5dp，真机看块像贴着格底往下坠。下方给到 7dp。
-            cell.setPadding(0, dp(5), 0, dp(7));
-            cell.setTag(TAG_CYCLE_CELL);
-            FrameLayout.LayoutParams cellLp = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT);
-            cellLp.topMargin = badgeReserve;
-            slot.addView(cell, cellLp);
+        for (int r = 0; r < rows; r++) {
+            LinearLayout row = new LinearLayout(act);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setClipChildren(false);
+            LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (r > 0) rlp.topMargin = gap;
+            boxPlanCycleDays.addView(row, rlp);
 
-            // content：格内严格两层——周X 标签 + 班次色块，不再含角标占位。
-            LinearLayout content = new LinearLayout(act);
-            content.setOrientation(LinearLayout.VERTICAL);
-            content.setGravity(Gravity.CENTER_HORIZONTAL);
-            content.setTag(TAG_CYCLE_CONTENT);
-            FrameLayout.LayoutParams contentLp = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT);
-            cell.addView(content, contentLp);
+            for (int c = 0; c < cols; c++) {
+                int i = r * cols + c;
+                if (i >= len) {
+                    // 末行补齐：留不可见占位撑住列宽。不补的话，剩下那几个格子会被
+                    // weight 均分整行——又变回「一张表两种宽度」，正是这次要修的 bug。
+                    View holder = new View(act);
+                    holder.setVisibility(View.INVISIBLE);
+                    LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(0, 1, 1f);
+                    if (c > 0) hlp.setMarginStart(gap);
+                    row.addView(holder, hlp);
+                    continue;
+                }
+                final boolean isToday = (i == todayIdx);
 
-            // 「周X」标签：一律两字，不写第 N 天
-            TextView week = new TextView(act);
-            week.setText(weekName(start, i));
-            week.setTextSize(10);
-            week.setGravity(Gravity.CENTER);
-            week.setTextColor(ContextCompat.getColor(act,
-                    isToday ? R.color.indigo : R.color.sub));
-            if (isToday) week.setTypeface(null, android.graphics.Typeface.BOLD);
-            week.setTag(TAG_CYCLE_WEEK);
-            content.addView(week, wrapLp());
+                // slot：一格的完整边界，承载格子本体 + 骑沿胶囊；点击落在这里。
+                FrameLayout slot = new FrameLayout(act);
+                slot.setClipChildren(false);
+                slot.setClickable(true);
+                slot.setFocusable(true);
+                final int day = i;
+                slot.setOnClickListener(v -> cycleNextShift(day));
 
-            // 班次色块：独立圆角块（v1.20.1 丙），复用班 / 休胶囊 token，一个字不动。
-            Shift sh = findShift(shifts, cycle[i]);
-            TextView t = new TextView(act);
-            t.setText(sh == null ? "休" : shortName(sh.name));
-            t.setTextSize(12);
-            t.setTypeface(null, android.graphics.Typeface.BOLD);
-            t.setGravity(Gravity.CENTER);
-            t.setBackgroundResource(sh == null
-                    ? R.drawable.bg_state_rest : R.drawable.bg_state_work);
-            t.setTextColor(ContextCompat.getColor(act,
-                    sh == null ? R.color.body : R.color.indigo));
-            t.setTag(TAG_CYCLE_SHIFT);
-            LinearLayout.LayoutParams shiftLp = wrapLp();
-            shiftLp.topMargin = dp(3);
-            shiftLp.setMarginStart(dp(6));
-            shiftLp.setMarginEnd(dp(6));
-            t.setPadding(0, dp(3), 0, dp(3));
-            content.addView(t, shiftLp);
+                // cell：格子本体。四格统一底色，今天仅描边加粗（bg_cycle_cell selected 态）。
+                // topMargin = badgeReserve 让出胶囊空间；四格起点一致 → 胶囊与标签齐平。
+                FrameLayout cell = new FrameLayout(act);
+                cell.setBackgroundResource(R.drawable.bg_cycle_cell);
+                cell.setSelected(isToday);
+                cell.setMinimumHeight(dp(58));
+                // 上下留白不对称（v1.20.3）：效果图里班次块下方比上方松一档，
+                // v1.20.2 上下都 5dp，真机看块像贴着格底往下坠。下方给到 7dp。
+                cell.setPadding(0, dp(5), 0, dp(7));
+                cell.setTag(TAG_CYCLE_CELL);
+                FrameLayout.LayoutParams cellLp = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT);
+                cellLp.topMargin = badgeReserve;
+                slot.addView(cell, cellLp);
 
-            // 今天格：骑沿胶囊与 cell 平级、压在格子上沿（后加 → 绘制在上层）。
-            // 完全落在 slot 内，不需要祖先关闭裁剪。字色用 card：浅色主题下是白、
-            // 深色主题下是近黑，两套都能压在实心 indigo 底上读出。
-            if (isToday) {
+                // content：格内严格两层——「第 N 天」标签 + 班次色块，胶囊不占格内。
+                LinearLayout content = new LinearLayout(act);
+                content.setOrientation(LinearLayout.VERTICAL);
+                content.setGravity(Gravity.CENTER_HORIZONTAL);
+                content.setTag(TAG_CYCLE_CONTENT);
+                FrameLayout.LayoutParams contentLp = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT);
+                cell.addView(content, contentLp);
+
+                // 「第 N 天」标签（v1.22.0）：周X 让给了顶部胶囊，格内写序号。
+                // 周期超过 7 天时「周X」会重复（10 天里两个周五），只有序号能定位。
+                TextView dayNo = new TextView(act);
+                dayNo.setText("第 " + (i + 1) + " 天");
+                dayNo.setTextSize(dayNoSp);
+                dayNo.setGravity(Gravity.CENTER);
+                dayNo.setTextColor(ContextCompat.getColor(act,
+                        isToday ? R.color.indigo : R.color.sub));
+                if (isToday) dayNo.setTypeface(null, android.graphics.Typeface.BOLD);
+                dayNo.setTag(TAG_CYCLE_WEEK);
+                content.addView(dayNo, wrapLp());
+
+                // 班次色块：独立圆角块（v1.20.1 丙），复用班 / 休胶囊 token，一个字不动。
+                Shift sh = findShift(shifts, cycle[i]);
+                TextView t = new TextView(act);
+                t.setText(sh == null ? "休" : shortName(sh.name));
+                t.setTextSize(12);
+                t.setTypeface(null, android.graphics.Typeface.BOLD);
+                t.setGravity(Gravity.CENTER);
+                t.setBackgroundResource(sh == null
+                        ? R.drawable.bg_state_rest : R.drawable.bg_state_work);
+                t.setTextColor(ContextCompat.getColor(act,
+                        sh == null ? R.color.body : R.color.indigo));
+                t.setTag(TAG_CYCLE_SHIFT);
+                LinearLayout.LayoutParams shiftLp = wrapLp();
+                shiftLp.topMargin = dp(3);
+                shiftLp.setMarginStart(dp(6));
+                shiftLp.setMarginEnd(dp(6));
+                t.setPadding(0, dp(3), 0, dp(3));
+                content.addView(t, shiftLp);
+
+                // 周X 胶囊：每格一枚（v1.22.0）。与 cell 平级、压在格子上沿（后加 →
+                // 绘制在上层）。普通格淡靛底 + 靛字，今天实心 indigo + 反白字；字色用
+                // card 是因为它在浅色主题下是白、深色主题下是近黑，两套都能压在实心
+                // indigo 上读出。完全落在 slot 内，不需要祖先关闭裁剪。
                 TextView badge = new TextView(act);
-                badge.setText("今天");
+                badge.setText(weekName(start, i));
                 badge.setTextSize(9);
                 badge.setTypeface(null, android.graphics.Typeface.BOLD);
-                badge.setTextColor(ContextCompat.getColor(act, R.color.card));
-                badge.setBackgroundResource(R.drawable.bg_cycle_today);
+                badge.setTextColor(ContextCompat.getColor(act,
+                        isToday ? R.color.card : R.color.indigo));
+                badge.setBackgroundResource(isToday
+                        ? R.drawable.bg_cycle_today : R.drawable.bg_cycle_daybadge);
                 badge.setGravity(Gravity.CENTER);
-                badge.setPadding(dp(7), dp(1), dp(7), dp(1));
+                badge.setPadding(dp(6), dp(1), dp(6), dp(1));
                 badge.setTag(TAG_CYCLE_BADGE);
                 FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.WRAP_CONTENT,
                         FrameLayout.LayoutParams.WRAP_CONTENT,
                         Gravity.TOP | Gravity.CENTER_HORIZONTAL);
                 slot.addView(badge, badgeLp);
-            }
 
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            if (i % 7 > 0) lp.setMarginStart(gap);
-            row.addView(slot, lp);
+                // 读屏：格内只剩序号、胶囊只有周几，两者合一才是完整信息。
+                slot.setContentDescription("第 " + (i + 1) + " 天 "
+                        + weekName(start, i) + " " + (sh == null ? "休息" : sh.name));
+
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                if (c > 0) lp.setMarginStart(gap);
+                row.addView(slot, lp);
+            }
         }
     }
 

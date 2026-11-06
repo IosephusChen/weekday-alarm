@@ -111,6 +111,14 @@
          取 #353A59：比格底亮约 26 级，在 card 与 #232038 上都勾得出来，
          又比 line(#2A2E47) 克制，不至于让四格看着像四根分隔线。 -->
     <color name="cycle_cell_stroke">#353A59</color>
+
+    <!-- 普通格「周X」胶囊（v1.22.0）。底要比格底 #1C1F35 亮一档才浮得起来，
+         但不取 pill_work_bg(#2A2350) 那口偏紫——那是班次块的色，压在格子里
+         会和「班」块抢读。取 #262A45：比格底亮约 15 级，色相仍是靛灰。
+         边 #3A3F63 比底再亮一档，勾得住轮廓，又不至于像两根分隔线。
+         字压 @color/indigo(#818CF8)，对 #262A45 约 5.4:1。 -->
+    <color name="cycle_badge_bg">#262A45</color>
+    <color name="cycle_badge_line">#3A3F63</color>
     <color name="verdict_bg">#2A2350</color>
 
     <!-- 「班」胶囊的底：与结论条同值，夜间 #818CF8 压上去 4.9:1 -->

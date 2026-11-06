@@ -5,6 +5,16 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # 2026-11-07：周末也跑一次。不是加一层保险，是踩到过：
+    # UiLayoutTest.afterEditingAlarm_listAndHeroAgree 构造的是「仅上班日」闹钟，
+    # 周六日会被渲染成「—」（今天休息），而断言写死了 07:00——同一份代码
+    # UTC 周五绿、CST 周六红。runner 跑在 UTC，于是北京时间一整个周末 CI 都是红的，
+    # 而「CI 绿」正是发版唯一的判据。平日绿不代表周末绿，这条 cron 让它周六早上
+    # 就暴露，而不是等到发版那天。
+    # UTC 周五 / 周六 22:00 = 北京周六 / 周日 06:00。
+    - cron: '0 22 * * 5'
+    - cron: '0 22 * * 6'
   workflow_dispatch:
     inputs:
       build_release:
@@ -26,9 +36,18 @@ jobs:
       - name: Check version and docs consistency
         run: python3 tools/check_version.py
 
+  # 2026-11-07：test 与 release 合并成一个 job。
+  # 原来两个 job 各自 checkout、装 JDK、装 Android SDK、冷启 Gradle，一次发版
+  # 光这些启动就白等两分钟，而它们要做的事在同一个 workspace 里就能接上。
+  # 代价是 job 变长、失败归因多绕一层，接受——出包步骤全部带 success() 闸门，
+  # 测试红了不会走到出包。
   test:
     name: Unit tests + lint
     runs-on: ubuntu-24.04
+    env:
+      # 这次要不要出正式包。放 job 级是因为下面六个出包步骤都要判它。
+      # push 分支写在前面：workflow_dispatch 没有 head_commit，靠短路绕开。
+      IS_RELEASE: ${{ (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:')) || (github.event_name == 'workflow_dispatch' && inputs.build_release) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,14 +72,22 @@ jobs:
         with:
           packages: 'platform-tools'
 
+      # 2026-11-07：缓存 ~/.gradle。之前每次冷启都要重下 Gradle distribution（130MB）
+      # 与全部依赖，一轮 CI 有 60~90 秒花在这上面。key 按 wrapper 与构建脚本的哈希算，
+      # 改依赖会 miss 一次，之后继续命中；distribution 那次 sed 后的 URL 是固定的，
+      # 不会因为 sed 而每次都 miss。
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --console=plain --stacktrace
 
+      # 只扫 debug。release 变体与 debug 的源码、资源完全一样，差的只有 R8 与
+      # BuildConfig 常量，lint 的 fatal 结论不会因此不同；而 release 那一遍要多建
+      # 一套变体模型，白花 30~40 秒。真正会 fatal 的（混淆规则、资源引用）由
+      # assembleRelease 自带的 lintVitalRelease 兜着。
       - name: Lint
-        # 只查 debug + release 两个变体。2026-11-06 加了 preview 变体（本地看手感用），
-        # 聚合任务 lint 会把三个变体各扫一遍，白多几十秒；preview 的 fatal 问题由本地
-        # assemblePreview 自带的 lintVitalPreview 兜着，CI 不必重复。
-        run: ./gradlew lintDebug lintRelease --console=plain --stacktrace
+        run: ./gradlew lintDebug --console=plain --stacktrace
 
       # 失败时也能看到报告：条数与 XML 结果一起上传，别让 CI 只给一个红叉
       - name: Upload test and lint reports
@@ -73,42 +100,20 @@ jobs:
             app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
 
-  # 手动触发才跑。两个作用：
-  #   1. 证明 Secrets 里的 keystore 是活的——不然等到真发版那天才发现解不出来
-  #   2. 不想动本机时，产一个带正式签名的包做验收
-  # 它**不建 Release、不打 tag、不改 version.json**：发布权仍只在本机那一端。
-  # 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
-  #
-  # 2026-11-06：除了手动 dispatch，`release:` 开头的提交推到 main 也直接出包。
-  # 动机是省掉「push 跑一遍测试 → 再 dispatch 又跑一遍」的重复：串行轮换下
-  # 一轮发版本来就有一次完整 CI，让它顺手把包出了。needs 仍然卡着，测试红了不出包。
-  release:
-    name: Assemble signed APK
-    needs: [ version, test ]
-    if: |
-      (github.event_name == 'workflow_dispatch' && inputs.build_release) ||
-      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Point Gradle wrapper to official distribution
-        run: sed -i 's|mirrors.cloud.tencent.com/gradle/|services.gradle.org/distributions/|' gradle/wrapper/gradle-wrapper.properties
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools'
+      # ---- 以下只在发版时跑：`release:` 开头的提交推 main，或手动 dispatch 勾了选项 ----
+      # 它的作用有两个：
+      #   1. 证明 Secrets 里的 keystore 是活的——不然等到真发版那天才发现解不出来
+      #   2. 不想动本机时，产一个带正式签名的包做验收
+      # 它**不建 Release、不打 tag、不改 version.json**：发布权仍只在本机那一端。
+      # 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
+      #
+      # 每个 step 都写了 success()：显式 if 会顶掉默认的 success()，不写的话
+      # 测试红了照样出包，那道闸就形同虚设。
 
       # keystore.properties 里写的是相对路径 ../weekdayalarm-release.jks，
       # 所以 jks 必须落在仓库的上一级，和本地保持一致。
       - name: Restore keystore
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
@@ -120,6 +125,7 @@ jobs:
           ls -l ../weekdayalarm-release.jks
 
       - name: Write keystore.properties
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         env:
           STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
@@ -133,11 +139,13 @@ jobs:
           } > keystore.properties
 
       - name: Assemble release
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         run: ./gradlew assembleRelease --console=plain
 
       # 没有 keystore 时 assembleRelease 照样 BUILD SUCCESSFUL，产物是 debug 签名的。
       # 那种包能装、却不能覆盖线上版本——所以这一步不能省。
       - name: Verify signature
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
           APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
@@ -149,6 +157,7 @@ jobs:
       # 2026-11-06：拆成两个 artifact。合在一起时每次下载都要拖 15MB 的 mapping，
       # 沙箱网络一抖就是五分钟；而看包验收只需要那 2.8MB 的 APK。发版时再单独取 mapping。
       - name: Upload APK
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
@@ -156,6 +165,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload mapping
+        if: ${{ success() && env.IS_RELEASE == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: release-mapping

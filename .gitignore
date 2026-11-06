@@ -10,6 +10,10 @@ captures/
 *.aab
 *.jks
 *.keystore
+# 例外：preview 变体专用的公开调试密钥（口令 android，安卓调试密钥的标准值）。
+# 它的存在是为了让不同沙箱构建出的包签名一致，手机端能直接覆盖安装。
+# 它与发布密钥 weekdayalarm-release.jks 无关，后者绝不入库。
+!tools/preview-debug.keystore
 
 # 正式签名凭据（v1.0.0）：口令与路径，绝不入库
 keystore.properties

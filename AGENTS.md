@@ -313,6 +313,39 @@ commit message 以 `release:` 开头并推到 main，CI 的 release job 直接�
 二是别因为不在就重新生成一把（新证书 = 新应用身份，已装用户必须卸载重装）。要「换会话
 也能出包」，只有 CI 的 Secrets 这一条路不依赖本地状态。
 
+### 改完想看手感，用 preview 包，别等 CI
+
+```bash
+./gradlew assemblePreview        # 约 40 秒（依赖已缓存）
+# 产物：app/build/outputs/apk/preview/app-preview.apk
+```
+
+| 项 | 值 |
+|---|---|
+| 包名 | `io.github.iosephuschen.weekdayalarm.preview` |
+| 桌面名 | 闹钟预览 |
+| 版本名 | `1.22.2-preview`（versionCode 跟随正式版） |
+| 签名 | `tools/preview-debug.keystore`（公开调试密钥，口令 `android`） |
+
+**它和正式版并存，不用卸载正式版。** 数据也独立，第一次装上要配一次班表——
+正式版「导出配置」→ preview「导入配置」，一分钟。之后每次覆盖安装，数据都保留。
+
+**为什么这把密钥要入库**（它和上一节的发布密钥是两回事）：沙箱每次开新会话都是干净环境，
+`~/.android/` 里没有 debug.keystore，AGP 会现生成一把新的，签名一变系统就拒绝覆盖
+（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`），只能卸载重装。把密钥固定成仓库里这一份，
+跨会话签名恒定。**删了它等于换签名**——已装的 preview 包从此必须卸载才能更新。
+它是公开的调试密钥（口令就是安卓调试的标准值 `android`），泄露无害；
+发布密钥 `weekdayalarm-release.jks` 仍然只在仓库外，那条规矩没变。
+
+**什么时候不能用它**：验「覆盖安装后班表和闹钟还在不在」、发给别人、发版——这三件事
+只有正式签名包能证明。其余（间距、配色、圆角、深色主题、文案、双位数文字挤不挤）
+全部用 preview 看，改十遍也不用等 CI。
+
+**它不产 Release**：发版仍只走 `release:` 提交触发 CI 的 release job，
+不要把 preview 包传到 Release 或 `version.json`。
+
+两个包同时装着时，各自的闹钟都会响——测预览版时先把正式版的班表清掉，或者只留一个。
+
 ### 三条禁止
 
 - **禁止两个端同时改同一个文件后靠合并解决。** 颜色值冲突还能看出谁对谁错，

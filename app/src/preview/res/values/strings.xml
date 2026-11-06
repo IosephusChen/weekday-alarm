@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- preview 变体专用（2026-11-06）：只覆盖桌面图标名，其余资源仍走 main。
+
+     两个包同时装在手机上时，图标下都写「打工人闹钟」会分不清哪个是预览版。
+     这里换成「闹钟预览」——四个字不会被桌面截断，也一眼能看出是同一个 App 的预览。
+     App 内的「关于」页还会显示 1.22.2-preview，双重可辨。 -->
+<resources>
+    <string name="app_name">闹钟预览</string>
+</resources>

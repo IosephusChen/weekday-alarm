@@ -1,142 +1,161 @@
 # 当前方案
 
-> 状态：**已交付 · 未占版本号**
-> 提出：2026-11-06 11:05（多端试跑第一单：CI 钉镜像 + 升弃用 action）
-> 批准：2026-11-06 11:08 用户原话「改吧」。此前用户已用「B」选定「先做多端试跑」这条路，
-> 方案要点（5 行改动、只升 setup-java、本版不发 Release）报上去后回的这一句。
-> 改判：2026-11-06 11:26 原方案写「目标版本 291」，执行到文档同步那一步撞上互斥（见第八节），
-> 用户选择「不占版本号」，用户原话「不占版本号（推荐）」即此轮选项。
-> 目标版本：**不占**（保持 290 / v1.20.4，本版不产出新包）
+> 状态：**已批准**
+> 提出：2026-11-06 14:15（v1.21.0：修 6.6 那三条回归）
+> 批准：2026-11-06 14:41 用户原话「你直接把BUG修好，如果需要真机测试，就做一个apk包给我，
+> 如果不需要真机测试，直接推远端」。方案两处待点头（整份方案、谁建 Release）合并为一句批准：
+> 修完直接推远端即视为交付，本地不出 APK（签不出能装别人的包）。
+> 目标版本：**291 / v1.21.0**（本版要出包，走 CI release job）
 
 ## 一、这一版修什么
 
-两处「今天绿、某天突然红」的隐患，证据都来自 2026-11-06 那次真实 run（`42153139219`）的注释原文，
-不是推测：
+`docs/项目状态.md` 6.6 里那三条**回归**，不是新功能。三条同源：`b203159`
+（v1.20.1「清死弹层」）删掉了 `ShiftCycleSheet.show()`，而它身上的三个副作用
+没有跟着搬去新入口 `PlanCardsView`。所以修的方向一律是**把旧行为搬回来**，
+不是发明新行为。
 
-| 隐患 | run 注释原文 | 后果 |
-|---|---|---|
-| `runs-on: ubuntu-latest` 是浮动标签 | `The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026` | 今天这三次全绿是 **Ubuntu 24 上的绿**。镜像被换掉后，Android SDK 路径、JDK、Node 任一处变化都会让 CI 红，而代码一个字没改 |
-| `actions/setup-java@v4` 已停止维护 | `setup-java v4 is deprecated and will no longer receive updates. Please migrate to actions/setup-java@v5` | 官方已不管这个版本，安全修复与新 runner 兼容都不再跟进 |
-
-这两条的共同点是**发作时间不受控**：可能几个月都没事，也可能正好压在发版当天。
-钉住镜像 + 跟上官方指名的版本，是把「什么时候升级」的决定权拿回自己手里。
-
-## 二、改法（只有一个文件，5 行）
-
-`.github/workflows/android.yml`：
-
-| 行 | 现在 | 改成 | 处数 |
+| # | 现象 | 我这轮核实到的根因 | 证据 |
 |---|---|---|---|
-| 22 / 31 / 82 | `runs-on: ubuntu-latest` | `runs-on: ubuntu-24.04` | 3 |
-| 42 / 90 | `uses: actions/setup-java@v4` | `uses: actions/setup-java@v5` | 2 |
+| ① | 排好「上 12 休 2」，切去双休看一眼再切回轮班，表没了，变成 4 天全第一个班次 | `PlanCardsView.startRotation()` 只判断 `draft.shiftCycle`，为空就铺默认表；备份写了没人读 | `git show b203159^:…/ShiftCycleSheet.java` 第 96–102 行有读备份的原始实现，随弹层一起删掉 |
+| ② | 引导页导入旧配置后回第 1 页改选，界面接受了，`commit()` 提交的是另一份草稿 | `onImportedFromBackup()` 里 `draft = ScheduleDraft.load(this)` 换了**字段**，而 `PlanCardsView.draft` 是构造时捕获的 `final` 字段 | `PlanCardsView.java:45` 是 `private final`；`GuideActivity.java:1391-1392` 换字段后只调了 `reload()` |
+| ③ | 草稿没落盘时删班次，被删 id 跟着 `commit()` 写回；日历说上班、闹钟没时刻 | `ShiftBookDialog.confirmDelete()` 只清 Prefs 里的 `shift_cycle`，草稿里的旧数组还在，`commit()` 原样写回，`cycleMask` 也还是「上班」 | `ShiftBookDialog.java:417-423` 清盘；`ScheduleDraft.java:197` 又把草稿写回 |
 
-`setup-java` 的 `with:` 参数（`distribution: temurin` / `java-version: '17'`）v5 里没变，只换 tag。
+**② 的「未验证」这轮验证完了**：`GuideActivity.complete()` 用的是 `draft.commit(this)`，
+而 `draft` 已经被换成新对象、`planCards` 手里还是旧对象——两边不是同一份，点是点了，
+提交的不是它。
 
-## 三、为什么不把四个 action 一起升
+## 二、逐条改法
 
-顺手查了四个 action 的发布记录（`/releases`，2026-11-06）：
+三条都在同一个组件族里，改动集中，**只动 3 个源文件**。
 
-| action | 当前 | 最新 | 落后 |
+### ① `PlanCardsView.startRotation()`：把「捡回备份」搬回来
+
+现在是：`shiftCycle` 为空 → 4 天全第一个班次。
+
+改成：`shiftCycle` 为空 → 先读 `Prefs.getRotationBackup(act)`，
+有就 `draft.setRotation(bk.cycle.length, bk.start, bk.cycle)`，没有才铺默认 4 天。
+
+这段逻辑**逐字对应**被删的 `ShiftCycleSheet.show()` 第 96–102 行：
+它当年做的也是「`draft.shiftCycle` 为空就读备份，连起始日一起捡回来」。
+副作用与 v1.20.0 一致：`setRotation()` 在 `!wasRotation` 时把 `cycleHoliday` 置 false
+（轮班的人春节照上班），当年那条路也一样。
+
+一处加强：捡回来的表里可能有**已被删掉的班次 id**（切去按周的这段时间里删了班次），
+这类 id 一律落成 `-1` 再交给 `setRotation`，否则等于把 ③ 那个坑从备份里又灌回来。
+
+### ② `PlanCardsView.draft` 去 `final`，加 `bindDraft()`
+
+- `PlanCardsView`：`private final ScheduleDraft draft` → `private ScheduleDraft draft`，
+  加包级方法 `void bindDraft(ScheduleDraft d)`：换字段 + `reload()`。
+- `GuideActivity.onImportedFromBackup()`：`planCards.reload()` → `planCards.bindDraft(draft)`。
+
+**不重建 `PlanCardsView`**（审查里那句提醒是对的）：重建会把 `addDayBoxes()` 那七个
+子控件和五张卡的监听再插一遍，等于一次泄漏。
+
+`bindDraft` 之后 `reload()` 会把 `planWeek` 按新草稿重算（`reload()` 里 `PLAN_CUSTOM`
+那条分支本来就每次现读），自定义七格也跟着对上。
+
+### ③ `ScheduleDraft` 补 `pruneIds()`，在 `commit()` 里兜底
+
+新增一个静态方法（两个调用点共用）：
+
+```
+/** 把 cycle 里已经不存在于班次表的 id 换成 -1；返回是否有改动。 */
+static boolean pruneIds(int[] cycle, List<Shift> shifts)
+```
+
+调用点两处：
+1. `commit()` 写盘前，对 `this.shiftCycle` 跑一遍；**有改动就重算 `cycleMask`**
+   （`maskOf(shiftCycle)`），再写 `setCycleMask` / `setShiftCycle`。
+2. ① 里捡备份之后、`setRotation` 之前。
+
+**为什么不按审查建议改在弹窗「完成」回调里**：那个回调只覆盖「本次从这一页点开弹窗」
+这一条路。班次还能从别处删（引导页 / 以后的入口），而 `commit()` 是**所有入口都要过**的
+那一关。放这里，磁盘上永远不会出现指向不存在班次的 id；显示层不用改——`renderCycleDays`
+里 `findShift` 查不到本来就画「休」，所以这个 bug 从来不是「画错了」，是「写错了」。
+
+代价：`commit()` 多一次 `Prefs.getShifts()`（一次 SharedPreferences 读，同一次保存里可忽略）。
+
+## 三、测试先行：三条红，再改代码
+
+按 `AGENTS.md` 第七节那条「先补一条能在旧代码上变红的测试」——每条都写清**在旧代码上红在哪**，
+改完再转绿。三条各一条用例，全放在已有测试文件里，不新建文件。
+
+| # | 用例 | 落点 | 在旧代码上的红 |
 |---|---|---|---|
-| `actions/checkout` | v4 | **v7.0.1** | 3 个大版本 |
-| `actions/setup-java` | v4 | **v6.2.0**（v6 发布于 2026-11-04，2 天前） | 2 个 |
-| `actions/upload-artifact` | v4 | **v7.0.2** | 3 个 |
-| `android-actions/setup-android` | v3 | **v4.0.4** | 1 个 |
+| ① | `rotationSurvivesTripThroughWeekMode` | `WeekScheduleActivityTest` | 排 4 天 `{3,3,-1,-1}`、起始日 11-02 → 点「单休」保存（写备份）→ 重开 → 点「轮班制」保存 → 断言盘上是原表。旧代码写回 `{3,3,3,3}`、起始日变成今天，**两条断言都红** |
+| ② | `importThenBackToPage1_keepsUserCorrection` | `GuideTest` | 全新引导（双休）→ 盘上改成单休 + `onImportedFromBackup()` → 回第 1 页断言「单休」卡选中。旧代码仍选中「双休」，**第一条就红**；再点「双休」走到「开始使用」，旧代码提交的仍是单休，**第二条也红** |
+| ③ | `commitDropsIdsOfDeletedShifts` | `DayPlanPrefsTest` | 草稿排 `{3,3,-1,5}` → 盘上删掉 5 号班次 → `commit()` → 断言盘上 `{3,3,-1,-1}` 且第 4 位不是上班日。旧代码写回 `5`、`cycleMask` 第 4 位仍是 1，**两条断言都红** |
 
-四个全都落后，但本版**只动 setup-java**，原因有三条：
+跑法（增量，不跑全量）：`GuideTest` / `WeekScheduleActivityTest` / `DayPlanPrefsTest` 三支。
+全量只在 `tools/release.sh --check` 里跑一次。
 
-1. **只有它是官方在 run 注释里点名弃用的**。其余三个的警告只是「Node 20 被强制跑在 Node 24 上」，
-   说明兼容层还在工作，没有「停止维护」的结论。
-2. **一次跨三个大版本，坏了难归因**。这版本身是流程试跑，如果 CI 红，我要能立刻说清是流程问题
-   还是升级问题。把 4 个 action + 镜像一起换，红了就是一团。
-3. **`setup-java` 不追 v6**。v6.2.0 是两天前发布的，没必要当小白鼠；用官方警告指名的 v5，
-   它已经稳定运行了几个月。
+**执行顺序 ① → ③ → ②**（照审查建议）：①影响最大且已证实；③只加一个方法；
+②要动共享组件的字段语义，放最后，改坏了立刻能看出是它。
 
-**其余三个的升级单列为下一版待办**，写进 `docs/项目状态.md` 6.5 技术债，附上面这张版本表——
-查到的事实不写下来，下次又得重查一遍。
+## 四、会不会碰到别处
 
-## 四、怎么验收（这版不看 diff，看新镜像）
-
-改 5 行、diff 一眼能看完，真正要证的是「钉住的镜像上跑得通」：
-
-1. push 后 `Version consistency` 与 `Unit tests + lint` 两 job 在 `ubuntu-24.04` 上**必须绿**
-   （run 详情页顶部会显示 `ubuntu-24.04`，不是 `ubuntu-latest`，这是钉住的直接证据）
-2. 再手动 dispatch 一次 `build_release=true`，`Assemble signed APK` 必须绿
-3. 把产出的 APK 拉下来反查：证书 SHA-256 仍是 `d417fb1f…45bdb126`、`versionCode 291`
-4. 注释清单里**不再出现**「ubuntu-latest label will migrate」这一条
-
-四条缺一条就不算过。第 1 条特别容易看漏——镜像变了但 CI 绿，也可能只是碰巧，得确认日志里
-`Runner Image` 那行写的是 `Ubuntu 24.04`。
-
-## 五、版本与文档同步（改判：不占版本号）
-
-**原计划升 291 / v1.20.5，执行中改判为不升。** 理由见第八节第 1 条，这里只记结果：
-
-- `app/build.gradle` **保持 290 / v1.20.4**，`Changelog.java` 与 `docs/更新日志.md` 不加条目。
-- 记录改放 `docs/项目状态.md` 的两段 blockquote：第二批工程基建、第一次跨端协作。
-  这与 2026-11-06 那批多端基建（AGENTS.md 第七节、`check_version.py`）同一处理方式，
-  它们也没占版本号。
-- 试跑发现的三条结论回写进了规则文件，不是只写在日志里：
-  `AGENTS.md` 第三节（先试直连）、第七节（开工四步加 `git config` 检查）、
-  `docs/恢复说明.md` 第七节（同上）、`docs/项目状态.md` 6.5（三个 action 的版本债 + 触发条件）。
-- **不发 Release、不打 tag、不动 `version.json`**。
-- 本版**不跑** `tools/release.sh`：不出包就不需要它，而 `PLAN.md` 状态已不是「已批准」，
-  脚本本身也会拦住。
-
-## 六、执行分工（本版是一次流程试跑）
-
-这一版真正的目的不是那 5 行代码，是**验证多端流程能不能走通**。分工按 `AGENTS.md` 第七节来：
-
-| 步骤 | 谁做 | 为什么是他 |
+| 风险 | 实测量 | 处置 |
 |---|---|---|
-| 1. 写方案、落 `PLAN.md` | 手机端 | 已经做完 |
-| 2. 批准、状态改「已批准」 | 用户 | 规矩就是规矩，脚本会强校验 |
-| 3. 在 `fix/ci-pin-runner` 分支改 5 行、跑 `check_version.py`、开 PR | **Trae 端** | 试跑主角：只凭仓库里的 `AGENTS.md` + 本文件，看它能不能独立干对 |
-| 4. review PR、合并 | 手机端 | 合并那一刻写权才换手 |
-| 5. 升版本号、出包、推 main | 手机端 | keystore 在这边，`AGENTS.md` 明写「出包由持有 keystore 的那端做」 |
-| 6. 手动 dispatch 验签名 | 手机端 | 同 5 |
+| ① 改了 `startRotation`，引导页也走这条路 | 引导页第 1 屏与班表页共用 `PlanCardsView`，**两条入口同一次修好** | `GuideTest` 里已有「点轮班卡」用例，转绿即证 |
+| ③ 在 `commit()` 里剪 id，可能剪掉别的用例里「只设了 id 没建班次」的假数据 | 全仓 `setRotation\|setShiftCycle` 只出现在 **4 个**测试文件 | 改动后跑全量一次；若有用例红，先看是它造了假数据还是我真剪错了 |
+| ② 换草稿对象，旧对象上的监听是否残留 | `PlanCardsView` 的监听全部读 `draft` **字段**（不是捕获的局部量），换字段即全部生效 | ②的用例同时断言「点卡片 → 卡片选中态跟着变」，覆盖到监听 |
+| 版本号 | 291 未被占用（`HEAD` 与 `origin/main` 齐平，`PLAN.md` 上一版明确「不占」） | 出包前 `tools/release.sh --check` 再看一次 |
 
-**第 3 步刻意不让 Trae 升版本号**——`AGENTS.md` 第七节「三条禁止」里写着「禁止在 PR 里顺手升
-`versionCode`」。如果 Trae 端真的只改了 workflow 没动版本号，说明规则文件被正确读到了；
-如果它自作主张升到 291，说明规则没传达到，那这条规则就得改写得更硬。**这是本次试跑最想验的一件事。**
+## 五、版本与文档同步（291 / v1.21.0）
+
+`tools/check_version.py` 要的六处 + `version.json`，一处不改就 FAIL：
+
+| 文件 | 改什么 |
+|---|---|
+| `app/build.gradle` | `versionCode 291` / `versionName "1.21.0"` |
+| `Changelog.java` | 顶部加一条 `Entry(291, "1.21.0", …)`，标题 ≤18 字 |
+| `docs/更新日志.md` | `### v1.21.0（versionCode 291）— …` + 正文 |
+| `docs/打工人闹钟-使用说明.md` | 版本头 1 处、包名 2 处（第 8 行与第 28 行）、`versionCode` 1 处 |
+| `docs/项目状态.md` | 第 1 节表格 1 处；6.6 表格三条改成「已修（v1.21.0）」并保留根因 |
+| `README.md` | 下载行 1 处（版本号 + APK 链接） |
+| `version.json` | `versionName` / `versionCode` / `apk` 链接指向 `v1.21.0` |
+
+`version.json` 与使用说明里的包名都指向一个**发版后才会存在的文件**——这两项要等
+Release 建好再落，顺序见下节。这是上次 `PLAN.md` 第八节踩过的互斥，这次先排好序。
+
+## 六、发布路径
+
+按 `AGENTS.md` 第七节：Java 逻辑走分支 + PR，`versionCode` 不在 PR 里升（写者动作）。
+
+1. 分支 `fix/v1.21-regressions`：三条测试（先红）+ 三条修复，一次提交
+2. 跑增量三支 → 全绿；push；开 PR（PR 描述写清改了哪三处、跑过哪些测试）
+3. 合并 PR（本会话是当前唯一写者，合并即换手完成）
+4. 直接推 main：`build.gradle` + 六处文档 + `PLAN.md` 状态改「已交付」（一次提交）
+5. `tools/release.sh --check`：全量测试 + lint + 六处一致性，一次跑完
+6. `gh workflow run android.yml -f build_release=true` 出签名包，下载 artifact
+7. 打 tag `v1.21.0` + 建 Release（附 APK），再提交 `version.json`
+
+**本地不跑 `assembleRelease`**：沙箱没有 keystore，落了 debug 签名也装不上别人的手机。
 
 ## 七、不做什么
 
-- **不动 App 代码**：`app/src/` 下任何文件都不碰，包括不改颜色、不改布局、不改测试。
-- **不动 CI 的业务逻辑**：job 划分、`needs` 依赖、`if` 条件、Secrets 注入方式、APK 校验步骤一律不改。
-- **不升另外三个 action**（checkout / upload-artifact / setup-android），只记进待办。
-- **不发 Release、不打 tag**（同第五节）。
-- **不新建文件**：不动 `tools/check_version.py`，不新建 workflow 文件，也不动 `CLAUDE.md` 指针。
+- **不动备份格式**：`Prefs.saveRotationBackup` / `getRotationBackup` 的 JSON 结构一个字不改。
+  `cycleHoliday` 不进备份——它在切去按周时就被按周态的值覆盖了，想留是另一个话题（见下）。
+- **不动 `ShiftBookDialog`**：删除时清 Prefs 的那段是对的，缺陷在草稿侧，改那边只会让
+  两个地方各清一遍。
+- **不重建 `PlanCardsView`**，也不给它加第二个草稿字段。
+- **不碰日历、闹钟、法定节假日、排班推断**（`WeekSchedule` / `ScheduleManager` / `Alarm`）。
+- **不修 6.6 之外的东西**：审查文档第四节那两条产品口径（节假日开关的可见性、重复点已选中的卡）
+  明确不在这一版，不顺手改。
+- **不升另外三个 CI action**（checkout / upload-artifact / setup-android），6.5 记着，条件未到。
+- **不新建文档**：不加 `docs/修复说明.md` 之类，记录进 `更新日志.md` 与 6.6 表格。
+- 执行中撞见范围外的问题，只记进本文件「越界记录」，不顺手改。
 
 ## 八、越界记录
 
-**1. 「目标版本 291」与「不发 Release」互斥（2026-11-06 11:26，执行到文档同步时才发现）**
+（暂无）
 
-原方案第五节同时写着「升 291」和「不发 Release」，这两条不能同时成立：
+---
 
-- `tools/check_version.py` 强制「版本号升了，六处文档必须同步到新版本」，其中使用说明要出现
-  `打工人闹钟-v{新版本}.apk`；
-- 同一个脚本还有一条**反向检查**：使用说明里不许留任何旧包名（`stale` 判定）。
-- 于是升到 291 就必须写 `打工人闹钟-v1.20.5.apk`，而这个文件在 Releases 里不存在（本版不发），
-  新用户照着使用说明去下载会扑空；写回 v1.20.4 又会被反向检查判 FAIL。
+## 附：一个已知但不属这一版的尾巴
 
-**根因**：这套规则体系隐含一个前提——「升版本号 = 要发版」。方案里把两件事拆开写，
-规则却不允许只做一半。
-
-**处置**：停下问用户，用户选「不占版本号」。已写的 291 改动（`build.gradle`、`Changelog.java`、
-`更新日志.md` 条目）全部回滚，代码回到 290，改用 `项目状态.md` 的基建 blockquote 记录。
-
-**没有顺手做的事**：没有为了让原方案成立去改 `check_version.py` 的反向检查——那是改裁判
-迁就方案，换到别的端眼里就是「规则随便就能绕」。
-
-**2. Trae 端直连 `github.com` 成功（不在方案里，是有价值的发现）**
-
-方案与文档都假定「`github.com` 直连超时、必须走 `api.github.com`」。实测 Trae 端 `git push`
-直连正常。原结论只对 WorkBuddy 沙箱成立，已在 `AGENTS.md` 第三节、`docs/项目状态.md` 6.0、
-`docs/恢复说明.md` 第七节补上限定，避免别的端白绕一圈。
-
-**3. 提交身份（不在方案里，未改配置）**
-
-Trae 端沙箱没配 git 作者身份，首次 commit 失败，它用 `GIT_AUTHOR_NAME` / `GIT_AUTHOR_EMAIL`
-在单条命令上临时传了 `trae-solo-agent <solo-agent@trae.ai>`，没改任何 `git config`。
-这个身份留在提交历史里了。已把这个坑写进 `AGENTS.md` 第七节「开工四步」第 2 步。
+轮班态下「跳过法定节假日」（`cycleHoliday`）**恢复不了**：切去按周时这个值被按周态沿用
+（`setDays` 从轮班转过来时不重置它），切回轮班时 `setRotation` 又按「第一次进轮班」重置为 false，
+而备份里没有这一位。v1.20.0 那条路也一样，所以这不算本版新增的回归，只是 ① 修完仍有的缺口。
+要不要把它一起进备份，等用户决定，本版不动。

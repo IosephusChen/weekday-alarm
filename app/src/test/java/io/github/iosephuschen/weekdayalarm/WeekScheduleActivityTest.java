@@ -149,6 +149,44 @@ public class WeekScheduleActivityTest {
         assertTrue(a.isFinishing());
     }
 
+    /**
+     * 切去按周看一眼再切回轮班，原来那张表要原样回来（v1.21.0）。
+     *
+     * <p>v1.20.1 删掉 {@code ShiftCycleSheet.show()} 时，连带删掉了它身上「
+     * {@code draft.shiftCycle} 为空就读备份」那段，新入口 {@code startRotation()}
+     * 只铺 4 天默认表。于是排一张「上二休二」的人切去看一眼双休，再切回来就是
+     * 「4 天、每天第一个班次」——那张表要几十次点击才排得出来。
+     *
+     * <p>所以这条用例走完整条用户路径：排表 → 切按周保存（写备份）→ 重开 →
+     * 点轮班 → 保存，断言盘上还是原来那四天、起始日也还是那一天。
+     */
+    @Test
+    public void rotationSurvivesTripThroughWeekMode() {
+        int night = 3;
+        Prefs.setShifts(ctx(), java.util.Collections.singletonList(
+                new Shift(night, "夜班", 20 * 60, Shift.END_UNKNOWN, 0)));
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 4);
+        java.time.LocalDate start = java.time.LocalDate.of(2026, 11, 2);
+        Prefs.setCycleStart(ctx(), start);
+        int[] rotation = {night, night, -1, -1};            // 上二休二
+        Prefs.setShiftCycle(ctx(), rotation);
+
+        // 切去看一眼单休：这一步清掉生效的那份，另存一份备份
+        WeekScheduleActivity a = open();
+        tap(a, R.id.card_plan_single);
+        tap(a, R.id.btn_save);
+        assertNull("切到按周后生效的那份照旧清掉", Prefs.getShiftCycle(ctx()));
+
+        // 再切回轮班：应把原来那张表捡回来
+        WeekScheduleActivity b = open();
+        tap(b, R.id.card_plan_rotation);
+        tap(b, R.id.btn_save);
+        org.junit.Assert.assertArrayEquals("原表一天不差", rotation, Prefs.getShiftCycle(ctx()));
+        assertEquals("起始日也一起捡回来", start, Prefs.getCycleStart(ctx()));
+    }
+
     /** 轮班周期点数字弹滚轮，不再是 ±（v1.18.0）。 */
     @Test
     public void cycleNumberIsClickable() {

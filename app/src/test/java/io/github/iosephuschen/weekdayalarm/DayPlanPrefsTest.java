@@ -353,4 +353,40 @@ public class DayPlanPrefsTest {
         Prefs.setCycleLen(ctx(), 7);
         assertArrayEquals("周期对上了就原样读回来", times, Prefs.getCycleTimes(ctx()));
     }
+
+    /**
+     * 班次被删掉之后，草稿里那个旧 id 不能再跟着 {@code commit()} 写回（v1.21.0）。
+     *
+     * <p>用户路径：正展开一张轮班表 → 点「管理班次」→ 删掉一个班次 → 点「完成」→ 保存。
+     * {@code ShiftBookDialog.confirmDelete} 只清了盘上的 {@code shift_cycle}，草稿里
+     * 那份旧数组还在，保存时原样写回，于是那天 {@code cycleMask} 说「上班」、
+     * {@code shiftOn} 却找不到班次返回 null——日历显示上班，闹钟没有时刻。
+     *
+     * <p>修法是在 {@code commit()} 里按盘上的班次表剪一遍，所以这条用例只喂数据和草稿，
+     * 不驱动弹窗：弹窗那一侧本来就没写错。
+     */
+    @Test
+    public void commitDropsIdsOfDeletedShifts() {
+        reset();
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0),
+                new Shift(5, "白班", 8 * 60, 16 * 60, 0));
+        LocalDate start = LocalDate.of(2026, 11, 2);
+
+        ScheduleDraft draft = ScheduleDraft.load(ctx());
+        // 四天：夜、夜、休、白 —— 第 4 天排的是 5 号
+        draft.setRotation(4, start, new int[]{3, 3, -1, 5});
+        // 用户在「管理班次」里把 5 号删掉（弹窗会把盘上的那份同步改掉）
+        setShifts(new Shift(3, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+
+        draft.commit(ctx());
+
+        assertArrayEquals("被删的那个 id 不许写回",
+                new int[]{3, 3, -1, -1}, Prefs.getShiftCycle(ctx()));
+        WeekSchedule.Rule rule = Prefs.getRule(ctx());
+        assertTrue("第 1 天照旧上班", WeekSchedule.isWorkday(start, rule));
+        assertFalse("第 4 天不该再算上班——班次没了，那天没有时刻",
+                WeekSchedule.isWorkday(start.plusDays(3), rule));
+        assertNull("那天也就没有班次",
+                WeekSchedule.shiftOn(start.plusDays(3), rule));
+    }
 }

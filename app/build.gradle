@@ -144,4 +144,8 @@ tasks.withType(Test).configureEach {
     inputs.dir(rootProject.file("docs"))
             .withPathSensitivity(org.gradle.api.tasks.PathSensitivity.RELATIVE)
             .optional()
+    // 2026-11-07：不参与构建缓存。Test 默认是 cacheable 的，而 CI 的缓存里存着
+    // 上一次同 commit 的「测试全绿」，重跑 job 时会直接恢复结果、一条测试都不跑。
+    // 编译产物照旧走缓存（省的是那 30~40 秒），测试必须真跑。
+    outputs.cacheIf { false }
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 轮班格子「周X」胶囊的底（v1.22.0）。
+
+     2026-11-06 17:43 用户：「每一个格子都带周 x 胶囊，只有今天有紫色外框线」。
+     胶囊从「今天专属」变成每格一枚，于是分成两种样式：
+
+       · 普通格 —— 这个文件：淡靛底 + 1dp 细边 + 靛字，退到背景里去
+       · 今天格 —— bg_cycle_today：实心 indigo + 反白字，全表唯一一枚实心
+
+     今天不再靠胶囊分辨（人人都有），改靠格子本体那圈 2dp indigo 描边。
+
+     胶囊高度只有「9sp 字 + 上下各 1dp」≈ 14dp，圆角走 radius_chip(10dp)
+     已经接近全圆，和 bg_cycle_today 同一档，两枚胶囊外形一致、只有轻重不同。
+     DesignTokenTest 要求形状圆角只用七档 token。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/cycle_badge_bg" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/cycle_badge_line" />
+    <corners android:radius="@dimen/radius_chip" />
+</shape>

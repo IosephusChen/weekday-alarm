@@ -1,74 +1,106 @@
 # 当前方案
 
-> 状态：**已出包 · 批准已作废**
-> 出包：2026-11-06 09:22（再出包须重写方案并重新确认）
-> 提出：2026-11-06 09:16（附浅色两版模拟：`cmp/light_A_white.png` / `cmp/light_B_tint.png`）
-> 批准：2026-11-06 09:14 用户原话「这是真机的浅色模式截图，格子底色灰灰的不好看，你美化一下」。
-> 这一句是明确的祈使指令，直接构成执行授权（对照 `AGENTS.md`：指差异／提意见不算，
-> 「改」「好」「美化一下」这类动手指令才算）。
-> 目标版本：290
-> （对应 v1.20.4。纯配色微调、不动结构，按既有约定走 patch。
->  这行只留纯数字：release.sh 用 `tr -dc 0-9` 提取，写版本号会把数字吞进去。）
+> 状态：**已批准**
+> 提出：2026-11-06 11:05（多端试跑第一单：CI 钉镜像 + 升弃用 action）
+> 批准：2026-11-06 11:08 用户原话「改吧」。此前用户已用「B」选定「先做多端试跑」这条路，
+> 方案要点（5 行改动、只升 setup-java、本版不发 Release）报上去后回的这一句。
+> 目标版本：291
+> （对应 v1.20.5。只改 CI 配置、不动 App 代码，按既有约定走 patch。）
 
 ## 一、这一版修什么
 
-用户装了 v1.20.3，发来浅色模式真机图（1000110850）：「格子底色灰灰的不好看」。
-逐像素采样，坐实两层问题：
+两处「今天绿、某天突然红」的隐患，证据都来自 2026-11-06 那次真实 run（`42153139219`）的注释原文，
+不是推测：
 
-| 层 | 采样值 | 问题 |
+| 隐患 | run 注释原文 | 后果 |
 |---|---|---|
-| 卡片底（选中） | `#EEF0FC` | 淡紫，本身没问题 |
-| 格子底 | `#E4E6F2` | **低饱和灰蓝**，压在淡紫上交界处发脏，四格像蒙了层灰 |
-| 「班」块 | `#E9EAFE` | 与格底只差 5/4/12，几乎糊平 |
-| 「休」块 | `#E4E6F2` | **与格底同值**，完全靠 1dp 边勉强分块 |
+| `runs-on: ubuntu-latest` 是浮动标签 | `The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026` | 今天这三次全绿是 **Ubuntu 24 上的绿**。镜像被换掉后，Android SDK 路径、JDK、Node 任一处变化都会让 CI 红，而代码一个字没改 |
+| `actions/setup-java@v4` 已停止维护 | `setup-java v4 is deprecated and will no longer receive updates. Please migrate to actions/setup-java@v5` | 官方已不管这个版本，安全修复与新 runner 兼容都不再跟进 |
 
-结论：病灶不在某一个色值偏深，而在**格底本身带了颜色**。白卡上的内容块靠"比底亮/比底暗"
-显形，底一上灰，块就全闷住了。v1.20.2 当初把格底定成 `rest_cell_bg` 同值，是为了让格子
-在白卡上"显形"——这个目的由描边承担就够了，不需要整块铺灰。
+这两条的共同点是**发作时间不受控**：可能几个月都没事，也可能正好压在发版当天。
+钉住镜像 + 跟上官方指名的版本，是把「什么时候升级」的决定权拿回自己手里。
 
-## 二、改法（两个 token，日间限定）
+## 二、改法（只有一个文件，5 行）
 
-1. **`values/colors.xml`：`cycle_cell_bg` `#E2E6F2` → `#FFFFFF`**。
-   格底撤回白：淡紫的「班」（`#E7EAFE`）与淡灰的「休」（`#E2E6F2`）各自浮得起来，
-   与班表页白卡上的班/休胶囊是同一套观感——不造新色、不动 `pill_work_bg` / `rest_cell_bg`。
-2. **`values/colors.xml`：`cycle_cell_stroke` `#D3D9E8` → `#E4E7F5`**。
-   白底上要勾轮廓，`#D3D9E8` 那根偏灰、会显脏；换成偏靛的淡灰线，与卡片淡紫同一色系。
+`.github/workflows/android.yml`：
 
-**深色一个字不动**：`#1C1F35` / `#353A59` 是 v1.20.3 刚对着深色真机定的，不回头改。
+| 行 | 现在 | 改成 | 处数 |
+|---|---|---|---|
+| 22 / 31 / 82 | `runs-on: ubuntu-latest` | `runs-on: ubuntu-24.04` | 3 |
+| 42 / 90 | `uses: actions/setup-java@v4` | `uses: actions/setup-java@v5` | 2 |
 
-试过但弃掉的方案：格底极淡紫 `#F6F7FD`。两版并排一比，它不上不下——比白多一层灰，
-又不足以把「班」块衬出来，等于把问题缩小一号而不是解决。
+`setup-java` 的 `with:` 参数（`distribution: temurin` / `java-version: '17'`）v5 里没变，只换 tag。
 
-## 三、测试（增量）
+## 三、为什么不把四个 action 一起升
 
-- 新增 `GuideTest.rotation_cycleCellLight_cleanGroundWithVisibleStroke()`：
-  读 `values/colors.xml`，断言格底亮度 > 0.97（旧值 `#E2E6F2` 是 0.916，会被挡下）、
-  描边比格底深、且差值 < 40（防"没线"与"硬线"两个极端）。
-- 既有守门一条不放：两态 solid 同色、细边专用 token、卡片亮度上限、格内下留白。
+顺手查了四个 action 的发布记录（`/releases`，2026-11-06）：
 
-## 四、版本与文档同步（290 / v1.20.4）
+| action | 当前 | 最新 | 落后 |
+|---|---|---|---|
+| `actions/checkout` | v4 | **v7.0.1** | 3 个大版本 |
+| `actions/setup-java` | v4 | **v6.2.0**（v6 发布于 2026-11-04，2 天前） | 2 个 |
+| `actions/upload-artifact` | v4 | **v7.0.2** | 3 个 |
+| `android-actions/setup-android` | v3 | **v4.0.4** | 1 个 |
 
-- `app/build.gradle` → `versionCode 290` / `versionName "1.20.4"`。
+四个全都落后，但本版**只动 setup-java**，原因有三条：
+
+1. **只有它是官方在 run 注释里点名弃用的**。其余三个的警告只是「Node 20 被强制跑在 Node 24 上」，
+   说明兼容层还在工作，没有「停止维护」的结论。
+2. **一次跨三个大版本，坏了难归因**。这版本身是流程试跑，如果 CI 红，我要能立刻说清是流程问题
+   还是升级问题。把 4 个 action + 镜像一起换，红了就是一团。
+3. **`setup-java` 不追 v6**。v6.2.0 是两天前发布的，没必要当小白鼠；用官方警告指名的 v5，
+   它已经稳定运行了几个月。
+
+**其余三个的升级单列为下一版待办**，写进 `docs/项目状态.md` 6.5 技术债，附上面这张版本表——
+查到的事实不写下来，下次又得重查一遍。
+
+## 四、怎么验收（这版不看 diff，看新镜像）
+
+改 5 行、diff 一眼能看完，真正要证的是「钉住的镜像上跑得通」：
+
+1. push 后 `Version consistency` 与 `Unit tests + lint` 两 job 在 `ubuntu-24.04` 上**必须绿**
+   （run 详情页顶部会显示 `ubuntu-24.04`，不是 `ubuntu-latest`，这是钉住的直接证据）
+2. 再手动 dispatch 一次 `build_release=true`，`Assemble signed APK` 必须绿
+3. 把产出的 APK 拉下来反查：证书 SHA-256 仍是 `d417fb1f…45bdb126`、`versionCode 291`
+4. 注释清单里**不再出现**「ubuntu-latest label will migrate」这一条
+
+四条缺一条就不算过。第 1 条特别容易看漏——镜像变了但 CI 绿，也可能只是碰巧，得确认日志里
+`Runner Image` 那行写的是 `Ubuntu 24.04`。
+
+## 五、版本与文档同步（291 / v1.20.5）
+
+- `app/build.gradle` → `versionCode 291` / `versionName "1.20.5"`。
 - `Changelog.java` 首条 + `docs/更新日志.md` 首条。
-- `docs/打工人闹钟-使用说明.md`（版本头 + 安装包名 + versionCode）、`README.md`
-  （在研版本注脚）、`docs/项目状态.md` 同步；`version.json` 由 `release.sh --check` 生成。
-- `docs/项目状态.md` 线上行如实写：本地 v1.20.4 已出包，远端 `releases/latest` 仍是
-  v1.20.1（v1.20.2 / v1.20.3 都没发）。
+- `docs/打工人闹钟-使用说明.md`（版本头 + 安装包名 + versionCode）、`README.md`、
+  `docs/项目状态.md`（版本行 + 6.5 技术债新增一条）同步；`version.json` 由 `release.sh --check` 生成。
+- 本版**不发 Release、不打 tag**（无功能变化，用户不需要下载）。只推 main 让 CI 生效。
+  —— 这条要用户点头：它是本版唯一偏离「出包即发布」惯例的地方。
 
-## 五、执行顺序
+## 六、执行分工（本版是一次流程试跑）
 
-1. 本方案落盘（已完成）
-2. 两个色 + 一条守门测试
-3. 版本与五处文档 → `--check`（全量 + lint）→ 出包 → 推 APK
-4. 回填包大小/MD5
+这一版真正的目的不是那 5 行代码，是**验证多端流程能不能走通**。分工按 `AGENTS.md` 第七节来：
 
-## 六、不做什么
+| 步骤 | 谁做 | 为什么是他 |
+|---|---|---|
+| 1. 写方案、落 `PLAN.md` | 手机端 | 已经做完 |
+| 2. 批准、状态改「已批准」 | 用户 | 规矩就是规矩，脚本会强校验 |
+| 3. 在 `fix/ci-pin-runner` 分支改 5 行、跑 `check_version.py`、开 PR | **Trae 端** | 试跑主角：只凭仓库里的 `AGENTS.md` + 本文件，看它能不能独立干对 |
+| 4. review PR、合并 | 手机端 | 合并那一刻写权才换手 |
+| 5. 升版本号、出包、推 main | 手机端 | keystore 在这边，`AGENTS.md` 明写「出包由持有 keystore 的那端做」 |
+| 6. 手动 dispatch 验签名 | 手机端 | 同 5 |
 
-- **不推远端**：用户说「美化一下」，不是「发」。不 commit / 不 push / 不 tag / 不建 Release。
-- 不动深色配色、不动 `pill_work_bg` / `rest_cell_bg` / `pill_rest_stroke` 三个公共 token。
-- 不动结构：角标、两层格内、圆角、间距、padding 一律不碰（padding 是上一版刚调的）。
-- 不动班表页、引导页、闹钟弹层的任何「自定义」七格。
+**第 3 步刻意不让 Trae 升版本号**——`AGENTS.md` 第七节「三条禁止」里写着「禁止在 PR 里顺手升
+`versionCode`」。如果 Trae 端真的只改了 workflow 没动版本号，说明规则文件被正确读到了；
+如果它自作主张升到 291，说明规则没传达到，那这条规则就得改写得更硬。**这是本次试跑最想验的一件事。**
 
-## 七、越界记录
+## 七、不做什么
 
-- 实施中撞见范围外的问题只记在这里，不顺手改。目前无。
+- **不动 App 代码**：`app/src/` 下任何文件都不碰，包括不改颜色、不改布局、不改测试。
+- **不动 CI 的业务逻辑**：job 划分、`needs` 依赖、`if` 条件、Secrets 注入方式、APK 校验步骤一律不改。
+- **不升另外三个 action**（checkout / upload-artifact / setup-android），只记进待办。
+- **不发 Release、不打 tag**（同第五节）。
+- **不新建文件**：不动 `tools/check_version.py`，不新建 workflow 文件，也不动 `CLAUDE.md` 指针。
+
+## 八、越界记录
+
+实施中撞见范围外的问题只记在这里，不顺手改。目前无。

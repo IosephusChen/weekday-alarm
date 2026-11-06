@@ -75,10 +75,16 @@ jobs:
   #   2. 不想动本机时，产一个带正式签名的包做验收
   # 它**不建 Release、不打 tag、不改 version.json**：发布权仍只在本机那一端。
   # 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
+  #
+  # 2026-11-06：除了手动 dispatch，`release:` 开头的提交推到 main 也直接出包。
+  # 动机是省掉「push 跑一遍测试 → 再 dispatch 又跑一遍」的重复：串行轮换下
+  # 一轮发版本来就有一次完整 CI，让它顺手把包出了。needs 仍然卡着，测试红了不出包。
   release:
     name: Assemble signed APK
     needs: [ version, test ]
-    if: github.event_name == 'workflow_dispatch' && inputs.build_release
+    if: |
+      (github.event_name == 'workflow_dispatch' && inputs.build_release) ||
+      (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:'))
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

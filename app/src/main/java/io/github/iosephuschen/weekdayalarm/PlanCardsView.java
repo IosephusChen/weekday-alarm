@@ -42,7 +42,7 @@ final class PlanCardsView {
     private static final int MIN_CYCLE = 1, MAX_CYCLE = WeekSchedule.Rule.MAX_CYCLE_LEN;
 
     private final Activity act;
-    private final ScheduleDraft draft;
+    private ScheduleDraft draft;
     /** 每次状态变了通知宿主（「下一步」「保存」之类要不要可用，由宿主自己判断）。 */
     private final Runnable onChanged;
 
@@ -117,6 +117,20 @@ final class PlanCardsView {
         tvPlanStart.setOnClickListener(v -> pickStartDay());
 
         addDayBoxes();
+        reload();
+    }
+
+    /**
+     * 换一份草稿（v1.21.0）：导入旧配置后宿主手里是新的那份，这里还握着旧的。
+     *
+     * <p>不换的后果不是「显示不对」那么轻：这一页点卡片改的是旧草稿，而宿主的
+     * 「开始使用 / 保存」提交的是新草稿——用户看到卡片变紫了，结果班表没变。
+     *
+     * <p>不重建本组件：{@link #addDayBoxes} 那七个方块和五张卡的监听会再插一遍。
+     */
+    void bindDraft(ScheduleDraft d) {
+        if (d == null || d == draft) return;
+        draft = d;
         reload();
     }
 
@@ -222,6 +236,19 @@ final class PlanCardsView {
             return;
         }
         List<Shift> shifts = Prefs.getShifts(act);
+        // v1.21.0：以前排过轮班，就把那张表捡回来当起点，而不是铺一张 4 天的新表。
+        // 这段是 v1.11.3 的原有行为，v1.20.1 删 ShiftCycleSheet 弹层时被一起带走了：
+        // 排一张「上 12 休 2」要几十次点击，切去看一眼双休就没了，等于让他重排一遍。
+        Prefs.Rotation bk = Prefs.getRotationBackup(act);
+        if (bk != null && bk.cycle != null && bk.cycle.length >= 2) {
+            // 先复制一份再剪：备份对象不属于这次编辑，剪了它下次就没得捡了。
+            // 剪的是「切去按周的这段时间里被删掉的班次」，否则等于把旧 id 又灌回来
+            int[] restored = ShiftCycleSheet.fit(bk.cycle, bk.cycle.length);
+            ScheduleDraft.pruneIds(restored, shifts);
+            draft.setRotation(restored.length, bk.start, restored);
+            reload();
+            return;
+        }
         int first = shifts.isEmpty() ? -1 : shifts.get(0).id;
         int[] cycle = new int[4];
         for (int i = 0; i < 4; i++) cycle[i] = first;

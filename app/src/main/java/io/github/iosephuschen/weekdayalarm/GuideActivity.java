@@ -1389,7 +1389,9 @@ public class GuideActivity extends AppCompatActivity {
         }
         // 导入已经写盘，草稿必须重新从 Prefs 取一次，否则「开始使用」会把导入结果盖掉
         draft = ScheduleDraft.load(this);
-        planCards.reload();
+        // v1.21.0：第 1 页那个组件也得换到新草稿上。原来只调 reload()，它读的还是
+        // 导入前那份，于是「回上一步改选」改的是旧对象，提交的是新对象——改选被静默丢弃
+        planCards.bindDraft(draft);
         refreshRepeatRow();
         // v0.84.1：末页变成「当场验一下」，权限页固定是第 3 页——导入完要送去开权限，
         // 不是送去测试。用常量而不是 PAGES-1，免得下次再拆页又跑偏。

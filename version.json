@@ -1,14 +1,13 @@
 {
-  "versionCode": 290,
-  "versionName": "1.20.4",
+  "versionCode": 291,
+  "versionName": "1.21.0",
   "published": "2026-11-06",
-  "title": "浅色格子洗白",
+  "title": "三处「改了等于没改」",
   "notes": [
-    "浅色主题的轮班格子从灰蓝底换成纯白，不再灰扑扑",
-    "格子里「班」「休」两个色块重新浮起来，不再糊成一片",
-    "格子细边跟着换淡靛色，白底上有轮廓又不发灰",
-    "只本地出包，暂不推远端"
+    "切去双休看一眼再切回轮班，原来排好的表还在",
+    "导入旧配置后回第一页改选，这次真会生效",
+    "删掉班次后保存，不会再把删掉的班次写回去"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.20.4/weekday-alarm-1.20.4.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.20.4"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.21.0/weekday-alarm-1.21.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.21.0"
 }

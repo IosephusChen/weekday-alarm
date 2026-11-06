@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(291, "1.21.0", "2026/11/06", "三处「改了等于没改」",
+                    "切去双休看一眼再切回轮班，原来排好的表还在",
+                    "导入旧配置后回第一页改选，这次真会生效",
+                    "删掉班次后保存，不会再把删掉的班次写回去"),
             new Entry(290, "1.20.4", "2026/11/06", "浅色格子洗白",
                     "浅色主题的轮班格子从灰蓝底换成纯白，不再灰扑扑",
                     "格子里「班」「休」两个色块重新浮起来，不再糊成一片",

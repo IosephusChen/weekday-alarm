@@ -148,4 +148,7 @@ tasks.withType(Test).configureEach {
     // 上一次同 commit 的「测试全绿」，重跑 job 时会直接恢复结果、一条测试都不跑。
     // 编译产物照旧走缓存（省的是那 30~40 秒），测试必须真跑。
     outputs.cacheIf { false }
+    // 别加 -XX:TieredStopAtLevel=1 想省 JIT（2026-11-07 试过）：13 条测试挂在
+    // "Out of space in CodeCache for adapters" 上，整轮从 77 秒涨到 122 秒。
+    // Robolectric 的沙箱 classloader 要编的类比普通测试多得多，C1 的 CodeCache 装不下。
 }

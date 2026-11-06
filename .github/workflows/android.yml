@@ -49,7 +49,40 @@ jobs:
       # push 分支写在前面：workflow_dispatch 没有 head_commit，靠短路绕开。
       IS_RELEASE: ${{ (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:')) || (github.event_name == 'workflow_dispatch' && inputs.build_release) }}
     steps:
+      # fetch-depth: 0：下面那步要拿 github.event.before 做 diff，浅克隆里没有这个对象，
+      # 判断会永远失败、永远走全量。仓库只有 7MB，全克隆比再写一套 fetch 逻辑省心。
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2026-11-07：只改文档时不必跑那 1082 条测试——代码没动，结果不可能变。
+      # 但 version job 的文档一致性检查照跑，DocsConsistencyTest 也照跑（它读 docs/）。
+      # 判定保守到近乎笨：只要有一个文件不在 docs/ 或根目录的 .md 里就走全量；
+      # 拿不到 base commit（dispatch、force push、新建分支）也走全量。
+      # 宁可白跑三分钟，不可漏跑一条。
+      - name: Detect docs-only change
+        id: scope
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "拿不到 base commit，按全量跑"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
+          echo "$CHANGED"
+          if [ -z "$CHANGED" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if echo "$CHANGED" | grep -qvE '^(docs/|[^/]+\.md$)'; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "有代码改动，跑全量"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "只有文档改动，只跑 DocsConsistencyTest"
+          fi
 
       # wrapper 里的 distributionUrl 指向腾讯镜像（本地开发快），但 CI 机器在境外，
       # 从腾讯拉 130MB 又慢又可能超时。官方源会重定向到 GitHub 自己的 release 资产，
@@ -80,7 +113,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Unit tests
+        if: ${{ steps.scope.outputs.docs_only != 'true' }}
         run: ./gradlew testDebugUnitTest --console=plain --stacktrace
+
+      # 文档提交只跑这一条：它读 docs/ 下的更新日志与使用说明，是唯一会被文档影响的测试。
+      - name: Docs consistency only
+        if: ${{ steps.scope.outputs.docs_only == 'true' }}
+        run: ./gradlew testDebugUnitTest --tests "*DocsConsistencyTest*" --console=plain --stacktrace
 
       # 只扫 debug。release 变体与 debug 的源码、资源完全一样，差的只有 R8 与
       # BuildConfig 常量，lint 的 fatal 结论不会因此不同；而 release 那一遍要多建

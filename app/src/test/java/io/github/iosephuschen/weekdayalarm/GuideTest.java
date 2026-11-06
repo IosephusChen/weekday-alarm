@@ -1467,6 +1467,51 @@ public class GuideTest {
                 ((TextView) a.findViewById(R.id.btn_next)).getText().toString());
     }
 
+    /**
+     * 导入旧配置后回第 1 页改选，这次改选要真的生效（v1.21.0）。
+     *
+     * <p>{@code onImportedFromBackup()} 里 {@code draft = ScheduleDraft.load(this)} 换掉了
+     * 字段，但 {@code PlanCardsView} 构造时把旧草稿存成了 final 字段——于是第 1 页画的、
+     * 点卡片改的，都是导入前那份；而「开始使用」提交的是导入后那份新草稿。
+     * 用户看到的是「点了单休，卡片也变紫了」，结果班表还是导入的那套。
+     *
+     * <p>两段都断言：第 1 页要显示导入后的制度（不是「用户刚点的」，是盘上那份），
+     * 改选之后提交到盘上的必须是改选的结果。
+     */
+    @Test
+    public void importThenBackToPage1_keepsUserCorrection() {
+        GuideActivity a = fresh();
+        // 模拟导入一份「单休」的旧配置：数据已经写盘，界面还停在第 1 页
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.SINGLE_REST_SUN);
+
+        a.onImportedFromBackup(new ConfigBackup.Result(true, "已导入 1 个闹钟", 1));
+        ShadowLooper.idleMainLooper();
+
+        // 点「上一步」回第 1 页（导入后停在权限页，是第 3 页）
+        a.findViewById(R.id.btn_prev).performClick();
+        ShadowLooper.idleMainLooper();
+        a.findViewById(R.id.btn_prev).performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals("应回到第 1 页", 0, flipperIndex(a));
+
+        assertTrue("第 1 页该显示导入进来的「单休」",
+                a.findViewById(R.id.card_plan_single).isSelected());
+        assertFalse("不该还停在导入前的「双休」",
+                a.findViewById(R.id.card_plan_double).isSelected());
+
+        // 用户发现导入错了，改成双休
+        a.findViewById(R.id.card_plan_double).performClick();
+        ShadowLooper.idleMainLooper();
+
+        // 走到最后一步点「开始使用」：提交的必须是刚改的双休
+        for (int i = 0; i < 4; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        assertEquals("用户刚选的「双休」不能被静默丢弃",
+                WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
+    }
+
     // ================= 页码：从通知点回来不能回到第 1 页（v1.0.3）=================
 
     private static int flipperIndex(GuideActivity a) {

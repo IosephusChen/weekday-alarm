@@ -192,6 +192,13 @@ final class ScheduleDraft {
             Prefs.setCycleKind(c, kind);
             Prefs.setCycleLen(c, cycleLen);
             Prefs.setCycleStart(c, cycleStart != null ? cycleStart : LocalDate.now());
+            // v1.21.0：写盘前按盘上的班次表剪一遍。班次被删掉之后，草稿里排过它的那几格
+            // 还是旧 id——原样写回去，那天 cycleMask 说「上班」而 shiftOn 找不到班次返回
+            // null，日历显示上班、闹钟没有时刻。所有入口（班表页 / 引导页）都要过 commit，
+            // 所以兜在这一层，而不是弹窗的「完成」回调里。
+            if (rotation() && pruneIds(shiftCycle, Prefs.getShifts(c))) {
+                cycleMask = maskOf(shiftCycle);
+            }
             Prefs.setCycleMask(c, cycleMask);
             Prefs.setCycleHoliday(c, cycleHoliday);
             Prefs.setShiftCycle(c, rotation() ? shiftCycle : null);
@@ -216,6 +223,37 @@ final class ScheduleDraft {
             Prefs.setShiftCycle(c, null);
         }
         dirty = false;
+    }
+
+    /**
+     * 把 {@code cycle} 里已经不在班次表里的 id 换成 -1（v1.21.0）。
+     *
+     * <p>班次能删，草稿里排过它的那几格不会自己跟着变；删班次的弹窗只改盘上那份，
+     * 草稿那份要到这里才剪。两个调用点：{@link #commit} 写盘前（所有入口的兜底），
+     * 和「切回轮班时把备份捡回来」那条路（备份里可能留着早就删掉的班次）。
+     *
+     * @return 是否改动了 {@code cycle}
+     */
+    static boolean pruneIds(int[] cycle, List<Shift> defs) {
+        if (cycle == null) return false;
+        boolean changed = false;
+        for (int i = 0; i < cycle.length; i++) {
+            if (cycle[i] < 0) continue;
+            boolean found = false;
+            if (defs != null) {
+                for (Shift s : defs) {
+                    if (s.id == cycle[i]) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (!found) {
+                cycle[i] = -1;
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     static long maskOf(int[] cycle) {

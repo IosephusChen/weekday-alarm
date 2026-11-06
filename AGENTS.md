@@ -341,10 +341,50 @@ commit message 以 `release:` 开头并推到 main，CI 的 release job 直接�
 只有正式签名包能证明。其余（间距、配色、圆角、深色主题、文案、双位数文字挤不挤）
 全部用 preview 看，改十遍也不用等 CI。
 
-**它不产 Release**：发版仍只走 `release:` 提交触发 CI 的 release job，
-不要把 preview 包传到 Release 或 `version.json`。
+**它有一个专用的预发布位**：tag `preview`，标记为 Pre-release，每次构建覆盖同一个文件。
+它不抢 `releases/latest`、不进 `version.json`、不会被当成正式版——正式版仍只走
+`release:` 提交触发 CI 的 release job。除此之外，不要把 preview 包塞进任何正式 Release。
 
 两个包同时装着时，各自的闹钟都会响——测预览版时先把正式版的班表清掉，或者只留一个。
+
+### 给手机送包：Release → 网盘，别用系统分享面板
+
+**别用分享面板。** 它返回的「已分享」只表示面板被调起，**不表示用户接收了**。拿不到回执
+就会连锁出三个错：用户没及时点 → 判定失败 → 再推一次 → 反复推 → 几轮之后忘了到底推没推。
+2026-11-07 用户明确否掉这条路，别回头。
+
+**走这条，全程无人值守、每一步都有回执：**
+
+```bash
+# 1. preview：覆盖专用预发布位（文件名固定，URL 永不变化）
+cp app/build/outputs/apk/preview/app-preview.apk /workspace/weekday-alarm-preview.apk
+gh release upload preview /workspace/weekday-alarm-preview.apk --clobber
+
+# 2. 正式版：本来就在 Release 上，跳过这一步
+```
+
+然后把 URL 交给百度网盘的 `file_upload_by_url`。**必须套国内代理**——百度服务器直连
+GitHub 返回 `errno: 1003`（实测百度自家图片能成，所以不是接口坏了，是它拉不到 GitHub）：
+
+```
+https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm/releases/download/preview/weekday-alarm-preview.apk
+```
+
+可用的代理：`gh-proxy.com`、`ghproxy.net`、`ghfast.top`（`ghproxy.cc` 不通）。
+
+| 项 | 值 |
+|---|---|
+| 落点 | `/打工人闹钟/`——网盘 App 首页可见。`/apps/bdpan/` 是应用沙箱目录，只有 CLI 能写，手机端要点进「我的应用数据」才找得到 |
+| 回执 | 返回 `errno: 0` + `fsid` + `size`，**size 与本地字节数一致才算送达** |
+| 文件名 | 连接器会自动插 `_yyyymmddHHMMSS`，覆盖不了同名文件；目录里会按时间累积 |
+| 依赖 | `gh` 能拿到 token + 百度网盘连接器。**不装 `bdpan` CLI、不重新授权** |
+
+**为什么不用 CLI 上传**：`bdpan` 是 17MB 二进制，凭证 `enc:v1` 加密落盘且绑机器，
+沙箱每次新会话全丢——等于每次开工重装 + 重新授权一次。连接器是 MCP，跨会话常驻。
+这也是「换夸克网盘能不能解决」的答案：不能，换谁都一样，问题在沙箱不持久，不在网盘。
+
+**正式版发完也镜像一份**：把 URL 里的 `/preview/` 和文件名换成 `vX.Y.Z` 那一版，同样套代理
+拉一次。目录里会按版本累积，旧包由用户自己删（连接器没有删除接口，CLI 也删不了根目录区）。
 
 ### 三条禁止
 

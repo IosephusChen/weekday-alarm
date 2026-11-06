@@ -443,7 +443,10 @@ final class PlanCardsView {
                 // 上下留白不对称（v1.20.3）：效果图里班次块下方比上方松一档，
                 // v1.20.2 上下都 5dp，真机看块像贴着格底往下坠。下方给到 7dp。
                 // v1.22.1：上 5 → 6dp，给进格后的胶囊留一点呼吸。
-                cell.setPadding(0, dp(6), 0, dp(7));
+                // v1.22.2：整体抬一档，上 8 / 下 9。7 列时格宽才 38dp，胶囊几乎顶满
+                // 横向，6dp 上留白和左右一比显得贴。下侧继续压过上方一档——
+                // v1.20.3 那条「块别贴着格底」的真机结论照旧守，两个值一起抬。
+                cell.setPadding(0, dp(8), 0, dp(9));
                 cell.setTag(TAG_CYCLE_CELL);
                 FrameLayout.LayoutParams cellLp = new FrameLayout.LayoutParams(
                         FrameLayout.LayoutParams.MATCH_PARENT,

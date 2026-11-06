@@ -264,14 +264,62 @@ public class GuideTest {
         assertEquals("上限放开到 62", "62 天", text(a, R.id.tv_plan_cycle));
         LinearLayout box = a.findViewById(R.id.box_plan_cycle_days);
         assertEquals("62 天 = 9 行（每行 7 格）", 9, box.getChildCount());
-        assertEquals("最后一行剩 6 格", 6,
-                ((LinearLayout) box.getChildAt(8)).getChildCount());
+        // v1.22.0：末行不再「有 6 格就算完」——每行必须凑满 cols 个位置，
+        // 缺的那格补 INVISIBLE 占位，否则 weight 会把 6 格均分整行、比上面一行宽 1/6。
+        LinearLayout lastRow = (LinearLayout) box.getChildAt(8);
+        assertEquals("末行 7 个位置（6 格 + 1 占位）", 7, lastRow.getChildCount());
+        assertEquals("第 6 个还是真格子", View.VISIBLE, lastRow.getChildAt(5).getVisibility());
+        assertEquals("第 7 个是占位、不可见", View.INVISIBLE, lastRow.getChildAt(6).getVisibility());
 
         a.planCardsForTest().setCycleLenForTest(1);
         ShadowLooper.idleMainLooper();
         assertEquals("最少 1 天", "1 天", text(a, R.id.tv_plan_cycle));
         assertEquals("1 天 = 1 行", 1, a.findViewById(R.id.box_plan_cycle_days) instanceof LinearLayout
                 ? ((LinearLayout) a.findViewById(R.id.box_plan_cycle_days)).getChildCount() : 0);
+    }
+
+    /**
+     * v1.22.0：周期不是 7 的倍数时，同一张表里会跑出两种格子宽度。
+     *
+     * <p>真机截图（10 天周期）就是这样：前 7 格各占 1/7 宽，第 8–10 格各占 1/3 宽。
+     * 根因是分行按「每 7 个一行」硬切、每格又 {@code weight=1} 均分<b>当前行</b>——
+     * 末行只有 3 格时，这 3 格把整行按三分之一分掉，约是上面 7 格的 2.3 倍。
+     *
+     * <p>这里把 10 天铺到 1080px 量一遍：按 {@code rows=⌈10/7⌉=2}、{@code cols=⌈10/2⌉=5}
+     * 应排成 2 行 × 5 列，十格逐一同宽。
+     */
+    @Test
+    public void rotation_longCycle_cellsEqualWidth() {
+        wipe();
+        seedRotation();
+        GuideActivity a = launch();
+        a.planCardsForTest().setCycleLenForTest(10);
+        ShadowLooper.idleMainLooper();
+
+        LinearLayout box = a.findViewById(R.id.box_plan_cycle_days);
+        int w = 1080;
+        box.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        box.layout(0, 0, w, box.getMeasuredHeight());
+
+        assertEquals("10 天 = 2 行", 2, box.getChildCount());
+        int[] widths = new int[10];
+        int k = 0;
+        for (int r = 0; r < box.getChildCount(); r++) {
+            LinearLayout row = (LinearLayout) box.getChildAt(r);
+            assertEquals("第 " + (r + 1) + " 行应有 5 个位置", 5, row.getChildCount());
+            for (int c = 0; c < row.getChildCount(); c++) {
+                widths[k++] = row.getChildAt(c).getWidth();
+            }
+        }
+        assertTrue("量到宽度为 0，说明没 layout 上、这条等于没测", widths[0] > 0);
+        for (int i = 1; i < widths.length; i++) {
+            // 容差 1px：总宽减掉四个间距后除不尽 5，LinearLayout 把余数补给前几格，
+            // 211 / 212 这种是像素取整、不是设计。旧代码是 7 格 vs 3 格差 100+ px。
+            assertTrue("第 " + i + " 格宽 " + widths[i] + "，第 0 格宽 " + widths[0]
+                            + "——差超过 1px 就说明又排成了两种格子宽度",
+                    Math.abs(widths[i] - widths[0]) <= 1);
+        }
     }
 
     /**
@@ -322,11 +370,18 @@ public class GuideTest {
     }
 
     /**
-     * v1.20.0 丙：格子一律只写「周X」两字，不写「第 N 天」；「今天第几天」胶囊保留、
-     * 文案不动——它存的是 cycleStart 循环锚点，不是格子序号，删了轮班对不上真实日历。
+     * 格子主标改成「第 N 天」——2026-11-06 17:43 用户明确推翻了 v1.20.0 那条
+     * 「一律只写周X、不写第 N 天」的旧决定。
+     *
+     * <p><b>为什么推翻</b>：周期超过 7 天时「周X」在周期里会重复——10 天周期里第 1 格和
+     * 第 8 格都是「周五」，只写周X 就分不出这格是周期的第几天，而轮班本身是滚动周期、
+     * 不是日历。周几改由每格顶部那枚胶囊承载（见下面那条），两边各说一件事、不重复。
+     *
+     * <p>卡片标题区那枚「第 1 天」锚点胶囊（{@code tv_plan_start}）不动：它存的是
+     * cycleStart，与格子序号是两回事。
      */
     @Test
-    public void rotation_cycleCells_labelOnlyWeekday() {
+    public void rotation_cycleCells_showDayNumber() {
         wipe();
         seedRotation();
         GuideActivity a = launch();
@@ -335,25 +390,26 @@ public class GuideTest {
                 R.id.box_plan_cycle_days)).getChildAt(0);
         for (int i = 0; i < row.getChildCount(); i++) {
             View c = row.getChildAt(i);
-            TextView week = c.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK);
-            assertNotNull("第 " + i + " 格要有「周X」标签", week);
-            assertTrue("标签只写两字「周X」，实际：" + week.getText(),
-                    week.getText().toString().matches("周[一二三四五六日]"));
-            assertFalse("标签里不该再写「第 N 天」",
-                    week.getText().toString().contains("第"));
+            TextView dayNo = c.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK);
+            assertNotNull("第 " + i + " 格要有「第 N 天」标签", dayNo);
+            assertEquals("周期第 " + (i + 1) + " 格应写「第 " + (i + 1) + " 天」，实际："
+                    + dayNo.getText(), "第 " + (i + 1) + " 天", dayNo.getText().toString());
             assertNotNull("格子要有班次名", c.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
         }
         assertEquals("今天第几天胶囊要保留、文案不动", "第 1 天", text(a, R.id.tv_plan_start));
     }
 
     /**
-     * v1.20.2（真机逐像素比对收尾）：四格统一底色、格内严格两层、「今天」是骑沿角标。
+     * 每格顶部都挂一枚「周X」胶囊（2026-11-06 17:43 用户：「每一个格子都带周 x 胶囊，
+     * 只有今天有紫色外框线」）；今天那格靠紫框 + 实心胶囊区分。
      *
-     * <p>用户 07:45 指出「今天格子里背景是黑的，其他格子是灰的」——根因是
-     * {@code bg_plan_day} 的 selected 换底。这里从 View 树钉住：四格同一两态 selector、
-     * 恰好一格 selected 且与角标同格、content 恰好两层（周X + 班次色块，无角标占位行）、
-     * 今天格那枚「今天」在 slot 上而不在格内；两态 solid 同色另由静态守门读 XML 钉死。
-     * 防止有人图省事又退回 INVISIBLE 占位或 selected 换底。
+     * <p>胶囊从「今天专属」变成「人人都有」之后，<b>今天的识别就只剩紫框一条</b>，
+     * 所以这里同时钉住：恰好一格 selected；该格胶囊用实心底（字色 {@code card}），
+     * 其余格用淡靛底（字色 {@code indigo}）——两种底色不能一样，否则今天淹没在表里。
+     *
+     * <p>历史约束照旧：四格统一格底（bg_cycle_cell 两态同 solid）、格内严格两层
+     * （第 N 天 + 班次色块）、胶囊挂在 slot 上而不塞进 content。v1.20.2 那三条
+     * 真机返工过的坑，一条都不许退回去。
      */
     @Test
     public void rotation_cycleCells_unifiedGroundAndFloatingBadge() {
@@ -365,6 +421,10 @@ public class GuideTest {
                 R.id.box_plan_cycle_days)).getChildAt(0);
         Drawable firstGround = null;
         int badgeCount = 0, selectedCount = 0;
+        String todayBadgeText = null;
+        int todayBadgeColor = 0, otherBadgeColor = 0;
+        boolean hasOther = false;
+
         for (int i = 0; i < row.getChildCount(); i++) {
             ViewGroup slot = (ViewGroup) row.getChildAt(i);
             View cell = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CELL);
@@ -372,8 +432,7 @@ public class GuideTest {
 
             // ③ 四格统一底色：都用同一个两态 selector（bg_cycle_cell）。
             // 不比 constantState 对象身份——Robolectric 下每格各自 inflate 一个新实例，
-            // 真机有资源缓存反而同一对象，拿身份判会随环境翻脸。这里钉「同类」+「恰好
-            // 一格 selected 且与角标同格」；「两态 solid 同色」由下面那条静态守门读 XML 钉死。
+            // 真机有资源缓存反而同一对象，拿身份判会随环境翻脸。
             Drawable ground = cell.getBackground();
             assertNotNull("第 " + i + " 格要有底色", ground);
             assertTrue("底色应是两态 selector（bg_cycle_cell），不是纯色块",
@@ -382,29 +441,42 @@ public class GuideTest {
             else assertEquals("四格底色同一种 drawable",
                     firstGround.getClass(), ground.getClass());
 
-            // ② 格内严格两层，且角标不占 content
+            // ② 格内严格两层，且胶囊不占 content
             ViewGroup content = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_CONTENT);
             assertNotNull("第 " + i + " 格要有两层内容层", content);
-            assertEquals("content 恰好周X + 班次色块两层", 2, content.getChildCount());
-            assertNotNull("要有周X 标签", content.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK));
+            assertEquals("content 恰好「第 N 天」+ 班次色块两层", 2, content.getChildCount());
+            assertNotNull("要有第 N 天标签", content.findViewWithTag(PlanCardsView.TAG_CYCLE_WEEK));
             assertNotNull("要有班次色块", content.findViewWithTag(PlanCardsView.TAG_CYCLE_SHIFT));
-            assertNull("「今天」角标不该塞进格内",
-                    content.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE));
+            assertNull("周X 胶囊不该塞进格内", content.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE));
+
+            // ① 每格都要有胶囊，且文案是周X
+            View badge = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
+            assertNotNull("第 " + i + " 格也要有「周X」胶囊（每格一枚）", badge);
+            badgeCount++;
+            String badgeText = ((TextView) badge).getText().toString();
+            assertTrue("胶囊文案应是周X，实际：" + badgeText,
+                    badgeText.matches("周[一二三四五六日]"));
+            assertSame("胶囊挂在 slot 上、与格子本体平级（骑在格沿）", slot, badge.getParent());
 
             boolean selected = cell.isSelected();
-            if (selected) selectedCount++;
-            View badge = slot.findViewWithTag(PlanCardsView.TAG_CYCLE_BADGE);
-            if (badge != null) {
-                badgeCount++;
-                assertEquals("骑沿角标文案", "今天", ((TextView) badge).getText().toString());
-                assertSame("角标挂在 slot 上、与格子本体平级（骑在格沿）",
-                        slot, badge.getParent());
-                assertTrue("有角标的格子才是今天（selected）", selected);
+            if (selected) {
+                selectedCount++;
+                todayBadgeText = badgeText;
+                todayBadgeColor = ((TextView) badge).getCurrentTextColor();
+            } else {
+                hasOther = true;
+                otherBadgeColor = ((TextView) badge).getCurrentTextColor();
             }
         }
-        assertEquals("一周期里恰好一枚「今天」角标", 1, badgeCount);
+
+        assertEquals("一周期里每格一枚胶囊", row.getChildCount(), badgeCount);
         assertEquals("恰好一格 selected（今天）——selected 只管描边，不许再拿它换底色",
                 1, selectedCount);
+        assertNotNull("今天那格要有胶囊", todayBadgeText);
+        assertTrue("非今天格也要有胶囊（否则这条比的是同一个对象）", hasOther);
+        assertTrue("今天的胶囊要用实心底（字色 card）、其余格用淡靛底（字色 indigo）——"
+                        + "胶囊人人都有之后，今天只能靠这两条区分",
+                todayBadgeColor != otherBadgeColor);
         assertEquals("「第 1 天」锚点胶囊不动", "第 1 天", text(a, R.id.tv_plan_start));
     }
 
@@ -438,6 +510,28 @@ public class GuideTest {
                 xml.contains("@color/cycle_cell_stroke"));
         assertFalse("不许再借 pill_rest_stroke——那个值在夜里比卡片还暗，边会整条消失",
                 xml.contains("@color/pill_rest_stroke"));
+    }
+
+    /**
+     * v1.22.0 静态守门：今天格描边 1.5dp → 2dp。
+     *
+     * <p>为什么必须加粗：胶囊从「今天专属」变成「每格一枚」之后，今天那格和别的格子
+     * 长得一模一样，<b>紫框成了唯一的识别线索</b>（用户 2026-11-06 17:43 原话
+     * 「只有今天有紫色外框线」）。1.5dp 压在 6dp 格间距里太弱，扫一眼找不到。
+     */
+    @Test
+    public void cycleToday_cell_strokeIs2dp() throws Exception {
+        String xml = new String(Files.readAllBytes(new File(
+                "src/main/res/drawable/bg_cycle_cell.xml").toPath()), StandardCharsets.UTF_8);
+        Matcher sel = Pattern.compile(
+                "state_selected=\"true\"\\s*>\\s*<shape[^>]*>(.*?)</shape>",
+                Pattern.DOTALL).matcher(xml);
+        assertTrue("应能定位 selected（今天）那一态", sel.find());
+        Matcher stroke = Pattern.compile("<stroke\\s+android:width=\"([0-9.]+)dp\"")
+                .matcher(sel.group(1));
+        assertTrue("selected 态要有描边", stroke.find());
+        assertEquals("今天格描边要 2dp——每格都有胶囊之后，紫框是今天唯一的线索",
+                "2", stroke.group(1));
     }
 
     /**

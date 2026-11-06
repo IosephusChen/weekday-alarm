@@ -174,6 +174,16 @@
          两边各走各的，所以单独起名。 -->
     <color name="cycle_cell_stroke">#E4E7F5</color>
 
+    <!-- 普通格「周X」胶囊的底与边（v1.22.0）。2026-11-06 17:43 用户要求
+         「每一个格子都带周 x 胶囊，只有今天有紫色外框线」——胶囊从「今天专属」
+         变成每格一枚，于是需要一种比今天那枚实心 indigo 轻、又能从格底浮起来的样子。
+         底取 guide_option_selected 同值 #EEF0FE（浅靛），边比它深一档；
+         字压 @color/indigo：#4F46E5 对 #EEF0FE 是 5.9:1，9sp bold 够读。
+         今天那枚继续走 bg_cycle_today（实心 indigo + 反白字）——两者不能同色，
+         同色就等于今天淹没在表里，而它现在只剩紫框这一条线索了。 -->
+    <color name="cycle_badge_bg">#EEF0FE</color>
+    <color name="cycle_badge_line">#DDE1FB</color>
+
     <!-- 「班」胶囊的底（v1.5.0 二次调）。与 verdict_bg 同值不同名：一个说的是
          「这张表排成什么样」，一个说的是「这一天上班」，将来动其中一个不该连累另一个。
          字压 @color/indigo：#4F46E5 对 #E7EAFE 是 5.6:1，12sp bold 够。 -->

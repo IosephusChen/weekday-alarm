@@ -9,6 +9,22 @@
 任何一处不等就退出，ref 一行不动。手工构造对象差一个字节就是一次历史分叉，
 没有这道闸不能用。
 
+2026-11-06 起分两条路，因为「本地有没有远端那个提交对象」决定了闸门能卡到多细：
+
+  ① 本地有这个对象（平时推送、本机 git pull 之后）：逐提交重建，**提交 SHA 必须
+     相等**。最严，所有校验全在。
+
+  ② 本地没这个对象（在 github.com 网页上改过文件）：提交层的 SHA 注定不等——
+     git 的 SHA 里含着 committer 时间戳，网页提交那个时间戳是 GitHub 服务端写的，
+     事后无法逐字节还原（试过用 patch 里的 Date 行还原作者时区，committer 那一半
+     仍对不上）。这种情形退一档：**tree 必须相等、每个 blob 的 SHA 必须相等、提交
+     的父必须连续**，只放开 commit 自身那一个 SHA。网页提交让 ② 从异常变成常态，
+     不让它走通，这条应急通道每次都得人工对齐。
+
+②产生的提交在远端是新 SHA（父是远端真实提交），本地仍没有它，所以推送完会把
+「本地 SHA ↔ 远端 SHA」这层对应关系记进 `.git/push_via_api.state`，下次接着用。
+副作用：`git status` 会一直显示「领先 N 个提交」，那是哈希差异不是内容差异。
+
 用法：
     source <skill>/scripts/get_token.sh github
     tools/push_via_api.py                 # 推到 origin 的当前分支
@@ -27,6 +43,7 @@
 import argparse
 import base64
 import datetime
+import json
 import os
 import re
 import subprocess
@@ -99,6 +116,92 @@ def local_tree_meta(commit):
         mode, typ, sha = head.split()
         meta[path] = (mode, typ, sha)
     return meta
+
+
+def create_tree(api, base, payload, workflow_paths):
+    """建 tree，并把一种特殊 404 翻译成人话。
+
+    2026-11-06 实测：令牌缺 `workflow` scope 时，任何「会改到 .github/workflows/」的
+    tree 请求都返回 404 Not Found（不是 403），同一批其他路径全是 201。看着像仓库
+    不存在或路径写错，实际上只是权限——今天为这一条反复排查了两轮。
+    """
+    r = api.s.post(API + base + "/git/trees", json=payload, timeout=120)
+    if r.status_code == 404 and workflow_paths:
+        sys.exit(
+            "建 tree 返回 404。改动里有 %d 个 .github/workflows/ 下的文件，而当前令牌\n"
+            "  没有 workflow scope——GitHub 对这种情况返回 404 而不是 403，看起来像仓库\n"
+            "  或路径不存在，实际是权限。受影响：%s\n"
+            "  出路：① 在网页上改这几个文件（浏览器会话不受此限）；\n"
+            "        ② 换一个带 Workflows: Read and write 的 fine-grained PAT。"
+            % (len(workflow_paths), ", ".join(sorted(workflow_paths)[:4])))
+    if r.status_code not in (200, 201):
+        sys.exit("HTTP %d  POST %s/git/trees\n%s" % (r.status_code, base, r.text[:500]))
+    return r.json()["sha"]
+
+
+def has_object(sha):
+    """本地有没有这个提交对象。空串也返回 False，省掉调用方的一次判空。"""
+    if not sha:
+        return False
+    return subprocess.run(["git", "cat-file", "-e", sha + "^{commit}"],
+                          capture_output=True).returncode == 0
+
+
+def state_path():
+    return os.path.join(git("rev-parse", "--git-dir"), "push_via_api.state")
+
+
+def load_state(branch):
+    """上次「本地 SHA ↔ 远端 SHA」的对应关系。读不到就当没有。"""
+    try:
+        with open(state_path(), encoding="utf-8") as f:
+            return json.load(f).get(branch)
+    except (OSError, ValueError):
+        return None
+
+
+def save_state(branch, local, remote):
+    p = state_path()
+    try:
+        with open(p, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    data[branch] = {"local": local, "remote": remote}
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def diff_between_trees(tree_a, tree_b):
+    """[(status, path)]。用 tree 而不是 commit 来比：②那条路里「远端那个提交」本地
+    没有对象，`diff-tree <sha>` 会直接失败；而两边的 tree 都能在本地算出来。"""
+    out = []
+    for line in git("diff-tree", "-r", "--no-commit-id", "--name-status",
+                    "--no-renames", tree_a, tree_b).splitlines():
+        parts = line.split("\t")
+        out.append((parts[0], parts[1]))
+    return out
+
+
+def create_tree(api, base, payload, workflow_paths):
+    """建 tree，并把一种特殊 404 翻译成人话。
+
+    2026-11-06 实测：令牌缺 `workflow` scope 时，任何「会改到 .github/workflows/」的
+    tree 请求都返回 404 Not Found（不是 403），同一批其他路径全是 201。看着像仓库
+    不存在或路径写错，实际只是权限——为这一条反复排查了两轮。
+    """
+    r = api.s.post(API + base + "/git/trees", json=payload, timeout=120)
+    if r.status_code == 404 and workflow_paths:
+        sys.exit(
+            "建 tree 返回 404。改动里有 %d 个 .github/workflows/ 下的文件，而当前令牌\n"
+            "  没有 workflow scope——GitHub 对这种情况返回 404 而不是 403，看起来像仓库\n"
+            "  或路径不存在，实际是权限。受影响：%s\n"
+            "  出路：① 在网页上改这几个文件（浏览器会话不受此限）；\n"
+            "        ② 换一个带 Workflows: Read and write 的 fine-grained PAT。"
+            % (len(workflow_paths), ", ".join(sorted(workflow_paths)[:4])))
+    if r.status_code not in (200, 201):
+        sys.exit("HTTP %d  POST %s/git/trees\n%s" % (r.status_code, base, r.text[:500]))
+    return r.json()["sha"]
 
 
 def push_tag(api, base, name, dry_run):
@@ -205,16 +308,44 @@ def main():
     remote = r.json()["object"]["sha"]
     print("远端 HEAD %s" % remote[:7])
 
+    remote_tree = api.req("GET", base + "/git/commits/" + remote)["tree"]["sha"]
+    head_tree = git("rev-parse", head + "^{tree}")
+    strict = has_object(remote)
+
+    parent_sha, prev_tree, prev_local = remote, remote_tree, remote
+
     if remote == head:
         print("分支已是最新")
         commits = []
-    else:
+    elif strict:
         if subprocess.run(["git", "merge-base", "--is-ancestor", remote, head]).returncode != 0:
             sys.exit("远端有本地没有的提交（或已分叉），拒绝自动推送，请先人工对齐")
         commits = git("rev-list", "--reverse", "%s..%s" % (remote, head)).splitlines()
+    else:
+        st = load_state(branch)
+        if head_tree == remote_tree:
+            print("内容与远端一致（SHA 不同，网页端提交所致），视为已同步")
+            if not args.dry_run:
+                save_state(branch, head, remote)
+            commits = []
+        elif st and st.get("remote") == remote and has_object(st.get("local")):
+            prev_local = st["local"]
+            commits = git("rev-list", "--reverse", "%s..%s" % (prev_local, head)).splitlines()
+            print("本地没有远端 %s 这个对象（网页端提交所致），从上次同步点 %s 续推"
+                  % (remote[:7], prev_local[:7]))
+            print("  tree、blob、父链仍逐项校验，只放开 commit 自身那一个 SHA")
+        else:
+            sys.exit(
+                "本地缺远端提交 %s 的对象（在网页上改过文件），也没有可用的同步点。\n"
+                "  远端树 %s   本地树 %s\n"
+                "两条路：\n"
+                "  a) 换一台能直连 github.com 的机器 git pull --rebase，让本地拿到这个对象；\n"
+                "  b) 若确认远端那份改动本地已有（内容相同、只是哈希不同），在\n"
+                "     %s\n"
+                "     里加一条 {\"%s\": {\"local\": \"<本地对应的 sha>\", \"remote\": \"%s\"}} 再跑。"
+                % (remote[:7], remote_tree[:7], head_tree[:7],
+                   state_path(), branch, remote))
 
-    parent_sha = remote
-    parent_tree = api.req("GET", base + "/git/commits/" + remote)["tree"]["sha"]
     print("待推 %d 个提交\n" % len(commits))
 
     for idx, short in enumerate(commits, 1):
@@ -223,15 +354,12 @@ def main():
         if len(parents) != 1:
             sys.exit("提交 %s 有 %d 个父提交（merge），本脚本不支持，请用 git push"
                      % (c[:7], len(parents)))
-        if parents[0] != parent_sha:
+        if parents[0] != prev_local:
             sys.exit("提交 %s 的父是 %s，不是 %s——历史不连续"
-                     % (c[:7], parents[0][:7], parent_sha[:7]))
+                     % (c[:7], parents[0][:7], prev_local[:7]))
 
-        changes = []
-        for line in git("diff-tree", "-r", "--no-commit-id", "--name-status",
-                        "--no-renames", parent_sha, c).splitlines():
-            parts = line.split("\t")
-            changes.append((parts[0], parts[1]))
+        cur_tree = git("rev-parse", c + "^{tree}")
+        changes = diff_between_trees(prev_tree, cur_tree)
 
         meta = local_tree_meta(c)
         entries, deletes = [], []
@@ -262,14 +390,14 @@ def main():
                                 for p, (m, t, s) in sorted(meta.items())]}
             how = "全量（含 %d 个删除）" % len(deletes)
         else:
-            payload = {"base_tree": parent_tree, "tree": entries}
+            payload = {"base_tree": prev_tree, "tree": entries}
             how = "增量 %d 项" % len(entries)
 
-        new_tree = api.req("POST", base + "/git/trees", json=payload)["sha"]
-        want_tree = git("rev-parse", c + "^{tree}")
-        if new_tree != want_tree:
+        new_tree = create_tree(api, base, payload,
+                               [p for _, p in changes if p.startswith(".github/workflows/")])
+        if new_tree != cur_tree:
             sys.exit("tree 对不上：远端算出 %s，本地 %s（%s）。ref 未改动"
-                     % (new_tree[:7], want_tree[:7], how))
+                     % (new_tree[:7], cur_tree[:7], how))
 
         raw = git("cat-file", "commit", c, strip=False)
         header, _, message = raw.partition("\n\n")
@@ -280,29 +408,40 @@ def main():
             "author": ident(header, "author"),
             "committer": ident(header, "committer"),
         })["sha"]
-        if new_commit != c:
+        if strict and new_commit != c:
             sys.exit("commit 对不上：远端算出 %s，本地 %s。ref 未改动"
                      % (new_commit[:7], c[:7]))
 
-        print("  tree %s  commit %s  ✓ %s\n" % (new_tree[:7], new_commit[:7], how))
-        parent_sha, parent_tree = new_commit, new_tree
+        print("  tree %s  commit %s  ✓ %s%s\n"
+              % (new_tree[:7], new_commit[:7], how,
+                 "" if new_commit == c else "（远端新 SHA，内容同本地 %s）" % c[:7]))
+        parent_sha, prev_tree, prev_local = new_commit, new_tree, c
 
     if not args.dry_run and commits:
         api.req("PATCH", base + "/git/refs/heads/" + branch,
                 json={"sha": parent_sha, "force": False})
         final = api.req("GET", base + "/git/ref/heads/" + branch)["object"]["sha"]
-        if final != head:
-            sys.exit("更新后远端是 %s，不是 %s" % (final[:7], head[:7]))
+        if final != parent_sha:
+            sys.exit("更新后远端是 %s，不是 %s" % (final[:7], parent_sha[:7]))
         print("远端 %s 现在指向 %s  ✓" % (branch, final[:7]))
-        # 2026-11-06：本脚本走 api.github.com 逐对象推，不经过 git 的 push，
-        # 所以本地 origin/<branch> 这个远程跟踪 ref 不会自己前进。后果是两个假信号：
-        # git status 一直显示"领先 N 个提交"，tools/release.sh 的写者自检也算错。
-        # 多端协作之后"我这棵树到底比远端新多少"是要天天看的，顺手把它对齐。
-        try:
-            git("update-ref", "refs/remotes/%s/%s" % (args.remote, branch), head)
-            print("  本地 origin/%s 已同步到 %s" % (branch, head[:7]))
-        except SystemExit:
-            print("  ! 本地 origin/%s 没能同步（不影响推送结果）" % branch)
+        if final == head:
+            # 2026-11-06：本脚本走 api.github.com 逐对象推，不经过 git 的 push，
+            # 所以本地 origin/<branch> 这个远程跟踪 ref 不会自己前进。后果是两个假信号：
+            # git status 一直显示"领先 N 个提交"，tools/release.sh 的写者自检也算错。
+            # 多端协作之后"我这棵树到底比远端新多少"是要天天看的，顺手把它对齐。
+            try:
+                git("update-ref", "refs/remotes/%s/%s" % (args.remote, branch), head)
+                print("  本地 origin/%s 已同步到 %s" % (branch, head[:7]))
+            except SystemExit:
+                print("  ! 本地 origin/%s 没能同步（不影响推送结果）" % branch)
+        else:
+            # ②那条路：远端是合成出来的新 SHA，本地没有这个对象。不能把它当跟踪 ref
+            # ——git 会拿一个不存在的对象去 diff，`git status` 直接报 bad object。
+            # 改记「本地 SHA ↔ 远端 SHA」，下次从这条对应关系续推。
+            save_state(branch, head, final)
+            print("  远端是合成出的新 SHA（内容同本地 %s），已记下同步点" % head[:7])
+            print("  git status 之后会显示「领先 %d 个提交」，那是哈希差异、不是内容差异"
+                  % len(commits))
     elif args.dry_run and commits:
         print("[dry-run] 提交全部校验通过，分支 ref 未更新")
 

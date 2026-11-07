@@ -1373,6 +1373,27 @@ public class GuideTest {
                 ((TextView) a.findViewById(R.id.st_lock)).getCurrentTextColor());
     }
 
+    /**
+     * 状态行说「两个开关都要开」，副标题就必须点得出是哪两个（v1.23.6）。
+     *
+     * <p>2026-11-08 用户看截图后提：这一行只说了数量，名字一个没有；要知道另一个是
+     * 「后台弹出界面」，得翻到第 4 页点开弹窗才看得到。名字现在是副标题的职责，
+     * 状态行仍只回答「读不到、两项都要开」——两句话各管一件事，不互相重复。
+     */
+    @Test
+    public void lockRow_subtitleNamesBothSwitches() {
+        GuideActivity a = fresh();
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_NONE,
+                System.currentTimeMillis() - LockProbe.TIMEOUT_MS - 1000);
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertTrue("状态行仍说「两个开关」，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).contains("两个开关"));
+        String sub = text(a, R.id.tv_lock_sub);
+        assertTrue("副标题要点名「锁屏显示」，实际：" + sub, sub.contains("锁屏显示"));
+        assertTrue("副标题要点名「后台弹出界面」，实际：" + sub, sub.contains("后台弹出界面"));
+    }
+
     /** 测过并且通过：结果写回 Prefs，引导页 onResume 时这一行要跟着变。 */
     @Test
     public void lockRow_showsPassAfterProbe() {

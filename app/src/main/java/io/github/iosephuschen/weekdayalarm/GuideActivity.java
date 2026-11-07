@@ -1274,7 +1274,13 @@ public class GuideActivity extends AppCompatActivity {
                 if (isRotationNow() && !Prefs.isCycleHoliday(this)) return "只在上班日响，休息日跳过。";
                 return "只在上班日响，休息日和节假日自动跳过。";
             case 2:
-                return "已开启 " + permOn + " / " + permTotal + " 项 · 决定闹钟响不响、准不准";
+                // v1.23.4：原来写「已开启 3 / 3 项」。这一页共 5 行，其中自启动、
+                // 锁屏显示写着「系统读不到」不计入分母，于是列表底下出现一个 3——
+                // 斜杠形式读起来像进度条，用户会去找「剩下 2 项去哪了」。
+                // 把「能查的」写进句子，数字才和眼睛对得上。
+                return permOn >= permTotal
+                        ? getString(R.string.guide_perm_all, permTotal)
+                        : getString(R.string.guide_perm_part, permTotal, permOn);
             default:
                 return "只是试一下，不占正式排班。";
         }

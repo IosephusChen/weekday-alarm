@@ -246,9 +246,10 @@ final class AlarmRowRenderer {
             time.setTextColor(skipDay != null || resting
                     ? ContextCompat.getColor(activity, R.color.sub) : titleColor);
             time.setTextSize(26);
-            // 定宽列里居中：数字按 "00:00" 量的宽度正好填满，居中等于没变；
-            // 「休」「—」这种单字符不居中会贴在列左侧，比其他行的时间偏出一截
-            time.setGravity(Gravity.CENTER);
+            // 左对齐，不居中：定宽列的用处就是「行内时间、行间分隔线、卡头分隔线落在
+            // 同一条竖线上」（见上面 timeW 的注释）。实测过居中——「休」的墨迹会右移
+            // 24dp，第一行 07:30 仍贴左，两行左边缘参差。单字符右侧留白是它的代价，
+            // 但换掉整列的基准不值。
             time.setTypeface(TYPEFACE_MEDIUM);
             // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准
             time.setIncludeFontPadding(false);

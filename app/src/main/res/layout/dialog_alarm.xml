@@ -314,20 +314,37 @@
         android:layout_marginTop="18dp"
         android:text="铃声" />
 
-    <TextView
-        android:id="@+id/tv_alarm_ringtone"
+    <!-- v1.23.4：加箭头。此前这一格和「重复」是同一套 bg_field_outline 可点卡片，
+         但「重复」右侧有紫箭头、这里没有——同一个弹窗里两格长不一样，
+         用户分不出「铃声」能不能点。箭头不是装饰，是「这格可点」的唯一线索。 -->
+    <LinearLayout
+        android:id="@+id/row_alarm_ringtone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:background="@drawable/bg_field_outline"
         android:clickable="true"
-        android:ellipsize="end"
         android:focusable="true"
-        android:maxLines="2"
-        android:padding="11dp"
-        android:textColor="@color/ink"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="11dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="11dp"
+        android:paddingBottom="11dp">
+
+        <TextView
+            android:id="@+id/tv_alarm_ringtone"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/ink"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView style="@style/SettingsChevron" />
+    </LinearLayout>
 </LinearLayout>
 
 </ScrollView>

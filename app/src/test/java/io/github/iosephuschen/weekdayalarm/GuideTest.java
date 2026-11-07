@@ -1247,7 +1247,7 @@ public class GuideTest {
             // 一个绿勾都没有、数字却说「0 / 4」——差的那一项界面上根本不存在。
             // 真机（精确闹钟安装即授予）看到的就是这一组：五项、分母 3。
             String c = text(a, R.id.tv_guide_sub);
-            assertTrue("这一行藏起来了，分母就该是 3，实际：" + c, c.contains("/ 3 项"));
+            assertTrue("这一行藏起来了，分母就该是 3，实际：" + c, c.contains("能查的 3 项"));
         } finally {
             // 桌面默认是「没给」。还原成默认而不是还原成 true，测试之间才不会串。
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
@@ -1269,7 +1269,7 @@ public class GuideTest {
             assertTrue("要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
             assertFalse("不能只写「去开启」——那是催人，不是告知", s.startsWith("去开启"));
             String c = text(a, R.id.tv_guide_sub);
-            assertTrue("多出一行，分母就得跟着变成 4，实际：" + c, c.contains("/ 4 项"));
+            assertTrue("多出一行，分母就得跟着变成 4，实际：" + c, c.contains("能查的 4 项"));
         } finally {
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         }

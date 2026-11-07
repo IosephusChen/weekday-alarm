@@ -287,7 +287,11 @@ public final class ShiftBookDialog {
         builder.setNegativeButton(ctx.getString(R.string.button_cancel), null);
         builder.setPositiveButton(ctx.getString(R.string.button_save), (d, w) -> {
             String label = name.getText().toString().trim();
-            if (label.isEmpty()) label = isNew ? "班次" : base.name;
+            // v1.23.4：新建留空时兜底「白班」，原来兜底「班次」——
+            // 弹窗标题就叫「班次」，卡片第一行也叫「班次」，
+            // 点「完成」前根本分不清哪一行是标题、哪一行是自己刚建的东西。
+            // 兜底值和占位符「白班 / 夜班」取同一个词，用户留空时看到的就是提示里那个。
+            if (label.isEmpty()) label = isNew ? ctx.getString(R.string.shift_default_name) : base.name;
             // end 仍写进数据（老配置、备份都读这个字段），只是界面不再采集。
             // 按「9 小时班」补一个，跨午夜自动折回 0~1439
             save(ctx, base, label, start[0], (start[0] + 9 * 60) % 1440);

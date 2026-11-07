@@ -122,6 +122,8 @@ final class AlarmEditor {
         View rowOwnRule = view.findViewById(R.id.row_own_rule);
         TextView tvOwnRule = view.findViewById(R.id.tv_own_rule);
         TextView tvRingtone = view.findViewById(R.id.tv_alarm_ringtone);
+        // v1.23.4：点击挂在整格上而不是文字上——补了箭头之后，点箭头也得能打开
+        View rowRingtone = view.findViewById(R.id.row_alarm_ringtone);
         View boxTime = view.findViewById(R.id.box_alarm_time);
         TextView tvSource = view.findViewById(R.id.tv_alarm_time_source);
         View rowShiftFollow = view.findViewById(R.id.row_shift_follow);
@@ -139,7 +141,7 @@ final class AlarmEditor {
         // 「跟着设置变」和「固定用系统默认」的区别。
         final String followLabel = "跟随全局设置";
         tvRingtone.setText(ringtoneRowText(activity, ring[0], silent[0]));
-        tvRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], silent[0],
+        rowRingtone.setOnClickListener(v -> RingtoneDialog.show(activity, ring[0], silent[0],
                 followLabel, (uri, kind) -> {
                     silent[0] = kind == RingtoneDialog.Kind.SILENT;
                     if (kind == RingtoneDialog.Kind.FOLLOW) ring[0] = null;

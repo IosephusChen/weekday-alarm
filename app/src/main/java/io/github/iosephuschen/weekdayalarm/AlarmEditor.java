@@ -375,9 +375,9 @@ final class AlarmEditor {
         // AlertDialog.Builder，链下去就把 RoundedDialog 那层丢了
         builder.setView(view);
         // 「删除」只给已有闹钟：新建的还没落盘，没有可删的东西
-        if (target != null) builder.setNeutralButton("删除", null);
-        builder.setNegativeButton("取消", null);
-        builder.setPositiveButton("保存", (d, w) -> {
+        if (target != null) builder.setNeutralButton(activity.getString(R.string.button_delete), null);
+        builder.setNegativeButton(activity.getString(R.string.button_cancel), null);
+        builder.setPositiveButton(activity.getString(R.string.button_save), (d, w) -> {
                     if (handled[0]) return;
                     handled[0] = true;
                     // 先关对话框再执行业务逻辑（与其它对话框回调时序保持一致）

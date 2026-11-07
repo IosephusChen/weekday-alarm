@@ -120,7 +120,7 @@ public final class ShiftBookDialog {
                 // 右下角的灰字，和「编辑闹钟」那颗空心胶囊的「保存」不是一个东西——
                 // 同一个 App 里「确认」有两种长相，这一个还特别像随手一划的次要动作。
                 // 位置照旧在右下角，样式由 RoundedDialog 统一套 bg_btn_outline。
-                .setPositiveButton("完成", (dlg, w) -> {
+                .setPositiveButton(ctx.getString(R.string.button_done), (dlg, w) -> {
                     if (cb != null) cb.onChanged();
                 })
                 .show();
@@ -284,8 +284,8 @@ public final class ShiftBookDialog {
         RoundedDialog.Builder builder = new RoundedDialog.Builder(ctx);
         builder.setTitle(isNew ? "新建班次" : "编辑班次");
         builder.setView(box);
-        builder.setNegativeButton("取消", null);
-        builder.setPositiveButton("保存", (d, w) -> {
+        builder.setNegativeButton(ctx.getString(R.string.button_cancel), null);
+        builder.setPositiveButton(ctx.getString(R.string.button_save), (d, w) -> {
             String label = name.getText().toString().trim();
             if (label.isEmpty()) label = isNew ? "班次" : base.name;
             // end 仍写进数据（老配置、备份都读这个字段），只是界面不再采集。
@@ -297,7 +297,7 @@ public final class ShiftBookDialog {
         });
         // v1.8.2：删除原来是长按——没有入口提示，等于只有开发者知道。
         // 编辑页放一个「删除」，是这类「很少用但必须有」的动作该在的位置
-        if (!isNew) builder.setNeutralButton("删除", (d, w) -> confirmDelete(ctx, base, cb));
+        if (!isNew) builder.setNeutralButton(ctx.getString(R.string.button_delete), (d, w) -> confirmDelete(ctx, base, cb));
         builder.show();
     }
 
@@ -415,8 +415,8 @@ public final class ShiftBookDialog {
                 .setPositiveDanger()
                 .setTitle("删除「" + s.name + "」？")
                 .setMessage("循环里排过这个班的日子会变成休息，跟它的闹钟那天不响。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("删除", (d, w) -> {
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
+                .setPositiveButton(ctx.getString(R.string.button_delete), (d, w) -> {
                     List<Shift> list = new ArrayList<>(Prefs.getShifts(ctx));
                     list.removeIf(x -> x.id == s.id);
                     Prefs.setShifts(ctx, list);

@@ -301,7 +301,7 @@ public final class RingtoneDialog {
 
         RoundedDialog.Builder b = new RoundedDialog.Builder(activity);
         b.setView(view);
-        b.setPositiveButton("确定", (d, w) -> {
+        b.setPositiveButton(activity.getString(R.string.button_ok), (d, w) -> {
             stop(playing[0]);
             playing[0] = null;
             if (onPicked == null) return;
@@ -310,7 +310,7 @@ public final class RingtoneDialog {
             Item it = items.get(picked[0]);
             onPicked.onPicked(it.uri, it.kind);
         });
-        b.setNegativeButton("取消", (d, w) -> {
+        b.setNegativeButton(activity.getString(R.string.button_cancel), (d, w) -> {
             stop(playing[0]);
             playing[0] = null;
         });

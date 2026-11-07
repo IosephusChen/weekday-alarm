@@ -44,7 +44,7 @@ public final class WidgetGuide {
         DialogKit.capScrollHeight(view.findViewById(R.id.dlg_widget_scroll), 0.62f);
         new RoundedDialog.Builder(activity)
                 .setView(view)
-                .setPositiveButton("知道了", null)
+                .setPositiveButton(activity.getString(R.string.button_got_it), null)
                 .show();
     }
 

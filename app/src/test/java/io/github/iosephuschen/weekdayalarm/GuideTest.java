@@ -1646,23 +1646,34 @@ public class GuideTest {
     }
 
     /**
-     * 进度行右端写「3 / 4」：四个点只说位置，不说总数（v1.23.6）。
+     * 进度行只留圆点，步骤信息交给容器的读屏描述（v1.23.8）。
      *
-     * <p>读屏软件读不出那四个 {@code View}，所以数字同时写进 contentDescription。
+     * <p>v1.23.7 曾在这行右端写「3 / 4」，用户当天指出和 ●●●○ 是同一句话说两遍。
+     * 数字撤掉，但「读屏读不出四个 View」这个问题是真的，改由容器
+     * contentDescription 承担；四颗点标成 NO，免得读屏把空 View 逐个念一遍。
      */
     @Test
-    public void progressRow_showsPageNumberAndSpeaksIt() {
+    public void progressRow_speaksStepThroughDotsContainer() {
         GuideActivity a = fresh();
-        TextView no = a.findViewById(R.id.tv_step_no);
-        assertNotNull("进度行右端要有页码", no);
-        assertEquals("1 / 4", no.getText().toString());
+        LinearLayout dots = a.findViewById(R.id.dots);
+        assertNotNull(dots);
+        assertEquals("四个点，一个不多一个不少", 4, dots.getChildCount());
+
+        assertNotNull("容器要有一段读屏描述：四颗点自己什么都没有",
+                dots.getContentDescription());
         assertEquals("读屏要念得出第几步、共几步",
-                "第 1 步，共 4 步", no.getContentDescription().toString());
+                "第 1 步，共 4 步", dots.getContentDescription().toString());
+        assertEquals("容器自己要能被读屏聚焦",
+                View.IMPORTANT_FOR_ACCESSIBILITY_YES, dots.getImportantForAccessibility());
+        assertEquals("点本身没有语义，不许单独被念",
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO,
+                dots.getChildAt(0).getImportantForAccessibility());
 
         tap(a, R.id.btn_next);
         tap(a, R.id.btn_next);
-        assertEquals("翻到第三页，页码要跟着走", "3 / 4", no.getText().toString());
-        assertEquals("第 3 步，共 4 步", no.getContentDescription().toString());
+        assertEquals("翻到第三页，描述要跟着走",
+                "第 3 步，共 4 步", dots.getContentDescription().toString());
+        assertEquals("点还是四个", 4, dots.getChildCount());
     }
 
     /** 点「稍后设置」= 我知道了：照样留下能响的闹钟、照样写标记。 */

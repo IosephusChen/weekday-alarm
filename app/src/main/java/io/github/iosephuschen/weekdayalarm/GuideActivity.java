@@ -1282,9 +1282,12 @@ public class GuideActivity extends AppCompatActivity {
      * <p>只亮当前这一颗，走过的回灰：旧版就是这个口径。四颗全亮会把「你现在在哪」
      * 藏起来，反而要数。总步数交给每页的标题和最后那页的「开始使用」去交代。
      *
-     * <p><b>v1.23.6：右端补「3 / 4」。</b>四个点回答「第几个」，不回答「一共几个、还剩几个」，
-     * 读屏软件更是读不出这四个 {@code View}。数字取 {@link #PAGES} 现拼，和点数同源；
-     * 同时给一行 contentDescription，读屏念「第 3 步，共 4 步」。
+     * <p><b>v1.23.8：删掉「3 / 4」，描述改挂在容器上。</b>v1.23.7 在右端补了数字，
+     * 理由是「四个点不回答一共几步、还剩几步，读屏更读不出来」。前半句站不住——
+     * ●●●○ 本身就是「四个里的第三个」，数字只是把同一句话说第二遍（用户当天指出）。
+     * 后半句是真的：四颗 {@code View} 没有文字，读屏只能念「按钮」或者什么都不念。
+     * 现在数字不进版面，只给容器写 contentDescription「第 3 步，共 4 步」，
+     * 四颗点标成 {@code IMPORTANT_FOR_ACCESSIBILITY_NO}，读屏念一次、不重复。
      */
     private void renderDots() {
         dots.removeAllViews();
@@ -1301,13 +1304,12 @@ public class GuideActivity extends AppCompatActivity {
             if (i > 0) lp.setMarginStart((int) (6 * density));
             dot.setLayoutParams(lp);
             dot.setBackground(d);
+            // 点本身没有语义，交给容器的描述统一说一次
+            dot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             dots.addView(dot);
         }
-        TextView no = findViewById(R.id.tv_step_no);
-        if (no != null) {
-            no.setText((index + 1) + " / " + PAGES);
-            no.setContentDescription("第 " + (index + 1) + " 步，共 " + PAGES + " 步");
-        }
+        dots.setContentDescription("第 " + (index + 1) + " 步，共 " + PAGES + " 步");
+        dots.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
 
     /**

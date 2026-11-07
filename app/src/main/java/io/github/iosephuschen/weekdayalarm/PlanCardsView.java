@@ -400,7 +400,12 @@ final class PlanCardsView {
         // 「第 10 天」在 7 列（格宽约 38dp）下要压到 9sp 才不贴边。数字是半角，实际
         // 宽度够用，仍留一档余量。不用 autoSizeTextType：Robolectric 下量不准，
         // 部分 ROM 上重绘还会抖。
-        float dayNoSp = cols >= MAX_COLS_PER_ROW ? 9f : (cols == 6 ? 9.5f : 10f);
+        //
+        // v1.23.9：5 列（9 / 10 天，格宽约 52.5dp）原来仍是 10sp，真机 2×2 实测
+        // 「第 6 天」左右各只剩约 3dp——不是贴死，但一行里唯一的长词挤成这样，
+        // 和 4 列（72dp）那种松快差得远。降半档到 9.5sp，肉眼几乎看不出字号变化，
+        // 行内留白却回到 5dp。6 列同理。
+        float dayNoSp = cols >= MAX_COLS_PER_ROW ? 9f : (cols >= 5 ? 9.5f : 10f);
 
         for (int r = 0; r < rows; r++) {
             LinearLayout row = new LinearLayout(act);

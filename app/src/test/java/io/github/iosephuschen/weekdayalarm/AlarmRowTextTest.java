@@ -1,5 +1,6 @@
 package io.github.iosephuschen.weekdayalarm;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -19,6 +20,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -170,5 +172,30 @@ public class AlarmRowTextTest {
         assertTrue("算不出时刻仍用破折号： " + none, "—".equals(none));
         assertTrue("正常情况画时钟： " + clock, "07:30".equals(clock));
         assertFalse("两种状态共用一个符号，等于没区分", rest.equals(none));
+    }
+
+    /**
+     * 「仅上班日」今天轮休：时刻照写，不画「—」（v1.23.9）。
+     *
+     * <p>{@link Alarm#timeOn} 用 {@link Alarm#NO_TIME} 同时表示「今天轮休」和
+     * 「这条闹钟算不出时刻」。渲染时如果只认这一个哨兵，「仅上班日」的闹钟一到周末
+     * 就变成一横——用户要看它几点响只能点进编辑框（2026-11-08 06:39 提出）。
+     *
+     * <p>这里喂一个固定的周日（2026-11-08），不依赖跑测试的真实日期：
+     * 7 天循环从 11-02 周一起、前五天上班，第 7 天正好休息。
+     */
+    @Test
+    public void workdayAlarm_keepsItsClockOnARestDay() {
+        LocalDate sunday = LocalDate.of(2026, 11, 8);
+        // times 传 null：只记上不上班，时刻由每条闹钟自己定（自定义勾星期的常态）
+        WeekSchedule.Rule rule = WeekSchedule.Rule.cycle(
+                7, 0b0011111L, LocalDate.of(2026, 11, 2), null, false);
+        Alarm a = new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true);
+
+        assertEquals("前提：这一天确实是休息日", Alarm.NO_TIME, a.timeOn(sunday, rule, false));
+        assertFalse("前提：这条闹钟今天不该响", a.appliesTo(sunday, rule));
+
+        assertEquals("今天不响，也要让人看见这条闹钟几点响", 7 * 60 + 30,
+                AlarmRowRenderer.displayMinutes(a, rule, sunday, false));
     }
 }

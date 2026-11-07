@@ -50,6 +50,26 @@ final class AlarmRowRenderer {
         return TimeText.clockOfMinutes(whenMin);
     }
 
+    /**
+     * 时间列该画哪一刻（v1.23.9）。
+     *
+     * <p>「今天不上班」和「这条闹钟没有时刻」是两件事。{@link Alarm#timeOn} 在后一种
+     * 情况下返回 {@link Alarm#NO_TIME}，但它同时也用 NO_TIME 表示「今天轮休」——
+     * 于是「仅上班日」的闹钟一到周末就画成一个「—」，用户要看这条闹钟几点响，
+     * 只能点进编辑框（2026-11-08 06:39 提出）。
+     *
+     * <p>不跟班表的闹钟，{@code hour/minute} 是用户亲手设的固定值，随时可以画出来，
+     * 灰字表示今天不响即可。跟班表的不能这样退——那种闹钟真没有单一时刻，
+     * 退回去画的是「谁也没为今天设过的数」（见 v1.7.1 那段）。
+     *
+     * @return 当天第几分钟；{@link Alarm#NO_TIME} 表示只能画「—」
+     */
+    static int displayMinutes(Alarm a, WeekSchedule.Rule rule, LocalDate day, boolean overtime) {
+        int m = a.timeOn(day, rule, overtime);
+        if (m != Alarm.NO_TIME) return m;
+        return a.timeFromRule(rule) ? Alarm.NO_TIME : a.hour * 60 + a.minute;
+    }
+
     /** 中等字重：比 BOLD 清爽，比常规重，用于时间与闹钟名。 */
     private static final Typeface TYPEFACE_MEDIUM =
             Typeface.create("sans-serif-medium", Typeface.NORMAL);
@@ -231,8 +251,16 @@ final class AlarmRowRenderer {
             // 班表值时会退回闹钟自己的固定时刻，那个数谁也没设过，画出来像是今晚要响。
             boolean follows = a.timeFromRule(globalRule);
             boolean resting = follows && !a.appliesTo(today, globalRule, overtimeToday);
-            int whenMin = a.timeOn(today, globalRule, overtimeToday);
+            int whenMin = displayMinutes(a, globalRule, today, overtimeToday);
             boolean noTime = whenMin == Alarm.NO_TIME;
+            // v1.23.9：「今天不上班」不等于「这条闹钟没有时刻」。
+            // 「仅上班日」今天轮休时 timeOn 返回 NO_TIME，可 hour/minute 是用户亲手设的，
+            // 原来画一个「—」，要看这条闹钟几点响只能点进编辑框（2026-11-08 06:39 用户提出）。
+            // 现在 displayMinutes 退回固定时刻，这里只需要知道「是不是退回来的」，
+            // 决定要不要跟着降灰——和「这次不响」跳过日同一套语义（时刻照写、整行弱化），
+            // 副标题「仅上班日」解释原因。
+            boolean fixedTime = !noTime
+                    && a.timeOn(today, globalRule, overtimeToday) == Alarm.NO_TIME;
             // v1.23.3：原来两种情况都画「—」，可它们说的不是一件事——
             // 「休」是「跟班表，今天轮休，明天照响」；「—」是「这条闹钟今天算不出时刻」，
             // 多半是班次没配全。同一个破折号让用户没法判断要不要去改设置。
@@ -243,7 +271,9 @@ final class AlarmRowRenderer {
             //
             // v0.91.8：跳过的那一天也降成灰的。这一行的「不响」是临时的，
             // 时间灰掉正好表达「这次弱化」，而名称仍是深色——整行不塌成灰色。
-            time.setTextColor(skipDay != null || resting
+            //
+            // v1.23.9：fixedTime 同理——时刻照写，但今天这条不响，所以也降灰。
+            time.setTextColor(skipDay != null || resting || fixedTime
                     ? ContextCompat.getColor(activity, R.color.sub) : titleColor);
             time.setTextSize(26);
             // 左对齐，不居中：定宽列的用处就是「行内时间、行间分隔线、卡头分隔线落在

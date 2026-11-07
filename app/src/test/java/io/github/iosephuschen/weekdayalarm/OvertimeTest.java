@@ -172,9 +172,12 @@ public class OvertimeTest {
     }
 
     /**
-     * v0.13.1 图例回归：7 个语义项必须分两行，且全部可见（单行时「加班」「今天」会被挤出屏幕）。
-     * v0.23.0 起两行统一为 4 列网格：第二行只有 3 项，第 4 格是不可见占位，
-     * 保证两行列宽一致、色块左边缘对齐（旧版 4+3 各按 weight 均分，列宽 1/4 与 1/3 不同，整体错位）。
+     * 图例回归：6 个语义项分两行、每行 3 项，全部可见。
+     *
+     * <p>历史：v0.13.1 是 7 项两行（单行时「加班」会被挤出屏幕）；v0.23.0 为了两行列宽
+     * 一致，第二行末位塞了一个不可见占位格凑成 4 列。v1.23.9 删掉「今天」这一项——
+     * 那格本来就有 indigo 描边和「休 / 班」标签，图例再解释一遍是多余的，
+     * 删完正好 3 + 3，占位格也一起撤了。
      */
     @Test
     public void legend_twoRows_allItemsVisible() {
@@ -186,15 +189,15 @@ public class OvertimeTest {
         assertEquals("图例应为两行", 2, legend.getChildCount());
         LinearLayout row1 = (LinearLayout) legend.getChildAt(0);
         LinearLayout row2 = (LinearLayout) legend.getChildAt(1);
-        assertEquals(4, row1.getChildCount());   // 上班/休息/节假日/调休补班
-        assertEquals(4, row2.getChildCount());   // 请假/加班/今天 + 占位
+        assertEquals(3, row1.getChildCount());   // 上班/休息/节假日
+        assertEquals(3, row2.getChildCount());   // 调休补班/请假/加班
 
-        // 每项 = 色块 + 文字；收集全部文字，7 个语义一个都不能少
+        // 每项 = 色块 + 文字；收集全部文字，6 个语义一个都不能少
         java.util.List<String> labels = new java.util.ArrayList<>();
         for (LinearLayout row : new LinearLayout[]{row1, row2}) {
             for (int i = 0; i < row.getChildCount(); i++) {
                 android.view.View child = row.getChildAt(i);
-                if (!(child instanceof LinearLayout)) continue;   // 第二行第 4 格：占位 View
+                assertTrue("图例每格都该是 色块+文字，不该再有占位格", child instanceof LinearLayout);
                 LinearLayout item = (LinearLayout) child;
                 assertEquals("每项应为 色块+文字", 2, item.getChildCount());
                 // 所有格子等宽（weight=1）且左对齐，两行才能严格对齐
@@ -213,7 +216,8 @@ public class OvertimeTest {
         assertTrue(labels.contains("调休补班"));
         assertTrue(labels.contains("请假"));
         assertTrue(labels.contains("加班"));
-        assertTrue(labels.contains("今天"));
-        assertEquals(7, labels.size());
+        assertFalse("「今天」已从图例删除：那格自带描边和标签，不必再解释",
+                labels.contains("今天"));
+        assertEquals(6, labels.size());
     }
 }

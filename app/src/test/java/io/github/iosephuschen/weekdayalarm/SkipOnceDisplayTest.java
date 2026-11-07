@@ -160,14 +160,15 @@ public class SkipOnceDisplayTest {
         ActivityController<MainActivity> c = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = c.get();
 
-        String before = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
+        // v1.23.9：具体时刻从副信息挪进了倒计时条左侧，这里跟着改读那一行
+        String before = ((TextView) act.findViewById(R.id.tv_countdown_label)).getText().toString();
         assertTrue("前提：没跳过时首页该写「明天 " + clock + "」，实际是「" + before + "」",
                 before.contains("明天 " + clock));
 
         Prefs.addSkipOnce(ctx(), 1, tomorrow);
         c.pause().resume();   // 回到前台，走的是真实刷新路径
 
-        String after = ((TextView) act.findViewById(R.id.tv_today_sub)).getText().toString();
+        String after = ((TextView) act.findViewById(R.id.tv_countdown_label)).getText().toString();
         assertFalse("点完「这次不响」，首页不能还写着明天那一趟：「" + after + "」",
                 after.contains("明天 " + clock));
         assertTrue("跳过明天，下次就该是后天：「" + after + "」", after.contains("后天 " + clock));

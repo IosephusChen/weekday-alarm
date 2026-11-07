@@ -28,9 +28,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
  *
  * <p>这类问题编译器完全管不到：写 {@code 12dp} 和写 {@code @dimen/radius_row} 都能编过，
  * 前者只是三个月后没人知道当初为什么是 12。所以只能靠测试钉住：
- * <b>形状里的圆角必须走 {@code @dimen/radius_*}，且只有那七档</b>。
+ * <b>形状里的圆角必须走 {@code @dimen/radius_*}，且只有那八档</b>。
  *
- * <p>七档的语义见 {@code values/dimens.xml} 的注释。
+ * <p>八档的语义见 {@code values/dimens.xml} 的注释。
  */
 public class DesignTokenTest {
 
@@ -40,6 +40,7 @@ public class DesignTokenTest {
     static {
         RADIUS.add("radius_hairline");
         RADIUS.add("radius_chip");
+        RADIUS.add("radius_chip_inner");
         RADIUS.add("radius_row");
         RADIUS.add("radius_card");
         RADIUS.add("radius_banner");
@@ -89,7 +90,7 @@ public class DesignTokenTest {
     /**
      * 形状文件里不许出现裸 dp 圆角。
      *
-     * <p>失败时的修法只有两条：从七档里挑一个（九成情况），或者真的需要新角色——
+     * <p>失败时的修法只有两条：从八档里挑一个（九成情况），或者真的需要新角色——
      * 那就先在 {@code dimens.xml} 里加 token，再加进 {@link #RADIUS}，并写清它和相邻档的区别。
      */
     @Test
@@ -108,7 +109,7 @@ public class DesignTokenTest {
         assertTrue("这些形状还在写裸 dp 圆角，请换成 @dimen/radius_*：" + bad, bad.isEmpty());
     }
 
-    /** 形状里引用的圆角必须来自那七档，不能自造一个 radius_foo。 */
+    /** 形状里引用的圆角必须来自那八档，不能自造一个 radius_foo。 */
     @Test
     public void shapesReferenceOnlyKnownRadiusTokens() {
         File[] files = drawableDir().listFiles((d, n) -> n.endsWith(".xml"));
@@ -123,11 +124,11 @@ public class DesignTokenTest {
             }
         }
 
-        assertTrue("引用了不在七档里的圆角 token（自造档位会让统一失效）：" + unknown,
+        assertTrue("引用了不在八档里的圆角 token（自造档位会让统一失效）：" + unknown,
                 unknown.isEmpty());
     }
 
-    /** dimens.xml 里必须正好定义这七档圆角、九档间距、七档字号。 */
+    /** dimens.xml 里必须正好定义这八档圆角、九档间距、七档字号。 */
     @Test
     public void dimensDefinesTheScale() {
         Set<String> defined = new TreeSet<>();
@@ -283,10 +284,34 @@ public class DesignTokenTest {
         }
     }
 
-    /** 上面几条断言用到的档位数量，顺手钉一下，别让「七档」在注释里过时。 */
+    /**
+     * 「今天」格的白环（v1.23.9，清单 B3）。
+     *
+     * <p>原来一层 shape：淡紫填充 + 2dp 深紫描边，描边画在边界内侧，填充直接顶到
+     * 笔画内沿——两色之间没有一道缝，2026-11-08 用户截图里看着像「描边贴边」。
+     * 现在是两层：外层只描边不填色，内层四边各让进 4dp（2dp 描边 + 2dp 白环），
+     * 中间那道露出的是卡片底，换夜间主题会跟着走。
+     *
+     * <p>这条只钉「四边都让进了」这一件事，具体多少 dp 允许微调——但只让一边
+     * 会让格子看起来歪了，那正是最需要拦住的手滑。
+     */
+    @Test
+    public void todayCell_hasGapBetweenStrokeAndFill() {
+        File f = new File(drawableDir(), "bg_day_today.xml");
+        assertTrue("今天格的背景不见了：" + f, f.isFile());
+        String xml = read(f);
+
+        assertTrue("应是两层结构（layer-list），不是一层 shape", xml.contains("<layer-list"));
+        for (String side : new String[]{"left", "top", "right", "bottom"}) {
+            assertTrue("内层要四边内缩，缺了 " + side + "：" + xml,
+                    xml.matches("(?s).*android:" + side + "=\"[1-9][0-9]*dp\".*"));
+        }
+    }
+
+    /** 上面几条断言用到的档位数量，顺手钉一下，别让档位数在注释里过时。 */
     @Test
     public void scaleSizeMatchesDocumentation() {
-        assertEquals("注释里写的是七档圆角", 7, RADIUS.size());
+        assertEquals("注释里写的是八档圆角", 8, RADIUS.size());
         assertEquals("注释里写的是九档间距", 9, SPACE.size());
         assertEquals("注释里写的是七档字号", 7, FONT.size());
     }

@@ -109,4 +109,24 @@ final class TodayCard {
         String tail = nextTail(next, today);
         return dayTag.isEmpty() ? tail : dayTag + " · " + tail;
     }
+
+    /**
+     * 首页副信息，去掉「下次闹钟 …」那半句（v1.23.9）。
+     *
+     * <p>首页把具体时刻挪进了倒计时条左侧（「明天 07:30 起床」+「还有 1 天 1 小时」），
+     * 副信息再写一遍就是同一句话说两次——用户 2026-11-08 05:30 看对比图时指出的 B1。
+     *
+     * <p>三个分支各不相同：请假仍是整句（闹钟全跳过是独立信息）；没有下次闹钟时
+     * 必须说清原因，不能只剩一个空行；有下次闹钟时只剩「今天是什么日子」，
+     * 常日为空字符串，由调用方把整行收掉。
+     *
+     * <p><b>只给首页用。</b>4×2 小组件没有倒计时条，那边仍调 {@link #subText}，
+     * 时刻只能写在这一行里。
+     */
+    static String subTextWithoutNext(String dayTag, ScheduleManager.NextAlarm next,
+                                     LocalDate today, boolean work, boolean vacation) {
+        if (vacation) return "个人请假 · 闹钟全部跳过";
+        if (next == null) return subText(dayTag, null, today, work, vacation);
+        return dayTag;
+    }
 }

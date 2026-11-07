@@ -474,7 +474,7 @@ final class AlarmEditor {
                 handled[0] = true;
                 DialogKit.showMessage(activity, "删除「" + target.label + "」？",
                         "删除后该闹钟不再提醒，已排程的实例会一并取消。",
-                        "删除", (d2, w2) -> {
+                        activity.getString(R.string.button_delete), (d2, w2) -> {
                             // v0.91.9：和首页的删除同一条道理——先把待触发的小睡作废再删。
                             // 编辑框里删掉之后，列表里已经没有它，applyAlarmChange 的两条
                             // 重排路径都清不到它的 SNOOZE 段。
@@ -482,7 +482,7 @@ final class AlarmEditor {
                             alarms.remove(target);
                             Prefs.setAlarms(activity, alarms);
                             onChanged.run();
-                        }, "取消", null);
+                        }, activity.getString(R.string.button_cancel), null);
                 dialog.dismiss();
             });
         }

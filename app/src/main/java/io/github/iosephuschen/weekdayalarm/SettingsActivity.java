@@ -530,8 +530,8 @@ public class SettingsActivity extends AppCompatActivity {
                         + HolidayData.BUILT_IN_YEAR + " 年节假日数据，这些年份的放假与调休补班"
                         + "都完整，排班推算不受影响。\n\n"
                         + "换到 Wi-Fi 或信号更好的地方可以再试一次。",
-                "重试", (d, w) -> checkHolidayUpdate(),
-                "知道了", null);
+                getString(R.string.button_retry), (d, w) -> checkHolidayUpdate(),
+                getString(R.string.button_got_it), null);
     }
 
     // ================= v0.56.1：从首页搬来的三块 =================
@@ -590,7 +590,7 @@ public class SettingsActivity extends AppCompatActivity {
         LinearLayout body = RowKit.stack(this, rows.toArray(new View[0]));
 
         DialogKit.showMessage(this, getString(R.string.dialog_run_status_title),
-                body, "知道了", null);
+                body, getString(R.string.button_got_it), null);
     }
 
     /**
@@ -631,7 +631,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         DialogKit.showMessage(this, getString(R.string.dialog_export_done_title),
-                body, "知道了", null);
+                body, getString(R.string.button_got_it), null);
     }
 
     /** 运行状态行右侧的一句话摘要：不点开也能看出「开着没、几个提醒」。 */

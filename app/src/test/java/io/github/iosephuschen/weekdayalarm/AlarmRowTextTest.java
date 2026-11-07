@@ -150,4 +150,25 @@ public class AlarmRowTextTest {
 
         ctl.pause().stop().destroy();
     }
+
+    /**
+     * 时间位的两种「不响」必须分得开（v1.23.3）。
+     *
+     * <p>原来「跟班表、今天轮休」和「算不出时刻」都画一个破折号。前者什么都不用做，
+     * 后者多半是班次没配全、得去改设置——同一个符号逼用户猜。
+     */
+    @Test
+    public void timeSlot_distinguishesRestFromNoTime() {
+        String rest = AlarmRowRenderer.timeSlotText(ctx(), true, false, 7 * 60 + 30);
+        String restNoTime = AlarmRowRenderer.timeSlotText(ctx(), true, true, Alarm.NO_TIME);
+        String none = AlarmRowRenderer.timeSlotText(ctx(), false, true, Alarm.NO_TIME);
+        String clock = AlarmRowRenderer.timeSlotText(ctx(), false, false, 7 * 60 + 30);
+
+        assertTrue("轮休要写「休」： " + rest, "休".equals(rest));
+        assertTrue("休息日取不到时刻时仍是「休」，不该退回破折号： " + restNoTime,
+                "休".equals(restNoTime));
+        assertTrue("算不出时刻仍用破折号： " + none, "—".equals(none));
+        assertTrue("正常情况画时钟： " + clock, "07:30".equals(clock));
+        assertFalse("两种状态共用一个符号，等于没区分", rest.equals(none));
+    }
 }

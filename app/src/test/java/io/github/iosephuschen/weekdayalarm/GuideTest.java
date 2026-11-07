@@ -84,6 +84,27 @@ public class GuideTest {
     }
 
     /**
+     * 引导页「下一步」和班表页「保存」用同一个按钮底（v1.23.0）。
+     *
+     * <p>原来「下一步」是 {@code bg_guide_btn_pill}（999dp 胶囊），「保存」是
+     * {@code bg_guide_btn}（14dp）。两个都是提交整页、都在底部、都是 indigo 实底
+     * 白字 15sp，唯一差别是圆角——同一件事两套形状，用户学不到规律。
+     *
+     * <p>现在统一到 {@code bg_guide_btn}；999dp 只留给 chip（关于页版本胶囊那种），
+     * 不再出现在提交按钮上。宽度仍是 124dp：右边有「上一步」并排，不能通栏
+     * ——通栏是把「独占整行」这个前提也一起改了，那是另一件事。
+     */
+    @Test
+    public void guide_nextUsesSameButtonAsSave() {
+        GuideActivity a = fresh();
+        View btn = a.findViewById(R.id.btn_next);
+        assertNotNull("引导页应该有「下一步」", btn);
+        assertEquals("「下一步」要和「保存」同一个底",
+                R.drawable.bg_guide_btn,
+                shadowOf(btn.getBackground()).getCreatedFromResId());
+    }
+
+    /**
      * 把闹钟列表换成指定内容。
      * 必须先读一次触发「首次读取预置」，否则下一次 getAlarms 又会塞回起床 / 午休。
      */
@@ -561,6 +582,29 @@ public class GuideTest {
                 xml.contains("@color/cycle_cell_stroke"));
         assertFalse("不许再借 pill_rest_stroke——那个值在夜里比卡片还暗，边会整条消失",
                 xml.contains("@color/pill_rest_stroke"));
+    }
+
+    /**
+     * 测不到锁屏时那句指引，必须指向引导页上真实存在的按钮（v1.23.0）。
+     *
+     * <p>原文写「回到引导页点『测一下』」，可那颗按钮从 v0.73.5 起就叫「测锁屏响铃」。
+     * 照做的人会去引导页找一个不存在的东西，结论是「功能坏了」。这类错不是措辞问题，
+     * 是指引指向空气，所以拿测试钉住，而不是靠人读一遍。
+     *
+     * <p>读文件而不是跑 Activity：这个测试页只在真锁屏上出现，Robolectric 里没有锁屏态。
+     * 两边各取一处字符串：按钮名来自布局，指引来自 Java，谁改了名都会红。
+     */
+    @Test
+    public void lockProbeHint_namesTheButtonThatActuallyExists() throws Exception {
+        String src = new String(Files.readAllBytes(new File(
+                "src/main/java/io/github/iosephuschen/weekdayalarm/LockProbeActivity.java")
+                .toPath()), StandardCharsets.UTF_8);
+        String xml = new String(Files.readAllBytes(new File(
+                "src/main/res/layout/activity_guide.xml").toPath()), StandardCharsets.UTF_8);
+        assertTrue("引导页应有「测锁屏响铃」这颗按钮，否则指引无从指起",
+                xml.contains("android:text=\"测锁屏响铃\""));
+        assertTrue("指引应写出按钮真名「测锁屏响铃」", src.contains("「测锁屏响铃」"));
+        assertFalse("别再用界面上不存在的「测一下」", src.contains("「测一下」"));
     }
 
     /**

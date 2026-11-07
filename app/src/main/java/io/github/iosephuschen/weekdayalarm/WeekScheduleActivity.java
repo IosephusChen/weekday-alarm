@@ -102,8 +102,12 @@ public class WeekScheduleActivity extends AppCompatActivity {
         new RoundedDialog.Builder(this)
                 .setTitle("还没保存")
                 .setMessage("这次改的班表还没保存，退出就丢了。")
-                .setNegativeButton("继续改", null)
-                .setPositiveButton("放弃修改", (d, w) -> finish())
+                // v1.23.0：两个按钮换位。「放弃修改」原来占 positive（主按钮描边位），
+                // 等于把不可逆的那条路标成推荐操作，安全的「继续改」反倒是一行灰字。
+                // 现在危险动作走 neutral——那里本来就是 danger 红字（v1.0.4 给
+                // 「删除这个闹钟」定的），零新增样式；positive 留给「继续改」。
+                .setNeutralButton("放弃修改", (d, w) -> finish())
+                .setPositiveButton("继续改", null)
                 .show();
     }
 

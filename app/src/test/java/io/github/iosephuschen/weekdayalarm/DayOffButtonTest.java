@@ -260,6 +260,28 @@ public class DayOffButtonTest {
     }
 
     /**
+     * 两个加班按钮之间 16dp（v1.23.0）。
+     *
+     * <p>8dp 时两颗胶囊几乎粘成一颗，读起来像一个动作的两半；16dp 之后中间的空隙
+     * 足够看清是两个独立按钮，又不至于把今日卡撑太宽。真机 2026-11-07 验收时
+     * 用户单独把这一项留下了，加号与提示行都没留。
+     *
+     * <p>断言用 token 换算出的像素值，不写死 16dp：不同 density 上 dp→px 的换算
+     * 结果不同，写死数值在别的屏上必红。也不读 XML 文本——读文本只能证明写对了字，
+     * 证不了布局真的按这个值排。
+     */
+    @Test
+    public void buttons_have16dpGap() {
+        resetPrefs();
+        MainActivity a = launch();
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)
+                a.findViewById(R.id.btn_day_off_tomorrow).getLayoutParams();
+        assertEquals("第二个按钮的左边距应等于 @dimen/space_16",
+                a.getResources().getDimensionPixelSize(R.dimen.space_16),
+                lp.getMarginStart());
+    }
+
+    /**
      * 今日卡点完不再弹 Toast（v0.92.0）。
      *
      * <p>点一下的瞬间，卡片上已经有四处变了：大标题「今天上班 → 今天请假」、副标题

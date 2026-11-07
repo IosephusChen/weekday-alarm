@@ -406,6 +406,9 @@ public final class ShiftBookDialog {
 
     private static void confirmDelete(Context ctx, Shift s, OnChanged cb) {
         new RoundedDialog.Builder(ctx)
+                // v1.23.0：删除是破坏性动作，主按钮用 danger 实底而不是主色描边。
+                // 必须放在链首——父类那几个 setter 返回 AlertDialog.Builder，接在后面就调不到了。
+                .setPositiveDanger()
                 .setTitle("删除「" + s.name + "」？")
                 .setMessage("循环里排过这个班的日子会变成休息，跟它的闹钟那天不响。")
                 .setNegativeButton("取消", null)

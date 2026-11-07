@@ -83,9 +83,33 @@ public final class DialogKit {
     public static void showMessage(Context c, String title, View body, String positiveText,
                                    DialogInterface.OnClickListener onPositive,
                                    String negativeText, DialogInterface.OnClickListener onNegative) {
+        showMessage(c, title, body, positiveText, onPositive, negativeText, onNegative, false);
+    }
+
+    /**
+     * 自定义正文的消息框，主按钮是破坏性动作（v1.23.0）。
+     *
+     * <p>只给「弹窗目的本身就是破坏」的场景用——目前是「覆盖导入」。
+     * 主按钮会换成 {@code bg_btn_danger}（danger 实底白字），因为主色在这套 UI 里
+     * 一直读作「推荐」，用在覆盖 / 删除上等于把危险动作标成推荐动作。
+     *
+     * <p>「还没保存」那类只是拦一下的弹窗不要用这个：那里 positive 必须留给安全路径，
+     * 破坏性动作走 neutral 位的红字（见 {@code RoundedDialog.styleButtons}）。
+     */
+    public static void showDangerMessage(Context c, String title, View body, String positiveText,
+                                         DialogInterface.OnClickListener onPositive,
+                                         String negativeText, DialogInterface.OnClickListener onNegative) {
+        showMessage(c, title, body, positiveText, onPositive, negativeText, onNegative, true);
+    }
+
+    private static void showMessage(Context c, String title, View body, String positiveText,
+                                    DialogInterface.OnClickListener onPositive,
+                                    String negativeText, DialogInterface.OnClickListener onNegative,
+                                    boolean positiveDanger) {
         View view = messageShell(c, title);
         ((LinearLayout) view.findViewById(R.id.message_body)).addView(body);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
+        if (positiveDanger) b.setPositiveDanger();
         b.setView(view);
         if (positiveText != null) b.setPositiveButton(positiveText, onPositive);
         if (negativeText != null) b.setNegativeButton(negativeText, onNegative);

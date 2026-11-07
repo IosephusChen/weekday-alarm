@@ -6,19 +6,24 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -162,6 +167,57 @@ public class UiLayoutTest {
         assertTrue("圆角半径应大于 0，实际：" + radius, radius > 0);
 
         d.dismiss();
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 破坏性动作的主按钮用 danger 实底（v1.23.0）。
+     *
+     * <p>这条守的是 {@code setPositiveDanger()} 这条通道本身：默认 false（那 15 个
+     * 普通弹窗的调用方一字不用改），只有显式标了才换 {@code bg_btn_danger} + 白字。
+     *
+     * <p>为什么不能继续用主色描边：主色在这套 UI 里一直读作「推荐」，而「删除」
+     * 「覆盖导入」是不可逆的。原来的「放弃修改」甚至直接占了 positive 位——
+     * 等于把危险动作标成了推荐操作。
+     *
+     * <p>后半段断言普通弹窗仍是描边，防的是「加标志位时默认值被写成 true」——
+     * 那种错编译能过、单看一处代码也看不出来，只有 15 处一起变样才暴露。
+     */
+    @Test
+    public void dialog_positiveDangerUsesDangerFill() {
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+
+        AlertDialog danger = new RoundedDialog.Builder(ctl.get())
+                .setPositiveDanger()
+                .setTitle("删除")
+                .setPositiveButton("删除", null)
+                .create();
+        danger.show();
+        ShadowLooper.idleMainLooper();
+        Button dp = danger.getButton(DialogInterface.BUTTON_POSITIVE);
+        assertNotNull("破坏性弹窗应有主按钮", dp);
+        assertEquals("主按钮要走 danger 实底",
+                R.drawable.bg_btn_danger,
+                shadowOf(dp.getBackground()).getCreatedFromResId());
+        assertEquals("danger 实底上的字必须是白的",
+                Color.WHITE, dp.getCurrentTextColor());
+
+        AlertDialog normal = new RoundedDialog.Builder(ctl.get())
+                .setTitle("保存")
+                .setPositiveButton("保存", null)
+                .create();
+        normal.show();
+        ShadowLooper.idleMainLooper();
+        Button np = normal.getButton(DialogInterface.BUTTON_POSITIVE);
+        assertNotNull(np);
+        assertEquals("没标破坏性的弹窗还走原来的描边",
+                R.drawable.bg_btn_outline,
+                shadowOf(np.getBackground()).getCreatedFromResId());
+
+        danger.dismiss();
+        normal.dismiss();
         ctl.pause().stop().destroy();
     }
 

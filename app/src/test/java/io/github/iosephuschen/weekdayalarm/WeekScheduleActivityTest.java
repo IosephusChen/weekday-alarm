@@ -8,9 +8,11 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Before;
@@ -20,6 +22,7 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowLooper;
 
 /**
@@ -130,6 +133,33 @@ public class WeekScheduleActivityTest {
         tap(a, R.id.card_plan_single);
         a.onBackPressed();
         assertFalse("有改动时不该直接退出", a.isFinishing());
+    }
+
+    /**
+     * 「还没保存」的危险动作不能占主按钮位（v1.23.0）。
+     *
+     * <p>原来 positive 是「放弃修改」。在这个 App 里，描边主按钮位就是「推荐点这个」，
+     * 等于把不可逆的那条路标成了推荐，而安全的「继续改」反倒是一行灰字。
+     *
+     * <p>现在「放弃修改」走 neutral——那里本来就是 danger 红字（v1.0.4 给「删除这个
+     * 闹钟」定的），零新增样式；positive 让给「继续改」。
+     *
+     * <p>注意这里只钉文案归属，不钉颜色：neutral 的红字是 {@code styleButtons} 的既有
+     * 行为，另有一条测试守它；这条守的是「谁占哪个位」，那才是不看代码看不出来的部分。
+     */
+    @Test
+    public void dialog_unsavedKeepsPositiveSafe() {
+        WeekScheduleActivity a = openDoubleRest();
+        tap(a, R.id.card_plan_single);
+        a.onBackPressed();
+        ShadowLooper.idleMainLooper();
+
+        AlertDialog d = (AlertDialog) ShadowDialog.getLatestDialog();
+        assertNotNull("有未保存改动时应该弹窗拦一下", d);
+        assertEquals("主按钮必须是安全动作「继续改」", "继续改",
+                d.getButton(DialogInterface.BUTTON_POSITIVE).getText().toString());
+        assertEquals("危险动作应该在 neutral 位", "放弃修改",
+                d.getButton(DialogInterface.BUTTON_NEUTRAL).getText().toString());
     }
 
     /** 没有改动时返回就该直接退。 */

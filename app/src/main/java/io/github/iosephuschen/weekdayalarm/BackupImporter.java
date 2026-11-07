@@ -66,7 +66,10 @@ public final class BackupImporter {
                                 DialogKit.showMessage(activity, "这个文件不能导入", check.message);
                                 return;
                             }
-                            DialogKit.showMessage(activity,
+                            // v1.23.0：覆盖导入是不可逆的，主按钮走 danger 实底。
+                            // 原来正文里有淡红警示条、按钮却是主色描边——警报拉响了，
+                            // 按钮却长成常规操作的样子，两段语义断开。
+                            DialogKit.showDangerMessage(activity,
                                     activity.getString(R.string.dialog_import_confirm_title),
                                     confirmBody(activity, json, fromGuide),
                                     activity.getString(R.string.import_confirm_positive),

@@ -2,11 +2,133 @@
 
 ## 交接条（换会话先读这三行，其余不用）
 
-- **做到哪**：v1.22.2 已发布（versionCode 294）。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。新增 `docs/封版验收提示词.md`，只在用户说「准备收工」时才用。
-- **下一步**：**UI 一致性与美化**。用户 2026-11-07 提了三个方向（界面美化 / 交互一致 / 修 bug），说会把全部界面截图分批发来（每次最多 5 张），**传完会说「确认没有截图了」，那时才开始**。
-  已查明的客观问题：字号有 20 种硬编码（8/9/10/11/12/13 六个连续档位各 42/7/47/31/52/31 处），圆角与间距早已 token 化且有 `DesignTokenTest` 守着。弹窗 0 处绕过 `DialogKit`，但按钮组合由调用方各选。
-  拟定三版：① 字号收拢 ② 弹窗按钮规则 ③ 逐屏美化。
+- **做到哪**：v1.22.2 已发布（versionCode 294）。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。截图收集阶段已结束（105 张），问题已归并成组件级 / 页面级 / 文案级三堆，见下节。
+- **下一步**：**v1.23.0 按钮规则**（本方案，待批）。用户已定：按钮判据认可、「今天/明天」选 A 方案、「还没保存」按建议把危险动作挪出 positive 位。之后依次是 ② 字号收拢（376 处 / 20 档 → 有限档位）③ 逐屏美化。
 - **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。
+
+## v1.23.0 · 按钮规则（2026-11-07 提出）
+
+> 状态：**已批准**（2026-11-07 13:43 验收通过并选定「收口 v1.23.0」，13:50 改齐版本号与五处文档，等发版）。
+> preview：`/workspace/weekday-alarm-preview.apk`（`io.github.iosephuschen.weekdayalarm.preview`，versionName 仍为 `1.22.2-preview`、versionCode 294——版本号要在验收通过后连同 Changelog / 更新日志 / 使用说明一次性改五处，否则 `DocsConsistencyTest` 会红）。网盘：`/打工人闹钟/weekday-alarm-1.22.2-btn-rules16-preview.apk`。
+> **本版只含按钮规则 + 加班按钮 16dp 间距**：`bg_btn_danger` + `setPositiveDanger()` + 「放弃修改」挪到 neutral + 引导页按钮统一，共 7 个文件改动、新 1 删 1 drawable、4 条守门测试。
+> **已撤回、不要重做**（用户 13:40 决定放弃，理由是「还是会调整」）：
+> - 加班按钮的 `+` 号与「可以都标记」提示行——第二轮就被判多余。**16dp 间距用户单独点名保留**（`buttons_have16dpGap` 守它）。
+> - 「还没保存」弹窗收窄（340dp / 窄主题 / 淡入动画）——试了三版都跳帧：`onShow` 改宽、`show` 前 `setLayout`、换 `windowAnimationStyle`。逐帧量过，宽度始终 558px，跳的是位置（左边缘 x=15 → x=41）；换成纯淡入仍跳，说明偏移不在窗口动画里。**再来要改的路径是「窗口先透明 attach、布局完成后再显形」，不是继续调宽度或动画。**
+> 测试：1105 条（1101 + 4），0 失败 0 错误 3 跳过。
+> 目标版本：295（minor 版，新增了公开 API）。
+> 依据：`/workspace/button-rule.html`（真实色值对照图，用户已认可判据）。
+
+### 判据
+
+**边界由「旁边有没有东西」决定，不是按钮自己的属性。**
+
+- 有并排对照物（弹窗里的「取消」）→ 必须有边界：实底，或 ≥1dp 描边
+- 独占整行、无对照物 → 可以只靠面积（通栏淡底成立）
+- 面积补偿不能缩：通栏淡底缩成小胶囊立刻失效
+- 判据管不了圆角与颜色语义，那两件各有独立规则
+
+来源是实测：`action_bg #EEF0FE` 在白卡上 1.13:1，`verdict_bg #E7EAFE` 在页面 `#F4F5FB` 上只有 1.10:1，**更低的那个反而站得住**——变量不是色差。
+
+### 一、这一版改什么
+
+两组，共 6 个文件。
+
+**A. 圆角：全 App 唯一一处真矛盾**
+
+引导页「下一步」是 `bg_guide_btn_pill`（`radius_pill` 999dp），班表页「保存」是 `bg_guide_btn`（`radius_row` 14dp）。两者同为提交整页、同为 indigo 实底白字 15sp，唯一差别是圆角。
+
+**B. 破坏性动作：问题不在颜色，在「位置」**
+
+四处现状是三套样式，根因是危险的那条路被放进了 recommended 位置。`styleButtons` 里 neutral 位其实**早就有** `danger` 红字样式（v1.0.4 为「删除这个闹钟」定的），只是没被用于 positive 位。
+
+| 位置 | 现状 | 改成 |
+| --- | --- | --- |
+| 编辑班次 · 删除 | neutral 位 + `danger` 红字 | 不动（已经是标准做法） |
+| 删除确认 · 删除 | positive 位 + 靛描边 | positive 位 + `danger` 实底 |
+| 还没保存 · 放弃修改 | positive 位 + 靛描边 | **挪到 neutral 位**，positive 让给「继续改」 |
+| 导入配置 · 覆盖导入 | positive 位 + 靛描边 | positive 位 + `danger` 实底 |
+
+规则两条：
+
+1. 破坏性动作只用 `danger`，绝不用 `indigo`。
+2. **按弹窗目的分配 positive 位**——目的是「执行破坏」才给 danger；目的是「拦一下丢改动」，positive 必须留给安全的那条。
+
+### 二、改法
+
+**A1** `res/layout/activity_guide.xml:1087`
+
+```xml
+android:background="@drawable/bg_guide_btn_pill"   →   @drawable/bg_guide_btn
+```
+
+宽度保持 `124dp`（右边有「上一步」并排，不能通栏）。删 `res/drawable/bg_guide_btn_pill.xml`。
+
+**B1** 新增 `res/drawable/bg_btn_danger.xml`——`danger` 实底 + `@dimen/radius_row`，ripple 色 `#1FDC2626`，结构与 `bg_btn_outline` 对齐。圆角走 token，`DesignTokenTest` 才不会红。
+
+**B2** `RoundedDialog.java`——现在 `round()` 是静态方法，`Builder` 没有任何状态能传进来。加一条通道：
+
+```java
+public static void round(AlertDialog dialog) { round(dialog, false); }
+public static void round(AlertDialog dialog, boolean positiveDanger) {
+    ...
+    styleButtons(dialog, positiveDanger);
+    dialog.setOnShowListener(d -> styleButtons(dialog, positiveDanger));
+}
+```
+
+`Builder` 增加 `private boolean positiveDanger;` 与 `public Builder setPositiveDanger()`，`create()` / `show()` 改成传这个值。`styleButtons` 里按标志二选一：
+
+```java
+positive.setBackgroundResource(positiveDanger
+        ? R.drawable.bg_btn_danger : R.drawable.bg_btn_outline);
+positive.setTextColor(ContextCompat.getColor(c,
+        positiveDanger ? android.R.color.white : R.color.indigo));
+```
+
+`styleButtons(dialog)` 保留一个单参重载转 `false`，现有 15 处调用方一字不改。
+
+**B3** `DialogKit.java`——加 `showDangerMessage(...)`，参数表与现有 `showMessage(title, bodyView, pos, onPos, neg, onNeg)` 一致，内部 `b.setPositiveDanger()`。不往现有方法上加参数，避免六个实参变八个。
+
+**B4** 三处调用点
+
+- `ShiftBookDialog.confirmDelete()` → `.setPositiveDanger()`
+- `BackupImporter.register()` 的确认弹窗 → 换 `DialogKit.showDangerMessage(...)`
+- `WeekScheduleActivity.tryFinish()` → 两个按钮换位：
+
+```java
+.setNeutralButton("放弃修改", (d, w) -> finish())
+.setPositiveButton("继续改", null)
+```
+
+neutral 位自动拿到 `danger` 红字 + 左边距 20dp，**零新增样式**。
+
+### 三、测试
+
+三条新守门测试，都放 `WeekScheduleActivityTest` / `GuideTest` / `ShiftBookDialogTest` 现有文件里：
+
+1. `guide_nextUsesSameButtonAsSave`——`btn_next` 背景必须是 `bg_guide_btn`（删掉 pill 后防回归）
+2. `dialog_positiveDangerUsesDangerFill`——带 `setPositiveDanger()` 的弹窗，positive 背景是 `bg_btn_danger`、字色白
+3. `dialog_unsavedKeepsPositiveSafe`——「还没保存」的 positive 文案是「继续改」，neutral 是「放弃修改」
+
+现有 1101 条必须全绿。特别注意 `ShiftBookDialogTest.done_isPrimaryButton`：它断言 positive 是 `bg_btn_outline`，而「完成」不是破坏性动作，**不该被这次改动带红**——如果红了，说明 danger 标志没做默认值，是 bug 不是测试要改。
+
+### 四、不做什么
+
+- **不动字号**。376 处 / 20 档，单独一版，混进来 preview 包没法判断手感来源。
+- **不动「知道了」的过度补偿**。它独占一行却用了描边，判据上属"可以淡底但用了更强"，无害；改它是纯折腾。
+- **不动 `bg_btn_outline`**。它同时是"弹窗主按钮"和"设置页次要动作"两个身份，是历史遗留，这一版拆不动，也不该顺手拆。
+- **不动 `bg_pill_solid`**（关于页版本胶囊，是 chip 不是按钮）。
+- **不动 `bg_snooze_pill`**（响铃页稍后按钮）。它属于"唯一一处滑动交互"那一摊，等响铃页单独议。
+- **不动 `colors.xml` 任何色值**，只增加引用。`danger #DC2626` 对白 4.83:1，够 AA，不新造色。
+- **不做逐屏美化**（B 堆），不在这一版。
+
+### 五、发布路径
+
+1. 改完 `./gradlew testDebugUnitTest` 全绿
+2. 出 preview 包（`.preview` 后缀 + 固定 keystore，可覆盖安装），**不等 CI**——用户要先看手感
+3. 用户认可后走 `release.sh`，`--check` 五处版本一致
+4. 更新交接条，把字号那版写成新的「下一步」
+
 
 > 以下为上一版方案存档，状态「已发布」，不要重做。提新方案时**记得回来更新上面三行**。
 

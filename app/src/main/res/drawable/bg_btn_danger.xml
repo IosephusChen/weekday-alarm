@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 破坏性动作的主按钮底（v1.23.0）。
+
+     只给「删除确认」「覆盖导入」这类**弹窗目的本身就是破坏**的场景用。
+     与 bg_btn_outline 结构一致，只把描边换成实底、把主色换成 danger：
+     危险动作不能用主色——主色在这套 UI 里一直读作「推荐」。
+
+     为什么是实底而不是红描边：这类弹窗里用户已经明确点进来了，红色实底是
+     「确认」，不是「推荐」；而描边在弹窗里就是普通主按钮的样子，读不出不可逆。
+     而「还没保存」那种「拦一下」的弹窗不适用——那里 positive 必须留给安全路径，
+     危险动作走 neutral 位的红字（见 RoundedDialog.styleButtons）。
+
+     圆角走 @dimen/radius_row，与 bg_btn_outline / bg_guide_btn 同档，
+     DesignTokenTest 才不会红。 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1FDC2626">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/danger" />
+            <corners android:radius="@dimen/radius_row" />
+        </shape>
+    </item>
+</ripple>

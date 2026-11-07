@@ -2,6 +2,7 @@ package io.github.iosephuschen.weekdayalarm;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
@@ -27,17 +28,32 @@ public final class RoundedDialog {
 
     /** 给已有对话框套上圆角底（24dp，与卡片同色），顺带把底部按钮换成 App 的样式。 */
     public static void round(AlertDialog dialog) {
+        round(dialog, false);
+    }
+
+    /**
+     * @param positiveDanger 主按钮是不是破坏性动作（删除 / 覆盖导入）。true 时主按钮换
+     *                       {@code bg_btn_danger}——danger 实底 + 白字。
+     *
+     * <p>为什么这类按钮要用实底而不是描边：弹窗目的本身就是破坏时，用户是明确点进来的，
+     * 红色实底在这里读作「确认」，不读作「推荐」。反过来，「还没保存」那种只是拦一下的
+     * 弹窗不适用——那里 positive 必须留给安全路径，破坏性动作走 neutral 位的红字，
+     * 见 {@link #styleButtons(AlertDialog, boolean)}。
+     *
+     * <p>默认 {@code false}，所以那 15 个普通弹窗的调用方一字不用改。
+     */
+    public static void round(AlertDialog dialog, boolean positiveDanger) {
         if (dialog == null) return;
         Window w = dialog.getWindow();
         if (w == null) return;
         w.setBackgroundDrawableResource(R.drawable.bg_dialog);
-        styleButtons(dialog);
+        styleButtons(dialog, positiveDanger);
         // 幂等兜底：Builder.create() 走的是 create 分支，那时 AlertController 还没把按钮
         // 装进窗口（要等 show() 才 addView），getButton 三个全是 null，样式静默跳过——
         // 1.0.3 及之前所有走 .create() 的弹窗（编辑闹钟、选择铃声、睡前提醒）
         // 因此一直是系统蓝紫文字，而走 .show() 的另外十二个是描边块。
         // 挂在 onShow 上再设一次；styleButtons 内部用绝对值写边距，重复调用不会叠加。
-        dialog.setOnShowListener(d -> styleButtons(dialog));
+        dialog.setOnShowListener(d -> styleButtons(dialog, positiveDanger));
     }
 
     /**
@@ -69,13 +85,25 @@ public final class RoundedDialog {
      * <p>按钮可能不存在（只有一个按钮、或者只有视图没有按钮的弹窗），两处都判空。
      */
     private static void styleButtons(AlertDialog dialog) {
+        styleButtons(dialog, false);
+    }
+
+    /**
+     * @param positiveDanger 主按钮用 danger 实底（破坏性动作）。见 {@link #round(AlertDialog, boolean)}。
+     */
+    private static void styleButtons(AlertDialog dialog, boolean positiveDanger) {
         Context c = dialog.getContext();
         Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
         if (positive != null) {
             // 先清 tint 再换背景，见上面注释；顺序反了等于白清
             positive.setBackgroundTintList(null);
-            positive.setBackgroundResource(R.drawable.bg_btn_outline);
-            positive.setTextColor(ContextCompat.getColor(c, R.color.indigo));
+            if (positiveDanger) {
+                positive.setBackgroundResource(R.drawable.bg_btn_danger);
+                positive.setTextColor(Color.WHITE);
+            } else {
+                positive.setBackgroundResource(R.drawable.bg_btn_outline);
+                positive.setTextColor(ContextCompat.getColor(c, R.color.indigo));
+            }
             // 系统默认把按钮文字转全大写（英文按钮会变 OK / CANCEL）。中文没影响，
             // 但哪天某个按钮放了英文就会突兀，这里统一次掉
             positive.setAllCaps(false);
@@ -134,6 +162,9 @@ public final class RoundedDialog {
 
     public static final class Builder extends AlertDialog.Builder {
 
+        /** 主按钮是破坏性动作。默认 false，只有显式调 {@link #setPositiveDanger()} 才变。 */
+        private boolean positiveDanger;
+
         public Builder(Context context) {
             super(context);
         }
@@ -142,17 +173,40 @@ public final class RoundedDialog {
             super(context, themeResId);
         }
 
+        /**
+         * 把主按钮标成破坏性动作：{@code danger} 实底 + 白字。
+         *
+         * <p><b>必须放在链式调用的第一个。</b>父类的 {@code setTitle / setMessage /
+         * setNegativeButton} 返回的是 {@code AlertDialog.Builder}，不是本类，接在它们后面
+         * 就调不到这个方法了：
+         *
+         * <pre>{@code
+         * new RoundedDialog.Builder(ctx)
+         *         .setPositiveDanger()          // 必须在最前
+         *         .setTitle("删除「白班」？")
+         *         .setPositiveButton("删除", ...)
+         *         .show();
+         * }</pre>
+         *
+         * <p>没有重写父类那一串方法去返回本类，是因为那要覆盖十几个重载，而收益只是
+         * 省一个书写顺序约束——代价是把 AlertDialog.Builder 的继承面整个接管过来。
+         */
+        public Builder setPositiveDanger() {
+            positiveDanger = true;
+            return this;
+        }
+
         @Override
         public AlertDialog create() {
             AlertDialog d = super.create();
-            round(d);
+            round(d, positiveDanger);
             return d;
         }
 
         @Override
         public AlertDialog show() {
             AlertDialog d = super.show();
-            round(d);
+            round(d, positiveDanger);
             return d;
         }
     }

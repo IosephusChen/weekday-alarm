@@ -388,6 +388,9 @@ cols = ⌈len ÷ rows⌉
 > **C6 措辞 + 硬编码**：`（通知被关闭，已缩短）` → `（通知权限没开，只能响这么久）`。原句讲的是系统内部动作（谁关的、缩短了什么），用户想知道的是「为什么只有 5 分钟」。同时三条提示串（`ring_hint_never_stop` / `_auto_stop` / `_auto_stop_degraded`）从 `AlarmActivity.autoStopHint` 的硬编码挪进 `strings.xml`——此前改一句文案要动 Java，和项目「文案全在 strings.xml」的规矩相悖。降级分支原先**没有测试**，这次补上。
 >
 > **没做的**：C4 标题体例、C5 长提示分段要逐屏看截图，留到后面。
+>
+> **A4 补齐（16:23，同一版）**：`dialog_pick` 的上下边缘渐隐是 v1.0.4 做的，其余四个弹窗一直没跟上——`dialog_alarm` / `dialog_message` / `dialog_schedule_sheet` / `dialog_widgets` 补上 `requiresFadingEdge=vertical` + `fadingEdgeLength=28dp`。`dialog_widgets` 原来还是 v0.91.7 那套常显滚动条（`fadeScrollbars=false`），正是 v1.0.4 注释里说的「那条深色竖条压在圆角上更抢眼」，一并改成渐隐。全屏页面不加：整页滚动，边缘渐隐会和状态栏混在一起。新增 `ScrollEdgeTest` 守门，已做反证。
+> 同一轮复核掉三条误判（都记在 `docs/待裁决清单.md`）：A6「选中态把卡片撑大」——`DialogKit` 只调 `setSelected()`，LayoutParams 固定 `MATCH_PARENT × WRAP_CONTENT`，尺寸不变，看到的是描边变重的观感；A15「日期格式两套」——ISO 只用于文件名与错误日志，UI 年月日早已统一，只剩变更记录用 `2026/10/25`；B7「设置页缺分割线」——线在 `activity_settings.xml:263`。
 
 ## v1.23.1 · 字号收拢（2026-11-07 提出，两批均已实现）
 

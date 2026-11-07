@@ -46,7 +46,7 @@
     <style name="WheelPickerText">
         <item name="android:textColorPrimary">@color/ink</item>
         <item name="android:textColorSecondary">@color/sub</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">@dimen/font_display</item>
         <item name="colorControlActivated">@color/indigo</item>
         <!-- v0.77.1：分隔线原来是深靛蓝（跟随 colorControlNormal），
              两列各画一条、在弹窗上横贯成两条长线；改成发丝线色后只剩「选中行」的暗示。 -->
@@ -64,13 +64,13 @@
         <item name="android:paddingTop">6dp</item>
         <item name="android:paddingBottom">6dp</item>
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">@dimen/font_caption</item>
     </style>
 
     <style name="WeekChip">
         <item name="android:background">@drawable/bg_chip_white</item>
         <item name="android:textColor">@color/white</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/font_label</item>
         <item name="android:paddingLeft">10dp</item>
         <item name="android:paddingRight">10dp</item>
         <item name="android:paddingTop">3dp</item>
@@ -83,19 +83,19 @@
          分区头降到 13sp + 次级灰，行标题保持 15sp 深色，层级一眼可辨。 -->
     <style name="SectionTitle">
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/font_body</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="FieldLabel">
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/font_body</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="FieldHint">
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/font_label</item>
     </style>
 
     <!-- ===== 使用说明页（v0.50.0）=====
@@ -110,7 +110,7 @@
             光秃秃的标题更能说清「这是第几类、一共几类」。 -->
     <style name="HelpSection">
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">@dimen/font_title</item>
         <item name="android:textStyle">bold</item>
     </style>
 
@@ -137,13 +137,13 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:text">·</item>
         <item name="android:textColor">@color/indigo</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">@dimen/font_action</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="HelpItem">
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">@dimen/font_action</item>
         <item name="android:lineSpacingMultiplier">1.35</item>
     </style>
 
@@ -152,19 +152,19 @@
          避免旧版「有的居中、有的左对齐」造成的视觉错位。 -->
     <style name="SettingsTitle">
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">@dimen/font_title</item>
     </style>
 
     <style name="SettingsValue">
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/font_body</item>
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
     </style>
 
     <style name="SettingsSummary">
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">@dimen/font_caption</item>
         <item name="android:lineSpacingMultiplier">1.2</item>
     </style>
 
@@ -180,7 +180,7 @@
         <item name="android:layout_marginStart">@dimen/space_6</item>
         <item name="android:text">›</item>
         <item name="android:textColor">@color/indigo</item>
-        <item name="android:textSize">17sp</item>
+        <item name="android:textSize">@dimen/font_chevron</item>
     </style>
 
     <!-- 响铃细节弹层（v1.19.0 美化）专用。
@@ -192,7 +192,7 @@
         <item name="android:layout_marginStart">@dimen/space_6</item>
         <item name="android:text">›</item>
         <item name="android:textColor">@color/sub</item>
-        <item name="android:textSize">17sp</item>
+        <item name="android:textSize">@dimen/font_chevron</item>
     </style>
 
     <!-- 分隔线左右各内缩 16dp，不再通栏顶到卡片边。五行读起来是一组，不是一张表格。 -->
@@ -219,7 +219,7 @@
         <item name="android:paddingEnd">@dimen/space_12</item>
         <item name="android:paddingBottom">@dimen/space_6</item>
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">@dimen/font_label</item>
     </style>
 
     <style name="HelpCard">

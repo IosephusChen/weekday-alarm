@@ -1645,6 +1645,26 @@ public class GuideTest {
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));
     }
 
+    /**
+     * 进度行右端写「3 / 4」：四个点只说位置，不说总数（v1.23.6）。
+     *
+     * <p>读屏软件读不出那四个 {@code View}，所以数字同时写进 contentDescription。
+     */
+    @Test
+    public void progressRow_showsPageNumberAndSpeaksIt() {
+        GuideActivity a = fresh();
+        TextView no = a.findViewById(R.id.tv_step_no);
+        assertNotNull("进度行右端要有页码", no);
+        assertEquals("1 / 4", no.getText().toString());
+        assertEquals("读屏要念得出第几步、共几步",
+                "第 1 步，共 4 步", no.getContentDescription().toString());
+
+        tap(a, R.id.btn_next);
+        tap(a, R.id.btn_next);
+        assertEquals("翻到第三页，页码要跟着走", "3 / 4", no.getText().toString());
+        assertEquals("第 3 步，共 4 步", no.getContentDescription().toString());
+    }
+
     /** 点「稍后设置」= 我知道了：照样留下能响的闹钟、照样写标记。 */
     @Test
     public void skip_marksOnboardAndTurnsSwitchOn() {

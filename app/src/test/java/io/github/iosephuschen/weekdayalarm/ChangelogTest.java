@@ -253,7 +253,9 @@ public class ChangelogTest {
         // 同一天赶出来的版本会连着好几张（v0.39.1 / .3 / .4 都是 10/21），
         // 断言「第 N 张换日」这种写法，下次再加一版同日的就红了
         Changelog.Entry newest = Changelog.all().get(0);
-        assertTrue("最新一版应印完整日期", containsText(box.getChildAt(0), newest.date));
+        // v1.23.6：界面写「2026年11月7日」，数据仍是 yyyy/MM/dd
+        assertTrue("最新一版应印完整日期",
+                containsText(box.getChildAt(0), Changelog.displayDate(newest.date)));
         String prevDate = newest.date;
         for (int i = 1; i < Changelog.all().size(); i++) {
             Changelog.Entry e = Changelog.all().get(i);
@@ -267,10 +269,10 @@ public class ChangelogTest {
                 assertTrue("与上一张同日应写「同日」：v" + e.version + " 实际：" + text,
                         text.startsWith("同日"));
                 assertFalse("同日不该重复印日期：v" + e.version + " 实际：" + text,
-                        text.contains(e.date));
+                        text.contains(Changelog.displayDate(e.date)));
             } else {
                 assertTrue("换了一天就该重新印日期：v" + e.version + " 实际：" + text,
-                        text.contains(e.date));
+                        text.contains(Changelog.displayDate(e.date)));
             }
             prevDate = e.date;
         }
@@ -411,5 +413,37 @@ public class ChangelogTest {
         assertEquals(all.size(),
                 Changelog.appendInto(ctx(), box, all, next, Changelog.PAGE_SIZE, installedCode()));
         assertEquals(all.size(), box.getChildCount());
+    }
+
+    /**
+     * 日志页不许把 {@code yyyy/MM/dd} 直接印给用户（v1.23.6）。
+     *
+     * <p>数据里存这个格式是为了排序和「同日」比对（{@code everyEntry_hasIsoLikeDate} 钉着），
+     * 但屏幕上 App 其它日期都是「2026年11月」/「11月7日 周五」这一套，只有这一页写着
+     * 斜杠日期，读起来像日志文件。2026-11-08 清单 A15 收到只剩这一处。
+     */
+    @Test
+    public void changelog_rendersChineseDates() {
+        assertEquals("2026年11月7日", Changelog.displayDate("2026/11/07"));
+        assertEquals("2026年1月5日", Changelog.displayDate("2026/01/05"));
+
+        LinearLayout box = new LinearLayout(ctx());
+        Changelog.renderInto(ctx(), box, Changelog.all(), installedCode());
+        assertFalse("整页不许出现 yyyy/MM/dd", hasSlashDate(box));
+    }
+
+    /** 递归找「四位年/两位月/两位日」的文本，用来守上面那条。 */
+    private static boolean hasSlashDate(View root) {
+        if (root instanceof TextView) {
+            CharSequence t = ((TextView) root).getText();
+            if (t != null && t.toString().matches(".*\\d{4}/\\d{2}/\\d{2}.*")) return true;
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                if (hasSlashDate(g.getChildAt(i))) return true;
+            }
+        }
+        return false;
     }
 }

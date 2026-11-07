@@ -41,7 +41,9 @@ public class ChangelogActivity extends AppCompatActivity {
         // 逐条加「测试版」标签既是改历史、也改不完；在顶上说明一句最省事，也不骗人。
         // v1.1.0：那行说明拆到 tv_changelog_note（独立字号、文案在 strings），
         // 语序也换成「最近更新 … · 共 N 个版本」——有用的在前。
-        sub.setText("最近更新 " + Changelog.all().get(0).date
+        // v1.23.6：日期按界面写法显示（2026年11月7日）。数据仍存 yyyy/MM/dd，
+        // 那是给排序和「同日」比对用的；屏幕上跟随 App 其它日期。
+        sub.setText("最近更新 " + Changelog.displayDate(Changelog.all().get(0).date)
                 + " · 共 " + Changelog.all().size() + " 个版本");
 
         List<Changelog.Entry> all = Changelog.all();

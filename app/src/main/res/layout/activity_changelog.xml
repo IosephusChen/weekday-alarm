@@ -33,7 +33,7 @@
                 android:paddingEnd="14dp"
                 android:paddingTop="7dp"
                 android:paddingBottom="7dp"
-                android:text="‹ 返回"
+                android:text="@string/button_back"
                 android:textColor="@color/ink"
                 android:textSize="14sp"
                 android:textStyle="bold" />

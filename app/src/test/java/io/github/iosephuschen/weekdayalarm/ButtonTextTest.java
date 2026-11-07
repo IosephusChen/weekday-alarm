@@ -32,6 +32,81 @@ public class ButtonTextTest {
     private static final Pattern RAW = Pattern.compile(
             "set(?:Positive|Negative|Neutral)Button\\s*\\(\\s*\"([^\"]*[\\u4e00-\\u9fa5][^\"]*)\"");
 
+    /**
+     * {@code showMessage(...)} 的按钮文案是第 4 / 第 6 个参数，不叫
+     * {@code setPositiveButton}，上面那条正则看不见它。
+     *
+     * <p>一开始我用「在 showMessage 调用里搜按钮词表」的粗办法，结果只抓到每句的第一个，
+     * 「开始测试」这种不在词表里的直接漏掉。所以改成按参数拆：字符串字面量才算，
+     * {@code getString(...)} 里有括号，自然不算。
+     */
+    private static void scanShowMessage(String file, String text, Set<String> bad) {
+        int from = 0;
+        while (true) {
+            int idx = text.indexOf("showMessage(", from);
+            if (idx < 0) return;
+            from = idx + 1;
+            // 注释里的示例跳过
+            int lineStart = text.lastIndexOf('\n', idx) + 1;
+            String beforeIdx = text.substring(lineStart, idx);
+            if (beforeIdx.contains("//") || beforeIdx.trim().startsWith("*")) continue;
+
+            java.util.List<String> args = literalArgs(text, idx + "showMessage(".length());
+            for (int k : new int[]{3, 5}) {          // 第 4、第 6 个参数
+                if (k >= args.size()) continue;
+                String a = args.get(k);
+                if (a != null && a.matches(".*[\\u4e00-\\u9fa5].*")) {
+                    int line = 1;
+                    for (int i = 0; i < idx; i++) if (text.charAt(i) == '\n') line++;
+                    bad.add(file + ":" + line + " · showMessage 第" + (k + 1) + "个参数 = 「" + a + "」");
+                }
+            }
+        }
+    }
+
+    /**
+     * 拆出一次调用的参数。纯字符串字面量返回内容，其余（含变量、方法调用、拼接）返回
+     * {@code null}。括号深度和字符串转义都处理，否则 {@code getString(R.string.x)} 里的
+     * 逗号会把参数拆错。
+     */
+    private static java.util.List<String> literalArgs(String s, int from) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        int depth = 0;
+        boolean inStr = false;
+        boolean literal = true;
+        for (int i = from; i < s.length(); i++) {
+            char ch = s.charAt(i);
+            if (inStr) {
+                if (ch == '\\' && i + 1 < s.length()) {
+                    cur.append(ch).append(s.charAt(++i));
+                } else if (ch == '"') {
+                    inStr = false;
+                } else {
+                    cur.append(ch);
+                }
+                continue;
+            }
+            if (ch == '"') { inStr = true; continue; }
+            if (ch == '(') { depth++; cur.append(ch); literal = false; continue; }
+            if (ch == ')') {
+                if (depth == 0) {
+                    out.add(literal ? cur.toString().trim() : null);
+                    return out;
+                }
+                depth--; cur.append(ch); literal = false; continue;
+            }
+            if (ch == ',' && depth == 0) {
+                out.add(literal ? cur.toString().trim() : null);
+                cur.setLength(0); literal = true; continue;
+            }
+            cur.append(ch);
+            if (!Character.isWhitespace(ch)) literal = false;
+        }
+        out.add(null);
+        return out;
+    }
+
     @Test
     public void dialogButtonsUseStringResources() {
         File srcDir = srcDir();
@@ -59,6 +134,9 @@ public class ButtonTextTest {
                 Matcher m = RAW.matcher(line);
                 if (m.find()) bad.add(f.getName() + ":" + (i + 1) + " = 「" + m.group(1) + "」");
             }
+
+            // showMessage 的按钮参数可能跨行写，按整份文件扫
+            scanShowMessage(f.getName(), read(f), bad);
         }
     }
 

@@ -1,6 +1,7 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -32,6 +33,22 @@ import java.util.List;
  * Activity，由它去开对话框、弹菜单、写 Prefs 并重排闹钟。
  */
 final class AlarmRowRenderer {
+
+    /**
+     * 行首时间位该画什么（v1.23.3）。
+     *
+     * <p>原来「今天轮休」和「算不出时刻」共用一个破折号。两者对用户的意思完全不同：
+     * 前者是「今天不用早起，明天照响」，什么都不用做；后者是「这条闹钟今天没有有效时刻」，
+     * 多半是班次没配全，得去改。同一个符号逼人去猜是哪种。
+     *
+     * <p>抽成方法是为了能直接断言——渲染整行要搭 Activity、班表、请假状态，
+     * 为了测一个符号不值得。
+     */
+    static String timeSlotText(Context c, boolean resting, boolean noTime, int whenMin) {
+        if (resting) return c.getString(R.string.alarm_time_rest);
+        if (noTime) return "—";
+        return TimeText.clockOfMinutes(whenMin);
+    }
 
     /** 中等字重：比 BOLD 清爽，比常规重，用于时间与闹钟名。 */
     private static final Typeface TYPEFACE_MEDIUM =
@@ -216,7 +233,11 @@ final class AlarmRowRenderer {
             boolean resting = follows && !a.appliesTo(today, globalRule, overtimeToday);
             int whenMin = a.timeOn(today, globalRule, overtimeToday);
             boolean noTime = whenMin == Alarm.NO_TIME;
-            time.setText(resting || noTime ? "—" : TimeText.clockOfMinutes(whenMin));
+            // v1.23.3：原来两种情况都画「—」，可它们说的不是一件事——
+            // 「休」是「跟班表，今天轮休，明天照响」；「—」是「这条闹钟今天算不出时刻」，
+            // 多半是班次没配全。同一个破折号让用户没法判断要不要去改设置。
+            // 「休」沿用 WeekGrid / ScheduleSheet 里同一个字，全 App 对休息只有这一种写法。
+            time.setText(timeSlotText(activity, resting, noTime, whenMin));
             // v0.74.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
             // 「灰不灰」这一个维度表达有没有开就够了
             //
@@ -225,6 +246,9 @@ final class AlarmRowRenderer {
             time.setTextColor(skipDay != null || resting
                     ? ContextCompat.getColor(activity, R.color.sub) : titleColor);
             time.setTextSize(26);
+            // 定宽列里居中：数字按 "00:00" 量的宽度正好填满，居中等于没变；
+            // 「休」「—」这种单字符不居中会贴在列左侧，比其他行的时间偏出一截
+            time.setGravity(Gravity.CENTER);
             time.setTypeface(TYPEFACE_MEDIUM);
             // 关掉字体自带的上下留白，字形高度才等于视觉高度，居中才算得准
             time.setIncludeFontPadding(false);

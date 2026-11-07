@@ -44,7 +44,9 @@ public final class DialogKit {
 
     /** 单按钮「知道了」的消息框。 */
     public static void showMessage(Context c, String title, String body) {
-        showMessage(c, title, body, "知道了", null, null, null);
+        // 「知道了」走资源：它和十几个弹窗里的 button_got_it 是同一个按钮，
+        // 写在这儿等于又多一份可以改漏的副本
+        showMessage(c, title, body, c.getString(R.string.button_got_it), null, null, null);
     }
 
     /**

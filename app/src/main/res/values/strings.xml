@@ -9,7 +9,8 @@
     <string name="widget_month_minimal_desc">本月班表 · 极简（4×3）：整月班表，不要请假按钮、格子更宽松</string>
 
     <!-- ===== 设置页文案（v0.73.7 从布局内联迁入）===== -->
-    <string name="settings_back">‹ 返回</string>
+    <!-- 闹钟行时间位：跟班表但今天轮休。与 WeekGrid / ScheduleSheet 的「休」同字 -->
+    <string name="alarm_time_rest">休</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
     <string name="settings_volume_label">闹钟音量</string>
@@ -181,7 +182,7 @@
 
     <string name="about_license_body">本应用以 MIT 许可发布，源码公开在 GitHub，可以自由使用、修改、分发。\n\n使用了 AndroidX（Apache License 2.0）。Robolectric 只在开发期跑单元测试，不打包进安装包。\n\n完整许可文本见仓库根目录的 LICENSE 文件。</string>
 
-    <string name="about_disclaimer_body">本应用通过系统闹钟接口触发提醒，实际能否响铃还取决于系统的后台管理策略、厂商省电设置与权限状态。\n\n重要场合（考试、航班、面试、就医）请另设一个备用闹钟。\n\n所有数据只存在本机：不上传、不备份到云端。卸载应用或清除数据即永久丢失，换机前请先用「导出配置」存一份。</string>
+    <string name="about_disclaimer_body">重要场合（考试、航班、面试、就医）请另设一个备用闹钟。\n\n本应用通过系统闹钟接口触发提醒，实际能否响铃还取决于系统的后台管理策略、厂商省电设置与权限状态。\n\n所有数据只存在本机：不上传、不备份到云端。卸载应用或清除数据即永久丢失，换机前请先用「导出配置」存一份。</string>
 
     <string name="about_privacy_body">本应用不收集任何个人信息：没有账号、没有统计 SDK、没有广告、没有设备指纹。\n\n网络请求只有两处：拉取节假日数据、检查有没有新版本（v0.89.0 起）。两者都只带版本号作标识，不携带任何设备信息或使用记录。\n\n闹钟、班表、请假 / 加班记录全部存在本机，只有你自己能看到。导出的配置文件也由你决定放在哪里、给谁。</string>
 
@@ -289,6 +290,9 @@
          命名按语义不按位置：`button_ok` 是「确认这一件事」，
          `button_done` 是「我已经弄完了」（设置类弹窗，没有可提交的东西）。 -->
     <string name="button_cancel">取消</string>
+    <string name="button_back">‹ 返回</string>
+    <string name="button_start_test">开始测试</string>
+    <string name="button_retry">重试</string>
     <string name="button_ok">确定</string>
     <string name="button_save">保存</string>
     <string name="button_delete">删除</string>

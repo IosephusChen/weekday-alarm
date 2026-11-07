@@ -456,7 +456,8 @@ public class MainActivity extends AppCompatActivity {
     private void confirmDeleteAlarm(Alarm a) {
         DialogKit.showMessage(this, "删除「" + a.label + "」？",
                 "删除后该闹钟不再提醒，已排程的实例会一并取消。",
-                "删除", (d, w) -> removeAlarm(a), "取消", null);
+                getString(R.string.button_delete), (d, w) -> removeAlarm(a),
+                getString(R.string.button_cancel), null);
     }
 
     /**

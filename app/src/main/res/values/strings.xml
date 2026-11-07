@@ -88,7 +88,7 @@
          页面上是找不到的——第三方组件在更下面一组里，摘要指错地方反而更费劲。 -->
     <string name="more_pin_widget_summary">长按桌面空白 →「小部件」→「全部应用」</string>
     <string name="more_export_title">导出配置</string>
-    <string name="more_export_summary">闹钟、排班、请假/加班、响铃与日历设置存成一个文件</string>
+    <string name="more_export_summary">闹钟、排班、请假 / 加班、响铃与日历设置存成一个文件</string>
     <string name="more_import_title">导入配置</string>
     <string name="more_import_summary">选择之前导出的文件恢复设置（会覆盖当前配置）</string>
 
@@ -100,7 +100,7 @@
     <string name="help_title">使用说明</string>
     <string name="help_toc_schedule">排班与日历</string>
     <string name="help_toc_alarm">闹钟</string>
-    <string name="help_toc_leave">请假 · 加班</string>
+    <string name="help_toc_leave">请假 / 加班</string>
     <string name="help_toc_widget">小组件</string>
     <string name="help_toc_settings">设置与备份</string>
 
@@ -183,7 +183,7 @@
 
     <string name="about_disclaimer_body">本应用通过系统闹钟接口触发提醒，实际能否响铃还取决于系统的后台管理策略、厂商省电设置与权限状态。\n\n重要场合（考试、航班、面试、就医）请另设一个备用闹钟。\n\n所有数据只存在本机：不上传、不备份到云端。卸载应用或清除数据即永久丢失，换机前请先用「导出配置」存一份。</string>
 
-    <string name="about_privacy_body">本应用不收集任何个人信息：没有账号、没有统计 SDK、没有广告、没有设备指纹。\n\n网络请求只有两处：拉取节假日数据、检查有没有新版本（v0.89.0 起）。两者都只带版本号作标识，不携带任何设备信息或使用记录。\n\n闹钟、班表、请假加班记录全部存在本机，只有你自己能看到。导出的配置文件也由你决定放在哪里、给谁。</string>
+    <string name="about_privacy_body">本应用不收集任何个人信息：没有账号、没有统计 SDK、没有广告、没有设备指纹。\n\n网络请求只有两处：拉取节假日数据、检查有没有新版本（v0.89.0 起）。两者都只带版本号作标识，不携带任何设备信息或使用记录。\n\n闹钟、班表、请假 / 加班记录全部存在本机，只有你自己能看到。导出的配置文件也由你决定放在哪里、给谁。</string>
 
     <string name="crash_notice">上次运行崩溃过 · 点这里导出日志</string>
     <string name="crash_notice_close">不再提示</string>
@@ -204,7 +204,7 @@
     <string name="dialog_export_done_title">已导出</string>
     <string name="export_done_body">配置已写入你选的位置。换手机时在新手机上用「导入配置」选这个文件即可。\n\n文件里有你的请假 / 加班日期，发给别人前留意。</string>
     <string name="dialog_import_confirm_title">导入配置？</string>
-    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假/加班标记、铃声、睡前提醒、日历显示。\n\n音量不在备份里——它存在系统里，跟着设备走，导入不会改它。</string>
+    <string name="import_confirm_body">会用这份配置覆盖当前的全部设置：闹钟、排班基准、请假 / 加班标记、铃声、睡前提醒、日历显示。\n\n音量不在备份里——它存在系统里，跟着设备走，导入不会改它。</string>
     <string name="import_confirm_guide_extra">包括你刚才选的班表。</string>
     <string name="import_confirm_warning">覆盖后无法撤销，当前设置不会自动备份。</string>
     <string name="import_confirm_positive">覆盖导入</string>
@@ -271,4 +271,13 @@
     <string name="dialog_keys_message">响铃界面里，按音量键或电源键分别会做什么。</string>
     <string name="dialog_ring_duration_title">响铃时长</string>
     <string name="dialog_ring_duration_message">不手动停止的话，响多久之后自己停下来。</string>
+
+    <!-- 响铃页底部提示（v1.23.1 从 AlarmActivity 的硬编码挪进来，见 C6）。
+         三条各自带完整前缀「滑到底才会停 · 」而不是拆一个公共前缀：
+         改文案的人一眼看到整句，不用在两处之间拼。
+         「通知权限没开」是给用户看的说法，原句写的是「通知被关闭，已缩短」——
+         那是系统内部动作（谁关的、缩短了什么），用户真正想知道的是为什么只有这么短。 -->
+    <string name="ring_hint_never_stop">滑到底才会停 · 铃声会一直响</string>
+    <string name="ring_hint_auto_stop">滑到底才会停 · %1$d 分钟后自动停止</string>
+    <string name="ring_hint_auto_stop_degraded">滑到底才会停 · %1$d 分钟后自动停止（通知权限没开，只能响这么久）</string>
 </resources>

@@ -238,6 +238,9 @@ public class AlarmActivity extends AppCompatActivity {
      * 这里不显示跳秒的倒计时：那会诱导人躺着等它自己停，而滑动停止才是希望他做的动作。
      *
      * <p>包级可见，单测直接断言文案，不必去启动一个锁屏全屏 Activity。
+     * 文案自 v1.23.1 起在 {@code strings.xml}（{@code ring_hint_*}）——原先硬编码在这里，
+     * 改一句话要动 Java，和项目「文案全在 strings.xml」的规矩相悖（清单 C6）。
+     * 单测读同一份资源比对，断言的是「数字跟着设置走」，不是把中文抄两遍。
      */
     static String autoStopHint(Context c) {
         // v0.91.9：跟着「实际生效」的时长走，不是跟着设置值走。
@@ -247,12 +250,12 @@ public class AlarmActivity extends AppCompatActivity {
         int minutes = AlarmService.effectiveRingMinutes(c);
         int configured = Prefs.getRingMinutes(c);
         if (minutes <= 0) {
-            return "滑到底才会停 · 铃声会一直响";
+            return c.getString(R.string.ring_hint_never_stop);
         }
         if (configured > minutes) {
-            return "滑到底才会停 · " + minutes + " 分钟后自动停止（通知被关闭，已缩短）";
+            return c.getString(R.string.ring_hint_auto_stop_degraded, minutes);
         }
-        return "滑到底才会停 · " + minutes + " 分钟后自动停止";
+        return c.getString(R.string.ring_hint_auto_stop, minutes);
     }
 
     /** 日期行：「10月21日 星期三」——与澎湃一致，月日不补零。 */

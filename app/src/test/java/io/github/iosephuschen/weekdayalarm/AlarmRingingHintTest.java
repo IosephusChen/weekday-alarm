@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
+import android.app.NotificationManager;
 import android.content.Context;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -13,6 +14,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowNotificationManager;
+
+import static org.robolectric.Shadows.shadowOf;
 
 /**
  * 响铃页底部提示（v0.40.1）：文案必须跟着「响铃时长」设置走。
@@ -68,5 +72,25 @@ public class AlarmRingingHintTest {
         Prefs.setRingMinutes(ctx, 0);
         String hint = AlarmActivity.autoStopHint(ctx);
         assertTrue("不限时不该编一个时长出来： " + hint, !hint.contains("分钟后自动停止"));
+    }
+
+    /**
+     * 通知权限没开时，时长被封顶到 5 分钟——用户设的 10 分钟只响了 5 分钟，
+     * 这行字是他能看到的唯一解释（C6）。
+     *
+     * <p>原句是「（通知被关闭，已缩短）」：讲的是系统内部发生了两件事，
+     * 没讲「为什么只有 5 分钟」「能不能改」。现在写「通知权限没开，只能响这么久」，
+     * 既是原因也是提示。
+     */
+    @Test
+    public void hint_degraded_saysWhyItStopsEarly() {
+        NotificationManager nm =
+                (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        ShadowNotificationManager shadow = shadowOf(nm);
+        shadow.setNotificationsEnabled(false);
+        Prefs.setRingMinutes(ctx, 10);
+
+        assertEquals("滑到底才会停 · 5 分钟后自动停止（通知权限没开，只能响这么久）",
+                AlarmActivity.autoStopHint(ctx));
     }
 }

@@ -72,40 +72,20 @@
          「你在第几个」，视线扫过去就到标题了，不抢戏。
          点由 renderDots() 逐个填，这里只留容器。
 
-         v1.23.6：这一行右端补「3 / 4」。四个点到第三页亮三颗，用户仍要自己数
-         「一共几步、还剩几步」；读屏软件更是什么都读不到（四个 View 没有文字）。
-         数字放右端而不是埋在点后面：这行两侧都是 24dp 内缩，端到端正好成一条
-         标注线，也不会把左侧的点和「跳过」挤在一起。 -->
+         v1.23.8：删掉 v1.23.7 加在右端的「3 / 4」。●●●○ 已经把「第几个、共几个」
+         说完了，右边再写一遍是同一句话说两遍（用户 2026-11-08 05:53 指出）。
+         当初加数字的真实理由是读屏读不出这四个 View——那个问题改由容器自己的
+         contentDescription 解决，见 renderDots()，可见的版面不再多一句话。 -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/dots"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/space_24"
         android:layout_marginTop="@dimen/space_6"
         android:layout_marginEnd="@dimen/space_24"
         android:gravity="center_vertical"
         android:minHeight="8dp"
-        android:orientation="horizontal">
-
-        <LinearLayout
-            android:id="@+id/dots"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/tv_step_no"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="1 / 4"
-            android:textColor="@color/sub"
-            android:textSize="11sp" />
-    </LinearLayout>
+        android:orientation="horizontal" />
 
     <!-- 四屏共用的页头（v1.14.0）：步骤名、图标、标题、副标题。
 

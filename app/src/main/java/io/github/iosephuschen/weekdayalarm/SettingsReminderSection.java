@@ -379,8 +379,8 @@ final class SettingsReminderSection {
         // 现在改成确认制，两个都名副其实——取消丢弃本次改动（含开关），完成才写 Prefs。
         new RoundedDialog.Builder(host)
                 .setView(view)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("完成", (d, w) -> {
+                .setNegativeButton(host.getString(R.string.button_cancel), null)
+                .setPositiveButton(host.getString(R.string.button_done), (d, w) -> {
                     int target;
                     if (pick[0] == 0) {
                         target = Prefs.BEDTIME_OFF;

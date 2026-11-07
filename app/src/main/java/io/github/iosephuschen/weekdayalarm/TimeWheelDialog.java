@@ -49,8 +49,8 @@ public final class TimeWheelDialog {
         new RoundedDialog.Builder(ctx)
                 .setTitle(title)
                 .setView(view)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确定", (d, w) ->
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
+                .setPositiveButton(ctx.getString(R.string.button_ok), (d, w) ->
                         cb.onPicked(npHour.getValue(), npMinute.getValue()))
                 .show();
     }

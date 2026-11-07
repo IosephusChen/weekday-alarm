@@ -749,11 +749,11 @@ public class SettingsActivity extends AppCompatActivity {
         });
         new RoundedDialog.Builder(this)
                 .setView(view)
-                .setPositiveButton("确定", (d, w) -> {
+                .setPositiveButton(this.getString(R.string.button_ok), (d, w) -> {
                     AlarmVolume.setLevel(this, seek.getProgress() + AlarmVolume.min(this));
                     updateVolumeText();
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(this.getString(R.string.button_cancel), null)
                 .show();
     }
 

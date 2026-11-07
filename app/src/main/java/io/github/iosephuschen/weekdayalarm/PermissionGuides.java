@@ -149,9 +149,9 @@ final class PermissionGuides {
         View view = DialogKit.messageView(activity, "开启自动弹出权限", sb.toString());
         RoundedDialog.Builder b = new RoundedDialog.Builder(activity);
         b.setView(view);
-        b.setPositiveButton("去设置", (d, w) -> openAppDetails(activity));
-        b.setNeutralButton("我已开启", (d, w) -> Prefs.setPopupGuided(activity, true));
-        b.setNegativeButton("暂不", null);
+        b.setPositiveButton(activity.getString(R.string.button_go_settings), (d, w) -> openAppDetails(activity));
+        b.setNeutralButton(activity.getString(R.string.button_opened), (d, w) -> Prefs.setPopupGuided(activity, true));
+        b.setNegativeButton(activity.getString(R.string.button_not_now), null);
         b.show();
     }
 

@@ -102,7 +102,7 @@
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:text="保存"
+            android:text="@string/button_save"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold" />

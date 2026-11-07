@@ -186,8 +186,8 @@ public final class ScheduleSheet {
         new RoundedDialog.Builder(ctx)
                 .setTitle(role.title)
                 .setView(view)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确定", (d, w) -> {
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
+                .setPositiveButton(ctx.getString(R.string.button_ok), (d, w) -> {
                     if (cb != null) cb.onSaved(s.copy());
                 })
                 .show();
@@ -424,8 +424,8 @@ public final class ScheduleSheet {
         new RoundedDialog.Builder(ctx)
                 .setTitle(role.rotation ? "第 " + (idx + 1) + " 天" : WEEK_NAMES[idx])
                 .setView(view)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确定", (d, w) -> {
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
+                .setPositiveButton(ctx.getString(R.string.button_ok), (d, w) -> {
                     if (swRest.isChecked()) {
                         s.mask &= ~(1L << idx);
                         if (s.times != null && idx < s.times.length) s.times[idx] = -1;
@@ -461,8 +461,8 @@ public final class ScheduleSheet {
         new RoundedDialog.Builder(ctx)
                 .setTitle(title)
                 .setView(view)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确定", (d, w) -> cb.onNumber(np.getValue()))
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
+                .setPositiveButton(ctx.getString(R.string.button_ok), (d, w) -> cb.onNumber(np.getValue()))
                 .show();
     }
 

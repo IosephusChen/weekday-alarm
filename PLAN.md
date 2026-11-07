@@ -391,6 +391,10 @@ cols = ⌈len ÷ rows⌉
 >
 > **A4 补齐（16:23，同一版）**：`dialog_pick` 的上下边缘渐隐是 v1.0.4 做的，其余四个弹窗一直没跟上——`dialog_alarm` / `dialog_message` / `dialog_schedule_sheet` / `dialog_widgets` 补上 `requiresFadingEdge=vertical` + `fadingEdgeLength=28dp`。`dialog_widgets` 原来还是 v0.91.7 那套常显滚动条（`fadeScrollbars=false`），正是 v1.0.4 注释里说的「那条深色竖条压在圆角上更抢眼」，一并改成渐隐。全屏页面不加：整页滚动，边缘渐隐会和状态栏混在一起。新增 `ScrollEdgeTest` 守门，已做反证。
 > 同一轮复核掉三条误判（都记在 `docs/待裁决清单.md`）：A6「选中态把卡片撑大」——`DialogKit` 只调 `setSelected()`，LayoutParams 固定 `MATCH_PARENT × WRAP_CONTENT`，尺寸不变，看到的是描边变重的观感；A15「日期格式两套」——ISO 只用于文件名与错误日志，UI 年月日早已统一，只剩变更记录用 `2026/10/25`；B7「设置页缺分割线」——线在 `activity_settings.xml:263`。
+>
+> **按钮文案外移（16:51，同一版）**：38 个 `setPositiveButton / setNegativeButton / setNeutralButton` 的文案原先全硬编码在 Java 里（「取消」15 个文件各写一遍、「确定」9 个），加 `activity_week_schedule.xml` 里一处 `android:text="保存"`。现在收成 `strings.xml` 的 11 条 `button_*`，一改全改。**视觉零变化**。
+> 这步本身不是目的：C3（嵌套弹窗撞名）和 C4（标题体例）讨论的就是按钮该叫什么，文案散在 14 个文件里的时候，讨论完还得做一遍搬运才有意义。新增 `ButtonTextTest` 守门（只管按钮，不管其余 41 处 `setText`——那些多是带占位符或拼接的句子），已做反证。
+> **C3 复核结果**：`AlarmCycleEditor` 和 `ScheduleSheet` 用的都是「确定」不是「保存」，真正叫「保存」的只有 `AlarmEditor`（闹钟编辑）与班表页底部。撞名具体指哪两个弹窗，仍需截图确认。
 
 ## v1.23.1 · 字号收拢（2026-11-07 提出，两批均已实现）
 

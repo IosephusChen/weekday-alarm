@@ -83,7 +83,7 @@ public final class PickDateDialog {
         holder[0] = new RoundedDialog.Builder(ctx)
                 .setTitle(title)
                 .setView(view)
-                .setNegativeButton("取消", null)
+                .setNegativeButton(ctx.getString(R.string.button_cancel), null)
                 .create();
         render[0].run();
         holder[0].show();

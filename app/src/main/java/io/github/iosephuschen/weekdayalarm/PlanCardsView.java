@@ -330,8 +330,8 @@ final class PlanCardsView {
         new RoundedDialog.Builder(act)
                 .setTitle(title)
                 .setView(holder)
-                .setNegativeButton("取消", null)
-                .setPositiveButton("确定", (d, w) -> onPick.accept(np.getValue()))
+                .setNegativeButton(act.getString(R.string.button_cancel), null)
+                .setPositiveButton(act.getString(R.string.button_ok), (d, w) -> onPick.accept(np.getValue()))
                 .show();
     }
 

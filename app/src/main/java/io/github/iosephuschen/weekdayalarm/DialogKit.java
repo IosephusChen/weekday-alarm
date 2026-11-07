@@ -336,10 +336,10 @@ public final class DialogKit {
         capListHeight(view);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
         b.setView(view);
-        b.setPositiveButton("完成", (d, w) -> {
+        b.setPositiveButton(c.getString(R.string.button_done), (d, w) -> {
             if (onDone != null) onDone.onMultiPick(checked);
         });
-        b.setNegativeButton("取消", null);
+        b.setNegativeButton(c.getString(R.string.button_cancel), null);
         b.show();
     }
 
@@ -438,10 +438,10 @@ public final class DialogKit {
         capListHeight(view);
         RoundedDialog.Builder b = new RoundedDialog.Builder(c);
         b.setView(view);
-        b.setPositiveButton("确定", (d, w) -> {
+        b.setPositiveButton(c.getString(R.string.button_ok), (d, w) -> {
             if (onDone != null) onDone.onPick(checked);
         });
-        b.setNegativeButton("取消", null);
+        b.setNegativeButton(c.getString(R.string.button_cancel), null);
         b.show();
     }
 

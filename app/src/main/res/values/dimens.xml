@@ -44,4 +44,29 @@
     <dimen name="space_20">20dp</dimen>
     <dimen name="space_24">24dp</dimen>
 
+    <!-- ── 字号 ──
+         v1.23.1 建。**只给「文字角色」用**，不是给 425 处布局裸值收编用的。
+
+         为什么建：`themes.xml` 里 15 个文字角色 style 各自写着 11/12/13/14/15/17/22sp，
+         同一个「正文」在说明页写 14、在设置页右值写 13，两者差一档但没人说得清是
+         刻意还是手滑。建 token 后「正文档」这个决定只在一处，想整体调大一级改一行。
+         布局里的裸值（如首页大时钟 76sp、卡片行 14sp）不动——那些是逐屏调出来的，
+         套进角色名反而说不准，见下方分组守门测试的口径。
+
+         命名按**层级**而不是用途：按钮和强调正文同为 14，都叫 action 比叫 button 诚实。 -->
+    <!-- 最小辅助字：设置行摘要、日期选择器星期表头、小组件表头 -->
+    <dimen name="font_caption">11sp</dimen>
+    <!-- 标签与提示：周次 chip、字段提示、说明页目录 chip -->
+    <dimen name="font_label">12sp</dimen>
+    <!-- 正文：分区标题、字段标签、设置行右值 -->
+    <dimen name="font_body">13sp</dimen>
+    <!-- 可操作文字与强调正文：按钮、说明页条目 -->
+    <dimen name="font_action">14sp</dimen>
+    <!-- 行标题：设置行标题、说明页小节标题 -->
+    <dimen name="font_title">15sp</dimen>
+    <!-- 行末「›」符号。不是文字，是图标——和正文同档会被读成句末标点 -->
+    <dimen name="font_chevron">17sp</dimen>
+    <!-- 选择器大数值：日期选择器滚轮 -->
+    <dimen name="font_display">22sp</dimen>
+
 </resources>

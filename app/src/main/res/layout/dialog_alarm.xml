@@ -135,7 +135,7 @@
             android:layout_weight="1"
             android:text="白班、夜班 · 开始前 1 小时 30 分"
             android:textColor="@color/indigo"
-            android:textSize="13.5sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <TextView style="@style/SettingsChevron" />
@@ -219,7 +219,7 @@
             android:layout_weight="1"
             android:text="4 天上 2 天"
             android:textColor="@color/indigo"
-            android:textSize="13.5sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <TextView style="@style/SettingsChevron" />

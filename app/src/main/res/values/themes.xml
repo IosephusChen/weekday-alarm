@@ -219,7 +219,7 @@
         <item name="android:paddingEnd">@dimen/space_12</item>
         <item name="android:paddingBottom">@dimen/space_6</item>
         <item name="android:textColor">@color/ink</item>
-        <item name="android:textSize">11.5sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="HelpCard">

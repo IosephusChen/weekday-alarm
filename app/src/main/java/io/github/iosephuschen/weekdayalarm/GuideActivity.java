@@ -1281,6 +1281,10 @@ public class GuideActivity extends AppCompatActivity {
      *
      * <p>只亮当前这一颗，走过的回灰：旧版就是这个口径。四颗全亮会把「你现在在哪」
      * 藏起来，反而要数。总步数交给每页的标题和最后那页的「开始使用」去交代。
+     *
+     * <p><b>v1.23.6：右端补「3 / 4」。</b>四个点回答「第几个」，不回答「一共几个、还剩几个」，
+     * 读屏软件更是读不出这四个 {@code View}。数字取 {@link #PAGES} 现拼，和点数同源；
+     * 同时给一行 contentDescription，读屏念「第 3 步，共 4 步」。
      */
     private void renderDots() {
         dots.removeAllViews();
@@ -1298,6 +1302,11 @@ public class GuideActivity extends AppCompatActivity {
             dot.setLayoutParams(lp);
             dot.setBackground(d);
             dots.addView(dot);
+        }
+        TextView no = findViewById(R.id.tv_step_no);
+        if (no != null) {
+            no.setText((index + 1) + " / " + PAGES);
+            no.setContentDescription("第 " + (index + 1) + " 步，共 " + PAGES + " 步");
         }
     }
 

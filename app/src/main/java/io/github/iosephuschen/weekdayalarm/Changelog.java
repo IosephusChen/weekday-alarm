@@ -1401,7 +1401,7 @@ public final class Changelog {
         metaRow.setOrientation(LinearLayout.HORIZONTAL);
         metaRow.setGravity(Gravity.CENTER_VERTICAL);
         TextView meta = new TextView(c);
-        meta.setText((sameDay ? "同日 " + shortDate(e.date) : e.date)
+        meta.setText((sameDay ? "同日 " + shortDate(e.date) : displayDate(e.date))
                 + " · versionCode " + e.code);
         meta.setTextSize(11f);
         meta.setTextColor(c.getColor(R.color.sub));
@@ -1441,6 +1441,30 @@ public final class Changelog {
      * <p>长度不是 10 就原样返回：日期格式哪天变了，宁可多印一串也不印错。
      */
     private static String shortDate(String date) {
-        return date != null && date.length() == 10 ? date.substring(5) : date;
+        String full = displayDate(date);
+        int cut = full.indexOf('年');
+        return cut < 0 ? full : full.substring(cut + 1);
+    }
+
+    /**
+     * 界面上的日期（v1.23.6）：数据里存 {@code yyyy/MM/dd}，显示成 {@code 2026年11月7日}。
+     *
+     * <p>数据格式不动：{@code yyyy/MM/dd} 好排序、好比对（「是否同日」直接比字符串），
+     * 也是 {@code ChangelogTest} 钉着的约定。要改的只是它出现在屏幕上的样子——
+     * App 里其它日期都是 {@code 2026年11月} / {@code 11月7日 周五} 这一套，
+     * 只有更新日志写着斜杠日期，读起来像日志文件而不是给人看的时间。
+     *
+     * <p>解析用最笨的切分：这一列全是内置常量，不会出现 {@code 2026-11-07} 或带时分的写法；
+     * 万一真来了个格式不对的，原样返回总比崩掉好。
+     */
+    public static String displayDate(String iso) {
+        if (iso == null) return "";
+        String[] p = iso.split("/");
+        if (p.length != 3) return iso;
+        try {
+            return p[0] + "年" + Integer.parseInt(p[1]) + "月" + Integer.parseInt(p[2]) + "日";
+        } catch (NumberFormatException e) {
+            return iso;
+        }
     }
 }

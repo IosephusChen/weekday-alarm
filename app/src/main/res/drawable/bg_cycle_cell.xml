@@ -11,7 +11,7 @@
      所以这里单独给轮班格子配一套：**两态 solid 同引 @color/cycle_cell_bg，只有描边不同**。
 
      selected（今天）1.5dp indigo 描边；默认 1dp cycle_cell_stroke 细边勾出格子轮廓。
-     圆角走 radius_chip，DesignTokenTest 要求形状只用七档 token。
+     圆角走 radius_chip，DesignTokenTest 要求形状只用八档 token。
 
      v1.20.3：默认边从 pill_rest_stroke 换成专用 cycle_cell_stroke——
      真机采样发现 #2A2E47 压在选中卡片(#2A2350)上比卡片还暗，整条边被吃掉，

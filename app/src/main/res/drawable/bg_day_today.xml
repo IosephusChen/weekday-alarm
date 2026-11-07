@@ -1,7 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="@color/day_today_bg" />
-    <corners android:radius="@dimen/radius_chip" />
-    <stroke android:width="2dp" android:color="@color/day_today_stroke" />
-</shape>
+<?xml version="1.0" encoding="utf-8"?><!--
+    今天格（v1.23.9 加白环）。
+
+    原来是一层 shape：solid 淡紫 + stroke 2dp 深紫。描边画在边界内侧，填充直接
+    顶到笔画内沿，两色之间没有一道缝——2026-11-08 清单 B3 说的「描边贴边」。
+
+    现在两层：外层只描边不填色，内层四边各让进 4dp（2dp 描边 + 2dp 白环）。
+    中间那道 2dp 露出的是父容器的白卡底，所以「白环」不是画上去的颜色，
+    换夜间主题时会跟着卡片底走，不会留下一圈死白。
+
+    内层圆角 6dp = 外层 10dp − 4dp 内缩，两圈弧才同心。
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <stroke
+                android:width="2dp"
+                android:color="@color/day_today_stroke" />
+            <corners android:radius="@dimen/radius_chip" />
+        </shape>
+    </item>
+
+    <item
+        android:bottom="4dp"
+        android:left="4dp"
+        android:right="4dp"
+        android:top="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/day_today_bg" />
+            <corners android:radius="@dimen/radius_chip_inner" />
+        </shape>
+    </item>
+</layer-list>

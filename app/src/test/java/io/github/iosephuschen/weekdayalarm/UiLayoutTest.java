@@ -143,9 +143,72 @@ public class UiLayoutTest {
         assertTrue("列表要显示改后的 07:00，实际：" + list, list.contains("07:00"));
         assertFalse("列表不该还留着改前的 07:30，实际：" + list, list.contains("07:30"));
 
-        TextView hero = a.findViewById(R.id.tv_today_sub);
+        // v1.23.9：具体时刻从副信息挪进倒计时条左侧
+        TextView hero = a.findViewById(R.id.tv_countdown_label);
         assertTrue("倒计时卡片也要是 07:00，实际：" + hero.getText(),
                 hero.getText().toString().contains("07:00"));
+    }
+
+    /**
+     * 「下次闹钟 明天 07:30 起床」只在倒计时条里说一次（v1.23.9）。
+     *
+     * <p>原来紫卡里写两遍：副信息一行「下次闹钟 明天 07:30 起床」，倒计时条又写
+     * 「距下次响铃 1 天 1 小时」——同一件事的两种说法（2026-11-08 清单 B1）。
+     * 现在具体时刻挪进倒计时条左侧，副信息只留「今天是什么日子」。
+     */
+    @Test
+    public void hero_saysNextClockOnce() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
+        Prefs.setAlarms(ctx(), Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.DAILY, true)));
+
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MainActivity a = ctl.get();
+
+        String sub = ((TextView) a.findViewById(R.id.tv_today_sub)).getText().toString();
+        String label = ((TextView) a.findViewById(R.id.tv_countdown_label)).getText().toString();
+
+        assertFalse("副信息不该再写「下次闹钟 …」，那句已并进倒计时条：" + sub,
+                sub.contains("下次闹钟"));
+        assertTrue("倒计时条左侧要写具体时刻：" + label, label.contains("07:30"));
+        assertTrue("还要说得出是哪一条：" + label, label.contains("起床"));
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 没有下次闹钟时，倒计时条退回类别名「距下次响铃」。
+     *
+     * <p>有闹钟时左侧写的是具体时刻，那时「距下次响铃」几个字是废话——
+     * 时刻本身就说明了这是下一次。可一个数字都没有的时候，再写时刻就是空话。
+     */
+    @Test
+    public void hero_withoutNextFallsBackToGenericLabel() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
+                .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
+        Prefs.setAlarms(ctx(), Collections.emptyList());
+
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MainActivity a = ctl.get();
+
+        assertEquals("没有下次闹钟时退回类别名",
+                "距下次响铃",
+                ((TextView) a.findViewById(R.id.tv_countdown_label)).getText().toString());
+        assertEquals("--:--:--",
+                ((TextView) a.findViewById(R.id.tv_countdown)).getText().toString());
+
+        ctl.pause().stop().destroy();
     }
 
     /** 对话框圆角：窗口背景被换成 24dp 圆角的 shape，不再是直角白块。 */
@@ -240,11 +303,14 @@ public class UiLayoutTest {
 
         TextView cd = ctl.get().findViewById(R.id.tv_countdown);
         assertNotNull("首页应有倒计时数字", cd);
-        assertTrue("倒计时应是时:分:秒，实际：" + cd.getText(),
-                cd.getText().toString().matches("\\d{2}:\\d{2}:\\d{2}"));
+        // v1.23.9：数字前面多了一枚小字「还有」——左侧不再写「距下次响铃」，
+        // 这两个字就是那句话的替身（否则一串数字读不出「还剩多久」）
+        String raw = cd.getText().toString();
+        assertTrue("倒计时应是「还有 时:分:秒」，实际：" + raw,
+                raw.matches("还有 \\d{2}:\\d{2}:\\d{2}"));
 
         long left = Duration.between(LocalDateTime.now(), target).getSeconds();
-        long shown = parseHms(cd.getText().toString());
+        long shown = parseHms(raw.replace("还有 ", ""));
         assertTrue("倒计时应等于剩余时间（±3 秒），剩余 " + left + " 显示 " + shown,
                 Math.abs(left - shown) <= 3);
         ctl.pause().stop().destroy();

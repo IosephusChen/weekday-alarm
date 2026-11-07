@@ -7,6 +7,10 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -35,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     /** 首页内嵌的排班日历（v0.48.1）：渲染与单日标记都在它里面。 */
     private CalendarPanel calendarPanel;
     /** 距下次响铃倒计时（v0.30.0）：每秒跳一次；没有下一次时显示「--:--:--」。 */
-    private TextView tvCountdown;
+    private TextView tvCountdown, tvCountdownLabel;
     /** 下一次真正会响的时刻；null = 没有启用的闹钟。由 refreshStatus 算好，tick 只读。 */
     private LocalDateTime nextRingAt;
     /** tick 里用来发现「跨天」的日期锚点。 */
@@ -69,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         tvTodaySub = findViewById(R.id.tv_today_sub);
         tvHolidayCountdown = findViewById(R.id.tv_holiday_countdown);
         tvCountdown = findViewById(R.id.tv_countdown);
+        tvCountdownLabel = findViewById(R.id.tv_countdown_label);
         tvWeekChip = findViewById(R.id.tv_week_chip);
         btnDayOff = findViewById(R.id.btn_day_off);
         btnDayOffTomorrow = findViewById(R.id.btn_day_off_tomorrow);
@@ -347,7 +352,30 @@ public class MainActivity extends AppCompatActivity {
     private void updateCountdown() {
         if (nextRingAt == null) return;
         long sec = Duration.between(LocalDateTime.now(), nextRingAt).getSeconds();
-        tvCountdown.setText(fmtCountdown(Math.max(0, sec)));
+        tvCountdown.setText(countdownText(Math.max(0, sec)));
+    }
+
+    /**
+     * 倒计时数值，前面带一枚小字「还有」（v1.23.9）。
+     *
+     * <p>为什么加这两个字：倒计时条左侧原来是「距下次响铃」，那四个字本身就是标签，
+     * 右边一串数字读作「距下次响铃 1 天 1 小时」。v1.23.9 把左侧换成具体时刻
+     * （「明天 07:30 起床」）之后，标签没了——右边的「1 天 1 小时」孤零零挂着，
+     * 既可能是「要响多久」，也可能被读成「闹钟设了多久」。用户 2026-11-08 06:39 问的
+     * 正是这句：「怎么让人知道是倒计时的意思」。
+     *
+     * <p>写成「还有 1 天 1 小时」，语序就是一个完整的短句，不必再解释。
+     * 两个字用小字、淡一档的色（与左侧同一档 12sp #D9D8FF），数字仍是主角——
+     * 倒计时每秒在跳，视觉重量不能被前缀抢走。
+     */
+    static CharSequence countdownText(long seconds) {
+        SpannableStringBuilder sb = new SpannableStringBuilder("还有 ");
+        sb.append(fmtCountdown(seconds));
+        sb.setSpan(new ForegroundColorSpan(0xFFD9D8FF), 0, 2,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sb.setSpan(new RelativeSizeSpan(0.7f), 0, 2,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return sb;
     }
 
     /**
@@ -772,9 +800,15 @@ public class MainActivity extends AppCompatActivity {
 
         // v0.76.1：三行文案改调 TodayCard——4×2 桌面小组件改用同一套计算，
         // 首页与桌面逐字一致。逻辑本身没动（dayTag / subText 的规则见 TodayCard）。
+        //
+        // v1.23.9：副信息不再写「下次闹钟 …」。那句话和倒计时条说的是同一件事，
+        // 原来一上一下各说一遍（用户 2026-11-08 05:30 比对截图后提的 B1）。
+        // 现在改成：具体时刻挪进倒计时条左侧，副信息只留「今天是什么日子」——
+        // 常日为空，整行 GONE，紫卡少一行。
         String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
-        String subText = TodayCard.subText(dayTag, next, today, work, vacation);
+        String subText = TodayCard.subTextWithoutNext(dayTag, next, today, work, vacation);
         tvTodaySub.setText(subText);
+        tvTodaySub.setVisibility(subText.isEmpty() ? View.GONE : View.VISIBLE);
 
         // v0.76.0：假期倒计时。并进 refreshStatus——它已经按天重算（tickDay 发现跨天就
         // refreshAll），不需要新的刷新通道。请假 / 加班 / 闹钟全关都不影响这一行：
@@ -787,11 +821,14 @@ public class MainActivity extends AppCompatActivity {
             tvHolidayCountdown.setVisibility(View.GONE);
         }
 
-        // 倒计时槽位的标题固定写「距下次响铃」，关着 / 没闹钟时数字留空档：
-        // 为什么没有数字，上一行的副标题已经说清楚了，这里再写一遍就是重复。
+        // 倒计时条左侧：有下次闹钟就写那句具体时刻（「明天 07:30 起床」），
+        // 没有就退回类别名「距下次响铃」——没数字的时候再写时刻就是空话。
+        // 为什么没有数字，上一行的副标题已经说清楚了，这里不再解释一遍。
         if (nextRingAt == null) {
+            tvCountdownLabel.setText("距下次响铃");
             tvCountdown.setText("--:--:--");
         } else {
+            tvCountdownLabel.setText(TodayCard.ringText(next, today));
             updateCountdown();
         }
 

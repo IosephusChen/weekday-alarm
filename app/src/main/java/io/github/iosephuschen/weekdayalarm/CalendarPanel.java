@@ -562,14 +562,18 @@ final class CalendarPanel {
     // ================= 图例 =================
 
     /**
-     * 图例：两行四列的固定网格，色块与日历格子同源（同一套 day_* 资源，夜间自动切换）。
+     * 图例：两行三列，色块与日历格子同源（同一套 day_* 资源，夜间自动切换）。
      *
      * <p>小色块只有 12dp，淡底色在白卡片上会糊成一片，因此加一圈同色系 1dp 淡描边
-     * 保证可见（描边仅辅助呈现，颜色感知仍以格子底色为准）；「今天」按格子同款用 indigo 描边。
+     * 保证可见（描边仅辅助呈现，颜色感知仍以格子底色为准）。
      *
-     * <p>单行横向排列在窄屏上会把最后几项挤出屏幕（实测「加班」只剩色块、「今天」整项不可见），
-     * 所以是两行；两行都用 4 列 weight=1，否则第一行 4 项、第二行 3 项的列宽 1/4 与 1/3
-     * 不一致，第二行的「请假」会落在第一行「上班/休息」中间，色块和文字全部错位。
+     * <p>单行横向排列在窄屏上会把最后几项挤出屏幕（实测「加班」只剩色块），所以是两行。
+     * 两行项数相同（各 3 项）时 weight=1 均分，列宽天然一致，不需要占位格。
+     *
+     * <p><b>v1.23.9 删掉「今天」</b>：原来 7 项排 4 列，第二行只有 3 项，右侧空出一格——
+     * 2026-11-08 清单 B5。而「今天」这一项本来也是多余的：那格有 indigo 描边、
+     * 又有「休 / 班」标签，日历上只有一格长这样，图例再解释一遍反而多占一个名额。
+     * 删掉后 6 项正好 3 列 × 2 行，每列从约 164dp 放宽到 219dp。
      */
     private void setupLegend() {
         legendRow.removeAllViews();
@@ -580,15 +584,13 @@ final class CalendarPanel {
         addLegendItem(row1, density, R.color.day_work_bg, R.color.day_work_stroke, 1, "上班");
         addLegendItem(row1, density, R.color.day_rest_bg, R.color.day_rest_stroke, 1, "休息");
         addLegendItem(row1, density, R.color.day_holiday_bg, R.color.day_holiday_stroke, 1, "节假日");
-        addLegendItem(row1, density, R.color.day_makeup_bg, R.color.day_makeup_stroke, 1, "调休补班");
         LinearLayout row2 = newLegendRow(density, true);
+        addLegendItem(row2, density, R.color.day_makeup_bg, R.color.day_makeup_stroke, 1, "调休补班");
         addLegendItem(row2, density, R.color.day_vacation_bg, R.color.day_vacation_stroke, 1, "请假");
         addLegendItem(row2, density, R.color.day_overtime_bg, R.color.day_overtime_stroke, 1, "加班");
-        addLegendItem(row2, density, R.color.day_today_bg, R.color.day_today_stroke, 2, "今天");
-        addLegendSpacer(row2);   // 第 4 格留空，保证两行 4 列严格对齐
     }
 
-    /** 图例的一行：横向容器，固定 4 列、每列 weight=1 均分，防止窄屏溢出。 */
+    /** 图例的一行：横向容器，每项 weight=1 均分（两行项数相同，列宽自然对齐）。 */
     private LinearLayout newLegendRow(float density, boolean secondRow) {
         LinearLayout row = new LinearLayout(host);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -599,14 +601,6 @@ final class CalendarPanel {
         row.setLayoutParams(lp);
         legendRow.addView(row);
         return row;
-    }
-
-    /** 占位格：不可见但参与 weight 均分，让第二行只有 3 项时列宽仍与第一行一致。 */
-    private void addLegendSpacer(LinearLayout row) {
-        View spacer = new View(host);
-        spacer.setLayoutParams(new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        row.addView(spacer);
     }
 
     /** 图例一项：左侧色块（格子同款底色/描边）+ 右侧文字（FieldHint 样式）。 */
@@ -641,7 +635,7 @@ final class CalendarPanel {
         item.setOrientation(LinearLayout.HORIZONTAL);
         item.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);   // 固定 4 列均分，防溢出
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f);   // 每行内均分，防溢出
         item.setLayoutParams(ilp);
         item.addView(blockView);
         item.addView(label);

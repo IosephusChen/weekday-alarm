@@ -90,7 +90,11 @@ public final class ShiftBookDialog {
 
         TextView add = new TextView(ctx);
         add.setText("＋ 新建班次");
-        add.setTextSize(14.5f);
+        // v1.23.1：14.5sp → 14sp。全仓字号收拢，14.5 是唯一一个写在 Java 里的半档，
+        // 它夹在「标题 15」和「次级说明 13」中间，但它是按钮，按钮档就是 14
+        // （首页「+ 添加闹钟」「停止」都是 14）。半档的 0.5sp 在真机上只有 1.5px，
+        // 既读不出层级，又让「这一处为什么特殊」永远说不清。
+        add.setTextSize(14f);
         add.setTypeface(MEDIUM);
         add.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
         add.setGravity(Gravity.CENTER);

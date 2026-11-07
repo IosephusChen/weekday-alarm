@@ -46,7 +46,7 @@
             android:paddingBottom="2dp"
             android:text="今天"
             android:textColor="@color/day_today_text"
-            android:textSize="10.5sp"
+            android:textSize="11sp"
             android:visibility="gone" />
 
         <Space

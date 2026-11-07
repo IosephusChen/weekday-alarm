@@ -41,7 +41,7 @@
             android:layout_marginStart="6dp"
             android:text="打工人闹钟"
             android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
         <TextView
@@ -52,7 +52,7 @@
             android:gravity="end"
             android:text="已开启"
             android:textColor="#E6E4FF"
-            android:textSize="11sp" />
+            android:textSize="10sp" />
     </LinearLayout>
 
     <!-- 状态行：大字段今天状态 + 右侧周次角标（抄首页状态卡的 tv_today_status + tv_week_chip）。
@@ -89,7 +89,7 @@
             android:paddingBottom="1dp"
             android:text="—"
             android:textColor="@color/white"
-            android:textSize="11sp" />
+            android:textSize="10sp" />
     </LinearLayout>
 
     <!-- 副信息：休息日 · 下次 明天 07:00 起床（TodayCard.subText，与首页逐字一致） -->
@@ -141,7 +141,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -150,7 +150,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -183,7 +183,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -192,7 +192,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -225,7 +225,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -234,7 +234,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -267,7 +267,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -276,7 +276,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -309,7 +309,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -318,7 +318,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -351,7 +351,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -360,7 +360,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>
@@ -392,7 +392,7 @@
                     android:layout_height="wrap_content"
                     android:text="一"
                     android:textColor="#E6E4FF"
-                    android:textSize="9sp"
+                    android:textSize="8.5sp"
                     android:includeFontPadding="false" />
 
                 <TextView
@@ -401,7 +401,7 @@
                     android:layout_height="wrap_content"
                     android:text="班"
                     android:textColor="#FFFFFF"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textStyle="bold"
                     android:includeFontPadding="false" />
             </LinearLayout>

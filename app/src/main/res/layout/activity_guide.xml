@@ -789,11 +789,18 @@
                                     android:textColor="@color/ink"
                                     android:textSize="15sp" />
 
+                                <!-- v1.23.6：副标题点名两个开关。原来只写「不开的话，锁屏时看不到
+                                     响铃界面」，而状态行写「两个开关都要开」——数量说了，名字没说，
+                                     用户得去第 4 页的弹窗里才知道另一个是「后台弹出界面」。
+                                     显式换行而不是靠自动折：19 字 + 16 字两行，各自都填得满，
+                                     自动折会在第二行留一个「面。」这样的孤字。 -->
                                 <TextView
+                                    android:id="@+id/tv_lock_sub"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开的话，锁屏时看不到响铃界面，解锁才出现。"
+                                    android:lineSpacingExtra="2dp"
+                                    android:text="要「锁屏显示」和「后台弹出界面」都开，\n少一个锁屏都看不到响铃界面。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 

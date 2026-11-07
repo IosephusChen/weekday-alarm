@@ -169,6 +169,8 @@ public class GuideActivity extends AppCompatActivity {
     private int shiftBaseStart = -1;
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
+    /** 锁屏自测那条提示（v1.23.6）。留个句柄只为在 {@link #onPause()} 里 cancel。 */
+    private Toast lockHintToast;
 
     private int index = 0;
     private int hour = 7;
@@ -310,6 +312,13 @@ public class GuideActivity extends AppCompatActivity {
         if (volumeWatcher != null) {
             volumeWatcher.stop();
             volumeWatcher = null;
+        }
+        // v1.23.6：锁屏自测那条 Toast 在这里收走。按电源键后这一页会先 onPause
+        // （锁屏把页面盖住），Toast 却是系统的 TYPE_TOAST 窗口，不跟着页面走——
+        // 不主动 cancel 的话，剩下的那截时长会叠在锁屏上（2026-11-08 用户截图）。
+        if (lockHintToast != null) {
+            lockHintToast.cancel();
+            lockHintToast = null;
         }
         super.onPause();
     }
@@ -1135,20 +1144,28 @@ public class GuideActivity extends AppCompatActivity {
     /**
      * 写状态行：文字 + 前面那枚勾（v1.0.4）。
      *
-     * <p>勾只有「已开启」才挂，但**位置一直留着**——未开启的行挂 {@code ic_check_slot}，
-     * 一枚同样 12dp、什么都不画的空 vector。只给开着的行加勾，四行的文字会错开
-     * 半个勾的宽度；这个清单要的是一眼扫完，不是四句各说各的。
+     * <p>勾只有「已开启」才挂。<b>v1.23.6：不再给未开启的行挂透明占位</b>
+     * （原 {@code ic_check_slot}，12dp + 4dp 间距 = 16dp）——那是为了四种状态
+     * 上下对齐，可这张卡里「自启动」那行本来就是 {@code setText}、文字贴着 16dp
+     * 内边距，于是「锁屏显示」的「去开启 · 在「其他权限」里」比它右边多空 16dp，
+     * 看起来像缩进错了。2026-11-08 用户截图指出这一点。
      *
-     * <p>用两枚资源而不是 {@code Drawable.setAlpha(0)}：alpha 在 Robolectric 的
-     * vector 实现里读不回来，守门测试就只剩一句「有 drawable」可断言，
-     * 到底挂的是勾还是空位测不出来。换成两枚资源，测试能直接比对。
+     * <p>取舍：清掉占位后，同一屏里「✓ 已开启」和「去开启」的左边缘会差 16dp。
+     * 但这页现在本来就是这样（自启动没有勾），而且勾本身占着那个位置，
+     * 读起来是「有勾的行前面有标记」，不是「文字没对齐」。
      */
     private void setStateText(TextView tv, boolean checked, int colorRes) {
         if (tv == null) return;
         int color = ContextCompat.getColor(this, colorRes);
         tv.setTextColor(color);
-        android.graphics.drawable.Drawable d = ContextCompat.getDrawable(this,
-                checked ? R.drawable.ic_check_mini : R.drawable.ic_check_slot);
+        if (!checked) {
+            // 不挂任何 drawable：文字回到卡片 16dp 内边距，与「自启动」左边缘对齐
+            tv.setCompoundDrawablePadding(0);
+            tv.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
+            return;
+        }
+        android.graphics.drawable.Drawable d =
+                ContextCompat.getDrawable(this, R.drawable.ic_check_mini);
         if (d == null) return;
         d = d.mutate();
         androidx.core.graphics.drawable.DrawableCompat.setTint(d, color);
@@ -1194,23 +1211,24 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 发起自测：写「待测」并安排 6 秒后拉起测试页。
+     * 发起自测：写「待测」并安排 6 秒后拉起测试页，然后当面把步骤再说一遍。
      *
      * <p>v1.23.5：这里不再 markTried。点按钮只是「发起」，结果要等六秒——
      * 那行状态由 {@link #refreshLockTryRow()} 按探针结果写，探针页关掉回到这里时
      * onResume 再刷一次。
      *
-     * <p><b>v1.23.6：不再弹 Toast。</b>原来这里有一条「现在按电源键锁屏，6 秒后屏幕
-     * 会自己亮一下」，而这条提示天然赶时间——用户看完就得按电源键，屏幕一黑，
-     * Toast 还在，因为它是系统的 {@code TYPE_TOAST} 窗口，不挂在 Activity 上，
-     * 锁屏也不负责收走它。2026-11-08 用户截图：锁屏后还能看到那块白卡约一秒。
-     * 步骤本来就在对话框正文里（「点「开始测试」后马上按电源键锁屏」），发起后
-     * 第 4 页那一行也会变成「按电源键锁屏 ›」——两处都在页面里，跟页面同生共死。
+     * <p><b>v1.23.6：Toast 留着，但由 {@link #onPause()} 收走。</b>中途试过删掉它，
+     * 用户当天就驳回——「点完马上按电源键」这个动作只有它当面说得清，第 4 页那行
+     * 小字替不了。真正要修的只是「锁屏后还留一秒」：Toast 是系统的 {@code TYPE_TOAST}
+     * 窗口，不挂在 Activity 上，锁屏不负责收；那就自己在页面离开前台时 cancel。
      */
     private void startLockProbe() {
         LockProbe.start(this);
         refreshLockState();
         refreshLockTryRow();
+        lockHintToast = Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
+                Toast.LENGTH_LONG);
+        lockHintToast.show();
     }
 
     private void openNotificationSettings() {

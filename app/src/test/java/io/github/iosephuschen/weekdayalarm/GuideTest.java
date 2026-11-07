@@ -1089,11 +1089,15 @@ public class GuideTest {
     }
 
     /**
-     * 状态行前面那枚勾（v1.0.4，G2 + G3）。
+     * 状态行前面那枚勾（v1.0.4，G2 + G3；v1.23.6 去掉空占位）。
      *
-     * <p>两个要求各管一半：勾只有开着才挂，但**位置一直留着**（未开启挂空 vector），
-     * 否则四行的文字左边缘会错开半个勾；绿色用 {@code success_text}，
-     * 日间白卡上 {@code success}(#16A34A) 只有 3.3:1，12sp 差 AA 一截。
+     * <p>勾只在开启时挂。v1.0.4 曾给未开启的行挂一枚同宽空 vector 占位，为的是
+     * 四行文字左边缘对齐；可「自启动」那行本来就不挂勾、文字贴着 16dp 内边距，
+     * 于是「锁屏显示」的状态比它多空 16dp，看起来像缩进错了（2026-11-08 用户截图）。
+     * 现在未开启不挂 drawable，文字回到 16dp 内边距。
+     *
+     * <p>绿色仍用 {@code success_text}：日间白卡上 {@code success}(#16A34A)
+     * 只有 3.3:1，12sp 差 AA 一截。
      */
     @Test
     public void permissionState_hasCheckMarkAndReadableGreen() {
@@ -1104,17 +1108,13 @@ public class GuideTest {
         GuideActivity a = fresh();
         TextView st = a.findViewById(R.id.st_notif);
         Drawable off = st.getCompoundDrawablesRelative()[0];
-        assertNotNull("未开启也要占住勾的位置", off);
+        assertNull("未开启不该留空占位：那 16dp 在「自启动」行旁边看着像缩进", off);
 
         shadowOf(nm).setNotificationsEnabled(true);
         a.onResume();
         ShadowLooper.idleMainLooper();
         Drawable on = st.getCompoundDrawablesRelative()[0];
         assertNotNull("开了要挂勾", on);
-        assertEquals("占位与勾要一样宽，四行文字才对得齐",
-                off.getIntrinsicWidth(), on.getIntrinsicWidth());
-        assertNotSame("两态挂的不能是同一枚资源，否则勾永远画不出来",
-                off.getConstantState(), on.getConstantState());
         assertEquals("绿色要用为白底调过的 success_text",
                 ContextCompat.getColor(ctx(), R.color.success_text), st.getCurrentTextColor());
     }
@@ -1446,15 +1446,16 @@ public class GuideTest {
     }
 
     /**
-     * 发起自测后不许再弹 Toast（v1.23.6）。
+     * 锁屏自测的提示：Toast 留着，但页面一离开前台就收走（v1.23.6）。
      *
-     * <p>Toast 是系统的 {@code TYPE_TOAST} 窗口，不挂在 Activity 上——用户点完
-     * 「开始测试」马上按电源键，剩下的那截时长会压在锁屏上。2026-11-08 用户截图
-     * 反馈的正是这个：锁屏后还能看到那块白卡约一秒。步骤现在只写在页面里
-     * （对话框正文 + 第 4 页那行「按电源键锁屏 ›」），跟着页面一起消失。
+     * <p>中途删过一次，用户当天驳回——「点完马上按电源键」这个动作只有这条 Toast
+     * 当面说得清。问题不在它存在，而在于它活得太久：Toast 是系统的 {@code TYPE_TOAST}
+     * 窗口，不挂在 Activity 上，锁屏不负责收，于是剩下的时长叠在锁屏上
+     * （2026-11-08 用户截图：锁屏后还能看到那块白卡约一秒）。
+     * 现在由 {@code onPause()} 主动 cancel——锁屏盖住页面时走的就是这条。
      */
     @Test
-    public void startLockProbe_showsNoToast() {
+    public void lockProbeHint_showsToastButDropsItOnPause() {
         GuideActivity a = fresh();
         for (int i = 0; i < 3; i++) {
             a.findViewById(R.id.btn_next).performClick();
@@ -1468,10 +1469,41 @@ public class GuideTest {
         d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals("点了「开始测试」不该再弹 Toast：它是系统窗，会压在锁屏上",
-                before, ShadowToast.shownToastCount());
-        assertEquals("步骤改由这一行说，字在页面里",
-                "按电源键锁屏 ›", text(a, R.id.try_state_lock));
+        assertEquals("这条提示要留着：点完马上按电源键，只有它当面说得清",
+                before + 1, ShadowToast.shownToastCount());
+        assertTrue("步骤文案一字不改，实际：" + ShadowToast.getTextOfLatestToast(),
+                ShadowToast.getTextOfLatestToast().contains("按电源键锁屏"));
+
+        android.widget.Toast t = ShadowToast.getLatestToast();
+        assertNotNull(t);
+        // 按电源键锁屏 → 引导页先 onPause，就是这一步把它收走
+        a.onPause();
+        ShadowLooper.idleMainLooper();
+        assertTrue("页面离开前台必须 cancel，否则 Toast 会叠在锁屏上（v1.23.6）",
+                ((ShadowToast) org.robolectric.shadow.api.Shadow.extract(t)).isCancelled());
+    }
+
+    /**
+     * 未打勾的状态行不许留透明占位（v1.23.6）。
+     *
+     * <p>原来未开启的行挂 {@code ic_check_slot}（12dp + 4dp 间距）为的是四种状态上下对齐，
+     * 可「自启动」那行本来就是 {@code setText}、贴着 16dp 内边距，于是「锁屏显示」的
+     * 「去开启 · 在「其他权限」里」比它多空 16dp，像缩进错了。2026-11-08 用户截图指出。
+     */
+    @Test
+    public void permissionState_hasNoLeadingGapWhenNotChecked() {
+        GuideActivity a = fresh();
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_UNLOCKED, System.currentTimeMillis());
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertNull("未打勾不该留透明占位，实际挂了 drawable",
+                ((TextView) a.findViewById(R.id.st_lock)).getCompoundDrawablesRelative()[0]);
+
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, System.currentTimeMillis());
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertNotNull("打勾的行要有勾",
+                ((TextView) a.findViewById(R.id.st_lock)).getCompoundDrawablesRelative()[0]);
     }
 
     /**

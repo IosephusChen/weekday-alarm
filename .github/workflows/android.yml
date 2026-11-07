@@ -70,7 +70,10 @@ jobs:
             echo "拿不到 base commit，按全量跑"
             exit 0
           fi
-          CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
+          # quotepath=false 必须给：git 默认把非 ASCII 文件名转义成 "docs/\346\201\242..."，
+          # 带双引号且不是以 docs/ 开头，白名单必然匹配不上——那样只要改的是中文名文档
+          # （恢复说明.md、项目状态.md、更新日志.md），判定就永远退化成全量，一次也省不到。
+          CHANGED=$(git -c core.quotepath=false diff --name-only "$BASE" "${{ github.sha }}")
           echo "$CHANGED"
           if [ -z "$CHANGED" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"

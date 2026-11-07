@@ -2,6 +2,18 @@
 
 这个文件每次开工都会读到。里面只有硬规矩，不写背景，背景在 `docs/流程规范.md`。
 
+**这套流程只有两处绑平台**（2026-11-07 补，因为用户计划换 Agent）：
+
+| 只在 WorkBuddy 有 | 换到别家怎么办 |
+| --- | --- |
+| git 凭据助手：`git push`、`gh` 开箱可用 | `export GH_TOKEN=<任意 PAT>`，`tools/*.py` 只读环境变量，不认平台 |
+| 百度网盘连接器：给手机送包 | 手机浏览器直接开 `https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm/releases/download/<tag>/<file>`。未在手机上实测，但它是通用 HTTPS 反代，能打开就能下 |
+
+`bdpan` CLI 不是依赖，是本项目**主动不用**它——每会话都要重装 + 重新授权，比等 CI 慢。
+
+除这两处，代码、测试、lint、CI 出包、Release、`version.json` 全部与平台无关：
+换哪家 Agent，`docs/恢复说明.md` 第六节那段话粘过去就能续上。
+
 ## 一、动代码之前，必须先拿到许可
 
 用户反馈的是现象或判断，不是指令。

@@ -12,7 +12,7 @@
 版本范围用 --from-code 卡死，只发这个区间里的，不碰更早的历史版本。
 
 用法：
-    source <skill>/scripts/get_token.sh github
+    export GH_TOKEN=<你的 GitHub PAT>     # 任何来源都行：gh auth token / 网页新建
     tools/push_via_api.py --branch main --tags   # 先推提交和 tag，Release 才有 tag 可挂
     tools/publish_pending.py --dry-run
     tools/publish_pending.py

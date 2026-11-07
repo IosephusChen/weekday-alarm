@@ -51,14 +51,21 @@ public class CopyInvariantTest {
         throw new AssertionError("strings.xml 里没有 " + name);
     }
 
-    /** 权限页副标题不许再出现「N / M」——那是分数形状，会跟列表行数对撞。 */
+    /**
+     * 探针页不许再对「锁屏显示那个开关」签保证。
+     *
+     * <p>那个开关不在 AOSP 权限体系里，App 读不到（见 {@code LockProbe} 类注释）。
+     * 探针页能证明的只有「这一页确实盖在了锁屏上」。v1.23.5 之前标题写
+     * 「锁屏显示是开着的」——说得比证明的多，用户拿它当保证用，出问题时
+     * 就会觉得这个勾在骗人。这条守门钉住那个说法不许回来。
+     */
     @Test
-    public void permProgress_doesNotReadLikeProgressBar() {
-        for (String key : new String[]{"guide_perm_all", "guide_perm_part"}) {
-            String s = string(key);
-            assertFalse(key + " 里还有斜杠分数形式：" + s, s.contains("/"));
-            assertTrue(key + " 必须自己交代分母的含义（含「能查的」）：" + s, s.contains("能查的"));
-        }
+    public void lockProbe_doesNotClaimSwitchIsOn() {
+        String src = read(new File(srcDir(), "LockProbeActivity.java"));
+        // 只扫字符串字面量，注释里提到旧说法不算（本测试自己的说明也会写到它）
+        assertFalse("探针页不能声称「锁屏显示是开着的」，它只证明这一页盖得上去",
+                src.contains("setText(\"锁屏显示是开着的\")"));
+        assertTrue("标题要说的是这一页自己", src.contains("setText(\"这一页盖在锁屏上了\")"));
     }
 
     /**
@@ -72,5 +79,22 @@ public class CopyInvariantTest {
         String name = string("shift_default_name");
         assertEquals("兜底名应该和占位符「白班 / 夜班」取同一个词", "白班", name);
         assertFalse("兜底名不能和弹窗标题撞名", "班次".equals(name));
+    }
+
+    private static File srcDir() {
+        File[] candidates = {
+                new File("src/main/java/io/github/iosephuschen/weekdayalarm"),
+                new File("app/src/main/java/io/github/iosephuschen/weekdayalarm")};
+        for (File f : candidates) if (f.isDirectory()) return f;
+        throw new AssertionError("找不到源码目录，工作目录是 " + new File(".").getAbsolutePath());
+    }
+
+    private static String read(File f) {
+        try {
+            return new String(java.nio.file.Files.readAllBytes(f.toPath()),
+                    java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new AssertionError("读不出来：" + f, e);
+        }
     }
 }

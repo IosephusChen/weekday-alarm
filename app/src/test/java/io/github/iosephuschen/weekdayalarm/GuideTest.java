@@ -1243,11 +1243,10 @@ public class GuideTest {
                     View.GONE, a.findViewById(R.id.perm_exact).getVisibility());
             assertEquals("分隔线要跟着一起收起，否则会留下一条孤零零的线",
                     View.GONE, a.findViewById(R.id.divider_exact).getVisibility());
-            // v1.14.0：分母跟着行数走。这行一藏，屏幕上只剩三项，写死 4 就会出现
-            // 一个绿勾都没有、数字却说「0 / 4」——差的那一项界面上根本不存在。
-            // 真机（精确闹钟安装即授予）看到的就是这一组：五项、分母 3。
-            String c = text(a, R.id.tv_guide_sub);
-            assertTrue("这一行藏起来了，分母就该是 3，实际：" + c, c.contains("能查的 3 项"));
+            // v1.23.5：副标题不再报「已开启 N / M 项」。这一页 5 行里两行明写
+            // 「系统读不到」，任何分母都会被读成「剩下几项呢」，用户 2026-11-08 要求去掉。
+            assertEquals("副标题只说这一页是什么意思，不再报计数",
+                    "这些开关决定闹钟响不响、准不准", text(a, R.id.tv_guide_sub));
         } finally {
             // 桌面默认是「没给」。还原成默认而不是还原成 true，测试之间才不会串。
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
@@ -1268,8 +1267,6 @@ public class GuideTest {
             String s = text(a, R.id.st_exact);
             assertTrue("要说清代价（晚多久、丢什么），实际：" + s, s.contains("1 分钟"));
             assertFalse("不能只写「去开启」——那是催人，不是告知", s.startsWith("去开启"));
-            String c = text(a, R.id.tv_guide_sub);
-            assertTrue("多出一行，分母就得跟着变成 4，实际：" + c, c.contains("能查的 4 项"));
         } finally {
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
         }
@@ -1383,8 +1380,47 @@ public class GuideTest {
         Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, System.currentTimeMillis());
         a.onResume();                // 自测页关掉后回到引导页走的就是这条路
         ShadowLooper.idleMainLooper();
-        assertTrue("通过后应显示已通过，实际：" + text(a, R.id.st_lock),
-                text(a, R.id.st_lock).startsWith("已通过"));
+        // v1.23.5：「已通过」改成「测过 · 能盖在锁屏上」。探针读不到厂商那个开关，
+        // 只能证明这一页盖得上去；「已通过」说得比证明的多。
+        assertTrue("通过后应显示测过的结论，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).startsWith("测过"));
+        assertFalse("不能再对读不到的开关签字，实际：" + text(a, R.id.st_lock),
+                text(a, R.id.st_lock).contains("已通过"));
+    }
+
+    /**
+     * 第 4 页锁屏行不能靠「点过按钮」打勾（v1.23.5）。
+     *
+     * <p>改之前是 {@code markTried}：点「开始测试」立刻「✓ 试过了」，六秒后的结果
+     * 完全不参与；而第 3 页锁屏行写「已通过」——同一个测试，一处说做过、一处说通过，
+     * 两枚勾长得一模一样。用户 2026-11-08 的原话：「只要点了开始测试就会直接亮绿勾，
+     * 哪怕测试没通过，也是显示☑️试过了」。
+     *
+     * <p>现在这行跟着探针结果走：发起时只说「锁屏后回来看」，探针写回 PASS 才是「能盖住」。
+     */
+    @Test
+    public void lockTryRow_ticksOnlyAfterProbePasses() {
+        GuideActivity a = fresh();
+        for (int i = 0; i < 3; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        assertEquals("没测过就是「试一次 ›」", "试一次 ›", text(a, R.id.try_state_lock));
+
+        tap(a, R.id.btn_lock_try);
+        androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+        d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点了只是发起，六秒后才出结果，这时不能打勾",
+                "锁屏后回来看 ›", text(a, R.id.try_state_lock));
+
+        // 探针页写完结果、用户按返回，引导页走 onResume 读出来
+        Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, System.currentTimeMillis());
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+        assertEquals("真的盖住了才写结论", "能盖住", text(a, R.id.try_state_lock));
     }
 
     /** 测了但当时没锁屏：不是失败，是「再测一次」。 */

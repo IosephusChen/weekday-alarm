@@ -1396,7 +1396,7 @@ public class GuideTest {
      * 两枚勾长得一模一样。用户 2026-11-08 的原话：「只要点了开始测试就会直接亮绿勾，
      * 哪怕测试没通过，也是显示☑️试过了」。
      *
-     * <p>现在这行跟着探针结果走：发起时只说「锁屏后回来看」，探针写回 PASS 才是「能盖住」。
+     * <p>现在这行跟着探针结果走：发起时只说「按电源键锁屏」，探针写回 PASS 才是「能盖住」。
      */
     @Test
     public void lockTryRow_ticksOnlyAfterProbePasses() {
@@ -1413,8 +1413,8 @@ public class GuideTest {
         d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals("点了只是发起，六秒后才出结果，这时不能打勾",
-                "锁屏后回来看 ›", text(a, R.id.try_state_lock));
+        assertEquals("点了只是发起，六秒后才出结果，这时不能打勾；步骤由这一行说",
+                "按电源键锁屏 ›", text(a, R.id.try_state_lock));
 
         // 探针页写完结果、用户按返回，引导页走 onResume 读出来
         Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_PASS, System.currentTimeMillis());
@@ -1423,15 +1423,55 @@ public class GuideTest {
         assertEquals("真的盖住了才写结论", "能盖住", text(a, R.id.try_state_lock));
     }
 
-    /** 测了但当时没锁屏：不是失败，是「再测一次」。 */
+    /**
+     * 第 3 页不再替第 4 页说「再测」（v1.23.6）。
+     *
+     * <p>原来 UNLOCKED 那态在这一行写「当时没锁屏，再测一次」。可这一行点下去是跳
+     * 「其他权限」——「再测」两个字指向的动作在第 4 页，写在这儿点不动。
+     * 2026-11-08 用户问「第三页的锁屏显示有必要和第四页联动吗」，答案是：
+     * 通过那一半留着（这一行没有 API 可读，探针是唯一证据），失败那一半留给第 4 页。
+     */
     @Test
-    public void lockRow_asksRetryWhenScreenWasUnlocked() {
+    public void lockRow_doesNotCarryRetryWhenScreenWasUnlocked() {
         GuideActivity a = fresh();
         Prefs.setLockProbe(ctx(), Prefs.LOCK_PROBE_UNLOCKED, System.currentTimeMillis());
         a.onResume();
         ShadowLooper.idleMainLooper();
-        assertTrue("当时没锁屏应提示再测一次，实际：" + text(a, R.id.st_lock),
-                text(a, R.id.st_lock).contains("再测"));
+        String s = text(a, R.id.st_lock);
+        assertFalse("这一行点下去是「其他权限」，不是重测，不能说「再测」，实际：" + s,
+                s.contains("再测"));
+        assertTrue("失败也只说读不到、两个开关都要开，实际：" + s, s.contains("两个开关都要开"));
+        assertEquals("失败的原因和重测入口都在第 4 页那行",
+                "没锁上，再测 ›", text(a, R.id.try_state_lock));
+    }
+
+    /**
+     * 发起自测后不许再弹 Toast（v1.23.6）。
+     *
+     * <p>Toast 是系统的 {@code TYPE_TOAST} 窗口，不挂在 Activity 上——用户点完
+     * 「开始测试」马上按电源键，剩下的那截时长会压在锁屏上。2026-11-08 用户截图
+     * 反馈的正是这个：锁屏后还能看到那块白卡约一秒。步骤现在只写在页面里
+     * （对话框正文 + 第 4 页那行「按电源键锁屏 ›」），跟着页面一起消失。
+     */
+    @Test
+    public void startLockProbe_showsNoToast() {
+        GuideActivity a = fresh();
+        for (int i = 0; i < 3; i++) {
+            a.findViewById(R.id.btn_next).performClick();
+            ShadowLooper.idleMainLooper();
+        }
+        tap(a, R.id.btn_lock_try);
+        androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
+                org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
+
+        int before = ShadowToast.shownToastCount();
+        d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点了「开始测试」不该再弹 Toast：它是系统窗，会压在锁屏上",
+                before, ShadowToast.shownToastCount());
+        assertEquals("步骤改由这一行说，字在页面里",
+                "按电源键锁屏 ›", text(a, R.id.try_state_lock));
     }
 
     /**

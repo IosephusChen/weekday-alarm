@@ -115,7 +115,6 @@ public class GuideActivity extends AppCompatActivity {
     private TextView tvGuideTitle, tvGuideSub;
     private ImageView ivStep;
     /** 第 3 页的权限计数（v1.14.0 并进副标题）：显示几行，分母就是几。 */
-    private int permOn, permTotal = 3;
     /**
      * 这一遍引导里改的班表（v1.10.0）。
      *
@@ -836,11 +835,15 @@ public class GuideActivity extends AppCompatActivity {
      * <p>包级可见，单测直接调它，不必去驱动通知权限或那个两级对话框
      * ——和 {@link #setTime(int, int)} 同一个理由。
      *
-     * <p><b>为什么不是「已通过」</b>：这三行都是「试一试」，试的结果不在 App 手里——
-     * 锁屏那条试出来是绿的还是红的，通知那条到没到，都不改变「你做过这一步」。
-     * 写「已通过」等于替一个没发生的检查签字；而且在第 3 页刚说完「权限已授予」的
-     * 语境里，再把「通过」二字按在测试行上，用户会以为这是同一类状态。
-     * 「试过了」只陈述动作，两种结果下都成立。
+     * <p><b>只管通知、响铃两行；锁屏那条走 {@link #refreshLockTryRow()}</b>（v1.23.5）。
+     * 差别在于「结果在不在 App 手里」：通知到没到、响铃听没听到，App 无从得知，
+     * 所以只能陈述动作；而锁屏自测的结果会写回 {@code Prefs}（通过 / 没锁上 / 没测成），
+     * 那就不该只写「试过了」——有结果却不说，勾就成了摆设。
+     *
+     * <p><b>为什么不是「已通过」</b>：这两行的结果不在 App 手里——通知到没到、
+     * 响铃听没听到，都不改变「你做过这一步」。写「已通过」等于替一个没发生的检查签字；
+     * 而且在第 3 页刚说完「权限已授予」的语境里，再把「通过」二字按在测试行上，
+     * 用户会以为这是同一类状态。「试过了」只陈述动作，两种结果下都成立。
      *
      * <p><b>为什么带文字而不只是一个绿勾</b>：勾是视觉语言，读屏软件念不出来，
      * 色弱用户也分不清它和左边那行灰字。符号配字，两种通道都能拿到。
@@ -981,37 +984,13 @@ public class GuideActivity extends AppCompatActivity {
         setPermState(stOverlay, overlay);
         refreshExactState();
         refreshLockState();
-        renderPermProgress(notif, fsi, overlay, exact);
-    }
-
-    /**
-     * 「已开启 N / 总数项」计数（v1.13.0，v1.13.2 改分母，v1.14.0 并进副标题，
-     * v1.19.0 删掉那根 4dp 进度条）。
-     *
-     * <p>只数系统读得到的那四项。自启动、锁屏显示两行自己就写着「系统读不到」，
-     * 把它们算进分母，数字永远差 2——用户会以为有两项怎么点都开不了。
-     *
-     * <p><b>v1.13.2：分母跟着行数走，不写死 4。</b>「精确闹钟」那一行在权限已给时是
-     * {@code GONE}（见 {@link #refreshExactState()}），写死 4 就会出现屏幕上一个绿勾、
-     * 数字说「2 / 4」——差的那一项在界面上根本不存在，用户会去找「第二项在哪」。
-     * 一个对不上眼睛的数字比没有数字更糟，所以：显示几行，分母就是几。
-     *
-     * <p>注意 {@code on} 只累加前三项，不加 {@code exact}：这一行只要显示出来就一定是
-     * 未开启（红字），它永远不贡献分子。加了会算出 4 / 3。
-     *
-     * <p><b>v1.14.0：这句写进副标题，不再单独占一行。</b>原来自成一行 11sp 灰字 + 10dp
-     * 间距，可它和副标题说的是同一件事（这一页现在什么状态），并起来省 23dp——正好是
-     * 第 3 屏装下六行清单的那 17dp 缺口的余量。数字必须是动态的，所以整句由这里拼。
-     */
-    private void renderPermProgress(boolean notif, boolean fsi, boolean overlay, boolean exact) {
-        permOn = (notif ? 1 : 0) + (fsi ? 1 : 0) + (overlay ? 1 : 0);
-        permTotal = exact ? 3 : 4;
-        // 计数在页头副标题里（见 headerSub），这里只更新数字。
-        // 只有正停在这一页时才回写，否则会把别的页的副标题改成权限计数。
-        // v1.19.0：那根 4dp 进度条连同它的 weight 刷新一并删掉（用户只说删进度条，
-        // 副标题「已开启 N / 总数项」保留）。这里剩下的活就是把计数喂给页头。
+        refreshLockTryRow();
+        // v1.23.5：副标题不再报计数。原来写「能查的 3 项全开 · 决定闹钟响不响、准不准」，
+        // 可这一页有 5 行，其中两行明写「系统读不到」——数字摆在那儿，用户还得自己算
+        // 「为什么不是 5」。用户 2026-11-08 要求去掉，副标题只说这一页是什么意思。
         if (index == PAGE_PERMISSIONS) renderHeader();
     }
+
 
     /**
      * 「精确闹钟」那一行只在没给权限时出现（v0.89.2）。
@@ -1064,7 +1043,12 @@ public class GuideActivity extends AppCompatActivity {
         if (stLock == null) return;
         int r = Prefs.getLockProbeResult(this);
         if (r == Prefs.LOCK_PROBE_PASS) {
-            stLock.setText("已通过 · 锁屏上能显示");
+            // v1.23.5：「已通过 · 锁屏上能显示」→「测过 · 能盖在锁屏上」。
+            // 「已通过」是对着「锁屏显示这个开关开着」签的字，可探针读不到那个开关——
+            // 它只证明了「这个界面能盖在锁屏上」。厂商把它挡住的那几种情况下，
+            // 页面根本起不来；能起来，就说明这一层的门是开的。说得比证明的多，
+            // 用户按绿勾去做判断，出问题时就会觉得这个勾在骗人。
+            stLock.setText("测过 · 能盖在锁屏上");
             setStateText(stLock, true, R.color.success_text);
         } else if (r == Prefs.LOCK_PROBE_UNLOCKED) {
             stLock.setText("当时没锁屏，再测一次");
@@ -1078,6 +1062,54 @@ public class GuideActivity extends AppCompatActivity {
             stLock.setText(HINT_OTHER_PERMS);
             setStateText(stLock, false, R.color.indigo);
         }
+    }
+
+    /**
+     * 第 4 页「测锁屏响铃」那行的状态：跟着探针结果走，不跟着「点过按钮」走。
+     *
+     * <p><b>v1.23.5 改之前的样子</b>：点「开始测试」立刻 {@code markTried}，
+     * 右侧变成「✓ 试过了」，6 秒后的测试结果一点不参与。可这枚勾和第 3 页
+     * 「✓ 已开启」长得一模一样，用户会当成同一类保证——2026-11-08 用户原话：
+     * 「只要点了开始测试就会直接亮绿勾，哪怕测试没通过，也是显示☑️试过了」。
+     * 勾在别处表示「验证通过」，在这里表示「点过按钮」，同一个符号两种意思。
+     *
+     * <p>现在勾只给通过的那一种：能盖住锁屏才画勾；没锁上、没测成都只有文字。
+     * 三种结果各说各的，用户不必翻回第 3 页去对。
+     */
+    private void refreshLockTryRow() {
+        TextView tv = findViewById(R.id.try_state_lock);
+        if (tv == null) return;
+        int r = Prefs.getLockProbeResult(this);
+        // 一次都没测过时 at 是 0，这时保留布局里那句「试一次 ›」
+        boolean started = Prefs.getLockProbeAt(this) > 0;
+
+        if (r == Prefs.LOCK_PROBE_PASS) {
+            setTryState(tv, "能盖住", true);
+        } else if (r == Prefs.LOCK_PROBE_UNLOCKED) {
+            setTryState(tv, "没锁上，再测 ›", false);
+        } else if (started && LockProbe.isTimedOut(this)) {
+            setTryState(tv, "没测成，再测 ›", false);
+        } else if (started) {
+            // 刚点完、探针还没到点的这 6 秒：告诉用户等一下，别以为没反应
+            setTryState(tv, "锁屏后回来看 ›", false);
+        }
+    }
+
+    /** 写第 4 页那行状态：勾只在 {@code checked} 时挂，和权限清单同一枚 12dp 矢量勾。 */
+    private void setTryState(TextView tv, String text, boolean checked) {
+        int color = ContextCompat.getColor(this,
+                checked ? R.color.success_text : R.color.indigo);
+        tv.setText(text);
+        tv.setTextColor(color);
+        android.graphics.drawable.Drawable d = checked
+                ? ContextCompat.getDrawable(this, R.drawable.ic_check_mini) : null;
+        if (d != null) {
+            d = d.mutate();
+            androidx.core.graphics.drawable.DrawableCompat.setTint(d, color);
+            tv.setCompoundDrawablePadding(Math.round(
+                    4 * getResources().getDisplayMetrics().density));
+        }
+        tv.setCompoundDrawablesRelativeWithIntrinsicBounds(d, null, null, null);
     }
 
     private void setPermState(TextView tv, boolean ok) {
@@ -1142,8 +1174,8 @@ public class GuideActivity extends AppCompatActivity {
     void showLockScreenHint() {
         String msg = "锁屏响铃要两个开关都开：「后台弹出界面」和「锁屏显示」，"
                 + "缺一个锁屏时都看不到响铃页。\n\n"
-                + "点「开始测试」后马上按电源键锁屏，6 秒后屏幕自己亮一下："
-                + "亮起并显示绿勾就是没问题，没亮就是至少有一个没开。";
+                + "点「开始测试」后马上按电源键锁屏，6 秒后屏幕会自己亮一下。"
+                + "看到那一页，说明系统没把闹钟界面挡在锁屏外；没看到，就是被挡住了。";
         DialogKit.showMessage(this, "试一下锁屏响铃", msg,
                 getString(R.string.button_start_test), (d, w) -> startLockProbe(),
                 getString(R.string.button_cancel), null);
@@ -1153,10 +1185,11 @@ public class GuideActivity extends AppCompatActivity {
     private void startLockProbe() {
         LockProbe.start(this);
         refreshLockState();
+        // v1.23.5：这里不再 markTried。点按钮只是「发起」，结果要等六秒——
+        // 那行状态由 refreshLockTryRow 按探针结果写，探针页关掉回到这里时 onResume 再刷一次。
+        refreshLockTryRow();
         Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
                 Toast.LENGTH_LONG).show();
-        // 点「开始测试」才算试过。只点开说明弹窗就取消，什么也没发生（v1.13.1）
-        markTried(R.id.try_state_lock);
     }
 
     private void openNotificationSettings() {
@@ -1274,13 +1307,11 @@ public class GuideActivity extends AppCompatActivity {
                 if (isRotationNow() && !Prefs.isCycleHoliday(this)) return "只在上班日响，休息日跳过。";
                 return "只在上班日响，休息日和节假日自动跳过。";
             case 2:
-                // v1.23.4：原来写「已开启 3 / 3 项」。这一页共 5 行，其中自启动、
-                // 锁屏显示写着「系统读不到」不计入分母，于是列表底下出现一个 3——
-                // 斜杠形式读起来像进度条，用户会去找「剩下 2 项去哪了」。
-                // 把「能查的」写进句子，数字才和眼睛对得上。
-                return permOn >= permTotal
-                        ? getString(R.string.guide_perm_all, permTotal)
-                        : getString(R.string.guide_perm_part, permTotal, permOn);
+                // v1.23.5：不再报「已开启 N / M 项」。这一页 5 行里有 2 行明写
+                // 「系统读不到」，任何分母都会被读成「剩下几项呢」——
+                // 换成「能查的 N 项」（v1.23.4）只是把疑问往后推了一步。
+                // 用户 2026-11-08 说去掉，那就去掉：副标题只说这一页是什么意思。
+                return "这些开关决定闹钟响不响、准不准";
             default:
                 return "只是试一下，不占正式排班。";
         }

@@ -91,9 +91,13 @@ public final class LockProbeActivity extends Activity {
         if (locked) {
             paint(badge, mark, bar,
                     R.drawable.bg_probe_badge, R.drawable.ic_probe_check, OK_COLOR);
-            title.setText("锁屏显示是开着的");
-            // 句号收在第二句上：这是两句完整的话，不是一句被折成两行
-            sub.setText("这一页能出现在锁屏上，说明闹钟响时也能。");
+            // v1.23.5：标题从「锁屏显示是开着的」改成陈述这一页自己。
+            // 原来那句是对「锁屏显示这个开关」签的字，可这个 App 读不到那个开关
+            // （不在 AOSP 权限体系里，见 LockProbe 类注释），能证明的只有
+            // 「这一页确实盖在了锁屏上」。说得比证明的多，用户就会拿它当保证用。
+            title.setText("这一页盖在锁屏上了");
+            // 锁屏行那边的「测过 · 能盖在锁屏上」说的是同一件事，两处用词要对得上
+            sub.setText("说明系统没把它挡在锁屏之外。真响铃时，全屏页面走的也是这条路。");
             stay = STAY_OK_MS;
         } else {
             // 不是失败，是「这次没测到」——用户可能还没来得及按电源键

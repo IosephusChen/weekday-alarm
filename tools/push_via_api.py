@@ -26,7 +26,7 @@
 副作用：`git status` 会一直显示「领先 N 个提交」，那是哈希差异不是内容差异。
 
 用法：
-    source <skill>/scripts/get_token.sh github
+    export GH_TOKEN=<你的 GitHub PAT>     # 任何来源都行：gh auth token / 网页新建
     tools/push_via_api.py                 # 推到 origin 的当前分支
     tools/push_via_api.py --dry-run       # 只构造并校验，不更新 ref
     tools/push_via_api.py --branch main
@@ -285,7 +285,7 @@ def main():
 
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
-        sys.exit("缺少 GITHUB_TOKEN。先 source <skill>/scripts/get_token.sh github")
+        sys.exit("缺少 GITHUB_TOKEN。先 export GH_TOKEN（任何来源的 GitHub PAT 都行）")
 
     os.chdir(git("rev-parse", "--show-toplevel"))
     owner, repo = parse_remote(args.remote)

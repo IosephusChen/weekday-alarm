@@ -9,7 +9,7 @@ Release 正文取 version.json 的 title 与 notes，和 App 内更新日志同�
 看到的、和应用商店页看到的是同一段话，不需要维护两份。
 
 用法：
-    source <skill>/scripts/get_token.sh github
+    export GH_TOKEN=<你的 GitHub PAT>     # 任何来源都行：gh auth token / 网页新建
     tools/publish_release.py --dry-run        # 只打印要做什么
     tools/publish_release.py                  # 建 Release 并传 APK
     tools/publish_release.py --mapping        # 顺带把 mapping.txt 传上去
@@ -33,7 +33,7 @@ UPLOADS = "https://uploads.github.com"
 def need(name):
     v = os.environ.get(name, "")
     if not v:
-        sys.exit("缺少 %s。先 source <skill>/scripts/get_token.sh github" % name)
+        sys.exit("缺少 %s。先 export GH_TOKEN（任何来源的 GitHub PAT 都行）" % name)
     return v
 
 

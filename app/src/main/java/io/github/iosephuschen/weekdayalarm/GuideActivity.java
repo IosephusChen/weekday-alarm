@@ -1021,7 +1021,7 @@ public class GuideActivity extends AppCompatActivity {
     /**
      * 「锁屏显示」那一行的状态（v0.55.3 引入，v0.73.5 改文案，v0.89.4 再改）。
      *
-     * <p>四态而不是两态：这一项查不到，只能靠自测。没测过时按普通权限行显示
+     * <p>这一项查不到，只能靠自测。没测过时按普通权限行显示
      * 「去开启 · 在「其他权限」里」——v0.73.5 之前这里写的是「同上一页」，
      * 当时这一行紧跟在「后台弹出界面」下面，指的就是它。后来这一行被移到底部
      * （自启动之后），上一页变成了「自启动管理」，而那一页里根本没有锁屏显示。
@@ -1030,7 +1030,12 @@ public class GuideActivity extends AppCompatActivity {
      * <p>v0.89.5：这句话与「后台弹出界面」那行完全一致——两者跳同一个页面，
      * 位置指引不该有两套说法。位置只在状态行说一次，副标题只讲后果。
      *
-     * <p>测过之后把探针结果写进来——通过、没锁屏、没测成各一句，不给无端指责。
+     * <p><b>v1.23.6：只接「测过且盖住了」这一种结果。</b>2026-11-08 用户问这一行
+     * 有没有必要跟第 4 页的测试联动——通过那一半有必要：这一行没有任何 API 可读，
+     * 探针是唯一证据，不写就永远只能写「读不到」；失败那一半不必要：这行点下去是
+     * 跳「其他权限」，「再测一次」的动作在第 4 页，写在这里点不动。
+     * 所以失败（没锁上 / 没测成）统一收敛成「系统读不到 · 两个开关都要开」，
+     * 具体原因和重测入口都留给第 4 页那一行。
      *
      * <p><b>v1.0.5：红字去掉。</b>超时这一态原来写「没测到 · 两个开关都要开」并标红，
      * 读起来像是用户做错了什么。可这一项本来就没有任何 API 能读（不在 AOSP 权限体系里），
@@ -1050,10 +1055,12 @@ public class GuideActivity extends AppCompatActivity {
             // 用户按绿勾去做判断，出问题时就会觉得这个勾在骗人。
             stLock.setText("测过 · 能盖在锁屏上");
             setStateText(stLock, true, R.color.success_text);
-        } else if (r == Prefs.LOCK_PROBE_UNLOCKED) {
-            stLock.setText("当时没锁屏，再测一次");
-            setStateText(stLock, false, R.color.indigo);
-        } else if (LockProbe.isTimedOut(this)) {
+        } else if (r == Prefs.LOCK_PROBE_UNLOCKED || LockProbe.isTimedOut(this)) {
+            // v1.23.6：UNLOCKED 原来单独写「当时没锁屏，再测一次」，可这一行点下去是
+            // 跳「其他权限」，不是重测——「再测」两个字指向的动作不在这一页。
+            // 现在两种失败都并进同一句：这一行只说「读不到、两个开关都要开」，
+            // 「没锁上，再测 ›」留在第 4 页，那儿才有按钮。
+            //
             // 真机 2×2 实测：后台弹出界面与锁屏显示缺一个锁屏都不弹，两个都要查。
             // 但这只是「可能」，不是判决——所以用中性色，不标红。
             stLock.setText("系统读不到 · 两个开关都要开");
@@ -1090,8 +1097,12 @@ public class GuideActivity extends AppCompatActivity {
         } else if (started && LockProbe.isTimedOut(this)) {
             setTryState(tv, "没测成，再测 ›", false);
         } else if (started) {
-            // 刚点完、探针还没到点的这 6 秒：告诉用户等一下，别以为没反应
-            setTryState(tv, "锁屏后回来看 ›", false);
+            // 刚点完、探针还没到点的这 6 秒：这句就是原来那条 Toast 的替身。
+            // v1.23.6 把「现在按电源键锁屏，6 秒后屏幕会自己亮一下」的 Toast 删了——
+            // 它是系统窗，不随 Activity 走，用户点完马上按电源键，剩下的几百毫秒
+            // 会叠在锁屏上（2026-11-08 截图反馈）。步骤改由这一行说：字在页面里，
+            // 锁屏就跟着页面一起消失。
+            setTryState(tv, "按电源键锁屏 ›", false);
         }
     }
 
@@ -1165,9 +1176,10 @@ public class GuideActivity extends AppCompatActivity {
      * 这里只留测试本身。开启路径不再需要第二份说明。
      *
      * <p>v0.73.6：正文与按钮下方小字、与开始后的 Toast 三者原来说的是同一件事，
-     * 用户反馈「说明有点多余」。现在小字只一句「当场试出来」，步骤交给 Toast
-     * （点完开始测试它会当面说），失败指令交给探针状态行（「没测到 · 两个
-     * 开关都要开」），对话框只保留测试本身：测什么、怎样算过。
+     * 用户反馈「说明有点多余」。小字只留一句「当场试出来」，步骤一度交给 Toast。
+     *
+     * <p><b>v1.23.6：那条 Toast 删了</b>（见 {@link #startLockProbe()}）。步骤现在只有
+     * 两处、且都在页面里：点之前看这段正文，点之后看第 4 页那一行「按电源键锁屏 ›」。
      *
      * <p>测试本身不碰业务：不响铃、不发通知、不排班、不记 snooze（见 {@link LockProbe}）。
      */
@@ -1181,15 +1193,24 @@ public class GuideActivity extends AppCompatActivity {
                 getString(R.string.button_cancel), null);
     }
 
-    /** 发起自测：写「待测」并安排 6 秒后拉起测试页，然后当面把步骤再说一遍。 */
+    /**
+     * 发起自测：写「待测」并安排 6 秒后拉起测试页。
+     *
+     * <p>v1.23.5：这里不再 markTried。点按钮只是「发起」，结果要等六秒——
+     * 那行状态由 {@link #refreshLockTryRow()} 按探针结果写，探针页关掉回到这里时
+     * onResume 再刷一次。
+     *
+     * <p><b>v1.23.6：不再弹 Toast。</b>原来这里有一条「现在按电源键锁屏，6 秒后屏幕
+     * 会自己亮一下」，而这条提示天然赶时间——用户看完就得按电源键，屏幕一黑，
+     * Toast 还在，因为它是系统的 {@code TYPE_TOAST} 窗口，不挂在 Activity 上，
+     * 锁屏也不负责收走它。2026-11-08 用户截图：锁屏后还能看到那块白卡约一秒。
+     * 步骤本来就在对话框正文里（「点「开始测试」后马上按电源键锁屏」），发起后
+     * 第 4 页那一行也会变成「按电源键锁屏 ›」——两处都在页面里，跟页面同生共死。
+     */
     private void startLockProbe() {
         LockProbe.start(this);
         refreshLockState();
-        // v1.23.5：这里不再 markTried。点按钮只是「发起」，结果要等六秒——
-        // 那行状态由 refreshLockTryRow 按探针结果写，探针页关掉回到这里时 onResume 再刷一次。
         refreshLockTryRow();
-        Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
-                Toast.LENGTH_LONG).show();
     }
 
     private void openNotificationSettings() {

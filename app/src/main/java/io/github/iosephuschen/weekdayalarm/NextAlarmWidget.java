@@ -76,12 +76,18 @@ public class NextAlarmWidget extends AppWidgetProvider {
         boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
         boolean work = DayOffAction.isWorkDay(todayType);
         String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
+        // v1.23.11：同首页——空态要说得出「闹钟开着只是不响」。next 由调用方给时
+        // 也不影响结果（有 next 就走不到这一支），所以这里照读 Prefs。
+        boolean anyEnabled = false;
+        for (Alarm a : Prefs.getAlarms(ctx)) {
+            if (a.enabled) { anyEnabled = true; break; }
+        }
         Shift todayShift = work ? WeekSchedule.shiftOn(today, rule) : null;
         return new WidgetModel(
                 TodayCard.statusText(vacation, overtime, work,
                         todayShift == null ? null : todayShift.name),
                 TodayCard.chipText(rule, today),
-                TodayCard.subText(dayTag, next, today, work, vacation));
+                TodayCard.subText(dayTag, next, today, work, vacation, anyEnabled));
     }
 
     /**

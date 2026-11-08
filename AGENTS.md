@@ -387,8 +387,9 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 ### 规则文件的单一真相源
 
 **`AGENTS.md` 是唯一一份规则。** 不管哪个工具要求什么文件名（`CLAUDE.md`、
-`.cursorrules`、`.trae/rules/…`、`.github/copilot-instructions.md`），那里只放**一行指针**，
-指向 `AGENTS.md`。
+`.cursorrules`、`.trae/rules/…`），那里只放**一行指针**，指向 `AGENTS.md`。
+名单里只有 `CLAUDE.md` 现在真的存在，其余是「将来接了就这么做」的模式说明——
+**别看到名字就去建文件**，建了就是第二份规则的起点。
 
 已经这么做的：`CLAUDE.md` 三行，正文只有「已改名为 AGENTS.md，请读那一份」。
 新接一个工具就照抄这个模式。**绝不要把规则复制成第二份**——两份规则从写下的那一刻

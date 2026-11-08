@@ -178,35 +178,40 @@ public class UiLayoutTest {
                 sub.contains("下次闹钟"));
         assertTrue("倒计时条左侧要写具体时刻：" + label, label.contains("07:30"));
         assertTrue("还要说得出是哪一条：" + label, label.contains("起床"));
+        assertEquals("有下次响铃时整条要在", View.VISIBLE,
+                a.findViewById(R.id.box_countdown).getVisibility());
 
         ctl.pause().stop().destroy();
     }
 
     /**
-     * 没有下次闹钟时，倒计时条退回类别名「距下次响铃」。
+     * 闹钟全关时整条倒计时收起来，不再留「距下次响铃 / --:--:--」的空槽（v1.23.10）。
      *
-     * <p>有闹钟时左侧写的是具体时刻，那时「距下次响铃」几个字是废话——
-     * 时刻本身就说明了这是下一次。可一个数字都没有的时候，再写时刻就是空话。
+     * <p>为什么收：副标题已经写了「没有启用的闹钟」，胶囊再摆一条空槽是同一件事说两遍；
+     * --:--:-- 又像没加载出来。收起来还省 45dp（胶囊 33 + 上间距 12）。
+     *
+     * <p>这条测的是「有闹钟、只是全关」——和下面 {@link #countdown_whenNoEnabledAlarm_staysBlank}
+     * （一条都没有）是两个入口，都走 nextRingAt == null。
      */
     @Test
-    public void hero_withoutNextFallsBackToGenericLabel() {
+    public void hero_hidesCountdownRowWhenAllAlarmsOff() {
         ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setGuideSeen(ctx(), true);
         Prefs.setOnboardDone(ctx(), true);
         ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
                 .putBoolean(Prefs.KEY_ALARMS_MIGRATED, true).commit();
-        Prefs.setAlarms(ctx(), Collections.emptyList());
+        Prefs.setAlarms(ctx(), Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.DAILY, false)));
 
         ActivityController<MainActivity> ctl =
                 Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
         MainActivity a = ctl.get();
 
-        assertEquals("没有下次闹钟时退回类别名",
-                "距下次响铃",
-                ((TextView) a.findViewById(R.id.tv_countdown_label)).getText().toString());
-        assertEquals("--:--:--",
-                ((TextView) a.findViewById(R.id.tv_countdown)).getText().toString());
+        assertEquals("没有下一次时要整条收起，不留空槽", View.GONE,
+                a.findViewById(R.id.box_countdown).getVisibility());
+        String sub = ((TextView) a.findViewById(R.id.tv_today_sub)).getText().toString();
+        assertTrue("原因仍要由副标题说清楚，实际：" + sub, sub.contains("没有"));
 
         ctl.pause().stop().destroy();
     }
@@ -329,10 +334,10 @@ public class UiLayoutTest {
         ShadowLooper.idleMainLooper();
 
         TextView sub = ctl.get().findViewById(R.id.tv_today_sub);
-        TextView cd = ctl.get().findViewById(R.id.tv_countdown);
         assertTrue("副标题要说明没有启用的闹钟，实际：" + sub.getText(),
                 sub.getText().toString().contains("没有"));
-        assertEquals("--:--:--", cd.getText().toString());
+        assertEquals("倒计时整条收起，不留 --:--:-- 的空槽", View.GONE,
+                ctl.get().findViewById(R.id.box_countdown).getVisibility());
         ctl.pause().stop().destroy();
     }
 

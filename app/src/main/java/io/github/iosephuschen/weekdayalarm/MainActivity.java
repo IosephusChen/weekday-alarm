@@ -809,7 +809,14 @@ public class MainActivity extends AppCompatActivity {
         // 现在改成：具体时刻挪进倒计时条左侧，副信息只留「今天是什么日子」——
         // 常日为空，整行 GONE，紫卡少一行。
         String dayTag = TodayCard.dayTagText(todayType, vacation, overtime);
-        String subText = TodayCard.subTextWithoutNext(dayTag, next, today, work, vacation);
+        // v1.23.11：空态要分「关了」和「开着但不响」，这里把前者的判据算给文案层，
+        // TodayCard 自己不去读 Prefs（4×2 小组件走的也是它）。
+        boolean anyEnabled = false;
+        for (Alarm a : alarms) {
+            if (a.enabled) { anyEnabled = true; break; }
+        }
+        String subText = TodayCard.subTextWithoutNext(dayTag, next, today, work, vacation,
+                anyEnabled);
         tvTodaySub.setText(subText);
         tvTodaySub.setVisibility(subText.isEmpty() ? View.GONE : View.VISIBLE);
 

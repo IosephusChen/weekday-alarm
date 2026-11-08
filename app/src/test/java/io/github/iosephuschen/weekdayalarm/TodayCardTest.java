@@ -83,30 +83,46 @@ public class TodayCardTest {
     public void subText_vacationOverridesEverything() {
         // 请假当天一律「个人请假 · 闹钟全部跳过」，哪怕有闹钟、是上班日
         assertEquals("个人请假 · 闹钟全部跳过",
-                TodayCard.subText("个人请假", at(0, 7, 0), today, true, true));
+                TodayCard.subText("个人请假", at(0, 7, 0), today, true, true, true));
     }
 
     @Test
     public void subText_noAlarmExplainsWhy() {
         assertEquals("上班日说清楚今天没有要响的",
                 "今天上班，但没有要响的闹钟",
-                TodayCard.subText("", null, today, true, false));
+                TodayCard.subText("", null, today, true, false, false));
         assertEquals("休息日只说没有启用的闹钟",
                 "没有启用的闹钟",
-                TodayCard.subText("", null, today, false, false));
+                TodayCard.subText("", null, today, false, false, false));
+    }
+
+    /**
+     * 闹钟开着、只是班表里没有要响的日子（v1.23.11）。
+     *
+     * <p>同一条路径 {@code next == null} 下有截然不同的两种原因，原来共用一句
+     * 「没有启用的闹钟」——用户 2026-11-08 指出：闹钟明明是绿点，App 说它没启用。
+     */
+    @Test
+    public void subText_saysAlarmsAreOnWhenOnlyScheduleIsQuiet() {
+        assertEquals("开着但不响，要说成班表的问题",
+                "闹钟开着，但这几天的班表都不响",
+                TodayCard.subText("", null, today, false, false, true));
+        assertEquals("上班日仍是那一句：今天确实没有要响的",
+                "今天上班，但没有要响的闹钟",
+                TodayCard.subText("", null, today, true, false, true));
     }
 
     @Test
     public void subText_alwaysNamesTheSubject() {
         assertEquals("当天也写「下次闹钟」，不再用没宾语的「下一个」",
                 "下次闹钟 23:59",
-                TodayCard.subText("", at(0, 23, 59), today, true, false));
+                TodayCard.subText("", at(0, 23, 59), today, true, false, true));
         assertEquals("休息日不再带前缀：大字已经说了「今天休息」",
                 "下次闹钟 明天 07:00",
-                TodayCard.subText("", at(1, 7, 0), today, false, false));
+                TodayCard.subText("", at(1, 7, 0), today, false, false, true));
         assertEquals("调休补班日也带前缀",
                 "调休补班 · 下次闹钟 明天 07:00",
-                TodayCard.subText("调休补班", at(1, 7, 0), today, true, false));
+                TodayCard.subText("调休补班", at(1, 7, 0), today, true, false, true));
     }
 
     @Test

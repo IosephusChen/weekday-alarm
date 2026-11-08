@@ -185,6 +185,43 @@ public class UiLayoutTest {
     }
 
     /**
+     * 闹钟开着、只是班表里没有要响的日子：不能说「没有启用的闹钟」（v1.23.11）。
+     *
+     * <p>用户 2026-11-08 指出的口子：原来三种空态共用一句话。{@code nextRing} 返回 null
+     * 只说明「窗口内一次都不命中」，跟「闹钟关着」是两件事——自定义班表七天全休时，
+     * 一条开着的「仅上班日」闹钟正好落进这条路，副标题却说它没启用。
+     */
+    @Test
+    public void hero_saysAlarmsOnWhenScheduleHasNothingToRing() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.getAlarms(ctx());                       // 先踩掉迁移标记，否则 setAlarms 会被覆盖
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_WEEK);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), 0L);                // 七天全休
+        Prefs.setCycleStart(ctx(), CycleEditor.mondayOf(LocalDate.now()));
+        Prefs.setCycleHoliday(ctx(), false);
+        Prefs.setAlarms(ctx(), Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
+
+        ActivityController<MainActivity> ctl =
+                Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MainActivity a = ctl.get();
+
+        String sub = ((TextView) a.findViewById(R.id.tv_today_sub)).getText().toString();
+        assertFalse("闹钟是启用的，不能说「没有启用的闹钟」，实际：" + sub,
+                sub.contains("没有启用"));
+        assertTrue("要说清是班表没排到，实际：" + sub, sub.contains("闹钟开着"));
+        assertEquals("空态下倒计时条仍要收起", View.GONE,
+                a.findViewById(R.id.box_countdown).getVisibility());
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
      * 闹钟全关时整条倒计时收起来，不再留「距下次响铃 / --:--:--」的空槽（v1.23.10）。
      *
      * <p>为什么收：副标题已经写了「没有启用的闹钟」，胶囊再摆一条空槽是同一件事说两遍；

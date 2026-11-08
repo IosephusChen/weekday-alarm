@@ -99,12 +99,23 @@ final class TodayCard {
     /**
      * 副信息整行。没有要响的闹钟时把原因说清楚，不留一个不动的时刻
      * 让人误以为闹钟还会响。
+     *
+     * <p><b>v1.23.11：空态一分为二。</b>{@code next == null} 只说明「窗口里一次都不命中」，
+     * 原来不区分「闹钟全关了」和「闹钟开着但班表不响」，一律写「没有启用的闹钟」。
+     * 用户 2026-11-08 指出后者的错：自定义班表七天全休，一条开着的「仅上班日」闹钟
+     * 就成了「没有启用的」——他打开列表一看，闹钟明明是绿的。
+     *
+     * @param anyEnabled 列表里是否有启用的闹钟；由调用方算好传进来，保持本方法纯函数
      */
     static String subText(String dayTag, ScheduleManager.NextAlarm next, LocalDate today,
-                          boolean work, boolean vacation) {
+                          boolean work, boolean vacation, boolean anyEnabled) {
         if (vacation) return "个人请假 · 闹钟全部跳过";
         if (next == null) {
-            return work ? "今天上班，但没有要响的闹钟" : "没有启用的闹钟";
+            if (work) return "今天上班，但没有要响的闹钟";
+            if (!anyEnabled) return "没有启用的闹钟";
+            // 闹钟开着，只是规则在这段窗口里一次都不命中。说「这几天」而不是「今天」：
+            // nextRing 扫的是整段窗口，能走到这里就说明近期都没有，不止今天。
+            return "闹钟开着，但这几天的班表都不响";
         }
         String tail = nextTail(next, today);
         return dayTag.isEmpty() ? tail : dayTag + " · " + tail;
@@ -124,9 +135,10 @@ final class TodayCard {
      * 时刻只能写在这一行里。
      */
     static String subTextWithoutNext(String dayTag, ScheduleManager.NextAlarm next,
-                                     LocalDate today, boolean work, boolean vacation) {
+                                     LocalDate today, boolean work, boolean vacation,
+                                     boolean anyEnabled) {
         if (vacation) return "个人请假 · 闹钟全部跳过";
-        if (next == null) return subText(dayTag, null, today, work, vacation);
+        if (next == null) return subText(dayTag, null, today, work, vacation, anyEnabled);
         return dayTag;
     }
 }

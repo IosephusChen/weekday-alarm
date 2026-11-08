@@ -119,6 +119,104 @@ public class CustomWeekOvertimeTest {
     }
 
     /**
+     * 真机报的问题（v1.23.12 装机后）：休息日点加班，按钮文案变了，<b>日历格子颜色不变</b>。
+     *
+     * <p>上面那条 {@code restDayOvertime_showsUpInButtonCalendarAndScheduler} 名字里
+     * 写着 Calendar，实际一条格子断言都没有——只测了数据层、按钮和副标题。名字撒谎，
+     * 于是这个洞一直开着。
+     *
+     * <p>这里直接读格子的底色：把「今天」设成休息日、标上加班，渲染后取那格的
+     * {@link android.graphics.drawable.GradientDrawable} 实色，必须等于加班色。
+     */
+    @Test
+    public void restDayOvertime_changesCalendarCellColor() throws Exception {
+        sp().edit().clear().apply();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+
+        LocalDate today = LocalDate.now();
+        int dow = today.getDayOfWeek().getValue();          // 1 = 周一
+        long mask = 0b1111111L & ~(1L << (dow - 1));        // 今天休息，其余上班
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), mask);
+        Prefs.setCycleStart(ctx(), today.minusDays(dow - 1));
+        Prefs.addOvertime(ctx(), today);
+
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        java.lang.reflect.Field panelField = MainActivity.class.getDeclaredField("calendarPanel");
+        panelField.setAccessible(true);
+        Object panel = panelField.get(a);
+        java.lang.reflect.Field cellsField = panel.getClass().getDeclaredField("cells");
+        cellsField.setAccessible(true);
+        android.widget.LinearLayout[][] cells =
+                (android.widget.LinearLayout[][]) cellsField.get(panel);
+
+        LocalDate first = today.withDayOfMonth(1);
+        LocalDate start = WeekSchedule.startOfWeek(first, Prefs.isSundayFirst(ctx()));
+        long idx = java.time.temporal.ChronoUnit.DAYS.between(start, today);
+        int r = (int) (idx / 7), c = (int) (idx % 7);
+
+        android.graphics.drawable.Drawable bg = cells[r][c].getBackground();
+        // 今天的格子是 bg_day_today（外层紫框 + 内层实底），底色在最里面那一层
+        if (bg instanceof android.graphics.drawable.LayerDrawable) {
+            bg = ((android.graphics.drawable.LayerDrawable) bg).getDrawable(1);
+        }
+        int actual = ((android.graphics.drawable.GradientDrawable) bg)
+                .getColor().getDefaultColor();
+        int expect = androidx.core.content.ContextCompat.getColor(ctx(), R.color.day_overtime_bg);
+
+        assertEquals(String.format("第 %d 行第 %d 列不是今天的格子（期望加班底色 #%06X，实际 #%06X）",
+                r, c, expect & 0xFFFFFF, actual & 0xFFFFFF), expect, actual);
+    }
+
+    /**
+     * 同一处的另一半：今天上班、标了请假，格子也要变紫（而不是停在 today 的淡紫）。
+     *
+     * <p>不加这条，将来有人把「今天」的判断改成只看加班，请假会静默退回原样。
+     */
+    @Test
+    public void workDayVacation_changesCalendarCellColor() throws Exception {
+        sp().edit().clear().apply();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+
+        LocalDate today = LocalDate.now();
+        int dow = today.getDayOfWeek().getValue();
+        long mask = 0b1111111L;                             // 七天全上班，今天才请得了假
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), mask);
+        Prefs.setCycleStart(ctx(), today.minusDays(dow - 1));
+        Prefs.addVacation(ctx(), today);
+
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        java.lang.reflect.Field panelField = MainActivity.class.getDeclaredField("calendarPanel");
+        panelField.setAccessible(true);
+        Object panel = panelField.get(a);
+        java.lang.reflect.Field cellsField = panel.getClass().getDeclaredField("cells");
+        cellsField.setAccessible(true);
+        android.widget.LinearLayout[][] cells =
+                (android.widget.LinearLayout[][]) cellsField.get(panel);
+
+        LocalDate first = today.withDayOfMonth(1);
+        LocalDate start = WeekSchedule.startOfWeek(first, Prefs.isSundayFirst(ctx()));
+        long idx = java.time.temporal.ChronoUnit.DAYS.between(start, today);
+        int r = (int) (idx / 7), c = (int) (idx % 7);
+
+        android.graphics.drawable.Drawable bg = cells[r][c].getBackground();
+        if (bg instanceof android.graphics.drawable.LayerDrawable) {
+            bg = ((android.graphics.drawable.LayerDrawable) bg).getDrawable(1);
+        }
+        int actual = ((android.graphics.drawable.GradientDrawable) bg)
+                .getColor().getDefaultColor();
+        int expect = androidx.core.content.ContextCompat.getColor(ctx(), R.color.day_vacation_bg);
+
+        assertEquals(String.format("今天请假，格子底色应是请假色（期望 #%06X，实际 #%06X）",
+                expect & 0xFFFFFF, actual & 0xFFFFFF), expect, actual);
+    }
+
+    /**
      * 首页副标题也不能被残影骗。这一处原来是全 App 最宽的：只判「有没有值」，
      * 连 {@code hasShifts()} 都不看，所以只有它说「今日加班」。
      *

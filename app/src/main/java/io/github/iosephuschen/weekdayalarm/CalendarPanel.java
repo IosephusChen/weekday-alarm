@@ -3,7 +3,9 @@ package io.github.iosephuschen.weekdayalarm;
 import android.app.Activity;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -170,6 +172,7 @@ final class CalendarPanel {
                 if (inMonth && MonthStats.countsAsWork(type, vacation, overtime)) workDays++;
 
                 int bgRes;
+                int bgColorRes;      // v1.23.13：同一份底色的「颜色版」，今天的格子要染内层
                 int textColorRes;
                 String label;
                 // v1.11.0：加班那天的班次名只取一次——格子上写它，无障碍描述也要用它，
@@ -180,10 +183,12 @@ final class CalendarPanel {
                 boolean plainWork = false;
                 if (vacation) {
                     bgRes = R.drawable.bg_day_vacation;
+                    bgColorRes = R.color.day_vacation_bg;
                     textColorRes = R.color.day_vacation_text;
                     label = "请假";
                 } else if (overtime) {
                     bgRes = R.drawable.bg_day_overtime;
+                    bgColorRes = R.color.day_overtime_bg;
                     textColorRes = R.color.day_overtime_text;
                     // v1.11.0：有班次就写班次名（「夜班」比「加班」多答了「上哪个」），
                     // 老数据没班次才退回「加班」
@@ -196,19 +201,23 @@ final class CalendarPanel {
                     switch (type) {
                         case MAKEUP_WORK:
                             bgRes = R.drawable.bg_day_makeup;
+                            bgColorRes = R.color.day_makeup_bg;
                             textColorRes = R.color.day_makeup_text;
                             break;
                         case HOLIDAY:
                             bgRes = R.drawable.bg_day_holiday;
+                            bgColorRes = R.color.day_holiday_bg;
                             textColorRes = R.color.day_holiday_text;
                             break;
                         case WORK:
                             bgRes = R.drawable.bg_day_work;
+                            bgColorRes = R.color.day_work_bg;
                             textColorRes = R.color.day_work_text;
                             plainWork = true;
                             break;
                         default:
                             bgRes = R.drawable.bg_day_rest;
+                            bgColorRes = R.color.day_rest_bg;
                             textColorRes = R.color.day_rest_text;   // 深灰，保证浅灰底上的可读性
                             break;
                     }
@@ -250,7 +259,22 @@ final class CalendarPanel {
                             : color;
                 }
                 if (d.equals(today)) {
-                    cell.setBackgroundResource(R.drawable.bg_day_today);
+                    // v1.23.13：这一行原来无条件换成 bg_day_today，而它内层是实色淡紫，
+                    // 于是今天那格永远看不出自己标了加班 / 请假——用户 2026-11-08 装机实测
+                    // 「休息日点今天要加班，按钮变了、格子还是原样」。
+                    // 现在保留 today 的紫框与 4dp 白环，只把内层实底染成当天状态色。
+                    Drawable frame = ContextCompat.getDrawable(host, R.drawable.bg_day_today);
+                    if (frame != null) {
+                        frame = frame.mutate();
+                        if (frame instanceof LayerDrawable) {
+                            Drawable inner = ((LayerDrawable) frame).getDrawable(1);
+                            if (inner instanceof GradientDrawable) {
+                                ((GradientDrawable) inner.mutate()).setColor(
+                                        ContextCompat.getColor(host, bgColorRes));
+                            }
+                        }
+                        cell.setBackground(frame);
+                    }
                     color = ContextCompat.getColor(host, R.color.day_today_text);
                     // 今天的格子整格都是主色，标签再降重会和数字脱节
                     labelColor = color;

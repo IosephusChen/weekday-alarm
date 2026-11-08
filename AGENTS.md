@@ -579,6 +579,8 @@ CI 一路绿，三条回归照样进了 290，因为那三处没有一条用例�
 2. `bash tools/handoff.sh`：一条命令看全——HEAD、与远端差多少、版本号、清单进度
    （实时扫 `docs/待裁决清单.md`，与 CI 同一份实现）、`PLAN.md` 交接条原文、
    上次测试结果（读 `test-results/*.xml` 现算）、工作区干不干净。十条以内，省掉翻三个文件。
+   末尾还会打印「接着读」：`AGENTS.md` 第一/三/七节 + `docs/项目状态.md` 第 1/6 节。
+   **其余文档按任务查**，别通读——三份必读加起来 1600 多行，大半是历史存档。
 3. `git pull --rebase`，看 `HEAD` 是不是最新
 4. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
    首次 commit 会直接失败；临时用 `GIT_AUTHOR_NAME=… GIT_AUTHOR_EMAIL=… git commit`

@@ -222,6 +222,15 @@ public class DocsConsistencyTest {
                 read(new File(root(), "AGENTS.md")).contains("tools/handoff.sh"));
         assertTrue("PLAN.md 交接条没提 tools/handoff.sh",
                 read(new File(root(), "PLAN.md")).contains("tools/handoff.sh"));
+
+        // 2026-11-08：只输出「在哪」不够。新会话看到 HEAD 与版本，仍不知道该读什么，
+        // 而规矩全在 AGENTS.md 里——漏读就会把踩过的坑重踩一遍。指针写进脚本，
+        // 不靠用户第一句话记不记得带。改这条时别删那一行，删了这里会红。
+        String shText = read(sh);
+        assertTrue("handoff.sh 没指路到 AGENTS.md：新会话只看到状态，不知道规矩在哪",
+                shText.contains("AGENTS.md"));
+        assertTrue("handoff.sh 没指路到 docs/项目状态.md",
+                shText.contains("docs/项目状态.md"));
     }
 
     /**

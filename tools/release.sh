@@ -200,12 +200,17 @@ echo
 # v1.0.10：这里原来只写「还要做两件事：commit / 灾备包不动」。
 # 1.0.2 ~ 1.0.9 攒下八个没发布的版本，根子就在这句——推 main、打 tag、建 Release
 # 一件都没提，跑完这个脚本就以为发完了。远端四步现在写全。
+#
+# 2026-11-09：CI 不再出包（密钥搬去 NAS 后没理由让 runner 再签一遍）。所以这个
+# 脚本产出的包**就是**要挂到 Release 上的那个包，不是"本地验证用的半成品"。
 echo "本地产出到此为止，远端一步都没走。接着做："
 echo "  1. git add -A && git commit"
-echo "  2. tools/push_via_api.py --branch main                    # 推 main"
+echo "  2. tools/push.sh                                          # 推 main（带重试）"
 echo "  3. git tag -a v$NAME -m \"<标题 + 要点>\" && tools/push_via_api.py --tag v$NAME"
 echo "  4. tools/publish_release.py --mapping --dry-run           # 先看一眼"
-echo "     去掉 --dry-run 真发（幂等，重跑不会重复建）"
+echo "     去掉 --dry-run 真发（幂等，重跑不会重复建）——传的就是上面这个包"
 echo "  5. 验：releases/latest 是 v$NAME、资产 MD5 对得上、raw 与 jsDelivr 的 version.json 是新版"
+echo "  6. tools/nas.sh put \"$OUT\" apk/weekday-alarm-$NAME.apk    # 送手机"
 echo
+echo "  （CI 只在 push 时跑单测 + lint，不出包；lintVitalRelease 由本脚本的 assembleRelease 兜）"
 echo "  （灾备包不动，只在正式发布前刷）"

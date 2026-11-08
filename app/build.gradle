@@ -55,26 +55,6 @@ android {
                 enableV3Signing true
             }
         }
-
-        // preview 变体专用（2026-11-06）。这是一把**公开的**调试密钥：口令就是安卓
-        // 调试密钥的标准值 android，别名 androiddebugkey，随仓库一起分发。
-        //
-        // 为什么要把一把密钥提交进仓库：沙箱每次开新会话都是干净环境，
-        // AGP 会在 ~/.android/ 现生成一把新的 debug.keystore，签名就变了，
-        // 手机端只能卸载重装。把密钥固定成这一份，跨会话签名恒定，
-        // 覆盖安装永远成功、数据保留。
-        //
-        // 它与 docs/恢复说明.md 里那把发布密钥毫无关系：发布密钥的私钥只有作者持有，
-        // 泄露等于全体用户必须卸载重装，绝不能进仓库（.gitignore 已挡住 *.jks）。
-        preview {
-            storeFile rootProject.file("tools/preview-debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
-            enableV1Signing true
-            enableV2Signing true
-            enableV3Signing true
-        }
     }
 
     compileOptions {
@@ -109,35 +89,13 @@ android {
                     "proguard-rules.pro"
             if (hasReleaseSigning || hasLocalKeystore) signingConfig signingConfigs.release
         }
-
-        // preview（2026-11-06）：给「改完先看手感」用的包，不走 CI。
-        //   - 包名加 .preview → 能和正式版并存，不用卸载正式版
-        //   - 签 tools/preview-debug.keystore → 跨会话签名恒定，覆盖安装不丢数据
-        //   - initWith release → R8 与资源压缩照旧，观感尽量贴近正式包
-        // 它**不产 Release**：发布仍只走 release 变体，由 CI 在 test job 里出包。
-        preview {
-            initWith release
-            applicationIdSuffix ".preview"
-            versionNameSuffix "-preview"
-            signingConfig signingConfigs.preview
-        }
     }
 }
 
-// preview / release 变体都不跑单元测试（v1.23.10），本地验收入口只剩 debug，
-// 与 CI 的 testDebugUnitTest 完全一致。
-//
-// preview：applicationIdSuffix 带了 .preview，Robolectric 里 Context.getPackageName()
-// 是 io.github.…weekdayalarm.preview，清单合并出来的 receiver 仍属于
-// io.github.…weekdayalarm —— WidgetProviderConfigTest 用包名过滤，一个都匹配不上，
-// 报「应有五个小组件 receiver 注册，实际 []」。生产包没这个问题，本地却每次全量假红。
-//
-// release：与 debug 同一份源码，JVM 单测只差一个 BuildConfig.DEBUG，R8 根本不进单测路径。
-// 跑第二遍除了把 1125 条变成 3 分钟，没有新增覆盖。
+// release 变体不跑单元测试（v1.23.10）：与 debug 同一份源码，JVM 单测只差一个
+// BuildConfig.DEBUG，R8 根本不进单测路径。跑第二遍除了把 1100 多条变成 3 分钟，
+// 没有新增覆盖。本地验收入口只有 debug，与 CI 的 testDebugUnitTest 完全一致。
 androidComponents {
-    beforeVariants(selector().withBuildType("preview")) { variant ->
-        variant.enableUnitTest = false
-    }
     beforeVariants(selector().withBuildType("release")) { variant ->
         variant.enableUnitTest = false
     }

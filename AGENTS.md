@@ -2,16 +2,16 @@
 
 这个文件每次开工都会读到。里面只有硬规矩，不写背景，背景在 `docs/流程规范.md`。
 
-**这套流程只有两处绑平台**（2026-11-07 补，因为用户计划换 Agent）：
+**这套流程只有一处绑平台**（2026-11-09 修订，原来两处）：
 
 | 只在 WorkBuddy 有 | 换到别家怎么办 |
 | --- | --- |
 | git 凭据助手：`git push`、`gh` 开箱可用 | `export GH_TOKEN=<任意 PAT>`，`tools/*.py` 只读环境变量，不认平台 |
-| 百度网盘连接器：给手机送包 | 手机浏览器直接开 `https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm/releases/download/<tag>/<file>`。未在手机上实测，但它是通用 HTTPS 反代，能打开就能下 |
 
-`bdpan` CLI 不是依赖，是本项目**主动不用**它——每会话都要重装 + 重新授权，比等 CI 慢。
+送包曾经是第二处（靠百度网盘连接器）。2026-11-09 换成 NAS WebDAV 之后不绑了：`tools/nas.sh`
+只用 curl，凭据读 `/root/.nas_credentials`，换哪个 Agent 都一样跑。
 
-除这两处，代码、测试、lint、CI 出包、Release、`version.json` 全部与平台无关：
+除这一处，代码、测试、lint、CI 守门、Release、`version.json` 全部与平台无关：
 换哪家 Agent，`docs/恢复说明.md` 第六节那段话粘过去就能续上。
 
 ## 一、动代码之前，必须先拿到许可
@@ -313,7 +313,8 @@ WorkBuddy 手机端、Trae 桌面端、网页 agent、CI 会同时碰到同一�
 
 1. 能直推的先推完；没做完的开 PR，描述里写清「改到哪、还差什么、下一步是什么」
 2. 接手方读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认写权与在飞版本
-3. 出包、推 tag、建 Release 仍由持有 `keystore` 的那一端做（或走 CI Secrets）
+3. 出包、推 tag、建 Release 由持有 `keystore` 的那一端做——现在密钥在 NAS（`tools/fetch-keys.sh`），
+   所以任何一端跑完这一步都能出包，判据变成「有没有 NAS 凭据」
 
 **换端的判据是「远端有没有你的东西」，不是「有没有说过一句」。**
 
@@ -333,7 +334,7 @@ WorkBuddy 手机端、Trae 桌面端、网页 agent、CI 会同时碰到同一�
 | 改动类型 | 走哪 | 为什么 |
 |---|---|---|
 | 纯文档 / 注释 / Java 逻辑 / 资源 | **直接推 main** | 串行轮换下 PR 只多跑一遍 CI；push 后 CI 照样判定 |
-| 升版本号 + 七处文档 | **单独一个 `release:` 提交，直推 main** | 这个提交会自动触发 CI 出包，不用再手动 dispatch |
+| 升版本号 + 七处文档 | **单独一个 `release:` 提交，直推 main** | 它只是发布边界的标记；出包在本地跑，CI 从 2026-11-09 起不出包 |
 | 换端交棒，且手里还有没推的活 | **分支 + PR** | 唯一会通知到人的形态；活推干净了就直接换 |
 | 大改动，或确实想让人先看一眼 | **分支 + PR** | PR 买的是「有东西等人看」这个提醒，不是校验 |
 | 改 `.github/workflows/` | 网页粘贴或带 `Workflow` 权限的 PAT，之后照常推 | 直推本来就不动（缺 scope 时 GitHub 返回 404） |
@@ -360,18 +361,15 @@ PR 买到的是另外两样：合并前的那一次判定，以及**「有东西
 3. **收工前把状态落盘**到 `PLAN.md` 与 `docs/项目状态.md`。直推没有「待合并分支」当状态
    载体，文档就是唯一的交接物，也是换会话后省积分的唯一依据。
 
-#### `release:` 提交自动出包
+#### `release:` 提交只是个标记（2026-11-09 改）
 
-commit message 以 `release:` 开头并推到 main，CI 直接在同一个 test job 里接着出包
-（测试与 lint 都过了才走到出包那几步）。省掉手动 `workflow_dispatch` 那一轮——这是
-今天最贵的一步。
+以前它会让 CI 接着出包，现在不会了：密钥从 NAS 一条命令就能拉下来（`tools/fetch-keys.sh`），
+本地 `tools/release.sh` 1~2 分钟出的是**同一把密钥签的正式包**，实测与 CI 包逐 zip 条目
+内容完全相同。让 runner 再签一遍，只买到 200 秒等待和一次网络抖动。
 
-2026-11-07 起出包不再单独占一个 job：原来两个 job 各自 checkout、装 JDK、装 SDK、
-冷启 Gradle，发版那轮光启动就白等两分钟。合并后实测一轮从 359 秒降到约 207 秒
-（测试 173→90 秒靠 Gradle 缓存，出包 144→52 秒靠复用同一个 workspace 编过的产物）。
-
-**CI 仍然只产 artifact**：tag、Release、`version.json` 由本机做。发布权只在一个端手里，
-少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
+所以 `release:` 现在的唯一作用是**划出发布边界**：版本号变了、七处文档同步了、这一版的
+Changelog 定稿了。出包、推 tag、建 Release、改 `version.json` 全在本地做——发布权仍然
+只在一个端手里，这条没变。
 
 #### 文档提交不跑全量（2026-11-07）
 
@@ -433,24 +431,25 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 都是新沙箱。）所以别问「哪台是主机」，改问「**这一端手里有没有 `.jks`**」——没有就先按
 `恢复说明.md` 第三节还原并核指纹。两条都别做反：一是别假设它还在（上次会话在，不代表这次在）；
 二是别因为不在就重新生成一把（新证书 = 新应用身份，已装用户必须卸载重装）。要「换会话
-也能出包」，只有两条路不依赖本地状态：CI 的 Secrets，或者 NAS `keys/` + `tools/fetch-keys.sh`。
+也能出包」，现在只有一条路：NAS `keys/` + `tools/fetch-keys.sh`。CI 的 Secrets 那条
+2026-11-09 随出包一起退役了（CI 不再签包）。
 
 ### 出包与推送：常用命令在这儿，细节查 `docs/流程规范.md`
 
 | 要做什么 | 命令 |
 |---|---|
 | 新沙箱取签名材料 | `tools/fetch-keys.sh`（从 NAS 拉 `.jks`，核指纹，不对就退出） |
-| 改完 UI 想看手感 | `./gradlew assemblePreview` → `app/build/outputs/apk/preview/app-preview.apk` |
+| 出正式包 | `tools/release.sh`（全量测试 + lint + assembleRelease + 回填项目状态） |
+| 装到手机 | `tools/nas.sh put <本地 apk> apk/<名字>.apk`，`tools/nas.sh ls apk/` 核对 |
 | 跑单测（与 CI 同一条） | `./gradlew testDebugUnitTest`（**条数别抄，现算看 `tools/handoff.sh`**） |
-| 传包到 NAS（手机装） | `tools/nas.sh put <本地 apk> apk/<名字>.apk`，`tools/nas.sh ls apk/` 核对 |
 | 推 main | `tools/push.sh`（抖得厉害时 `PUSH_TRIES=5 tools/push.sh`） |
 | 推完核对 | `tools/post-push.sh` |
 
-**看手感用 preview，别用 debug 包**：debug 与正式版同包名（装它要先卸正式版，班表全丢），且 `App.java` 两处 `if (!BuildConfig.DEBUG)` 让它不拉节假日、不查更新——会把「debug 缺的那半截」误判成新代码的 bug。preview 走 `initWith release`、`DEBUG=false`，行为与正式版一致，还能与正式版并存。
+**想看手感就直接出正式包，别用 debug 包**：debug 与正式版同包名（装它要先卸正式版，班表全丢），且 `App.java` 两处 `if (!BuildConfig.DEBUG)` 让它不拉节假日、不查更新——会把「debug 缺的那半截」误判成新代码的 bug。正式包本地 1~2 分钟就能出，同 `versionCode` 覆盖安装不丢数据，所以没有「预览包」这个中间态了：`preview` 变体 2026-11-09 已删除（`docs/流程规范.md` 第十六节），别再复活。
 
-**它现在只是「隔离」，不再是「省时间」**（CI 已从 359 秒降到 207 秒）。退役条件只有一条：有了自动截图对比。现在没有。改逻辑（闹钟判定、班表计算、通知时机）不用出 preview，跑单测就够。
+**送手机走 NAS**（`tools/nas.sh put`），别用系统分享面板：它返回的「已分享」只表示面板被调起，不表示用户接收了，拿不到回执就会反复推（2026-11-07 用户明确否掉）。细节在 `docs/流程规范.md` 第十八节。
 
-**送手机走 NAS 或 Release → 网盘，别用系统分享面板。** NAS 那条最快（`tools/nas.sh put`，不用等 CI），Release → 网盘那条留档，两条都在 `docs/流程规范.md` 第十七、十八节。分享面板返回的「已分享」只表示面板被调起，不表示用户接收了；拿不到回执就会反复推，几轮之后忘了到底推没推（2026-11-07 用户明确否掉）。preview 包名、密钥为什么要入库、网盘落点与回执判据，在第十六、十七节。
+**CI 从 2026-11-09 起只守门**：`check_version.py` + 单测 + lint，不出包。包在本地出，`release:` 提交只是发布边界的标记。
 
 **沙箱到 github.com 是间歇性抖动**（实测一次 40 秒超时、一次 0.97 秒成功），换协议换 DNS 都治不了，**唯一有效的是重试**——`tools/push.sh` 已把「HTTP/1.1 + 低速阈值 + 三次重试」包好，别因为一次 `Operation too slow` 就去改 `http.version`。
 
@@ -459,7 +458,7 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 - **禁止两个端同时改同一个文件后靠合并解决。** 颜色值冲突还能看出谁对谁错，
   Java 逻辑冲突基本等于重写——那还不如让一个人重写一遍。
 - **禁止在功能提交里顺手升 `versionCode`。** 版本号属于发版动作，只能出现在
-  `release:` 提交里；那个提交还负责触发 CI 出包。
+  `release:` 提交里。它也不再触发任何出包——那是旧流程，包现在由 `tools/release.sh` 在本地出。
 - **禁止拿「CI 绿了」当发版依据。** CI 只证明「代码自洽」，不证明「这一版被批准过」。
   批准的证据只有 `PLAN.md` 里那一行状态，而它由 `tools/release.sh` 强校验。
 

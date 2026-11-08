@@ -36,6 +36,16 @@ code=$(sed -n 's/.*versionCode \([0-9][0-9]*\).*/\1/p' app/build.gradle | head -
 name=$(sed -n 's/.*versionName "\([^"]*\)".*/\1/p' app/build.gradle | head -1)
 row "版本" "v$name / $code"
 
+# 2026-11-09：密钥不再指望「上次那个沙箱」，统一从 NAS 取。这里只报状态不自动拉——
+# 交接快照是只读的，拉密钥要联网、要凭据，那属于「动手」不属于「看」。
+if [ -f keystore.properties ] && [ -f ../weekdayalarm-release.jks ]; then
+    row "签名密钥" "在位（$(stat -c%s ../weekdayalarm-release.jks 2>/dev/null || echo '?') 字节）——能本地出包"
+elif [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; }; then
+    row "签名密钥" "不在，但有 NAS 凭据 → tools/fetch-keys.sh"
+else
+    row "签名密钥" "不在，也没有 NAS 凭据 → 出包前先向用户要账号"
+fi
+
 # 远端：git push 走 github.com 会间歇卡死，这里改走 gh-proxy；25 秒取不到就认输
 REMOTE="https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git"
 if timeout 12 git fetch --quiet "$REMOTE" main 2>/dev/null; then

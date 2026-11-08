@@ -482,8 +482,10 @@ gh release upload preview /workspace/weekday-alarm-preview.apk --clobber
 # 2. 正式版：本来就在 Release 上，跳过这一步
 ```
 
-**推 main 固定加 `-c http.version=HTTP/1.1`。** 直连 github.com:443 走 HTTP/2 会在握手阶段
-卡两分多钟再报 `Failed to connect`，换 1.1 一秒过（2026-11-08 实测两次）：
+**推 main 固定加 `-c http.version=HTTP/1.1`。** 走 HTTP/2 更容易卡在握手（两分多钟后
+`Failed to connect`）。但沙箱到 github.com 本身是**间歇性抖动**，1.1 也会偶尔报
+`Operation too slow`——**换一条命令重试就行**。2026-11-08 同一天里连失败三次、第四次
+一秒过；别因为一次失败就去改配置（那天差点把 `http.version` 判成没用）。
 
 ```bash
 git -c http.version=HTTP/1.1 push \

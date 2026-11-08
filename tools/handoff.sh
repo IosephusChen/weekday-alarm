@@ -2,8 +2,8 @@
 #
 # 一条命令看当前实况（2026-11-08）。
 #
-# 为什么要有它：交接条让人「读这几行」，但 AGENTS 570 行、PLAN 641 行，新会话
-# 要自己翻；「现在到底什么状态」散在四个文件里。这里把它们合成十条输出——
+# 为什么要有它：交接条让人「读这几行」，但规则和状态散在 AGENTS / PLAN / 项目状态
+# 三份几百行的文件里，新会话要自己翻。这里合成一条输出——
 # HEAD、远端差多少、版本、清单进度、交接条原文、上次测试、工作区干不干净。
 #
 # 数据来源只有两处：git（现查）与 tools/check_version.py --stats（清单统计，
@@ -69,14 +69,60 @@ awk '/^## 交接条/{f=1;next} f&&/^## /{exit} f&&NF' PLAN.md
 
 echo
 res=$(python3 - <<'PY'
-import glob, xml.etree.ElementTree as ET
+import glob, subprocess, xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+# 2026-11-08 修：原来只累加 tests 数，跑单个类也会把目录重写成那个类的条数
+# （Gradle 每次清空 test-results），于是 handoff 报出「9 用例」——比不报更危险。
+# 现在同时报「跑了几个测试类 / 共几个」与「是不是在代码最后一次提交之前跑的」。
+files = glob.glob('app/build/test-results/testDebugUnitTest/*.xml')
+if not files:
+    print("还没跑过（bash tools/setup-env.sh）")
+    raise SystemExit
+
 t = f = s = 0
-for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+newest = 0.0
+for p in files:
     r = ET.parse(p).getroot()
     t += int(r.get('tests', 0))
     f += int(r.get('failures', 0)) + int(r.get('errors', 0))
     s += int(r.get('skipped', 0))
-print(f"{t} 用例 / {f} 失败 / {s} 跳过" if t else "还没跑过（bash tools/setup-env.sh）")
+    ts = r.get('timestamp')
+    if ts:
+        dt = datetime.strptime(ts[:19], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+        newest = max(newest, dt.timestamp())
+
+src = len(glob.glob('app/src/test/**/*Test.java', recursive=True))
+ran = len(files)
+now = datetime.now(timezone.utc).timestamp()
+
+
+def ago(sec):
+    sec = max(0, int(sec))
+    if sec < 120:
+        return "刚刚"
+    if sec < 3600:
+        return "%d 分钟前" % (sec // 60)
+    if sec < 86400:
+        return "%d 小时前" % (sec // 3600)
+    return "%d 天前" % (sec // 86400)
+
+
+warn = []
+if ran < src:
+    warn.append("只跑了 %d/%d 个测试类，不是全量" % (ran, src))
+try:
+    ct = int(subprocess.run(
+        ['git', 'log', '-1', '--format=%ct', '--', 'app/src', 'app/build.gradle'],
+        capture_output=True, text=True).stdout.strip() or 0)
+except Exception:
+    ct = 0
+if ct and newest and newest < ct:
+    warn.append("代码在这之后又提交过，结果可能过期")
+
+msg = "%d 用例 / %d 失败 / %d 跳过（%s" % (t, f, s, ago(now - newest) if newest else "时间未知")
+msg += "，" + "；".join(warn) + "）" if warn else "）"
+print(msg)
 PY
 )
 row "上次测试" "$res"

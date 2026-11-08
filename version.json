@@ -1,14 +1,13 @@
 {
-  "versionCode": 296,
-  "versionName": "1.23.11",
+  "versionCode": 297,
+  "versionName": "1.23.12",
   "published": "2026-11-08",
-  "title": "倒计时一眼看懂，空态不再冤枉闹钟",
+  "title": "点加班不再只改副标题",
   "notes": [
-    "首页倒计时前加「还有」，一眼看出这是倒计时不是时刻",
-    "没有要响的闹钟时整条收起，副标题说清是关着还是班表不响",
-    "日历「今天」格加一圈白环，图例收成两行三列",
-    "锁屏提示、权限副标题与各处字号一并校对"
+    "自定义班表点今天、明天要加班，按钮和日历格子一起变",
+    "加班标记的判据收成一处，各页面不再各说一套",
+    "班次被删掉之后，格子上不再留着旧班次名"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.11/weekday-alarm-1.23.11.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.11"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.12/weekday-alarm-1.23.12.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.12"
 }

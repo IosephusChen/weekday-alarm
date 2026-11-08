@@ -56,6 +56,9 @@ if [ "$local_sha" != "$remote_sha" ]; then
 fi
 echo "一致。"
 
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "${GITHUB_TOKEN_FILE:-/root/.github_token}" ]; then
+    GITHUB_TOKEN=$(tr -d '\r\n' < "${GITHUB_TOKEN_FILE:-/root/.github_token}")
+fi
 if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "$TOKEN_SH" ]; then
     . "$TOKEN_SH" github >/dev/null 2>&1
 fi

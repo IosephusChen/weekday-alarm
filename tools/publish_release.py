@@ -32,8 +32,18 @@ UPLOADS = "https://uploads.github.com"
 
 def need(name):
     v = os.environ.get(name, "")
+    if not v and name == "GH_TOKEN":
+        # 2026-11-08：connector 的 ghu_ 令牌 8 小时过期，发版发到一半 401 就是这么来的。
+        # 长期 PAT 存在仓库外（600，不进 git），这里补一条兜底读取。
+        try:
+            v = open(os.environ.get("GITHUB_TOKEN_FILE",
+                                    os.path.expanduser("~/.github_token")),
+                     encoding="utf-8").read().strip()
+        except OSError:
+            v = ""
     if not v:
-        sys.exit("缺少 %s。先 export GH_TOKEN（任何来源的 GitHub PAT 都行）" % name)
+        sys.exit("缺少 %s。把 fine-grained PAT 存到 ~/.github_token（chmod 600），"
+                 "或 export %s" % (name, name))
     return v
 
 

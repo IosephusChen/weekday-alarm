@@ -273,6 +273,36 @@ public class DocsConsistencyTest {
     }
 
     /**
+     * 推送与发布脚本必须优先读长期 PAT，不能只认 connector。
+     *
+     * <p>2026-11-08 发 v1.23.13 时被这个卡住：包已出好、六处文档同步完、测试全绿，
+     * 只剩推送，结果 connector 给的 `ghu_` 令牌已过期（GitHub 规定这类令牌最多活
+     * 8 小时），API 一路 401。整条发版链因此停在最后一厘米，只能回头找用户点授权。
+     *
+     * <p>判据只能落在文件里：用户自建的 fine-grained PAT 不过期，存在仓库外
+     * （`/root/.github_token`，600，不进 git），四个会碰远端的脚本都得先读它。
+     * 少一个，那条路径就会在某个 8 小时之后突然断掉，而且报的是「401」，
+     * 看起来像权限配错了，不像令牌过期。
+     */
+    @Test
+    public void pushScripts_preferLongLivedTokenOverConnector() throws Exception {
+        String[] scripts = {
+                "tools/push.sh",
+                "tools/push_via_api.py",
+                "tools/post-push.sh",
+                "tools/publish_release.py",
+        };
+        for (String rel : scripts) {
+            String s = read(new File(root(), rel));
+            assertTrue(rel + " 不再读 .github_token——connector 的令牌 8 小时就过期，"
+                    + "这条路径会在某个下午突然 401", s.contains(".github_token"));
+        }
+        assertTrue("AGENTS.md 没写清 connector 令牌 8 小时过期这件事，"
+                        + "下次又会去点一次授权撑着",
+                read(new File(root(), "AGENTS.md")).contains("8 小时"));
+    }
+
+    /**
      * 「判据只能有一个实现」这条规矩必须写在 AGENTS 里。
      *
      * <p>代码层面拦不住「又在某处手写一遍」——这类判断看起来都非常合理，

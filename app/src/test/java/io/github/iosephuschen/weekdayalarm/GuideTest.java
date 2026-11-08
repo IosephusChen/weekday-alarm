@@ -2282,7 +2282,18 @@ public class GuideTest {
      */
     @Test
     public void nextRingRow_followsTheDraftSchedule() {
-        GuideActivity a = fresh();
+        // v1.23.10：这条测的是「七格草稿 → 下次响铃」的联动，与法定调休无关，
+        // 所以必须先把节假日联动关掉，否则结论取决于跑测试那天离补班日有多远：
+        //   自定义班表默认跟节假日（Prefs.isCycleHoliday 缺省 true）→ WeekSchedule
+        //   先判 isMakeupWorkday，补班日直接返回 MAKEUP_WORK（上班）→ 七格全「休」
+        //   也挡不住 nextRing 非空 → 这一行仍 VISIBLE。
+        // 补班日来自内置表（只到 2026）或启动时自动拉的 remote；App 里只有
+        // !BuildConfig.DEBUG 才检查，debug 不拉、release 拉，于是同一份代码两个变体
+        // 结论不同。2026-11-08 全量跑 release 时实测到一次「整周全休却仍 VISIBLE」。
+        wipe();
+        Prefs.setCycleHoliday(ctx(), false);
+        GuideActivity a = launch();
+        assertFalse("前提：节假日联动已关掉", Prefs.isCycleHoliday(ctx()));
         assertEquals("默认双休、这一行应在", View.VISIBLE,
                 visibility(a, R.id.tv_next_ring));
         String before = text(a, R.id.tv_next_ring);

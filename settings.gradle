@@ -1,6 +1,15 @@
+// 仓库统一走腾讯云镜像，google() / mavenCentral() 留作兜底。
+//
+// 2026-11-08 实测（沙箱出口在国内）：
+//   repo.maven.apache.org      143 KB/s，Robolectric 的 android-all 只有 636 KB/s
+//   mirrors.cloud.tencent.com  2.3 MB/s，同一个 android-all 12 MB/s
+//   dl.google.com（google()）   可达，装 SDK 时 21 MB/s
+// 冷构建光拉依赖就要好几分钟，加这条镜像后同一台机器上是秒级。
+// 该镜像同时代理 central 与 google 两个源（androidx、robolectric 都实测 200），
+// 所以放在最前面；镜像里没有的制品仍会落到下面两个官方仓库。
 pluginManagement {
     repositories {
-        maven { url 'https://mirrors.tencent.com/nexus/repository/maven-public/' }
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -9,6 +18,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
         google()
         mavenCentral()
     }

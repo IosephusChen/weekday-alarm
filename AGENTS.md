@@ -415,7 +415,7 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 # 产物：app/build/outputs/apk/preview/app-preview.apk
 ```
 
-**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，1127 条约 1 分钟）。`./gradlew test`
+**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，约 1 分钟；**条数别抄这里**——每加一条守门就会变，现算看 `bash tools/handoff.sh`）。`./gradlew test`
 以前会把 preview 变体也跑一遍，那条 `WidgetProviderConfigTest` 在 `.preview` 包名下一片假红；
 v1.23.10 已在 `app/build.gradle` 里给 preview 关掉单测（`enableUnitTest = false`），现在 `test`
 只剩 debug。再看到 `testPreviewUnitTest` 任务冒出来，说明那几行被删了。

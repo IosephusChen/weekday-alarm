@@ -208,8 +208,8 @@ public class DocsConsistencyTest {
      * 交接快照脚本必须真的在，而且交接条里要有入口。
      *
      * <p>与上一条同一个理由：交接条让人跑一条命令，那条命令就得存在且能跑。
-     * 2026-11-08 之前没有这条命令，新会话要靠翻 AGENTS（570 行）+ PLAN（641 行）
-     * 自己拼状态，拼错了也没人拦——当天交接条里的清单数字就漂了 5 条。
+     * 2026-11-08 之前没有这条命令，新会话要靠翻 AGENTS + PLAN 自己拼状态，
+     * 拼错了也没人拦——当天交接条里的清单数字就漂了 5 条。
      */
     @Test
     public void handoffScript_exists_andDocsPointAtIt() throws Exception {
@@ -231,6 +231,28 @@ public class DocsConsistencyTest {
                 shText.contains("AGENTS.md"));
         assertTrue("handoff.sh 没指路到 docs/项目状态.md",
                 shText.contains("docs/项目状态.md"));
+    }
+
+    /**
+     * 交接快照的「上次测试」必须报范围，不能只报条数。
+     *
+     * <p>2026-11-08 实测出来的坑：跑 `--tests "*DocsConsistencyTest*"`（9 条）之后，
+     * Gradle 把 test-results 目录整个重写成那一个类的 XML，于是 handoff 报出
+     * 「9 用例 / 0 失败」——一个 1137 条的仓库看着像只有 9 条。这种数比不报更危险：
+     * 新会话会以为测试很薄，改起来就大胆。
+     *
+     * <p>现在必须同时报「跑了几个测试类 / 共几个」和「是不是在代码最后一次提交之前跑的」。
+     * 下面三个词就是那两段判据的实现，删掉任一段这里都会红。
+     */
+    @Test
+    public void handoff_reportsTestScopeNotJustCount() throws Exception {
+        String sh = read(new File(root(), "tools/handoff.sh"));
+        assertTrue("handoff.sh 不再报「只跑了 N/M 个测试类」——跑单个类会把上次测试覆盖成那个类的条数",
+                sh.contains("只跑了"));
+        assertTrue("handoff.sh 不再报「结果可能过期」——测试早于代码提交时，那个数字没有意义",
+                sh.contains("结果可能过期"));
+        assertTrue("handoff.sh 没数全量测试类（app/src/test/**/*Test.java），无法判断是不是子集",
+                sh.contains("app/src/test/**/*Test.java"));
     }
 
     /**

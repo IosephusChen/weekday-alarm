@@ -58,7 +58,9 @@ for i in $(seq 1 "$TRIES"); do
     echo "push ${BRANCH} 第 ${i}/${TRIES} 次 ……"
     # HTTP/1.1 + 低速阈值：默认 HTTP/2 走 github.com:443 常在握手阶段挂住，
     # 卡两分多钟才报 Failed to connect；1.1 大多一秒过。
-    timeout "$LIMIT" git -c http.version=HTTP/1.1 \
+    # `-k 5`：TERM 之后 5 秒还不退就 KILL。git 卡在内核 connect 时收 TERM 不响应，
+    # 只写 `timeout 45` 会一直等下去（2026-11-08 实测：脚本挂住，一行输出后没了）。
+    timeout -k 5 "$LIMIT" git -c http.version=HTTP/1.1 \
             -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
             push "$URL" "$BRANCH" >"$out" 2>&1
     rc=$?

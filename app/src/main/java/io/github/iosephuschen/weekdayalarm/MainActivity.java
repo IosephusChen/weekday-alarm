@@ -38,8 +38,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView btnDayOff, btnDayOffTomorrow;
     /** 首页内嵌的排班日历（v0.48.1）：渲染与单日标记都在它里面。 */
     private CalendarPanel calendarPanel;
-    /** 距下次响铃倒计时（v0.30.0）：每秒跳一次；没有下一次时显示「--:--:--」。 */
+    /** 距下次响铃倒计时（v0.30.0）：每秒跳一次；没有下一次时整条收起（v1.23.10）。 */
     private TextView tvCountdown, tvCountdownLabel;
+    /** 倒计时胶囊整条。没有下一次时 GONE——空槽连同「--:--:--」一起收走。 */
+    private View boxCountdown;
     /** 下一次真正会响的时刻；null = 没有启用的闹钟。由 refreshStatus 算好，tick 只读。 */
     private LocalDateTime nextRingAt;
     /** tick 里用来发现「跨天」的日期锚点。 */
@@ -74,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
         tvHolidayCountdown = findViewById(R.id.tv_holiday_countdown);
         tvCountdown = findViewById(R.id.tv_countdown);
         tvCountdownLabel = findViewById(R.id.tv_countdown_label);
+        boxCountdown = findViewById(R.id.box_countdown);
         tvWeekChip = findViewById(R.id.tv_week_chip);
         btnDayOff = findViewById(R.id.btn_day_off);
         btnDayOffTomorrow = findViewById(R.id.btn_day_off_tomorrow);
@@ -348,7 +351,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /** 把剩余时间写进 hero 卡。nextRingAt 为空时 refreshStatus 已经写好了占位文案。 */
+    /** 把剩余时间写进 hero 卡。nextRingAt 为空时 refreshStatus 已经把整条收起来了。 */
     private void updateCountdown() {
         if (nextRingAt == null) return;
         long sec = Duration.between(LocalDateTime.now(), nextRingAt).getSeconds();
@@ -822,12 +825,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 倒计时条左侧：有下次闹钟就写那句具体时刻（「明天 07:30 起床」），
-        // 没有就退回类别名「距下次响铃」——没数字的时候再写时刻就是空话。
-        // 为什么没有数字，上一行的副标题已经说清楚了，这里不再解释一遍。
+        // 没有就把整条收起来（v1.23.10）。
+        //
+        // 为什么不退回类别名「距下次响铃」+「--:--:--」：上一行的副标题已经说清了原因
+        // （「没有启用的闹钟」/「今天上班，但没有要响的闹钟」），胶囊再摆一条空槽，
+        // 是同一件事说两遍；而 --:--:-- 读起来更像没加载出来，不像「今天不响」。
+        // 收起来还省 45dp（胶囊 33 + 上间距 12），首屏的「今天要加班」直接上提。
         if (nextRingAt == null) {
-            tvCountdownLabel.setText("距下次响铃");
-            tvCountdown.setText("--:--:--");
+            boxCountdown.setVisibility(View.GONE);
         } else {
+            boxCountdown.setVisibility(View.VISIBLE);
             tvCountdownLabel.setText(TodayCard.ringText(next, today));
             updateCountdown();
         }

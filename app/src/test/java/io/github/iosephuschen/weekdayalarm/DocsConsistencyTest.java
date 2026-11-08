@@ -223,4 +223,36 @@ public class DocsConsistencyTest {
         assertTrue("PLAN.md 交接条没提 tools/handoff.sh",
                 read(new File(root(), "PLAN.md")).contains("tools/handoff.sh"));
     }
+
+    /**
+     * 推送后的核对脚本必须真的在，AGENTS 要指出来。
+     *
+     * <p>2026-11-08：`push.sh` 报成功后，还要确认远端 SHA 真的换了、CI 起来了。
+     * 这一步原来靠手工 fetch，连超时三次，而超时后 `origin/main` 仍是旧值，
+     * 拿它比对会误报「推送失败」——于是白重推一次。
+     */
+    @Test
+    public void postPushScript_exists_andDocsPointAtIt() throws Exception {
+        File sh = new File(root(), "tools/post-push.sh");
+        assertTrue("缺少 tools/post-push.sh：" + sh, sh.isFile());
+        assertTrue("脚本要能直接跑（chmod +x）：" + sh, sh.canExecute());
+        assertTrue("脚本开头要有 shebang", read(sh).startsWith("#!/usr/bin/env bash"));
+        assertTrue("AGENTS.md 没提 tools/post-push.sh，推完不知道要核对",
+                read(new File(root(), "AGENTS.md")).contains("tools/post-push.sh"));
+    }
+
+    /**
+     * 「判据只能有一个实现」这条规矩必须写在 AGENTS 里。
+     *
+     * <p>代码层面拦不住「又在某处手写一遍」——这类判断看起来都非常合理，
+     * 每一处单独读都能自圆其说。只能靠开工时读到这条硬规矩。
+     */
+    @Test
+    public void agentsStatesSingleJudgeRule() throws Exception {
+        String agents = read(new File(root(), "AGENTS.md"));
+        assertTrue("AGENTS.md 缺「判据只能有一个实现」这条硬规矩",
+                agents.contains("判据只能有一个实现"));
+        assertTrue("规矩要指到 effectiveOverride，否则新人不知道调哪个",
+                agents.contains("effectiveOverride"));
+    }
 }

@@ -16,11 +16,6 @@ on:
     - cron: '0 22 * * 5'
     - cron: '0 22 * * 6'
   workflow_dispatch:
-    inputs:
-      build_release:
-        description: '同时出正式包（用 Secrets 里的 keystore，产物只作为 artifact，不建 Release）'
-        type: boolean
-        default: false
 
 jobs:
   # 2026-11-06：版本一致性的「裁判」。这套检查原本只内联在 tools/release.sh 里，
@@ -39,15 +34,17 @@ jobs:
   # 2026-11-07：test 与 release 合并成一个 job。
   # 原来两个 job 各自 checkout、装 JDK、装 Android SDK、冷启 Gradle，一次发版
   # 光这些启动就白等两分钟，而它们要做的事在同一个 workspace 里就能接上。
-  # 代价是 job 变长、失败归因多绕一层，接受——出包步骤全部带 success() 闸门，
-  # 测试红了不会走到出包。
+  #
+  # 2026-11-09：出包那半截删了，这个 job 现在只剩守门（单测 + lint）。
+  # 原先留着的理由是「沙箱里没有签名密钥，只能让 CI 签」——密钥搬去 NAS、
+  # tools/fetch-keys.sh 一条命令就能拉下来之后，这个理由不成立了，
+  # 而它的代价是一直在：release: 提交要等 200 秒才出包，GitHub 一抖就卡住。
+  # 现在包在本地产（1~2 分钟、零联网），CI 只回答「这套代码自洽吗」。
+  # 与之交换的是 CI 不再跑 lintVitalRelease——出包那步顺带做的 release 变体 lint。
+  # 本地 tools/release.sh 的 assembleRelease 仍然会跑它，发版路径没丢这道。
   test:
     name: Unit tests + lint
     runs-on: ubuntu-24.04
-    env:
-      # 这次要不要出正式包。放 job 级是因为下面六个出包步骤都要判它。
-      # push 分支写在前面：workflow_dispatch 没有 head_commit，靠短路绕开。
-      IS_RELEASE: ${{ (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'release:')) || (github.event_name == 'workflow_dispatch' && inputs.build_release) }}
     steps:
       # fetch-depth: 0：下面那步要拿 github.event.before 做 diff，浅克隆里没有这个对象，
       # 判断会永远失败、永远走全量。仓库只有 7MB，全克隆比再写一套 fetch 逻辑省心。
@@ -127,7 +124,8 @@ jobs:
       # 只扫 debug。release 变体与 debug 的源码、资源完全一样，差的只有 R8 与
       # BuildConfig 常量，lint 的 fatal 结论不会因此不同；而 release 那一遍要多建
       # 一套变体模型，白花 30~40 秒。真正会 fatal 的（混淆规则、资源引用）由
-      # assembleRelease 自带的 lintVitalRelease 兜着。
+      # 本地出包时 assembleRelease 自带的 lintVitalRelease 兜着——CI 从 2026-11-09
+      # 起不出包了，这道改在 tools/release.sh 里跑。
       - name: Lint
         run: ./gradlew lintDebug --console=plain --stacktrace
 
@@ -142,74 +140,3 @@ jobs:
             app/build/reports/lint-results-debug.html
           if-no-files-found: ignore
 
-      # ---- 以下只在发版时跑：`release:` 开头的提交推 main，或手动 dispatch 勾了选项 ----
-      # 它的作用有两个：
-      #   1. 证明 Secrets 里的 keystore 是活的——不然等到真发版那天才发现解不出来
-      #   2. 不想动本机时，产一个带正式签名的包做验收
-      # 它**不建 Release、不打 tag、不改 version.json**：发布权仍只在本机那一端。
-      # 少一个能改线上状态的角色，就少一类「两端各发一次」的故障。
-      #
-      # 每个 step 都写了 success()：显式 if 会顶掉默认的 success()，不写的话
-      # 测试红了照样出包，那道闸就形同虚设。
-
-      # keystore.properties 里写的是相对路径 ../weekdayalarm-release.jks，
-      # 所以 jks 必须落在仓库的上一级，和本地保持一致。
-      - name: Restore keystore
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::KEYSTORE_BASE64 为空，Secrets 没配好"
-            exit 1
-          fi
-          echo "$KEYSTORE_BASE64" | base64 -d > ../weekdayalarm-release.jks
-          ls -l ../weekdayalarm-release.jks
-
-      - name: Write keystore.properties
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        env:
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
-        run: |
-          {
-            echo "storeFile=../weekdayalarm-release.jks"
-            echo "storePassword=$STORE_PASSWORD"
-            echo "keyAlias=$KEY_ALIAS"
-            echo "keyPassword=$KEY_PASSWORD"
-          } > keystore.properties
-
-      - name: Assemble release
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        run: ./gradlew assembleRelease --console=plain
-
-      # 没有 keystore 时 assembleRelease 照样 BUILD SUCCESSFUL，产物是 debug 签名的。
-      # 那种包能装、却不能覆盖线上版本——所以这一步不能省。
-      - name: Verify signature
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        run: |
-          APK=app/build/outputs/apk/release/app-release.apk
-          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          "$APKSIGNER" verify --print-certs "$APK" | head -4
-
-      # mapping.txt 一起带上：release 开了 minify，没有它崩溃栈反混淆不出来。
-      # 历次 Release 的 mapping 都是本地出包时手动补的，CI 这条路一直缺这一步。
-      #
-      # 2026-11-06：拆成两个 artifact。合在一起时每次下载都要拖 15MB 的 mapping，
-      # 沙箱网络一抖就是五分钟；而看包验收只需要那 2.8MB 的 APK。发版时再单独取 mapping。
-      - name: Upload APK
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk
-          path: app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-
-      - name: Upload mapping
-        if: ${{ success() && env.IS_RELEASE == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-mapping
-          path: app/build/outputs/mapping/release/mapping.txt
-          if-no-files-found: error

@@ -433,14 +433,16 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 都是新沙箱。）所以别问「哪台是主机」，改问「**这一端手里有没有 `.jks`**」——没有就先按
 `恢复说明.md` 第三节还原并核指纹。两条都别做反：一是别假设它还在（上次会话在，不代表这次在）；
 二是别因为不在就重新生成一把（新证书 = 新应用身份，已装用户必须卸载重装）。要「换会话
-也能出包」，只有 CI 的 Secrets 这一条路不依赖本地状态。
+也能出包」，只有两条路不依赖本地状态：CI 的 Secrets，或者 NAS `keys/` + `tools/fetch-keys.sh`。
 
 ### 出包与推送：常用命令在这儿，细节查 `docs/流程规范.md`
 
 | 要做什么 | 命令 |
 |---|---|
+| 新沙箱取签名材料 | `tools/fetch-keys.sh`（从 NAS 拉 `.jks`，核指纹，不对就退出） |
 | 改完 UI 想看手感 | `./gradlew assemblePreview` → `app/build/outputs/apk/preview/app-preview.apk` |
 | 跑单测（与 CI 同一条） | `./gradlew testDebugUnitTest`（**条数别抄，现算看 `tools/handoff.sh`**） |
+| 传包到 NAS（手机装） | `tools/nas.sh put <本地 apk> apk/<名字>.apk`，`tools/nas.sh ls apk/` 核对 |
 | 推 main | `tools/push.sh`（抖得厉害时 `PUSH_TRIES=5 tools/push.sh`） |
 | 推完核对 | `tools/post-push.sh` |
 
@@ -448,7 +450,7 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 
 **它现在只是「隔离」，不再是「省时间」**（CI 已从 359 秒降到 207 秒）。退役条件只有一条：有了自动截图对比。现在没有。改逻辑（闹钟判定、班表计算、通知时机）不用出 preview，跑单测就够。
 
-**送手机只走 Release → 网盘，别用系统分享面板。** 分享面板返回的「已分享」只表示面板被调起，不表示用户接收了；拿不到回执就会反复推，几轮之后忘了到底推没推（2026-11-07 用户明确否掉）。preview 包名、密钥为什么要入库、网盘落点与回执判据，全在 `docs/流程规范.md` 第十六、十七节。
+**送手机走 NAS 或 Release → 网盘，别用系统分享面板。** NAS 那条最快（`tools/nas.sh put`，不用等 CI），Release → 网盘那条留档，两条都在 `docs/流程规范.md` 第十七、十八节。分享面板返回的「已分享」只表示面板被调起，不表示用户接收了；拿不到回执就会反复推，几轮之后忘了到底推没推（2026-11-07 用户明确否掉）。preview 包名、密钥为什么要入库、网盘落点与回执判据，在第十六、十七节。
 
 **沙箱到 github.com 是间歇性抖动**（实测一次 40 秒超时、一次 0.97 秒成功），换协议换 DNS 都治不了，**唯一有效的是重试**——`tools/push.sh` 已把「HTTP/1.1 + 低速阈值 + 三次重试」包好，别因为一次 `Operation too slow` 就去改 `http.version`。
 

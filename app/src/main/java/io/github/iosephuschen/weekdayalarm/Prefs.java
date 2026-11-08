@@ -914,14 +914,14 @@ public final class Prefs {
     /** 全部加班日期（含「加班但没指定班次」的老数据）。 */
     public static Set<LocalDate> getOvertimeDates(Context c) {
         Set<LocalDate> out = new HashSet<>();
-        // v1.11.2：双休 / 单休 / 大小周没有班次，表里残留的正数 id 是切模式留下的残影，
-        // 不算加班——否则从轮班切回双休后，那天会莫名其妙响一次闹钟。
-        // 用 getWeekMode 而不是 getRule：这里只要一个模式判断，不必把整张班次表读出来
-        boolean hasShifts = getWeekMode(c).isCycle();
+        // v1.23.12：判据统一到 Rule.effectiveOverride。原来这里只看 isCycle()，
+        // 自定义七天的正数 id 被算成加班，而按钮 / 格子按 hasShifts() 判残影——
+        // 同一份数据，闹钟响、格子不显示。
+        // 现在只解析一次规则，循环里是纯函数；不再逐日读 Prefs。
+        WeekSchedule.Rule rule = getRule(c);
         for (Map.Entry<LocalDate, Integer> e : getDayPlan(c).entrySet()) {
-            Integer v = e.getValue();
+            Integer v = rule.effectiveOverride(e.getValue());
             if (v == null || v == WeekSchedule.DAY_LEAVE) continue;
-            if (v >= 0 && !hasShifts) continue;
             out.add(e.getKey());
         }
         return out;
@@ -943,10 +943,10 @@ public final class Prefs {
 
     /** 某天是否被标记为个人加班（休息日标记后「仅上班日」闹钟当天照响）。 */
     public static boolean isOvertime(Context c, LocalDate d) {
-        Integer v = getDayShift(c, d);
-        if (v == null || v == WeekSchedule.DAY_LEAVE) return false;
-        // v1.11.2：双休 / 单休 / 大小周没有班次，表里残留的正数 id 是切模式留下的残影
-        return v < 0 || getWeekMode(c).isCycle();
+        // v1.23.12：判据统一到 Rule.effectiveOverride——自定义七天 + 正数 id 这种
+        // 残影，四处（这里 / getOvertimeDates / 按钮 / 日历）必须给出同一个答案
+        Integer v = getRule(c).effectiveOverride(getDayShift(c, d));
+        return v != null && v != WeekSchedule.DAY_LEAVE;
     }
 
     /**

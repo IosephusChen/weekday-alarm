@@ -63,8 +63,11 @@ final class DayTag {
      */
     static String shiftName(WeekSchedule.Rule rule, Integer ov, int maxChars) {
         // v1.11.2：双休 / 单休 / 大小周没有班次，残留的 id 不该写成格子上的班次名
-        if (rule == null || !rule.hasShifts() || ov == null || ov < 0) return null;
-        Shift s = rule.shiftById(ov);
+        // v1.23.12：判据统一到 effectiveOverride（多一道「班次还在吗」）
+        if (rule == null || ov == null) return null;
+        Integer effective = rule.effectiveOverride(ov);
+        if (effective == null || effective < 0) return null;
+        Shift s = rule.shiftById(effective);
         if (s == null || s.name == null || s.name.isEmpty()) return null;
         return s.name.length() > maxChars ? s.name.substring(0, maxChars) : s.name;
     }

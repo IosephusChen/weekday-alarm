@@ -91,9 +91,8 @@ final class WeekWidgetRender {
         for (int i = 0; i < 7; i++) {
             LocalDate d = start.plusDays(i);
             WeekSchedule.DayType type = WeekSchedule.dayType(d, rule);
-            Integer ov = plan.get(d);
-            // v1.11.2：双休 / 单休 / 大小周没有班次，正数 id 是切模式留下的残影
-            if (ov != null && ov >= 0 && !rule.hasShifts()) ov = null;
+            Integer ov = rule.effectiveOverride(plan.get(d));
+            // v1.23.12：残影判据收进 effectiveOverride
             boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
             boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
             // v1.11.0：不再要求「和班表反着来」才显示。上班日标了加班同样要写出来，

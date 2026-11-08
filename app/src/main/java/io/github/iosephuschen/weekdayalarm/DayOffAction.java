@@ -79,12 +79,13 @@ final class DayOffAction {
      * 判错就会出现「今天已请假」这种假话。
      */
     static boolean isMarked(Context ctx, LocalDate day) {
-        Integer ov = Prefs.getDayShift(ctx, day);
+        // v1.23.12：判据统一到 effectiveOverride。这里原来自己判了一遍
+        // 「正数 id + 没有班次 = 残影」，判断方式与 isOvertime 不同，
+        // 结果就是副标题说「加班」、按钮说「要加班」
+        WeekSchedule.Rule rule = Prefs.getRule(ctx);
+        Integer ov = rule.effectiveOverride(Prefs.getDayShift(ctx, day));
         if (ov == null) return false;
-        // v1.11.2：双休 / 单休 / 大小周的班次残影不算标记——格子不显示它，
-        // 闹钟也不看它，按钮却说「已加班」就是假话
-        if (ov >= 0 && !Prefs.getRule(ctx).hasShifts()) return false;
-        return isWorkDay(typeOf(ctx, day))
+        return isWorkDay(WeekSchedule.dayType(day, rule.withDays(null)))
                 ? ov == WeekSchedule.DAY_LEAVE
                 : ov != WeekSchedule.DAY_LEAVE;
     }
@@ -100,11 +101,11 @@ final class DayOffAction {
      * 按钮说的是「不上班」，就只处理请假。
      */
     static boolean toggle(Context ctx, LocalDate day) {
-        Integer ov = Prefs.getDayShift(ctx, day);
-        // v1.11.2：没有班次的班表，正数 id 是残影，按「没标记」处理——
-        // 否则点一下只是把它清掉，按钮却没变，看着像没反应
-        if (ov != null && ov >= 0 && !Prefs.getRule(ctx).hasShifts()) ov = null;
-        if (isWorkDay(typeOf(ctx, day))) {
+        WeekSchedule.Rule rule = Prefs.getRule(ctx);
+        // v1.23.12：残影在这里一次性当「没标记」——原来这行和 isMarked、
+        // isOvertime 各写一份，三处判据不一样，点一下只清数据、按钮不变
+        Integer ov = rule.effectiveOverride(Prefs.getDayShift(ctx, day));
+        if (isWorkDay(WeekSchedule.dayType(day, rule.withDays(null)))) {
             if (ov != null && ov == WeekSchedule.DAY_LEAVE) {
                 Prefs.clearDayShift(ctx, day);
                 return false;

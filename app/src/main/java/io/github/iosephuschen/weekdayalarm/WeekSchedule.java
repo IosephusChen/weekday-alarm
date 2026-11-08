@@ -280,6 +280,29 @@ public final class WeekSchedule {
             return mode.isCycle() && shiftCycle != null;
         }
 
+        /**
+         * 把覆盖表里的原始值，翻译成「在<b>这张</b>班表上真正生效的值」（v1.23.12）。
+         *
+         * <p>整个 App 只有这一份判据。同一个问题原来在写入端、按钮、日历、闹钟、
+         * 两个小组件里各写一遍，判据还不一样：{@code isCycle()} 把自定义七天当成
+         * 「有班次」，{@code hasShifts()} 不认——于是用户点完加班，副标题说「加班」、
+         * 按钮和格子一动不动。v1.11.2 那句「残影不生效」被复制了十几处，漏一处
+         * 就留一条缝。
+         *
+         * <p>返回值：{@code null} 没有标记；{@code DAY_LEAVE} 请假；
+         * {@code DAY_OVERTIME_ANY} 加班但没指定班次；正数 加班并指定了这个班次。
+         *
+         * <p>正数要过两道：这张班表得真的有「班次」这个概念，且那个班次还在
+         * （用户可能把班次删了）。两道缺一，这个 id 就是切模式留下的残影——
+         * 数据不删，但不生效。
+         */
+        public Integer effectiveOverride(Integer ov) {
+            if (ov == null) return null;
+            if (ov < 0) return ov;
+            if (!hasShifts()) return null;
+            return shiftById(ov) == null ? null : ov;
+        }
+
         /** 按 id 找班次；找不到返回 null（班次被删了，那天就当作没有班）。 */
         public Shift shiftById(int id) {
             Shift s = find(shifts, id);
@@ -380,15 +403,14 @@ public final class WeekSchedule {
         // v1.11.0：用户亲手改过的那一天，优先级最高——比法定节假日还高。
         // 节假日是「国家怎么放」，覆盖是「我实际怎么上」：国庆被叫去值班，
         // 标了加班就该按上班算，不能被 HOLIDAY 又盖回去。
-        Integer ov = rule == null ? null : rule.overrideOf(d);
+        Integer ov = rule == null ? null : rule.effectiveOverride(rule.overrideOf(d));
         if (ov != null) {
             if (ov == DAY_LEAVE) return DayType.LEAVE;
-            // 班次被删了（用户整理过班次表）：这条覆盖已经没有意义，落回规则算，
-            // 总比显示「上班」但没有任何班次、闹钟全不响要好
-            //
-            // v1.11.2：双休 / 单休 / 大小周没有班次，覆盖表里残留的正数 id 一律不算数
-            // ——不然从轮班切回双休后，格子还写着「夜班」，人却按双休作息走
-            if (rule.hasShifts() && rule.shiftById(ov) != null) return DayType.WORK;
+            // v1.23.12：判据收进 effectiveOverride——「班次还在吗」「这张表有没有班次」
+            // 两道一起过。以前这里手写一遍，双休 / 自定义七天的残影才漏出去
+            // DAY_OVERTIME_ANY（-2）不在这里定：格子要显示「加班」，
+            // 那天算不算上班交给 isScheduledWorkday
+            if (ov > 0) return DayType.WORK;
         }
 
         // v1.1.0：自定义 / 轮班先分流，且**必须在这两行节假日判断之前**。
@@ -493,13 +515,11 @@ public final class WeekSchedule {
         // v1.11.0：覆盖表优先。加班日从此有确定的班次——这正是 v1.8.0 那条
         // 「加班日没有班次，时刻只能退回第一个勾选的班次」的补丁
         // v1.11.2：只对「有班次」的班表成立；双休 / 单休 / 大小周的残留 id 不算
-        Integer ov = rule.overrideOf(d);
-        if (ov != null && rule.hasShifts()) {
+        Integer ov = rule.effectiveOverride(rule.overrideOf(d));
+        if (ov != null) {
             if (ov == DAY_LEAVE) return null;
             if (ov == DAY_OVERTIME_ANY) return null;   // 老数据：沿用旧行为
-            Shift s = rule.shiftById(ov);
-            if (s != null) return s;
-            // 班次被删掉 → 落回规则
+            return rule.shiftById(ov);                 // effectiveOverride 已保证非 null
         }
         if (rule.shiftCycle == null || rule.shifts == null) return null;
         // v1.8.1：切回「双休 / 大小周」之后 shift_cycle 还留在 Prefs 里（没人清），
@@ -532,13 +552,8 @@ public final class WeekSchedule {
      */
     public static boolean isScheduledWorkday(LocalDate d, Rule rule) {
         // v1.11.0：自己改过的那天就是「我的作息」，与法定节假日无关
-        Integer ov = rule == null ? null : rule.overrideOf(d);
-        if (ov != null) {
-            if (ov == DAY_LEAVE) return false;
-            if (ov == DAY_OVERTIME_ANY) return true;          // 老数据：标了加班就是要上班
-            // v1.11.2：双休 / 单休 / 大小周没有班次，残留 id 不改变「班表口径的上班日」
-            if (rule.hasShifts() && rule.shiftById(ov) != null) return true;
-        }
+        Integer ov = rule == null ? null : rule.effectiveOverride(rule.overrideOf(d));
+        if (ov != null) return ov != DAY_LEAVE;
         if (rule.mode.isCycle()) return isCycleWorkday(d, rule);
 
         int v = d.getDayOfWeek().getValue();

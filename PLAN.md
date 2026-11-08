@@ -5,7 +5,7 @@
 - **开工**：每个会话都是全新沙箱（没有仓库、没有 SDK、没有 git 身份）。两条命令起：`git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。环境好了先跑 `bash tools/handoff.sh`：HEAD、远端差、版本、清单进度、本交接条、上次测试一次看全，不用再翻三个文件。
 - **做到哪**：**v1.23.13 / 298 已发布**（2026-11-08 23:09）：修「今天那格被淡紫底盖住加班 / 请假色」，只改渲染最后一步，判据与数据结构没动；`releases/latest` 已指向，APK 2,902,787 字节 / MD5 `e924e2b0…`，签名与 v1.23.12 一致可覆盖安装。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
 - **下一步**：清单里**能靠代码判定的已经全部做完**，剩 10 条卡在两件事上——① 要用户拍板（6 条）：A3 弹窗收尾、A8 吸顶（结构改造）、A13 默认值、A14 父标题常驻（后半即 C3，合起来处理）、A16 节日覆盖、C4 标题体例；② 要新截图（4 条）：A5 的 4 个 Toast 调用点（要 5 秒录屏）、A10 可点值配色、B2 日历头部、B14 班次圆点。下次开工先问用户要图，别再猜。
-- **待推（2026-11-09）**：`.github/workflows/android.yml` 的出包六步已经删好，但推不上去——fine-grained PAT 缺 `workflow` scope（GitHub 对 workflow 文件单独设限，git 与 REST 都拒，`push_via_api.py` 也 403）。两条路：① 用户建一个 **classic** PAT（勾 `repo` + `workflow`），然后 `git add .github/workflows/android.yml && git commit && tools/push.sh`；② 用户在网页手工把「`# ---- 以下只在发版时跑`」到文件末尾整段删掉。新文件备份在 NAS `patches/android-yml-2026-11-09.yml`，工作区丢了从那儿取。**在推上去之前，CI 仍会在 `release:` 提交时出包**——比文档说的多做一步，无害但慢。
+- **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 **classic** PAT（fine-grained 缺 `workflow` scope，git 与 REST 都拒），临时建一把、推完就删，别常驻。
 - **待用户真机验收**：正式包 NAS `apk/weekday-alarm-1.23.13.apk`（与线上 Release 同一个）。重点验：**排班选「自定义」、周日和周一设为休息日，点「今天要加班」→ 按钮文案与日历格子应当一起变（今天那格转橙底，紫框和 4dp 白环保留）**；点「请假」同理。另外确认**未标记时今天仍是淡紫**，别被上一个修复带成浅灰。v1.23.11 那批四处（4×2 七格「休」、首页「休」字对齐、锁屏 Toast、七天全休的空态文案）仍未验收，一并看。
 - **清单**：39 条正文在 `docs/待裁决清单.md`，**状态列只在那份文件改**。已做 14 条、部分已做 4 条、复核不成立 5 条、判定不改 6 条；剩 10 条待裁决（6 条要拍板 / 4 条要截图；A14 的后半即 C3，算同一条）。这行数字由 `tools/check_version.py` 校验，和清单对不上直接红。
 - **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。
@@ -321,7 +321,7 @@ slot
 
 分支 `fix/v1.22.1-badge-inside`（代码 + 测试，**不带版本号**，守 `AGENTS.md`）
 → PR → CI 绿 → squash 合并 → 推 main 落版本号与七处文档 → `release.sh --check`
-→ `gh workflow run build_release=true` 出签名包 → 打 tag `v1.22.1` → 建 Release
+→ `gh workflow run build_release=true` 出签名包（**旧流程**：2026-11-09 起 CI 不出包，改本地 `tools/release.sh`）→ 打 tag `v1.22.1` → 建 Release
 （APK + mapping）→ 回填 `version.json`。
 
 纯 UI 微调，**先出 APK 给用户装上再看一眼**（框角、行距只能眼睛判），确认后再打 tag。
@@ -457,7 +457,7 @@ cols = ⌈len ÷ rows⌉
 
 分支 `feat/v1.22-rotation-grid`（代码 + 测试，**不带版本号**，守 `AGENTS.md` 第 283 行）
 → PR → CI 绿 → squash 合并 → 推 main 落版本号与七处文档 → `release.sh --check`
-→ `gh workflow run build_release=true` 出签名包 → 打 tag `v1.22.0` → 建 Release
+→ `gh workflow run build_release=true` 出签名包（**旧流程**：2026-11-09 起 CI 不出包，改本地 `tools/release.sh`）→ 打 tag `v1.22.0` → 建 Release
 （APK + mapping）→ 回填 `version.json`。
 
 本版是纯 UI 重排，**先出 APK 给用户装上验手感**（紫框辨识度、字号、间距只能眼睛判），

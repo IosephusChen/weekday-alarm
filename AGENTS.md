@@ -110,7 +110,8 @@
   `/weekday-alarm/nas-access.docx` 里是四行——WebDAV 基址、账号、密码、GitHub PAT。用网盘
   连接器读出正文，喂给 `tools/load-access.sh`，两个文件一次落盘，用户不用手打。
   四步：`file_list` 拿 fsid → `file_content_create` 拿 taskid → 轮询 `file_content_get`
-  到 `status=succeeded` → `bash tools/load-access.sh <<'EOF' <content> EOF`。
+  到 `status=succeeded` → `bash tools/load-access.sh <<'EOF' <content> EOF`
+  （脚本在仓库里，所以这一步排在 `git clone` 之后；读 docx 本身不依赖本地任何东西）。
   **实测 20 秒**（两次：20s / 22s，没有缓存，每次都要重新解析），每天配额 20 个不同文件。
   三个坑：① 解析器按视觉宽度折长行，URL 和 PAT 都被从中间断过，所以 `load-access.sh`
   按 `KEY=` 切、不按行切；② 必须是**真的** docx——`file_upload_by_content` 转出来的是

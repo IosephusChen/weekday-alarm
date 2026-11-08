@@ -202,10 +202,10 @@ public final class Alarm {
             // 的意义。必须放在 mode.isCycle() 前面：轮班模式下的加班日同样要走这里。
             // v1.11.2：只对「有班次」的班表成立。双休 / 单休 / 大小周的班次表只是
             // 切换模式后的残留，拿它改响铃时刻等于给没有班的班表凭空加了一维。
-            Integer ov = rule.overrideOf(d);
-            if (rule.hasShifts() && ov != null && ov >= 0) {
-                Shift s = rule.shiftById(ov);
-                if (s != null) return s.start + offsetMin;
+            Integer ov = rule.effectiveOverride(rule.overrideOf(d));
+            if (ov != null && ov >= 0) {
+                // effectiveOverride 已保证这个 id 对应的班次还在
+                return rule.shiftById(ov).start + offsetMin;
             }
             // 同上：只有班表当前真的是「N 天一轮」时才认班次，否则退回下面的老路径
             if (rule.mode.isCycle() && rule.shiftCycle != null) {

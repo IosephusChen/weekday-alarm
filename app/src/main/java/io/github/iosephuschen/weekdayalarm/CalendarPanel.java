@@ -163,10 +163,8 @@ final class CalendarPanel {
                 // v1.11.0：请假 / 加班合并成一张「按天覆盖」表，同一天只可能有一个值。
                 // 「假加」这个状态从此不存在——以前它是两个日期集合各自独立判断拼出来的，
                 // 用户点开那天会看到两个互相矛盾的记录，取消时还得想删哪个。
-                Integer ov = inMonth ? plan.get(d) : null;
-                // v1.11.2：双休 / 单休 / 大小周没有班次，正数 id 是切模式留下的残影，
-                // 当作没有标记——否则格子上会挂一个「加班」，闹钟却不认它
-                if (ov != null && ov >= 0 && !rule.hasShifts()) ov = null;
+                Integer ov = inMonth ? rule.effectiveOverride(plan.get(d)) : null;
+                // v1.23.12：残影判据收进 effectiveOverride（原来这行手写一遍）
                 boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
                 boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
                 if (inMonth && MonthStats.countsAsWork(type, vacation, overtime)) workDays++;
@@ -423,8 +421,10 @@ final class CalendarPanel {
         boolean past = d.isBefore(LocalDate.now());
         // v1.11.2：菜单、格子、响铃三处共用一个判断——当前班表有没有班次。
         // 双休 / 单休 / 大小周没有，班次定义表里那些只是切模式留下的残影
-        boolean hasShifts = Prefs.getRule(host).hasShifts();
-        Integer ov = Prefs.getDayShift(host, d);
+        // v1.23.12：覆盖值也走同一个 effectiveOverride，菜单不再自己判残影
+        WeekSchedule.Rule rule = Prefs.getRule(host);
+        boolean hasShifts = rule.hasShifts();
+        Integer ov = rule.effectiveOverride(Prefs.getDayShift(host, d));
         boolean hasV = ov != null && ov == WeekSchedule.DAY_LEAVE;
         boolean hasO = ov != null && ov != WeekSchedule.DAY_LEAVE;
         String dateText = TimeText.monthDayWeek(d);
@@ -516,7 +516,7 @@ final class CalendarPanel {
      */
     private void onOvertimeClick(LocalDate d, boolean work, boolean past) {
         String dateText = TimeText.monthDayWeek(d);
-        Integer ov = Prefs.getDayShift(host, d);
+        Integer ov = Prefs.getRule(host).effectiveOverride(Prefs.getDayShift(host, d));
         if (ov != null && ov != WeekSchedule.DAY_LEAVE) {
             Prefs.clearDayShift(host, d);
             onChanged.run();

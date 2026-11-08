@@ -739,7 +739,9 @@ public class MainActivity extends AppCompatActivity {
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
         // v1.11.0：请假 / 加班合并成一张表，一天只有一个值。今天算不算上班已经由
         // dayType 给出（覆盖层优先级最高），这里只负责把「为什么」取出来给文案用
-        Integer ov = Prefs.getDayShift(this, today);
+        // v1.23.12：判据统一到 effectiveOverride。这里原来只判「有没有值」，
+        // 比按钮和日历都宽——自定义七天的残影因此只在副标题上显示成「加班」
+        Integer ov = rule.effectiveOverride(Prefs.getDayShift(this, today));
         boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
         boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
         boolean work = DayOffAction.isWorkDay(todayType);

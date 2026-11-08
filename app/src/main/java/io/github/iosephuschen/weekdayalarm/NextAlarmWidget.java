@@ -71,7 +71,8 @@ public class NextAlarmWidget extends AppWidgetProvider {
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
         WeekSchedule.DayType todayType = WeekSchedule.dayType(today, rule);
         // v1.11.0：同首页，一天只有一个值
-        Integer ov = Prefs.getDayShift(ctx, today);
+        // v1.23.12：同首页，残影判定也走 effectiveOverride
+        Integer ov = rule.effectiveOverride(Prefs.getDayShift(ctx, today));
         boolean vacation = ov != null && ov == WeekSchedule.DAY_LEAVE;
         boolean overtime = ov != null && ov != WeekSchedule.DAY_LEAVE;
         boolean work = DayOffAction.isWorkDay(todayType);

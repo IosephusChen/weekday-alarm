@@ -2,16 +2,19 @@ package io.github.iosephuschen.weekdayalarm;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
@@ -113,5 +116,35 @@ public class CustomWeekOvertimeTest {
         assertFalse("再点一下应撤销", DayOffAction.toggle(ctx(), SUNDAY));
         assertFalse(Prefs.isOvertime(ctx(), SUNDAY));
         assertFalse(DayOffAction.isMarked(ctx(), SUNDAY));
+    }
+
+    /**
+     * 首页副标题也不能被残影骗。这一处原来是全 App 最宽的：只判「有没有值」，
+     * 连 {@code hasShifts()} 都不看，所以只有它说「今日加班」。
+     *
+     * <p>用 {@code LocalDate.now()} 是因为首页自己就用它——把「今天」在班表里设成
+     * 休息日即可，不依赖跑测试那天是周几。
+     */
+    @Test
+    public void leftoverShiftId_doesNotShowAsOvertimeOnHome() {
+        sp().edit().clear().apply();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+
+        LocalDate today = LocalDate.now();
+        int dow = today.getDayOfWeek().getValue();          // 1 = 周一
+        long mask = 0b1111111L & ~(1L << (dow - 1));        // 今天休息，其余上班
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setCycleMask(ctx(), mask);
+        Prefs.setCycleStart(ctx(), today.minusDays(dow - 1));
+        sp().edit().putString(Prefs.KEY_SHIFT_DEFS, Shift.toJson(Arrays.asList(
+                new Shift(1, "白班", 8 * 60, Shift.END_UNKNOWN, 0)))).apply();
+        Prefs.setDayShift(ctx(), today, 1);                 // 残影：正数 id，但没排班次
+
+        MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        TextView status = a.findViewById(R.id.tv_today_status);
+        assertNotNull(status);
+        assertEquals("残影不该在首页说「今天加班」", "今天休息", status.getText().toString());
     }
 }

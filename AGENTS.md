@@ -425,124 +425,22 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 二是别因为不在就重新生成一把（新证书 = 新应用身份，已装用户必须卸载重装）。要「换会话
 也能出包」，只有 CI 的 Secrets 这一条路不依赖本地状态。
 
-### 改完想看手感，用 preview 包，别等 CI
+### 出包与推送：常用命令在这儿，细节查 `docs/流程规范.md`
 
-```bash
-./gradlew assemblePreview        # 约 40 秒（依赖已缓存）
-# 产物：app/build/outputs/apk/preview/app-preview.apk
-```
-
-**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，约 1 分钟；**条数别抄这里**——每加一条守门就会变，现算看 `bash tools/handoff.sh`）。`./gradlew test`
-以前会把 preview 变体也跑一遍，那条 `WidgetProviderConfigTest` 在 `.preview` 包名下一片假红；
-v1.23.10 已在 `app/build.gradle` 里给 preview 关掉单测（`enableUnitTest = false`），现在 `test`
-只剩 debug。再看到 `testPreviewUnitTest` 任务冒出来，说明那几行被删了。
-
-| 项 | 值 |
+| 要做什么 | 命令 |
 |---|---|
-| 包名 | `io.github.iosephuschen.weekdayalarm.preview` |
-| 桌面名 | 闹钟预览 |
-| 版本名 | `1.22.2-preview`（versionCode 跟随正式版） |
-| 签名 | `tools/preview-debug.keystore`（公开调试密钥，口令 `android`） |
+| 改完 UI 想看手感 | `./gradlew assemblePreview` → `app/build/outputs/apk/preview/app-preview.apk` |
+| 跑单测（与 CI 同一条） | `./gradlew testDebugUnitTest`（**条数别抄，现算看 `tools/handoff.sh`**） |
+| 推 main | `tools/push.sh`（抖得厉害时 `PUSH_TRIES=5 tools/push.sh`） |
+| 推完核对 | `tools/post-push.sh` |
 
-**它和正式版并存，不用卸载正式版。** 数据也独立，第一次装上要配一次班表——
-正式版「导出配置」→ preview「导入配置」，一分钟。之后每次覆盖安装，数据都保留。
+**看手感用 preview，别用 debug 包**：debug 与正式版同包名（装它要先卸正式版，班表全丢），且 `App.java` 两处 `if (!BuildConfig.DEBUG)` 让它不拉节假日、不查更新——会把「debug 缺的那半截」误判成新代码的 bug。preview 走 `initWith release`、`DEBUG=false`，行为与正式版一致，还能与正式版并存。
 
-**为什么这把密钥要入库**（它和上一节的发布密钥是两回事）：沙箱每次开新会话都是干净环境，
-`~/.android/` 里没有 debug.keystore，AGP 会现生成一把新的，签名一变系统就拒绝覆盖
-（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`），只能卸载重装。把密钥固定成仓库里这一份，
-跨会话签名恒定。**删了它等于换签名**——已装的 preview 包从此必须卸载才能更新。
-它是公开的调试密钥（口令就是安卓调试的标准值 `android`），泄露无害；
-发布密钥 `weekdayalarm-release.jks` 仍然只在仓库外，那条规矩没变。
+**它现在只是「隔离」，不再是「省时间」**（CI 已从 359 秒降到 207 秒）。退役条件只有一条：有了自动截图对比。现在没有。改逻辑（闹钟判定、班表计算、通知时机）不用出 preview，跑单测就够。
 
-**什么时候不能用它**：验「覆盖安装后班表和闹钟还在不在」、发给别人、发版——这三件事
-只有正式签名包能证明。其余（间距、配色、圆角、深色主题、文案、双位数文字挤不挤）
-全部用 preview 看，改十遍也不用等 CI。
+**送手机只走 Release → 网盘，别用系统分享面板。** 分享面板返回的「已分享」只表示面板被调起，不表示用户接收了；拿不到回执就会反复推，几轮之后忘了到底推没推（2026-11-07 用户明确否掉）。preview 包名、密钥为什么要入库、网盘落点与回执判据，全在 `docs/流程规范.md` 第十六、十七节。
 
-**它有一个专用的预发布位**：tag `preview`，标记为 Pre-release，每次构建覆盖同一个文件。
-它不抢 `releases/latest`、不进 `version.json`、不会被当成正式版——正式版仍只走
-`release:` 提交触发 CI 出正式包。除此之外，不要把 preview 包塞进任何正式 Release。
-
-两个包同时装着时，各自的闹钟都会响——测预览版时先把正式版的班表清掉，或者只留一个。
-
-**2026-11-07 复核：它还在，但理由只剩「隔离」，不再是「省时间」**（CI 出包已经从 359 秒
-降到 207 秒，两者只差 167 秒）。三条替代方案都算过：
-
-- **用 debug 包顶替**：包名与正式版完全相同（debug 变体没有 `applicationIdSuffix`），装它
-  必须先卸载正式版，而卸载等于班表全丢。更麻烦的是 `App.java:91` 与 `App.java:102` 两处
-  `if (!BuildConfig.DEBUG)`——debug 不拉节假日、不查更新，拿它看手感会把「debug 包缺的那
-  半截」误判成新代码的 bug。preview 走 `initWith release`，`DEBUG=false`，行为与正式版一致。
-- **用正式签名包做预览**：那个包与已发布版本签名相同、只差 versionCode，一旦手滑传给别
-  人或装错，就分不清哪个是线上版。`.preview` 包名和桌面名「闹钟预览」防的就是这个。
-- **干脆等 CI**：改 UI 的下午往往要「改一版 → 看 → 再改」三四轮，每轮多等 167 秒。
-
-**退役条件只有一个**：有了自动截图对比（真机云测，或本地 emulator 截屏做像素比对）。
-那时「人肉看手感」不再需要设备，这个变体可以删。现在没有，删掉等于把「看着不对」的
-所有判断都推到发版之后。
-
-**别每次都出**：改 UI（间距、配色、圆角、深色主题、长文案换行）才出；改逻辑（闹钟判定、
-班表计算、通知时机）跑单测就够，preview 看不出差别。
-
-### 给手机送包：Release → 网盘，别用系统分享面板
-
-**别用分享面板。** 它返回的「已分享」只表示面板被调起，**不表示用户接收了**。拿不到回执
-就会连锁出三个错：用户没及时点 → 判定失败 → 再推一次 → 反复推 → 几轮之后忘了到底推没推。
-2026-11-07 用户明确否掉这条路，别回头。
-
-**走这条，全程无人值守、每一步都有回执：**
-
-```bash
-# 0. token：脚本在 skills 目录，不在仓库里。
-#    source 后面**不要接管道**（`| tail` 会开子 shell，export 的变量带不回来）。
-source /root/.codebuddy/skills/github-connector/scripts/get_token.sh github
-export GH_TOKEN="$GITHUB_TOKEN"
-
-# 1. preview：覆盖专用预发布位（文件名固定，URL 永不变化）
-cp app/build/outputs/apk/preview/app-preview.apk /workspace/weekday-alarm-preview.apk
-gh release upload preview /workspace/weekday-alarm-preview.apk --clobber
-
-# 2. 正式版：本来就在 Release 上，跳过这一步
-```
-
-**推 main 用 `tools/push.sh`。** 沙箱到 github.com 是**间歇性抖动**：2026-11-08 实测
-`git ls-remote` 一次 40 秒超时、一次 0.97 秒成功，`https://github.com/` 首页也量到
-11 秒 / 13 秒 / 直接超时。换协议、换 DNS 都治不了，**唯一稳定有效的做法是重试**，
-脚本已经把「HTTP/1.1 + 低速阈值 + 三次重试」包好了：
-
-```bash
-tools/push.sh              # 推 main
-PUSH_TRIES=5 tools/push.sh # 抖得厉害时多试几次
-```
-
-手写的话是这一条（别因为一次 `Operation too slow` 就去改配置——那天差点把
-`http.version` 判成没用）：
-
-```bash
-git -c http.version=HTTP/1.1 push \
-  "https://${GITHUB_TOKEN}@github.com/IosephusChen/weekday-alarm.git" main
-```
-
-然后把 URL 交给百度网盘的 `file_upload_by_url`。**必须套国内代理**——百度服务器直连
-GitHub 返回 `errno: 1003`（实测百度自家图片能成，所以不是接口坏了，是它拉不到 GitHub）：
-
-```
-https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm/releases/download/preview/weekday-alarm-preview.apk
-```
-
-可用的代理：`gh-proxy.com`、`ghproxy.net`、`ghfast.top`（`ghproxy.cc` 不通）。
-
-| 项 | 值 |
-|---|---|
-| 落点 | `/打工人闹钟/`——网盘 App 首页可见。`/apps/bdpan/` 是应用沙箱目录，只有 CLI 能写，手机端要点进「我的应用数据」才找得到 |
-| 回执 | 返回 `errno: 0` + `fsid` + `size`，**size 与本地字节数一致才算送达** |
-| 文件名 | 连接器会自动插 `_yyyymmddHHMMSS`，覆盖不了同名文件；目录里会按时间累积 |
-| 依赖 | `gh` 能拿到 token + 百度网盘连接器。**不装 `bdpan` CLI、不重新授权** |
-
-**为什么不用 CLI 上传**：`bdpan` 是 17MB 二进制，凭证 `enc:v1` 加密落盘且绑机器，
-沙箱每次新会话全丢——等于每次开工重装 + 重新授权一次。连接器是 MCP，跨会话常驻。
-这也是「换夸克网盘能不能解决」的答案：不能，换谁都一样，问题在沙箱不持久，不在网盘。
-
-**正式版发完也镜像一份**：把 URL 里的 `/preview/` 和文件名换成 `vX.Y.Z` 那一版，同样套代理
-拉一次。目录里会按版本累积，旧包由用户自己删（连接器没有删除接口，CLI 也删不了根目录区）。
+**沙箱到 github.com 是间歇性抖动**（实测一次 40 秒超时、一次 0.97 秒成功），换协议换 DNS 都治不了，**唯一有效的是重试**——`tools/push.sh` 已把「HTTP/1.1 + 低速阈值 + 三次重试」包好，别因为一次 `Operation too slow` 就去改 `http.version`。
 
 ### 三条禁止
 

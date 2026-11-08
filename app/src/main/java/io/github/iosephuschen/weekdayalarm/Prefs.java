@@ -840,7 +840,11 @@ public final class Prefs {
             } catch (Exception ignore) {
             }
         }
-        int firstShift = firstShiftId(c);
+        // v1.23.12：老数据里没记班次，取哪一个取决于这张班表有没有班次概念。
+        // 自定义七天没有轮班表，写正数 id 会被读取端当残影——搬过来等于没搬。
+        // 这里不能调 getRule()：它内部要 getDayPlan()，而本方法正是从那里来的。
+        boolean hasShifts = hasShiftsRaw(c);
+        int firstShift = hasShifts ? firstShiftId(c) : -1;
         for (String s : p.getStringSet(KEY_OVERTIME_DATES, Collections.emptySet())) {
             try {
                 LocalDate d = LocalDate.parse(s);
@@ -852,6 +856,17 @@ public final class Prefs {
         }
         p.edit().putString(KEY_DAY_PLAN, encodeDayPlan(plan))
                 .putBoolean(KEY_DAY_PLAN_MIGRATED, true).apply();
+    }
+
+    /**
+     * 「这张班表有没有班次」的轻量版（v1.23.12）。
+     *
+     * <p>与 {@link WeekSchedule.Rule#hasShifts()} 同一判据，但不构造 Rule——
+     * 迁移发生在 {@link #getDayPlan} 内部，而 Rule 的构造函数里就要读 dayPlan，
+     * 调 {@code getRule()} 会无限递归。
+     */
+    private static boolean hasShiftsRaw(Context c) {
+        return getWeekMode(c).isCycle() && getShiftCycle(c) != null;
     }
 
     private static int firstShiftId(Context c) {
@@ -944,7 +959,11 @@ public final class Prefs {
     public static void addOvertime(Context c, LocalDate d) {
         // v1.11.2：没有班次的班表一律记 -2。不判模式的话，一个只建过白班的
         // 双休用户会被写成「白班」，而那个 id 在双休下不生效——标了等于没标
-        List<Shift> shifts = getWeekMode(c).isCycle() ? getShifts(c) : null;
+        //
+        // v1.23.12：判据从 `getWeekMode().isCycle()` 换成 `getRule().hasShifts()`。
+        // 自定义七天也是 CYCLE，但没有轮班表——旧写法会存一个正数 id，而读取端
+        // 按 hasShifts() 判它是残影，结果按钮文案和日历格子都不动（用户实测）。
+        List<Shift> shifts = getRule(c).hasShifts() ? getShifts(c) : null;
         int value = shifts != null && shifts.size() == 1 && shifts.get(0) != null
                 ? shifts.get(0).id : WeekSchedule.DAY_OVERTIME_ANY;
         setDayShift(c, d, value);

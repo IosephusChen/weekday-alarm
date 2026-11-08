@@ -116,11 +116,13 @@ def checklist_counts():
 
 def print_stats():
     rows, counts, unknown = checklist_counts()
-    print("清单 %d 条：已做 %d / 部分已做 %d / 不成立 %d / 不改 %d / 待裁决 %d"
-          % (len(rows), counts["已做"], counts["部分已做"], counts["不成立"],
-             counts["不改"], counts["待裁决"]))
+    line = ("清单 %d 条：已做 %d / 部分已做 %d / 不成立 %d / 不改 %d / 待裁决 %d"
+            % (len(rows), counts["已做"], counts["部分已做"], counts["不成立"],
+               counts["不改"], counts["待裁决"]))
+    # 拼成一行：handoff.sh 直接把它塞进表格，换行会破坏对齐
     if unknown:
-        print("  无法归类：" + "、".join(unknown))
+        line += "；无法归类：" + "、".join(unknown)
+    print(line)
 
 
 if "--stats" in sys.argv:

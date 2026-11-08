@@ -67,16 +67,26 @@ ok "Java $JVER（$JAVA_HOME）"
 # 先花两秒试一次：能起就不管；起不来且确实是 init 的问题，备份后停用它再试；
 # 仍起不来才报错。不猜、不删，备份文件名带时间戳。
 if [[ -f "$HOME/.gradle/init.gradle" ]]; then
-    if ! ./gradlew --version >/dev/null 2>&1; then
-        backup="$HOME/.gradle/init.gradle.disabled-$(date +%Y%m%d%H%M%S)"
-        mv "$HOME/.gradle/init.gradle" "$backup"
-        if ./gradlew --version >/dev/null 2>&1; then
-            info "Gradle 起不来是因为坏的 init.gradle，已停用（备份：$backup）"
+    probe_dir=$(mktemp -d)
+    probe_log=$(mktemp)
+    # 不能用 `--version`：它不加载 init 脚本，坏脚本下照样成功（2026-11-08 复核时
+    # 第一版就是这么写的，等于没检查）。必须真的跑一次最小构建；用空工程，
+    # 免得把「还没装 SDK」和「脚本编译不过」混成同一种失败。
+    if ! ./gradlew --project-dir "$probe_dir" -q help >"$probe_log" 2>&1; then
+        if grep -q "initialization script" "$probe_log"; then
+            backup="$HOME/.gradle/init.gradle.disabled-$(date +%Y%m%d%H%M%S)"
+            mv "$HOME/.gradle/init.gradle" "$backup"
+            if ./gradlew --project-dir "$probe_dir" -q help >/dev/null 2>&1; then
+                info "Gradle 起不来是因为坏的 init.gradle，已停用（备份：$backup）"
+            else
+                mv "$backup" "$HOME/.gradle/init.gradle"
+                die "Gradle 起不来，且不是 init.gradle 的问题——手动跑 ./gradlew help 看报错"
+            fi
         else
-            mv "$backup" "$HOME/.gradle/init.gradle"
-            die "Gradle 起不来，且不是 init.gradle 的问题——手动跑 ./gradlew --version 看报错"
+            info "Gradle 预检未通过，但与 init.gradle 无关，继续（真报错留给构建步骤）"
         fi
     fi
+    rm -rf "$probe_dir" "$probe_log"
 fi
 
 # ---- 2. git 身份 -----------------------------------------------------------

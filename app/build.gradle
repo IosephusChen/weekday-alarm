@@ -124,6 +124,25 @@ android {
     }
 }
 
+// preview / release 变体都不跑单元测试（v1.23.10），本地验收入口只剩 debug，
+// 与 CI 的 testDebugUnitTest 完全一致。
+//
+// preview：applicationIdSuffix 带了 .preview，Robolectric 里 Context.getPackageName()
+// 是 io.github.…weekdayalarm.preview，清单合并出来的 receiver 仍属于
+// io.github.…weekdayalarm —— WidgetProviderConfigTest 用包名过滤，一个都匹配不上，
+// 报「应有五个小组件 receiver 注册，实际 []」。生产包没这个问题，本地却每次全量假红。
+//
+// release：与 debug 同一份源码，JVM 单测只差一个 BuildConfig.DEBUG，R8 根本不进单测路径。
+// 跑第二遍除了把 1125 条变成 3 分钟，没有新增覆盖。
+androidComponents {
+    beforeVariants(selector().withBuildType("preview")) { variant ->
+        variant.enableUnitTest = false
+    }
+    beforeVariants(selector().withBuildType("release")) { variant ->
+        variant.enableUnitTest = false
+    }
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.google.android.material:material:1.12.0'

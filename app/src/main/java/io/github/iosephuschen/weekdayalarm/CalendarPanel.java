@@ -262,7 +262,9 @@ final class CalendarPanel {
                     // v1.23.13：这一行原来无条件换成 bg_day_today，而它内层是实色淡紫，
                     // 于是今天那格永远看不出自己标了加班 / 请假——用户 2026-11-08 装机实测
                     // 「休息日点今天要加班，按钮变了、格子还是原样」。
-                    // 现在保留 today 的紫框与 4dp 白环，只把内层实底染成当天状态色。
+                    // 现在保留 today 的紫框与 4dp 白环，只把内层实底染成当天状态色；
+                    // 没有个人覆盖时仍用 day_today_bg——「今天=淡紫」是既有视觉，不动它。
+                    int innerRes = ov != null ? bgColorRes : R.color.day_today_bg;
                     Drawable frame = ContextCompat.getDrawable(host, R.drawable.bg_day_today);
                     if (frame != null) {
                         frame = frame.mutate();
@@ -270,7 +272,7 @@ final class CalendarPanel {
                             Drawable inner = ((LayerDrawable) frame).getDrawable(1);
                             if (inner instanceof GradientDrawable) {
                                 ((GradientDrawable) inner.mutate()).setColor(
-                                        ContextCompat.getColor(host, bgColorRes));
+                                        ContextCompat.getColor(host, innerRes));
                             }
                         }
                         cell.setBackground(frame);

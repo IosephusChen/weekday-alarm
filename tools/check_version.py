@@ -243,6 +243,28 @@ else:
            % (len(rows), counts["已做"], counts["部分已做"], counts["不成立"],
               counts["不改"], counts["待裁决"]))
 
+    # 2026-11-08：只比数字不够。交接条「下一步」点名了 10 个编号，其中 B10 早已
+    # 「前半不做、后半拆走」，真正待裁决的 C4 反倒没提——而总数刚好也是 10，
+    # 五档数字全对，校验一路绿。结果新会话照着去要 B10 的截图（要不到），
+    # C4 永远没人拍板。现在把「交接条点到的编号」和「清单里待裁决的编号」按集合比。
+    step = next((l for l in plan.splitlines() if l.startswith("- **下一步**")), "")
+    if not step:
+        fail("PLAN.md 交接条里找不到「- **下一步**」那一行")
+    else:
+        pending = {tag for tag, bucket in rows if bucket == "待裁决"}
+        # C3 是 A14 的后半，正文合并处理，不是独立条目
+        named = set(re.findall(r"\b([ABC]\d+)\b", step)) - {"C3"}
+        if named != pending:
+            parts = []
+            if pending - named:
+                parts.append("漏了 " + "、".join(sorted(pending - named)))
+            if named - pending:
+                parts.append("多写了 " + "、".join(sorted(named - pending))
+                             + "（清单里不是待裁决）")
+            fail("交接条「下一步」的编号与清单待裁决条目不一致", "；".join(parts))
+        else:
+            ok("交接条「下一步」点名 %d 条，与清单待裁决逐一对应" % len(pending))
+
 # ---------------------------------------------------------------- 项目状态首行
 # 第 3 行是全文档被要求「开工先读」的那句，2026-11-08 实测还停在 v1.22.0 / 292，
 # 而正文表格已经是 296。同一份文件两个版本号，错的偏偏是先读的那个。

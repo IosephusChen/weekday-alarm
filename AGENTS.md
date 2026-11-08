@@ -411,6 +411,11 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 # 产物：app/build/outputs/apk/preview/app-preview.apk
 ```
 
+**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，1125 条约 1 分钟）。`./gradlew test`
+以前会把 preview 变体也跑一遍，那条 `WidgetProviderConfigTest` 在 `.preview` 包名下一片假红；
+v1.23.10 已在 `app/build.gradle` 里给 preview 关掉单测（`enableUnitTest = false`），现在 `test`
+只剩 debug。再看到 `testPreviewUnitTest` 任务冒出来，说明那几行被删了。
+
 | 项 | 值 |
 |---|---|
 | 包名 | `io.github.iosephuschen.weekdayalarm.preview` |
@@ -465,11 +470,24 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 **走这条，全程无人值守、每一步都有回执：**
 
 ```bash
+# 0. token：脚本在 skills 目录，不在仓库里。
+#    source 后面**不要接管道**（`| tail` 会开子 shell，export 的变量带不回来）。
+source /root/.codebuddy/skills/github-connector/scripts/get_token.sh github
+export GH_TOKEN="$GITHUB_TOKEN"
+
 # 1. preview：覆盖专用预发布位（文件名固定，URL 永不变化）
 cp app/build/outputs/apk/preview/app-preview.apk /workspace/weekday-alarm-preview.apk
 gh release upload preview /workspace/weekday-alarm-preview.apk --clobber
 
 # 2. 正式版：本来就在 Release 上，跳过这一步
+```
+
+**推 main 固定加 `-c http.version=HTTP/1.1`。** 直连 github.com:443 走 HTTP/2 会在握手阶段
+卡两分多钟再报 `Failed to connect`，换 1.1 一秒过（2026-11-08 实测两次）：
+
+```bash
+git -c http.version=HTTP/1.1 push \
+  "https://${GITHUB_TOKEN}@github.com/IosephusChen/weekday-alarm.git" main
 ```
 
 然后把 URL 交给百度网盘的 `file_upload_by_url`。**必须套国内代理**——百度服务器直连

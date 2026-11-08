@@ -183,4 +183,24 @@ public class DocsConsistencyTest {
                         + String.join("\n", bad),
                 bad.isEmpty());
     }
+
+    /**
+     * 开工文档都让人跑 {@code tools/setup-env.sh}，那就得真有这个文件。
+     *
+     * <p>这条挡的是「脚本被删了 / 改了名，文档还在指」。新会话照着文档敲第一条命令
+     * 就报 No such file，而它没有上下文去猜发生了什么——2026-11-08 就是这么卡住的
+     * （当时文档里写的是「缺 SDK 就停下来告诉我」，没有可执行的补救动作）。
+     */
+    @Test
+    public void setupScript_exists_andDocsPointAtIt() throws Exception {
+        File sh = new File(root(), "tools/setup-env.sh");
+        assertTrue("缺少 tools/setup-env.sh：" + sh, sh.isFile());
+        assertTrue("脚本要能直接跑（chmod +x）：" + sh, sh.canExecute());
+        assertTrue("脚本开头要有 shebang", read(sh).startsWith("#!/usr/bin/env bash"));
+
+        assertTrue("AGENTS.md 没提 tools/setup-env.sh，新会话不知道要跑它",
+                read(new File(root(), "AGENTS.md")).contains("tools/setup-env.sh"));
+        assertTrue("恢复说明没提 tools/setup-env.sh",
+                read(new File(docs(), "恢复说明.md")).contains("tools/setup-env.sh"));
+    }
 }

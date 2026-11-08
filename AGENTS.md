@@ -415,7 +415,7 @@ checkout 因此改成了 `fetch-depth: 0`：浅克隆里没有 `event.before` �
 # 产物：app/build/outputs/apk/preview/app-preview.apk
 ```
 
-**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，1125 条约 1 分钟）。`./gradlew test`
+**验收入口固定 `testDebugUnitTest`**（与 CI 同一条命令，1127 条约 1 分钟）。`./gradlew test`
 以前会把 preview 变体也跑一遍，那条 `WidgetProviderConfigTest` 在 `.preview` 包名下一片假红；
 v1.23.10 已在 `app/build.gradle` 里给 preview 关掉单测（`enableUnitTest = false`），现在 `test`
 只剩 debug。再看到 `testPreviewUnitTest` 任务冒出来，说明那几行被删了。
@@ -543,16 +543,31 @@ CI 一路绿，三条回归照样进了 290，因为那三处没有一条用例�
 「绿」只说明没人给它写那条会红的用例。** 所以修 bug 的正确顺序是先补一条能在旧代码上变红的
 测试，再改代码——否则修完了 CI 还是绿的，你分不清是修好了还是压根没测到。
 
-### 换端开工前的四步
+### 换端开工前的几步
 
-1. `git pull --rebase`，看 `HEAD` 是不是最新
-2. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
+1. **全新沙箱**（没有仓库、没有 SDK、没有 git 身份），两条命令起：
+
+   ```bash
+   cd /workspace
+   git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git
+   cd weekday-alarm && bash tools/setup-env.sh
+   ```
+
+   `setup-env.sh` 补 JDK 检查、git 身份、`local.properties`、Android SDK 三件套，
+   最后跑一遍 `testDebugUnitTest`。只补缺的，重复跑不会重装。
+   实测：空目录装完 SDK 21 秒，SDK 齐了 3 秒进构建。
+
+   **直连 `github.com` 会卡死**（2026-11-08 实测 120 秒超时，套 `gh-proxy.com` 21 秒），
+   别试直连。
+2. `git pull --rebase`，看 `HEAD` 是不是最新
+3. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
    首次 commit 会直接失败；临时用 `GIT_AUTHOR_NAME=… GIT_AUTHOR_EMAIL=… git commit`
-   也成，但那个身份会永久留在提交历史里（PR #1 就这么留下过 `trae-solo-agent`）
-3. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
-4. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
+   也成，但那个身份会永久留在提交历史里（PR #1 就这么留下过 `trae-solo-agent`）。
+   上面第 1 步的脚本已经代劳，手工开工时才要自己配
+4. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
+5. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
 
-四步都过了再动第一行代码。
+五步都过了再动第一行代码。
 
 ## 八、封版验收（只在准备长期停工前做一次）
 

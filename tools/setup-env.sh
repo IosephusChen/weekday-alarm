@@ -165,6 +165,24 @@ if [[ $RUN_TEST -eq 0 ]]; then
 fi
 
 info "跑 testDebugUnitTest（首次要拉依赖，慢在这一步）"
-./gradlew testDebugUnitTest --console=plain
+# 2026-11-09：这段提示是补的。今天全量测试崩了一次，第一反应是「再跑一次看看」，
+# 第二反应才想起 docs/项目状态.md 里早记过——Zulu 20 的 C2 编译器会在
+# Robolectric 全量时 SIGSEGV（Node::uncast，退出码 134），XML 都写不全，
+# 看起来像「一堆测试红了」，其实是 JVM 崩了。新会话没有那层记忆，只会当成代码坏了。
+# 处置沿用既有结论：不改 build.gradle、不改任何脚本，只在崩的时候用环境变量绕开。
+if ! ./gradlew testDebugUnitTest --console=plain; then
+    echo
+    echo "── 测试没通过。先分清是「代码坏了」还是「JVM 崩了」 ──"
+    echo "上面若有 SIGSEGV / 'non-zero exit value 134'，或者 XML 里没写出失败用例，"
+    echo "那是 Zulu 20 的 C2 编译器（Node::uncast），不是代码问题。绕开它重跑："
+    echo
+    echo "  JAVA_TOOL_OPTIONS='-XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=256m' \\"
+    echo "    ./gradlew testDebugUnitTest"
+    echo
+    echo "两个参数必须一起加：只加前一个会把默认 48MB CodeCache 撑满、编译器被禁用，"
+    echo "反过来让 SlideToStopTest 的 MethodHandle.linkToStatic 报 InternalError。"
+    echo "细节在 docs/项目状态.md 第 6 节「测试偶发 BUILD FAILED」那条。"
+    exit 1
+fi
 ok "环境就绪，单测通过"
 info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"

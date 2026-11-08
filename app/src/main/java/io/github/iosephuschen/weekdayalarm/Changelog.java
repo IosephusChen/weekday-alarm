@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(298, "1.23.13", "2026/11/08", "今天的格子也会跟着加班变色",
+                    "今天那格原来固定显示淡紫，加班、请假都被它盖住",
+                    "现在保留紫框，只把内层底色换成当天状态"),
             new Entry(297, "1.23.12", "2026/11/08", "点加班不再只改副标题",
                     "自定义班表点今天、明天要加班，按钮和日历格子一起变",
                     "加班标记的判据收成一处，各页面不再各说一套",

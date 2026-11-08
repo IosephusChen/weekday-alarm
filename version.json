@@ -1,13 +1,12 @@
 {
-  "versionCode": 297,
-  "versionName": "1.23.12",
+  "versionCode": 298,
+  "versionName": "1.23.13",
   "published": "2026-11-08",
-  "title": "点加班不再只改副标题",
+  "title": "今天的格子也会跟着加班变色",
   "notes": [
-    "自定义班表点今天、明天要加班，按钮和日历格子一起变",
-    "加班标记的判据收成一处，各页面不再各说一套",
-    "班次被删掉之后，格子上不再留着旧班次名"
+    "今天那格原来固定显示淡紫，加班、请假都被它盖住",
+    "现在保留紫框，只把内层底色换成当天状态"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.12/weekday-alarm-1.23.12.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.12"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.13/weekday-alarm-1.23.13.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.13"
 }

@@ -114,6 +114,10 @@
   **沙箱不持久，这个文件每次新会话都没有，属于正常现象**：开篇问用户要一次，写进去，3 秒。
   别打「存到资料库 / 写进仓库 / 记进某个 config 让 agent 自己读」的主意——凭据不入库是资料库
   的硬规则，写进公开仓库等于公开，两条路都是错的。2026-11-08 讨论过一轮，结论就这一句。
+  **唯一例外**：改 `.github/workflows/` 下的文件要 **classic** PAT——fine-grained 缺
+  `workflow` scope，git 与 REST 都拒（`push_via_api.py` 也 403）。这种时候单独问用户要一把
+  7 天的 classic PAT，推完立刻让他删。别把它写进 `/root/.github_token` 常驻：classic 是账号级
+  `repo` 权限，覆盖用户所有仓库，比 fine-grained 危险一个量级。
 - 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。
   **先试一次直连 `git push`**——`github.com` 不通只是 WorkBuddy 沙箱的现象，Trae / 本机
   直连是通的（2026-11-06 跨端实测）。直连真超时了再用 `tools/push_via_api.py`：走

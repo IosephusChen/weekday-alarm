@@ -107,7 +107,7 @@
   UTC，于是北京时间周六 08:00 到周一 08:00 之间 CI 一直是红的——而「CI 绿」是发版
   唯一的判据。CI 现在另有周末 cron 专门盯这类只在特定日子发生的红。
 - **新沙箱取凭据：先读网盘那份 docx，别张嘴就问。** 用户百度网盘
-  `/打工人闹钟/nas-access.docx` 里是四行——WebDAV 基址、账号、密码、GitHub PAT。用网盘
+  `/weekday-alarm/nas-access.docx` 里是四行——WebDAV 基址、账号、密码、GitHub PAT。用网盘
   连接器读出正文，喂给 `tools/load-access.sh`，两个文件一次落盘，用户不用手打。
   四步：`file_list` 拿 fsid → `file_content_create` 拿 taskid → 轮询 `file_content_get`
   到 `status=succeeded` → `bash tools/load-access.sh <<'EOF' <content> EOF`。
@@ -458,7 +458,7 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 
 | 要做什么 | 命令 |
 |---|---|
-| 新沙箱取凭据 | 网盘 `/打工人闹钟/nas-access.docx` 读出正文 → `tools/load-access.sh`（详见第三节第一条） |
+| 新沙箱取凭据 | 网盘 `/weekday-alarm/nas-access.docx` 读出正文 → `tools/load-access.sh`（详见第三节第一条） |
 | 新沙箱取签名材料 | `tools/fetch-keys.sh`（从 NAS 拉 `.jks`，核指纹，不对就退出） |
 | 出正式包 | `tools/release.sh`（全量测试 + lint + assembleRelease + 回填项目状态） |
 | 装到手机 | `tools/nas.sh put <本地 apk> apk/<名字>.apk`，`tools/nas.sh ls apk/` 核对 |

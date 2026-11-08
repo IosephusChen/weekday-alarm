@@ -2,7 +2,7 @@
 # 从网盘 docx 的正文恢复凭据，写进 /root/.nas_credentials 与 /root/.github_token。
 #
 # 为什么要有这个脚本：新沙箱是空盘，/root 下两个凭据文件每次都得重新注入。
-# 凭据存在用户百度网盘的 /打工人闹钟/nas-access.docx，agent 用网盘连接器读出正文，
+# 凭据存在用户百度网盘的 /weekday-alarm/nas-access.docx，agent 用网盘连接器读出正文，
 # 管道喂给这里，就还原成两个文件——用户不用再手打密码。
 #
 # 用法（agent 侧的第 4 步）：

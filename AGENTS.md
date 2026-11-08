@@ -559,15 +559,18 @@ CI 一路绿，三条回归照样进了 290，因为那三处没有一条用例�
 
    **直连 `github.com` 会卡死**（2026-11-08 实测 120 秒超时，套 `gh-proxy.com` 21 秒），
    别试直连。
-2. `git pull --rebase`，看 `HEAD` 是不是最新
-3. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
+2. `bash tools/handoff.sh`：一条命令看全——HEAD、与远端差多少、版本号、清单进度
+   （实时扫 `docs/待裁决清单.md`，与 CI 同一份实现）、`PLAN.md` 交接条原文、
+   上次测试结果（读 `test-results/*.xml` 现算）、工作区干不干净。十条以内，省掉翻三个文件。
+3. `git pull --rebase`，看 `HEAD` 是不是最新
+4. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
    首次 commit 会直接失败；临时用 `GIT_AUTHOR_NAME=… GIT_AUTHOR_EMAIL=… git commit`
    也成，但那个身份会永久留在提交历史里（PR #1 就这么留下过 `trae-solo-agent`）。
    上面第 1 步的脚本已经代劳，手工开工时才要自己配
-4. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
-5. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
+5. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
+6. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
 
-五步都过了再动第一行代码。
+六步都过了再动第一行代码。
 
 ## 八、封版验收（只在准备长期停工前做一次）
 

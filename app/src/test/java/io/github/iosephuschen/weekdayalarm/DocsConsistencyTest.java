@@ -203,4 +203,24 @@ public class DocsConsistencyTest {
         assertTrue("恢复说明没提 tools/setup-env.sh",
                 read(new File(docs(), "恢复说明.md")).contains("tools/setup-env.sh"));
     }
+
+    /**
+     * 交接快照脚本必须真的在，而且交接条里要有入口。
+     *
+     * <p>与上一条同一个理由：交接条让人跑一条命令，那条命令就得存在且能跑。
+     * 2026-11-08 之前没有这条命令，新会话要靠翻 AGENTS（570 行）+ PLAN（641 行）
+     * 自己拼状态，拼错了也没人拦——当天交接条里的清单数字就漂了 5 条。
+     */
+    @Test
+    public void handoffScript_exists_andDocsPointAtIt() throws Exception {
+        File sh = new File(root(), "tools/handoff.sh");
+        assertTrue("缺少 tools/handoff.sh：" + sh, sh.isFile());
+        assertTrue("脚本要能直接跑（chmod +x）：" + sh, sh.canExecute());
+        assertTrue("脚本开头要有 shebang", read(sh).startsWith("#!/usr/bin/env bash"));
+
+        assertTrue("AGENTS.md 没提 tools/handoff.sh，新会话不知道有这条命令",
+                read(new File(root(), "AGENTS.md")).contains("tools/handoff.sh"));
+        assertTrue("PLAN.md 交接条没提 tools/handoff.sh",
+                read(new File(root(), "PLAN.md")).contains("tools/handoff.sh"));
+    }
 }

@@ -67,6 +67,66 @@ def need(rel, needle, what):
         fail("%s —— %s 里找不到：%s" % (what, rel, needle))
 
 
+# ---------------------------------------------------------------- 交接条 / 清单
+# 为什么由脚本数：交接条里的「39 条 / 已做 14 条…」是手写的，2026-11-08 实测已经
+# 漂成「44 条 / 已做 12 条…」——新会话先读的就是这一行，读到的是错数。改成
+# 「清单是唯一真相源，交接条只是它的摘要」：两边不一致就红，人不用记。
+BUCKETS = ("已做", "部分已做", "不成立", "不改", "待裁决")
+
+
+def classify(status):
+    """把状态列归到五档。归不进去返回 None（宁可红，也不悄悄算漏）。"""
+    s = status.replace("**", "").strip()
+    if s.startswith("部分已做"):
+        return "部分已做"
+    if s.startswith("已做"):
+        return "已做"
+    if "不成立" in s[:20]:
+        return "不成立"
+    if s.startswith(("不做", "前半不做", "不改")):
+        return "不改"
+    if s.startswith("待裁决"):
+        return "待裁决"
+    return None
+
+
+def checklist_rows():
+    """返回 [(编号, 归类)]，只认 # 列是 A1 / B2 / C3 这种的表格行。"""
+    text = read("docs/待裁决清单.md")
+    out = []
+    for line in text.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3 or not re.fullmatch(r"[ABC]\d+", cells[0]):
+            continue
+        out.append((cells[0], classify(cells[-1])))
+    return out
+
+
+def checklist_counts():
+    rows = checklist_rows()
+    counts = {k: 0 for k in BUCKETS}
+    unknown = [tag for tag, bucket in rows if bucket is None]
+    for _tag, bucket in rows:
+        if bucket:
+            counts[bucket] += 1
+    return rows, counts, unknown
+
+
+def print_stats():
+    rows, counts, unknown = checklist_counts()
+    print("清单 %d 条：已做 %d / 部分已做 %d / 不成立 %d / 不改 %d / 待裁决 %d"
+          % (len(rows), counts["已做"], counts["部分已做"], counts["不成立"],
+             counts["不改"], counts["待裁决"]))
+    if unknown:
+        print("  无法归类：" + "、".join(unknown))
+
+
+if "--stats" in sys.argv:
+    print_stats()
+    sys.exit(0)
+
 # ---------------------------------------------------------------- 版本号来源
 gradle = read("app/build.gradle")
 if not gradle:
@@ -128,6 +188,77 @@ else:
             warn("version.json 仍是 %s / %s，落后于 build.gradle 的 %s / %d"
                  % (v_name, v_code, NAME, CODE),
                  "若本版已发版，说明漏跑 release.sh 或漏提交 version.json")
+
+# ---------------------------------------------------------------- 交接条 vs 清单
+# 摘要允许比清单短，但不允许比清单旧。五档数字、总条数，有一个对不上就 FAIL。
+print("-- 交接条与清单 --")
+rows, counts, unknown = checklist_counts()
+if not rows:
+    fail("docs/待裁决清单.md 里没解析到任何条目")
+if unknown:
+    fail("清单状态列有无法归类的条目", "、".join(unknown))
+if rows and not unknown:
+    ok("清单解析到 %d 条" % len(rows))
+
+plan = read("PLAN.md")
+line = next((l for l in plan.splitlines()
+             if "条正文在" in l and "待裁决清单" in l), "")
+if not line:
+    fail("PLAN.md 交接条里找不到「N 条正文在 docs/待裁决清单.md」那一行")
+else:
+    def num(seg, label):
+        m = re.search(label + r"\s*(\d+)\s*条", seg)
+        return int(m.group(1)) if m else None
+
+    claimed = {}
+    m = re.search(r"(\d+)\s*条正文在", line)
+    claimed["总条数"] = int(m.group(1)) if m else None
+    # 按顿号切段再认标签：「部分已做」必须先判，否则会被「已做」抢走
+    for seg in line.split("、"):
+        if "部分已做" in seg:
+            claimed["部分已做"] = num(seg, "部分已做")
+        elif "已做" in seg:
+            claimed["已做"] = num(seg, "已做")
+        elif "不成立" in seg:
+            claimed["不成立"] = num(seg, "不成立")
+        elif "不改" in seg:
+            claimed["不改"] = num(seg, "不改")
+    m = re.search(r"剩\s*(\d+)\s*条", line)
+    claimed["待裁决"] = int(m.group(1)) if m else None
+
+    expect = {"总条数": len(rows)}
+    expect.update(counts)
+    bad = []
+    for k in ("总条数",) + BUCKETS:
+        if claimed.get(k) is None:
+            bad.append("%s（交接条没写）" % k)
+        elif claimed[k] != expect[k]:
+            bad.append("%s（交接条 %d / 清单 %d）" % (k, claimed[k], expect[k]))
+    if bad:
+        fail("交接条摘要与清单不一致", "；".join(bad))
+    else:
+        ok("交接条与清单一致（%d 条：已做 %d / 部分已做 %d / 不成立 %d / 不改 %d / 待裁决 %d）"
+           % (len(rows), counts["已做"], counts["部分已做"], counts["不成立"],
+              counts["不改"], counts["待裁决"]))
+
+# ---------------------------------------------------------------- 项目状态首行
+# 第 3 行是全文档被要求「开工先读」的那句，2026-11-08 实测还停在 v1.22.0 / 292，
+# 而正文表格已经是 296。同一份文件两个版本号，错的偏偏是先读的那个。
+print("-- 项目状态首行 --")
+status_doc = read("docs/项目状态.md")
+headline = next((l for l in status_doc.splitlines()
+                 if l.startswith("> **一句话现状**")), "")
+if not headline:
+    fail("docs/项目状态.md 里没有「一句话现状」那一行")
+else:
+    m = re.search(r"v(\d+\.\d+\.\d+)\s*/\s*(\d+)", headline)
+    if not m:
+        fail("项目状态首行没写「vX.Y.Z / NNN」", headline[:60])
+    elif m.group(1) != NAME or int(m.group(2)) != CODE:
+        fail("项目状态首行是 v%s / %s，build.gradle 是 v%s / %d"
+             % (m.group(1), m.group(2), NAME, CODE))
+    else:
+        ok("项目状态首行与 build.gradle 同版（v%s / %d）" % (NAME, CODE))
 
 # ---------------------------------------------------------------- 结论
 print()

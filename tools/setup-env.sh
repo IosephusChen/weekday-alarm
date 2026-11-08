@@ -60,6 +60,25 @@ if [[ ! "$JVER" =~ ^[0-9]+$ ]] || (( JVER < 17 || JVER > 21 )); then
 fi
 ok "Java $JVER（$JAVA_HOME）"
 
+# ---- 1.5 Gradle 能否启动 ---------------------------------------------------
+# 沙箱可能预置一个坏掉的 ~/.gradle/init.gradle（2026-11-08 实测：`mavelCentral()`
+# 拼错 + `url` 没加引号，Groovy 编译不过）。之后每条 gradle 命令都失败，报错指向
+# init 脚本，看起来却像项目坏了——新会话容易在这里白查一轮。
+# 先花两秒试一次：能起就不管；起不来且确实是 init 的问题，备份后停用它再试；
+# 仍起不来才报错。不猜、不删，备份文件名带时间戳。
+if [[ -f "$HOME/.gradle/init.gradle" ]]; then
+    if ! ./gradlew --version >/dev/null 2>&1; then
+        backup="$HOME/.gradle/init.gradle.disabled-$(date +%Y%m%d%H%M%S)"
+        mv "$HOME/.gradle/init.gradle" "$backup"
+        if ./gradlew --version >/dev/null 2>&1; then
+            info "Gradle 起不来是因为坏的 init.gradle，已停用（备份：$backup）"
+        else
+            mv "$backup" "$HOME/.gradle/init.gradle"
+            die "Gradle 起不来，且不是 init.gradle 的问题——手动跑 ./gradlew --version 看报错"
+        fi
+    fi
+fi
+
 # ---- 2. git 身份 -----------------------------------------------------------
 # 沙箱默认没有，第一次 commit 会直接失败。只在没设时补，不动全局配置。
 if [[ -z "$(git config user.email || true)" ]]; then

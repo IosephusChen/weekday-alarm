@@ -506,18 +506,23 @@ CI 一路绿，三条回归照样进了 290，因为那三处没有一条用例�
    实测：空目录装完 SDK 21 秒，SDK 齐了 3 秒进构建。
 
    **直连 `github.com` 会卡死**（2026-11-08 实测 120 秒超时，套 `gh-proxy.com` 21 秒），
-   别试直连。
-2. `bash tools/handoff.sh`：一条命令看全——HEAD、与远端差多少、版本号、清单进度
-   （实时扫 `docs/待裁决清单.md`，与 CI 同一份实现）、`PLAN.md` 交接条原文、
-   上次测试结果（读 `test-results/*.xml` 现算）、工作区干不干净。十条以内，省掉翻三个文件。
-   末尾还会打印「接着读」：`AGENTS.md` 第一/三/七节 + `docs/项目状态.md` 第 1/6 节。
+   别试直连。代理也不通时换 `ghproxy.net`、`ghfast.top` 试一次；三条都不通就别在沙箱里
+   折腾了，让用户在本地 clone 后传 bundle（`docs/恢复说明.md` 第一节）。
+2. **取凭据**（2026-11-09 起自动，不用问用户）：读网盘 `/weekday-alarm/nas-access.docx`
+   的正文，喂 `bash tools/load-access.sh`。四步流程与三个坑在本节第三条第一项。
+   **必须排在第 1 步之后**——脚本在仓库里。读不到再问用户，别猜。
+3. `bash tools/handoff.sh`：一条命令看全——HEAD、与远端差多少、版本号、凭据与签名密钥
+   在不在、清单进度（实时扫 `docs/待裁决清单.md`，与 CI 同一份实现）、`PLAN.md` 交接条原文、
+   上次测试结果（读 `test-results/*.xml` 现算）、工作区干不干净。
+   末尾两行最有用：**「下一步」是它按当前缺什么排好序的**（凭据 → 落后 → 密钥 → 测试基线 → 脏
+   工作区），照做即可；「接着读」是 `AGENTS.md` 第一/三/七节 + `docs/项目状态.md` 第 1/6 节。
    **其余文档按任务查**，别通读——三份必读加起来 1600 多行，大半是历史存档。
-3. `git pull --rebase`，看 `HEAD` 是不是最新
-4. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
+4. `git pull --rebase`，看 `HEAD` 是不是最新
+5. `git config user.name` / `user.email` 有值吗？没有就先配上——沙箱默认不带身份，
    首次 commit 会直接失败；临时用 `GIT_AUTHOR_NAME=… GIT_AUTHOR_EMAIL=… git commit`
    也成，但那个身份会永久留在提交历史里（PR #1 就这么留下过 `trae-solo-agent`）。
    上面第 1 步的脚本已经代劳，手工开工时才要自己配
-5. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
+6. 读 `AGENTS.md` + `PLAN.md` + `docs/项目状态.md`，确认当前写者是谁、有没有在飞的版本
 6. `python3 tools/check_version.py`，十秒确认这棵树是自洽的
 
 六步都过了再动第一行代码。

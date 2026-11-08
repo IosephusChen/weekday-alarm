@@ -5,7 +5,7 @@
 - **开工**：每个会话都是全新沙箱（没有仓库、没有 SDK、没有 git 身份、**没有凭据**）。三步，**顺序别换**：
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 取凭据：读网盘 `/weekday-alarm/nas-access.docx`（连接器四步 → `bash tools/load-access.sh`，实测 20 秒，坑在 AGENTS 第三节），读不到再问用户要。**必须在 ① 之后**——`load-access.sh` 在仓库里，没 clone 就没有它。
-  ③ `bash tools/handoff.sh`：HEAD、远端差、版本、清单进度、本交接条、上次测试一次看全，不用再翻三个文件。
+  ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
 - **做到哪**：**v1.23.13 / 298 已发布**（2026-11-08 23:09）：修「今天那格被淡紫底盖住加班 / 请假色」，只改渲染最后一步，判据与数据结构没动；`releases/latest` 已指向，APK 2,902,787 字节 / MD5 `e924e2b0…`，签名与 v1.23.12 一致可覆盖安装。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
 - **下一步**：清单里**能靠代码判定的已经全部做完**，剩 10 条卡在两件事上——① 要用户拍板（6 条）：A3 弹窗收尾、A8 吸顶（结构改造）、A13 默认值、A14 父标题常驻（后半即 C3，合起来处理）、A16 节日覆盖、C4 标题体例；② 要新截图（4 条）：A5 的 4 个 Toast 调用点（要 5 秒录屏）、A10 可点值配色、B2 日历头部、B14 班次圆点。下次开工先问用户要图，别再猜。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 **classic** PAT（fine-grained 缺 `workflow` scope，git 与 REST 都拒），临时建一把、推完就删，别常驻。
@@ -729,7 +729,7 @@ cols = ⌈len ÷ rows⌉
 **改什么**：
 
 - `tools/check_version.py` 新增两段 FAIL：① 扫 `待裁决清单.md` 的状态列，与交接条那行逐项比；② `项目状态.md` 首行版本必须等于 `build.gradle`。另加 `--stats`，handoff 复用同一份解析，不写第二套。
-- `tools/handoff.sh`：一条命令出实况（HEAD / 远端差 / 版本 / 清单进度 / 交接条原文 / 上次测试 / 工作区）。测试条数从 XML 现算，不再写死。
+- `tools/handoff.sh`：一条命令出实况（HEAD / 远端差 / 版本 / 凭据 / 签名密钥 / 清单进度 / 交接条原文 / 上次测试 / 工作区），末尾给排序过的「下一步」。测试条数从 XML 现算，不再写死。
 - `tools/setup-env.sh` 加 Gradle 预检：`init.gradle` 坏了就备份停用再试，仍失败才报错（当天实测踩过：`mavelCentral()` 拼错，报错看着像项目坏了）。
 - 文档同步：交接条数字改对、项目状态首行改对、测试条数从表格撤掉改由 handoff 现算、AGENTS 开工步骤加 handoff。
 

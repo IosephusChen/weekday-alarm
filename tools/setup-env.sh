@@ -160,9 +160,11 @@ fi
 # ---- 5. 自检 ---------------------------------------------------------------
 if [[ $RUN_TEST -eq 0 ]]; then
     ok "环境就绪（--no-test，没跑测试）"
+    info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"
     exit 0
 fi
 
 info "跑 testDebugUnitTest（首次要拉依赖，慢在这一步）"
 ./gradlew testDebugUnitTest --console=plain
 ok "环境就绪，单测通过"
+info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"

@@ -31,12 +31,22 @@ LIMIT="${PUSH_CONNECT_TIMEOUT:-45}"
 PROBE_LIMIT="${PUSH_PROBE_TIMEOUT:-10}"
 REPO="IosephusChen/weekday-alarm"
 TOKEN_SH="/root/.codebuddy/skills/github-connector/scripts/get_token.sh"
+# 2026-11-08 加：优先用长期 PAT，connector 只做兜底。
+# connector 发的是 GitHub App 用户令牌（ghu_ 开头），GitHub 规定最多活 8 小时，
+# 到期必须用户再点一次授权——发版发到一半发现 401、回头找人点授权，就是这么来的。
+# 用户自建的 fine-grained PAT 不过期，存在仓库外面（600，不进 git），脚本先读它。
+TOKEN_FILE="${GITHUB_TOKEN_FILE:-/root/.github_token}"
+if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "$TOKEN_FILE" ]; then
+    GITHUB_TOKEN=$(tr -d '\r\n' < "$TOKEN_FILE")
+fi
 
 if [ -z "${GITHUB_TOKEN:-}" ] && [ -f "$TOKEN_SH" ]; then
     . "$TOKEN_SH" github >/dev/null 2>&1
 fi
 if [ -z "${GITHUB_TOKEN:-}" ]; then
-    echo "拿不到 GITHUB_TOKEN，先检查 $TOKEN_SH" >&2
+    echo "拿不到 GITHUB_TOKEN。" >&2
+    echo "  长期做法：把 fine-grained PAT 存到 $TOKEN_FILE（chmod 600），脚本会优先读它" >&2
+    echo "  临时做法：在 CodeBuddy 里重新授权 GitHub connector（令牌只有 8 小时）" >&2
     exit 1
 fi
 

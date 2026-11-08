@@ -283,9 +283,18 @@ def main():
     ap.add_argument("--tags", action="store_true", help="推本地全部标签")
     args = ap.parse_args()
 
+    # 2026-11-08：优先读长期 PAT。connector 的 ghu_ 令牌 8 小时过期，
+    # 发版发到一半 401 的根因就在这。文件在仓库外、权限 600，不进 git。
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token:
-        sys.exit("缺少 GITHUB_TOKEN。先 export GH_TOKEN（任何来源的 GitHub PAT 都行）")
+        token_file = os.environ.get("GITHUB_TOKEN_FILE", os.path.expanduser("~/.github_token"))
+        try:
+            token = open(token_file, encoding="utf-8").read().strip()
+        except OSError:
+            token = ""
+    if not token:
+        sys.exit("缺少 GITHUB_TOKEN。把 fine-grained PAT 存到 ~/.github_token（chmod 600），"
+                 "或 export GH_TOKEN=<PAT>")
 
     os.chdir(git("rev-parse", "--show-toplevel"))
     owner, repo = parse_remote(args.remote)

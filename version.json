@@ -1,14 +1,14 @@
 {
-  "versionCode": 295,
-  "versionName": "1.23.0",
-  "published": "2026-11-07",
-  "title": "按钮分主次，危险动作不再装推荐",
+  "versionCode": 296,
+  "versionName": "1.23.11",
+  "published": "2026-11-08",
+  "title": "倒计时一眼看懂，空态不再冤枉闹钟",
   "notes": [
-    "删除班次、覆盖导入这类不可逆的确认，主按钮改红底白字",
-    "「放弃修改」从主按钮挪成左边红字，安全那条留在主位",
-    "引导页「开始使用」与保存按钮统一成同一种底",
-    "「今天 / 明天」两个按钮之间留出 16dp，不再粘成一颗"
+    "首页倒计时前加「还有」，一眼看出这是倒计时不是时刻",
+    "没有要响的闹钟时整条收起，副标题说清是关着还是班表不响",
+    "日历「今天」格加一圈白环，图例收成两行三列",
+    "锁屏提示、权限副标题与各处字号一并校对"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.0/weekday-alarm-1.23.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.11/weekday-alarm-1.23.11.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.11"
 }

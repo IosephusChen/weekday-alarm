@@ -86,6 +86,11 @@ public class DayPlanPrefsTest {
         reset();
         setShifts(new Shift(2, "白班", 8 * 60, Shift.END_UNKNOWN, 0),
                 new Shift(5, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        // v1.23.12：要真的是轮班（铺了那张表），「取第一个班次」才有意义。
+        // 双休 / 自定义七天没有班次，迁移只能记「未指定班次」
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setShiftCycle(ctx(), new int[]{2, 2, 2, 2, 2, -1, -1});
         LocalDate d = LocalDate.of(2026, 11, 7);
         setLegacy(new LocalDate[]{}, new LocalDate[]{d});
 
@@ -128,8 +133,12 @@ public class DayPlanPrefsTest {
     @Test
     public void setDayShift_overwritesSameDay() {
         reset();
-        // 正数 id 只在有班次的班表上算数（v1.11.2），所以先切轮班
+        // 正数 id 只在有班次的班表上算数（v1.11.2）：轮班模式 + 真的铺了轮班表，
+        // 两个条件缺一不可。只切 mode=CYCLE 的话，这是「自定义七天」，没有班次
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        setShifts(new Shift(4, "白班", 8 * 60, Shift.END_UNKNOWN, 0));
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setShiftCycle(ctx(), new int[]{4, 4, 4, 4, 4, -1, -1});
         LocalDate d = LocalDate.of(2026, 11, 6);
         Prefs.addVacation(ctx(), d);
         assertTrue(Prefs.isVacation(ctx(), d));
@@ -146,6 +155,10 @@ public class DayPlanPrefsTest {
         reset();
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
         setShifts(new Shift(7, "夜班", 20 * 60, Shift.END_UNKNOWN, 0));
+        // v1.23.12：只切模式不够——自定义也是 CYCLE，但不是轮班，没有班次可选。
+        // 补上这张表，「只有一个班次就用它」这条便利才成立
+        Prefs.setCycleLen(ctx(), 7);
+        Prefs.setShiftCycle(ctx(), new int[]{7, 7, 7, 7, 7, -1, -1});
         LocalDate d = LocalDate.of(2026, 11, 7);
 
         Prefs.addOvertime(ctx(), d);

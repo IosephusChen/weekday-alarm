@@ -24,11 +24,14 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 被扫范围：PLAN 的「当前方案节」= `## A5 · …` 起、到第一个 `## v1.x` 之前；
-# 清单的「A5 录屏复核记录」= 该 `###` 起、到下一个标题之前。
-PLAN_FROM = "## A5 ·"
+# 被扫范围（2026-11-09 改：不写死小节名）：
+# - PLAN：「交接条」之后、第一个 `## v1.x` 之前，即所有**未归档**的方案节。原先把起点写成
+#   `## A5 ·`，A5 一结案改名，脚本就会报「找不到小节起点」把发布挡死，报出的原因还和实情
+#   无关。改成按位置切，方案改名/合并/新增都不影响。
+# - 清单：第一个 `### ` 小节起、到下一个 `## ` 之前。同样不认小节名。
+PLAN_HEAD = "## 交接条"
 PLAN_TO_PREFIX = "## v1."
-LIST_FROM = "### A5 录屏复核记录"
+LIST_FROM = "### "
 
 CODE_EXT = r"(?:java|kt|xml|py|sh|gradle|json|yml)"
 # 锚点排除空白、反引号与常见中文标点，避免把句子尾巴吃进来
@@ -84,19 +87,24 @@ def read_lines(rel):
 
 
 def region_plan(lines):
-    start = next((i for i, l in enumerate(lines) if l.startswith(PLAN_FROM)), None)
-    if start is None:
-        return None
+    """交接条之后 → 第一个 `## v1.x` 之前。交接条本身不扫（多是状态描述，没有代码引用）。"""
+    start = 0
+    for i, l in enumerate(lines):
+        if l.startswith(PLAN_HEAD):
+            nxt = next((j for j in range(i + 1, len(lines)) if lines[j].startswith("## ")), None)
+            start = nxt if nxt is not None else len(lines)
+            break
     end = next((i for i, l in enumerate(lines) if i > start and l.startswith(PLAN_TO_PREFIX)),
                len(lines))
-    return start, end
+    return (start, end) if start < end else None
 
 
 def region_list(lines):
+    """第一个 `### ` 小节 → 下一个 `## ` 之前。新增复核记录会自动纳入，改名也不会失效。"""
     start = next((i for i, l in enumerate(lines) if l.startswith(LIST_FROM)), None)
     if start is None:
         return None
-    end = next((i for i, l in enumerate(lines) if i > start and l.startswith(("### ", "## "))),
+    end = next((i for i, l in enumerate(lines) if i > start and l.startswith("## ")),
                len(lines))
     return start, end
 

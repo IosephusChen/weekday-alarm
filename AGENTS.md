@@ -133,10 +133,15 @@
   Repository permissions → **Workflows: Read and write**，当天用它推本文件**实测通过**
   （`7382876`：改 workflow 的提交用 `/root/.github_token` 直接推成功）。
   2026-11-08 为推 workflow 建过一把 classic（名 `weekday-alarm-push`，scope 是 `repo`
-  + `workflow`，**7 天有效、2026-11-16 到期**），那只是当时的应急产物，随时可删；
-  别假设它长期有效，也别再为这件事新建 classic。
-  无论哪把：**只在当次 push 里用环境变量注入**，不写进 `/root/.github_token`、不写进
-  `.git/config`——classic 是账号级 `repo` 权限，覆盖用户所有仓库，比 fine-grained 危险一个量级。
+  + `workflow`，7 天有效、原定 11-16 到期），那只是当时的应急产物，**2026-11-09 用户已删除**。
+  现在只剩 `/root/.github_token` 这一把 fine-grained，它推 workflow 文件已实测通过——
+  别再为这件事新建 classic（账号级 `repo` 权限覆盖用户所有仓库，比 fine-grained 危险一个量级）。
+  **推的时候地址也要对**：`origin` 指向 `gh-proxy.com`，那是只读镜像，往它 push 只会得到
+  `No anonymous write access`；推送必须显式换成
+  `https://x-access-token:<token>@github.com/IosephusChen/weekday-alarm.git`。
+  别写 `https://<token>@github.com/...`——省略密码那段，git 会把 token 当用户名、回头找你要密码，
+  在无 tty 的沙箱里直接 `could not read Password`。凭据**只在当次 push 的 URL 里出现一次**，
+  不写进 `/root/.github_token` 以外的任何地方、不写进 `.git/config`、不改 `origin`。
 - 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。
   **先试一次直连 `git push`**——`github.com` 不通只是 WorkBuddy 沙箱的现象，Trae / 本机
   直连是通的（2026-11-06 跨端实测）。直连真超时了再用 `tools/push_via_api.py`：走

@@ -388,9 +388,12 @@ public class SettingsLayoutTest {
         // 副标题只讲「范围是什么意思」，两行内读完；数据来源与以后怎么办挪到 TIP
         String sub = c.getString(R.string.dialog_horizon_message);
         assertTrue("副标题要短到两行内，实际 " + sub.length() + " 字", sub.length() <= 40);
-        assertFalse("数据来源那段该在 TIP 里，不该挤在副标题", sub.contains("2027"));
-        assertTrue("TIP 要讲清数据覆盖到哪年",
-                c.getString(R.string.dialog_horizon_tip).contains("2026"));
+        assertFalse("数据来源那段该在 TIP 里，不该挤在副标题",
+                sub.contains(String.valueOf(HolidayData.BUILT_IN_YEAR + 1)));
+        // 不写死年份：内置哪年，TIP 就得说哪年——v1.23.22 补 2027 时这条没跟着改会红
+        assertTrue("TIP 要讲清数据覆盖到哪年（内置 " + HolidayData.BUILT_IN_YEAR + "）",
+                c.getString(R.string.dialog_horizon_tip)
+                        .contains(String.valueOf(HolidayData.BUILT_IN_YEAR)));
     }
 
     /**

@@ -16,7 +16,7 @@ import java.time.LocalDate;
  *
  * <p>要守住的三件事：
  * <ol>
- *   <li>内置覆盖 2007–2026，每一年都有放假安排，不能有空洞；</li>
+ *   <li>内置覆盖 2007–2027，每一年都有放假安排，不能有空洞；</li>
  *   <li>空年份（holiday-cn 提前建好但 days 为空的明年文件）<b>绝不能</b>清空已有数据；</li>
  *   <li>按年隔离：拉 2027 不影响 2026 的远程修正。</li>
  * </ol>
@@ -33,16 +33,48 @@ public class HolidayCnSourceTest {
         HolidayData.resetRemoteForTest();
     }
 
-    // ---------- 内置层：20 年 ----------
+    // ---------- 内置层：21 年 ----------
 
     /** 每一年都得有元旦放假，不能有「某年没数据」的空洞。 */
     @Test
-    public void builtIn_hasEveryYearFrom2007To2026() {
+    public void builtIn_hasEveryYearFrom2007To2027() {
         for (int y = HolidayData.BUILT_IN_FIRST_YEAR; y <= HolidayData.BUILT_IN_YEAR; y++) {
             assertTrue(y + " 年元旦应放假", HolidayData.isHoliday(LocalDate.of(y, 1, 1)));
         }
         assertEquals("内置起始年", 2007, HolidayData.BUILT_IN_FIRST_YEAR);
-        assertEquals("内置最新年", 2026, HolidayData.BUILT_IN_YEAR);
+        assertEquals("内置最新年", 2027, HolidayData.BUILT_IN_YEAR);
+    }
+
+    /**
+     * v1.23.22：2027 是内置层里最新的一年，必须能脱离远程独立工作。
+     *
+     * <p>断网、远程挂掉、或用户把网络权限关掉时，这九天真按工作日排，
+     * 双休用户会在春节里连着五天 07:30 被叫醒——所以逐段钉住。
+     */
+    @Test
+    public void builtIn_2027MatchesTheStateCouncilNotice() {
+        // 春节 2/5（除夕）–2/13 共 9 天，2/14 补班
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 2, 5)));
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 2, 13)));
+        assertTrue("2/14 是春节后的补班日", HolidayData.isMakeupWorkday(LocalDate.of(2027, 2, 14)));
+        assertFalse("2/15 已收假", HolidayData.isHoliday(LocalDate.of(2027, 2, 15)));
+        assertEquals("春节正日是 2/6", "春节", HolidayData.holidayName(LocalDate.of(2027, 2, 6)));
+
+        // 元旦 1/1–1/3，1/31 补班
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 1, 3)));
+        assertTrue(HolidayData.isMakeupWorkday(LocalDate.of(2027, 1, 31)));
+
+        // 清明 4/3–4/5、劳动 5/1–5/5（5/8 补班）、端午 6/9、中秋 9/15
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 4, 5)));
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 5, 5)));
+        assertTrue(HolidayData.isMakeupWorkday(LocalDate.of(2027, 5, 8)));
+        assertEquals("端午只有一天", "端午", HolidayData.holidayName(LocalDate.of(2027, 6, 9)));
+        assertEquals("中秋只有一天", "中秋", HolidayData.holidayName(LocalDate.of(2027, 9, 15)));
+        assertTrue(HolidayData.isMakeupWorkday(LocalDate.of(2027, 9, 26)));
+
+        // 国庆 10/1–10/7，10/9 补班
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 10, 7)));
+        assertTrue(HolidayData.isMakeupWorkday(LocalDate.of(2027, 10, 9)));
     }
 
     /** 2007 年五一还是七天黄金周，2015 年有抗战纪念日——两个「和现在不一样」的年份。 */
@@ -138,41 +170,43 @@ public class HolidayCnSourceTest {
     /** 远程层不带名字；未来年份靠农历层补，不会真的缺名字。 */
     @Test
     public void holidayCn_futureYearNameFallsBackToLunar() {
-        // 2027 春节 2/6
-        HolidayData.applyHolidayCnJson(cn("2027", "2027-02-06=1", "2027-02-07=1"));
-        assertNull("远程层不存名字", HolidayData.holidayName(LocalDate.of(2027, 2, 6)));
+        // 2028 元旦：内置只到 2027，远程只给日期不给名字
+        HolidayData.applyHolidayCnJson(cn("2028", "2028-01-01=1"));
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
+        assertNull("远程层不存名字，内置也没有这一年", HolidayData.holidayName(LocalDate.of(2028, 1, 1)));
+        // 名字不靠内置表：农历层自己算得出 2027 春节
         assertEquals("农历层能补上", "春节", LunarCalendar.festival(LocalDate.of(2027, 2, 6)));
     }
 
     /** 重复合入同一份数据 → 无变化；结构坏掉 → 不算成功，也不动已有数据。 */
     @Test
     public void holidayCn_repeatAndBrokenJson() {
-        String json = cn("2027", "2027-01-01=1");
+        String json = cn("2028", "2028-01-01=1");
         assertTrue(HolidayData.applyHolidayCnJson(json));
         assertFalse("同一份数据再合一次不该算变化", HolidayData.applyHolidayCnJson(json));
         assertTrue(HolidayData.lastApplyOk());
 
         assertFalse(HolidayData.applyHolidayCnJson("{ not json"));
         assertFalse("坏数据不算解析成功", HolidayData.lastApplyOk());
-        assertTrue("坏数据不能清空已有安排", HolidayData.isHoliday(LocalDate.of(2027, 1, 1)));
+        assertTrue("坏数据不能清空已有安排", HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
     }
 
     /** 没有 year 字段的 JSON 必须拒绝（防止 {"error":"..."} 被当成空数据）。 */
     @Test
     public void holidayCn_missingYearRejected() {
-        assertFalse(HolidayData.applyHolidayCnJson("{\"days\":[{\"date\":\"2027-01-01\",\"isOffDay\":true}]}"));
+        assertFalse(HolidayData.applyHolidayCnJson("{\"days\":[{\"date\":\"2028-01-01\",\"isOffDay\":true}]}"));
         assertFalse(HolidayData.lastApplyOk());
-        assertFalse(HolidayData.isHoliday(LocalDate.of(2027, 1, 1)));
+        assertFalse(HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
     }
 
     /** 日期年份与 year 字段不符的条目要丢掉，不能串到别的年份去。 */
     @Test
     public void holidayCn_foreignYearEntriesDropped() {
-        String json = "{\"year\":2027,\"days\":["
-                + "{\"date\":\"2027-01-01\",\"isOffDay\":true},"
+        String json = "{\"year\":2028,\"days\":["
+                + "{\"date\":\"2028-01-01\",\"isOffDay\":true},"
                 + "{\"date\":\"2026-06-01\",\"isOffDay\":true}]}";
         assertTrue(HolidayData.applyHolidayCnJson(json));
-        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 1, 1)));
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
         assertFalse("混进来的 2026 日期应被丢弃", HolidayData.isHoliday(LocalDate.of(2026, 6, 1)));
     }
 }

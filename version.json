@@ -1,14 +1,13 @@
 {
-  "versionCode": 306,
-  "versionName": "1.23.21",
+  "versionCode": 307,
+  "versionName": "1.23.22",
   "published": "2026-11-10",
-  "title": "轮班改班表，保存按钮又能按了",
+  "title": "2027 年的假，断网也认得",
   "notes": [
-    "轮班制逐日选完班次，保存按钮不再是灰的",
-    "日历提示补上「调班」：轮班才写，别的班表没这一项",
-    "点开日历某一天，那句提示当场收走",
-    "新装默认双休：没选过班表的人不再被排成大小周"
+    "2027 年放假与补班打进安装包，不联网也算得准",
+    "春节 2/5–2/13 连休九天，2/14 要上班",
+    "提醒范围那页的说明改成「内置到 2027 年底」"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.21/weekday-alarm-1.23.21.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.21"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.22/weekday-alarm-1.23.22.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.22"
 }

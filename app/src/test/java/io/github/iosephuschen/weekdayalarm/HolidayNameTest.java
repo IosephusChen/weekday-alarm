@@ -159,11 +159,12 @@ public class HolidayNameTest {
 
     @Test
     public void remoteNewYearWithoutNameIsStillUsable() {
-        String json = "{\"version\":2027,\"published\":\"2026-11-04\","
-                + "\"holidays\":[[\"2027-01-01\",\"2027-01-03\"]],\"makeups\":[]}";
+        // 用内置之外的年份：内置有名字的表在这里不起作用，才测得到「远程不带名字」本身
+        String json = "{\"version\":2028,\"published\":\"2027-11-04\","
+                + "\"holidays\":[[\"2028-01-01\",\"2028-01-03\"]],\"makeups\":[]}";
         HolidayData.applyRemoteJson(json);
-        assertNull(HolidayData.holidayName(LocalDate.of(2027, 1, 1)));
-        assertTrue(HolidayData.isHoliday(LocalDate.of(2027, 1, 1)));
+        assertNull(HolidayData.holidayName(LocalDate.of(2028, 1, 1)));
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
     }
 
     @Test

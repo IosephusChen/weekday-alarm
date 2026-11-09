@@ -69,14 +69,21 @@ public class HolidayFreshnessTest {
 
     // ---------- 检查间隔 ----------
 
-    /** 内置数据只到 2026：2026 年里「次年」永远缺，间隔就是 1 天。 */
+    /**
+     * 内置只到 2027：2027 年里「次年」缺 2028，间隔就是 1 天。
+     *
+     * <p>v1.23.22 把 2027 打进内置后，2026 年已经不缺次年（内置有 2027），
+     * 所以基准日整体后移一年；反过来也顺手钉住「2026 年应当是 7 天」。
+     */
     @Test
     public void interval_missingNextYearIsOneDay() {
+        assertEquals("2026 年内置已有次年，不该每天拉",
+                7 * DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2026, 10, 26)));
         assertEquals("缺次年数据应每天查一次",
-                DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2026, 10, 26)));
+                DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2027, 10, 26)));
         // 11 月初国务院公布，这个月正是要天天查的时候
-        assertEquals(DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2026, 11, 4)));
-        assertEquals(DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2027, 1, 1)));
+        assertEquals(DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2027, 11, 4)));
+        assertEquals(DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2028, 1, 1)));
     }
 
     /** 已拿到次年数据 → 回到 7 天，别为了「保险」一直每天拉。 */
@@ -89,15 +96,22 @@ public class HolidayFreshnessTest {
                 DAY, HolidayUpdater.autoCheckIntervalMs(LocalDate.of(2027, 2, 1)));
     }
 
-    /** 节流本身：25 小时前查过就够一天了；2 小时前查过不重复拉。 */
+    /**
+     * 节流本身：没到间隔就不拉，过了就拉。
+     *
+     * <p>原来这条把「25 小时」写死，隐含「今年缺次年 → 间隔 1 天」。内置补到 2027 后，
+     * 2026 年不缺次年，写死的 25 小时会失效。改成按当前间隔取两个点，测的仍是同一件事：
+     * {@code shouldAutoCheck} 真的读了上次时间并跟间隔比较，而不是恒定真 / 恒定假。
+     */
     @Test
-    public void shouldAutoCheck_respectsOneDayThrottle() {
-        markCheckedAgo(2 * HOUR);
-        assertFalse("2 小时前刚查过，不该再拉", HolidayUpdater.shouldAutoCheck(ctx));
+    public void shouldAutoCheck_respectsTheCurrentInterval() {
+        long interval = HolidayUpdater.autoCheckIntervalMs(LocalDate.now());
 
-        markCheckedAgo(25 * HOUR);
-        assertTrue("缺次年数据时，25 小时前那次检查已过期",
-                HolidayUpdater.shouldAutoCheck(ctx));
+        markCheckedAgo(interval / 4);
+        assertFalse("远没到间隔，不该再拉", HolidayUpdater.shouldAutoCheck(ctx));
+
+        markCheckedAgo(interval + HOUR);
+        assertTrue("刚过间隔就该拉", HolidayUpdater.shouldAutoCheck(ctx));
     }
 
     /** 拿到次年数据后，25 小时不算过期——这条防的是「改成每天查之后忘了回 7 天」。 */
@@ -125,20 +139,26 @@ public class HolidayFreshnessTest {
         assertNull("11 月底也不提示", HolidayData.nextYearPendingHint(LocalDate.of(2026, 11, 30)));
     }
 
-    /** 12 月 1 日起仍未拿到次年数据 → 说清「还没发布」，别让用户以为是班表设错了。 */
+    /**
+     * 12 月 1 日起仍未拿到次年数据 → 说清「还没发布」，别让用户以为是班表设错了。
+     *
+     * <p>2026 年 12 月不再提示：内置已有 2027，那是真有了。
+     */
     @Test
     public void hint_fromDecemberWhenNextYearMissing() {
-        assertEquals("2027 年待发布 · 联网后自动更新",
+        assertNull("2026 年 12 月：2027 已内置，不该再提示待发布",
                 HolidayData.nextYearPendingHint(LocalDate.of(2026, 12, 1)));
-        assertEquals("2027 年待发布 · 联网后自动更新",
-                HolidayData.nextYearPendingHint(LocalDate.of(2026, 12, 31)));
-    }
-
-    /** 年份跟着今天走：2027 年 12 月缺的是 2028。 */
-    @Test
-    public void hint_followsTheYear() {
         assertEquals("2028 年待发布 · 联网后自动更新",
                 HolidayData.nextYearPendingHint(LocalDate.of(2027, 12, 1)));
+        assertEquals("2028 年待发布 · 联网后自动更新",
+                HolidayData.nextYearPendingHint(LocalDate.of(2027, 12, 31)));
+    }
+
+    /** 年份跟着今天走：2028 年 12 月缺的是 2029。 */
+    @Test
+    public void hint_followsTheYear() {
+        assertEquals("2029 年待发布 · 联网后自动更新",
+                HolidayData.nextYearPendingHint(LocalDate.of(2028, 12, 1)));
     }
 
     /** 已拿到次年数据就不提示——这时那行该显示「2027 年 · 在线」（v1.20.0：不带发布日）。 */
@@ -153,14 +173,14 @@ public class HolidayFreshnessTest {
 
     @Test
     public void label_plainRangeWhenNothingPending() {
-        assertEquals("2007–2026 年 · 内置",
+        assertEquals("2007–2027 年 · 内置",
                 SettingsActivity.holidayDataLabel(LocalDate.of(2026, 10, 26)));
     }
 
     @Test
     public void label_showsPendingHintInDecember() {
-        assertEquals("2027 年待发布 · 联网后自动更新",
-                SettingsActivity.holidayDataLabel(LocalDate.of(2026, 12, 2)));
+        assertEquals("2028 年待发布 · 联网后自动更新",
+                SettingsActivity.holidayDataLabel(LocalDate.of(2027, 12, 2)));
     }
 
     @Test

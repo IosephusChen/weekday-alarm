@@ -558,11 +558,27 @@ final class PlanCardsView {
         LocalDate start = draft.cycleStart != null ? draft.cycleStart : LocalDate.now();
         ShiftCycleSheet.showShiftPicker(act, weekName(start, day) + " 上哪个班",
                 shifts, cur,
-                id -> {
-                    cycle[day] = id;
-                    draft.setRotation(len, draft.cycleStart, cycle);
-                    renderRotation();
-                });
+                id -> applyCycleShift(day, id));
+    }
+
+    /**
+     * 给周期里第 day 天定一个班次（v1.23.21）。
+     *
+     * <p>这段原来直接写在 {@link #cycleNextShift} 的回调里，末尾只有 {@code renderRotation()}，
+     * 漏了 {@code onChanged.run()}——而「我的班表」的保存按钮只在 {@link #reload()} 末尾刷新
+     * （{@code WeekScheduleActivity.syncSaveButton} 读 {@code draft.dirty}）。
+     * 于是：进来就是轮班（按钮本来就是灰的）→ 逐日选完白班夜班 → {@code dirty} 已变 true，
+     * 按钮却还是灰的、点不动。改周期长度、改「今天第几天」都走 reload，所以只有这一条路坏。
+     *
+     * <p>包级可见是为了让单测直接调它——{@code showShiftPicker} 要真对话框，测不了。
+     */
+    void applyCycleShift(int day, int id) {
+        int len = Math.max(1, draft.cycleLen);
+        int[] cycle = draft.cycleShiftIds(len);
+        if (day >= 0 && day < cycle.length) cycle[day] = id;
+        draft.setRotation(len, draft.cycleStart, cycle);
+        renderRotation();
+        if (onChanged != null) onChanged.run();
     }
 
     private static Shift findShift(List<Shift> shifts, int id) {

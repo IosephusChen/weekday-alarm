@@ -78,6 +78,16 @@ final class CalendarPanel {
     private static final float LABEL_SP = 9.5f;
 
     /**
+     * 日历下方那条一次性提示的两种写法（v1.23.21）。
+     *
+     * <p>分两种是因为菜单本身分两种：轮班的上班日有「调班」、休息日有「加班」；
+     * 双休 / 单休 / 大小周 / 自定义七天没有班次，点开只有「请假」和「加班」。
+     * 只写一份会让另一类用户去找一个不存在的选项。
+     */
+    private static final String HINT_PLAIN = "点任意一天，标请假 / 加班";
+    private static final String HINT_ROTATION = "点任意一天，标请假 / 调班 / 加班";
+
+    /**
      * 6×7 格子骨架（v0.52.2）：第一次渲染时建好，之后只改文字、颜色与背景。
      *
      * <p>原来每次 {@link #refresh()} 都 removeAllViews 再新建 84 个 View——
@@ -116,7 +126,14 @@ final class CalendarPanel {
     void refresh() {
         renderCalendar();
         // 每次刷新都按标记重算，不在构造时定死：用户从引导页回来、改完设置回来都会走这里。
-        tvHint.setVisibility(Prefs.isCalHintSeen(host) ? View.GONE : View.VISIBLE);
+        boolean seen = Prefs.isCalHintSeen(host);
+        tvHint.setVisibility(seen ? View.GONE : View.VISIBLE);
+        // v1.23.21：文案也跟着重算。跳过引导的人先落在「大小周 / 双休」（没有班次），
+        // 之后把班表改成轮班再回首页，这里必须换成三项——否则提示在让他点开找
+        // 「调班」，而那个菜单里根本没有这一项（轮班才有）。
+        if (!seen) {
+            tvHint.setText(Prefs.getRule(host).hasShifts() ? HINT_ROTATION : HINT_PLAIN);
+        }
     }
 
     /**
@@ -464,6 +481,10 @@ final class CalendarPanel {
      * 把「标了会怎样」直接写在选项旁边——这件事以前只在点完的 Toast 里说。
      */
     private void onDayClick(LocalDate d) {
+        // v1.23.21：点开某一天就算「已经会用了」，那句话当场收走。
+        // 原来只在真选了请假 / 加班之后才收，于是菜单开着、提示还挂在下面，
+        // 用户读了两种说法（提示说三项、菜单里只有两项）才发现对不上。
+        dismissHint();
         // v1.11.0：这里的「上班日 / 休息日」指按规则本来是什么，不是这天最终算什么。
         // 用带覆盖的类型会得出「标了请假 → 休息日 → 只给加班选项」这种死循环，
         // 用户就再也取消不掉自己的请假了

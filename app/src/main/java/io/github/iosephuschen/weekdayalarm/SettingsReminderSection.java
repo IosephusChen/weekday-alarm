@@ -96,7 +96,11 @@ final class SettingsReminderSection {
      *
      * <p>v0.76.4 换成 {@link DialogKit#showGroupPick} 单选卡片：自绘 RadioGroup
      * （{@code dialog_ring_duration}）的单选圈是系统样式，和卡片语言不搭。
-     * 确定才写 Prefs（和原来一样），映射逐字保留：{@code mins<=0→不限}、
+     *
+     * <p>v1.23.14（A3）：从 {@code showGroupPickWithTip} 改成 {@link DialogKit#showPickWithTip}
+     * ——<b>点一项就写入并关掉</b>，不再让用户再点一次「确定」。理由：这里只有一组选项，
+     * 选完就没有第二件事要确认；而按键设置那种两组（音量键 × 电源键）必须跨组选完再落，
+     * 那里仍保留「确定」（{@code showKeysDialog}）。存盘映射逐字保留：{@code mins<=0→不限}、
      * 否则取第一个「不小于 mins」的档位，都比它大就落最后一档。
      */
     private void showRingDurationDialog() {
@@ -113,15 +117,13 @@ final class SettingsReminderSection {
                 }
             }
         }
-        DialogKit.showGroupPickWithTip(host,
+        DialogKit.showPickWithTip(host,
                 host.getString(R.string.dialog_ring_duration_title),
                 host.getString(R.string.dialog_ring_duration_message),
                 RING_DURATION_TIP,
-                new DialogKit.Group[]{
-                        new DialogKit.Group(null, RING_DURATION_ITEMS,
-                                RING_DURATION_SUBS, checked)},
+                RING_DURATION_ITEMS, RING_DURATION_SUBS, checked,
                 picked -> {
-                    Prefs.setRingMinutes(host, RING_DURATION_VALUES[picked[0]]);
+                    Prefs.setRingMinutes(host, RING_DURATION_VALUES[picked]);
                     updateRingDurationText();
                 });
     }

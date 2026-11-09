@@ -1,12 +1,14 @@
 {
-  "versionCode": 298,
-  "versionName": "1.23.13",
-  "published": "2026-11-08",
-  "title": "今天的格子也会跟着加班变色",
+  "versionCode": 299,
+  "versionName": "1.23.14",
+  "published": "2026-11-09",
+  "title": "引导提示不再压住系统权限框",
   "notes": [
-    "今天那格原来固定显示淡紫，加班、请假都被它盖住",
-    "现在保留紫框，只把内层底色换成当天状态"
+    "以前引导页说完就弹提示，系统权限框紧跟着盖上来",
+    "现在等框关掉再说；点了拒绝会听到「闹钟不会响」",
+    "响铃时长点一项就生效，不必再点「确定」",
+    "「导入完成」改叫「已导入」，与「已导出」同一体例"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.13/weekday-alarm-1.23.13.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.13"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.14/weekday-alarm-1.23.14.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.14"
 }

@@ -12,9 +12,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -26,6 +28,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowActivity;
+import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowSeekBar;
 
@@ -205,10 +208,64 @@ public class SettingsLayoutTest {
         ctl.pause().stop().destroy();
     }
 
+    /**
+     * A3（v1.23.14）：响铃时长只有一组选项，点一项就落盘并关掉，不用再点「确定」。
+     *
+     * <p>对照的是按键设置那种两组（音量键 × 电源键）——那两处必须跨组选完再落，
+     * 「确定」留着；这里没有第二件事要确认，多一次点击只是多一道手续。
+     */
+    @Test
+    public void ringDuration_writesOnTapWithoutOk() {
+        Intent i = new Intent(ctx(), MoreSettingsActivity.class)
+                .putExtra(MoreSettingsActivity.EXTRA_SECTION, MoreSettingsActivity.SECTION_RING);
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class, i).setup();
+        ShadowLooper.idleMainLooper();
+
+        Prefs.setRingMinutes(ctx(), Prefs.RING_MINUTES_DEFAULT);
+        ctl.get().findViewById(R.id.row_ring_duration).performClick();
+        ShadowLooper.idleMainLooper();
+
+        AlertDialog dlg = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        assertNotNull("点了应弹对话框", dlg);
+        View row = pickRowWithText(dlg.findViewById(R.id.dlg_pick_list), "5 分钟");
+        assertNotNull("弹窗里应有「5 分钟」这一项", row);
+
+        row.performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("点一项就该写入，不必再点确定", 5, Prefs.getRingMinutes(ctx()));
+        assertFalse("点完要关掉对话框", dlg.isShowing());
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 在选项列表里按主文案找那一行（返回可点的卡片，不是里面的 TextView）。
+     *
+     * <p>卡片是 {@code DialogKit.optionView} 现搭的，没有 id，只能按文本找；
+     * 结构固定为 card &gt; textCol &gt; TextView(主文案)。
+     */
+    private static View pickRowWithText(View root, String text) {
+        if (!(root instanceof ViewGroup)) return null;
+        ViewGroup g = (ViewGroup) root;
+        for (int i = 0; i < g.getChildCount(); i++) {
+            View child = g.getChildAt(i);
+            if (child instanceof TextView && text.contentEquals(((TextView) child).getText())) {
+                View col = (View) child.getParent();          // textCol
+                return col == null ? null : (View) col.getParent();  // card
+            }
+            if (child instanceof ViewGroup) {
+                View found = pickRowWithText(child, text);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
     /** 搬到主页的那一行也得绑上：点「稍后提醒」应弹对话框（绑定在父类里，与页面无关）。 */
     @Test
-    public void homeSnoozeRow_isBound() {
-        ActivityController<SettingsActivity> ctl = openHome();
+    public void homeSnoozeRow_isBound() {        ActivityController<SettingsActivity> ctl = openHome();
         ctl.get().findViewById(R.id.row_snooze).performClick();
         ShadowLooper.idleMainLooper();
         assertNotNull("主页点了「稍后提醒」应弹对话框",

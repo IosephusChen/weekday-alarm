@@ -169,7 +169,7 @@ def main():
     print("-- 文档引用校验（tools/check_refs.py）--")
     bad = 0
     bad += check_doc("PLAN.md", region_plan, "PLAN.md 当前方案节", quiet)
-    bad += check_doc("docs/待裁决清单.md", region_list, "清单 A5 复核记录", quiet)
+    bad += check_doc("docs/待裁决清单.md", region_list, "清单复核记录与拍板待选", quiet)
     if bad:
         print("\n有 %d 处引用指不准。按 AGENTS 第三节：行号与锚点当场 grep 确证再写。" % bad)
         return 1

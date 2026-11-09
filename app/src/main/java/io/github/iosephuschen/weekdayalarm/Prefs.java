@@ -497,15 +497,32 @@ public final class Prefs {
      * （2026-10-31 用户重装后正是这么问的）。而且它的模式是「每天」，对一个主打
      * 「只在该上班的日子响」的 App 来说，恰好是最不该当范本的那一条。
      *
-     * <p>只影响从未迁移过的设备（全新安装）。老用户走的是下面的分支，列表一个字都不会变。
+     * <p>v1.23.17（C）：连「起床」也不预置了。用户点「稍后设置」表达的是「先不设」，
+     * 却会得到一条明早真会响的闹钟——语义相反（2026-11-09 用户提出）。现在全新安装
+     * 读到的是空列表，首页走它本来就有的「还没有闹钟」空态。
+     *
+     * <p>但**升级必须照旧迁移**：旧版单闹钟真的写过 {@code KEY_ALARM_HOUR}，那台机器
+     * 上有用户自己设的时间；不迁移等于把老用户的闹钟清空。判据只能是「这个键存不存在」——
+     * 全新安装没有任何代码写过它，老机器一定有。
+     *
+     * <p>只影响从未迁移过的设备。老用户走的是下面的分支，列表一个字都不会变。
      */
     private static List<Alarm> getAlarmsRaw(Context c) {
         SharedPreferences sp = sp(c);
         if (!sp.getBoolean(KEY_ALARMS_MIGRATED, false)) {
+            // 标记丢了但列表还在（极端情况：写入中断、有人在别处删了这一个键）——
+            // 就地认下来，绝不按「新装」处理。宁可多一条预置，也不能清空用户的闹钟。
+            String existing = sp.getString(KEY_ALARMS, null);
+            if (existing != null) {
+                sp.edit().putBoolean(KEY_ALARMS_MIGRATED, true).apply();
+                return Alarm.fromJson(existing);
+            }
             List<Alarm> migrated = new java.util.ArrayList<>();
-            int h = sp.getInt(KEY_ALARM_HOUR, 7);
-            int m = sp.getInt(KEY_ALARM_MIN, 30);
-            migrated.add(new Alarm(1, h, m, "起床", Alarm.Mode.WORKDAY, true));
+            if (sp.contains(KEY_ALARM_HOUR)) {
+                int h = sp.getInt(KEY_ALARM_HOUR, 7);
+                int m = sp.getInt(KEY_ALARM_MIN, 30);
+                migrated.add(new Alarm(1, h, m, "起床", Alarm.Mode.WORKDAY, true));
+            }
             sp.edit()
                     .putString(KEY_ALARMS, Alarm.toJson(migrated))
                     .putBoolean(KEY_ALARMS_MIGRATED, true)

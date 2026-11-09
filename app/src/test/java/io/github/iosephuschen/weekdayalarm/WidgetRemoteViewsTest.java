@@ -279,6 +279,9 @@ public class WidgetRemoteViewsTest {
     @Test
     public void monthAlarmRow_onlyIn4x4() {
         Context c = ctx();
+        // v1.23.17 起新装不再预置闹钟，这条要先自己放一条开着的，否则测的是「未开启」。
+        Prefs.setAlarms(c, java.util.Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
         View v4 = MonthScheduleWidget.build(c).apply(c, new FrameLayout(c));
         assertEquals("4×4 闹钟状态该显示", View.VISIBLE,
                 v4.findViewById(R.id.widget_month_alarm).getVisibility());

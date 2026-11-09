@@ -73,6 +73,23 @@ public class UiLayoutTest {
      * 第 2 行与那条 1dp 分隔线——数据一变，它们就 NPE。测试依赖的应该是它自己摆好的前提，
      * 而不是别处碰巧留下的种子数据。
      */
+    /**
+     * 起一个「恰好一条闹钟」的主页。
+     *
+     * <p>v1.23.17 起全新安装不再预置闹钟，{@code launch()} 得到的是空态——
+     * 凡是要读「第一行」的布局断言，都得自己放一条进去。
+     */
+    private MainActivity launchWithOneAlarm() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
+        ActivityController<MainActivity> ctl = Robolectric.buildActivity(MainActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        return ctl.get();
+    }
+
     private MainActivity launchWithTwoAlarms() {
         ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
         Prefs.setGuideSeen(ctx(), true);
@@ -122,12 +139,17 @@ public class UiLayoutTest {
      */
     @Test
     public void afterEditingAlarm_listAndHeroAgree() {
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
+        Prefs.setGuideSeen(ctx(), true);
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
         ActivityController<MainActivity> ctl = Robolectric.buildActivity(MainActivity.class).setup();
         ShadowLooper.idleMainLooper();
         MainActivity a = ctl.get();
 
         java.util.List<Alarm> alarms = new java.util.ArrayList<>(Prefs.getAlarms(ctx()));
-        assertFalse("预置闹钟不该是空的", alarms.isEmpty());
+        assertFalse("测试自己放的那条闹钟不该凭空消失", alarms.isEmpty());
         Alarm first = alarms.get(0);
         // 用 DAILY 而不是 WORKDAY：这条测的是「改完时间，列表与顶部一致」，与今天
         // 是周几无关。WORKDAY 在周六日会被渲染成「—」（今天休息），于是这条断言在
@@ -469,7 +491,7 @@ public class UiLayoutTest {
      */
     @Test
     public void alarmRow_alignsTimeWithNameAtTop() {
-        MainActivity a = launch();
+        MainActivity a = launchWithOneAlarm();
         ViewGroup list = a.findViewById(R.id.alarm_list);
         LinearLayout row = (LinearLayout) list.getChildAt(0);
         assertEquals("时间与名称应顶部对齐", Gravity.TOP,

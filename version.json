@@ -1,13 +1,13 @@
 {
-  "versionCode": 301,
-  "versionName": "1.23.16",
+  "versionCode": 302,
+  "versionName": "1.23.17",
   "published": "2026-11-09",
-  "title": "响不响，先看自启动",
+  "title": "跳过就是真的没设",
   "notes": [
-    "通知没开不影响响铃；划掉 App 后还响不响，看自启动",
-    "第 3 页副标题改成：响不响看自启动，其余管怎么响、准不准、怎么关",
-    "悬浮窗没开时是退回整屏；后台弹出也没开，就只剩声音"
+    "「稍后设置」不再顺手建一条明早会响的闹钟",
+    "新装不再预置「起床 07:30」，首页直接从空列表开始",
+    "老版本升级的闹钟照旧迁移，一条都不会丢"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.16/weekday-alarm-1.23.16.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.16"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.17/weekday-alarm-1.23.17.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.17"
 }

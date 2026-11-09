@@ -7,150 +7,81 @@
   ② 取凭据：读网盘 `/weekday-alarm/nas-access.docx`（连接器四步 → `bash tools/load-access.sh`，实测 20 秒，坑在 AGENTS 第三节），读不到再问用户要。**必须在 ① 之后**——`load-access.sh` 在仓库里，没 clone 就没有它。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
 - **做到哪**：**v1.23.13 / 298 已发布**（2026-11-08 23:09）：修「今天那格被淡紫底盖住加班 / 请假色」，只改渲染最后一步，判据与数据结构没动；`releases/latest` 已指向，APK 2,902,787 字节 / MD5 `e924e2b0…`，签名与 v1.23.12 一致可覆盖安装。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
-- **下一步**：清单里**能靠代码判定的已经全部做完**，剩 10 条卡在两件事上——① 要用户拍板（6 条）：A3 弹窗收尾、A8 吸顶（结构改造）、A13 默认值、A14 父标题常驻（后半即 C3，合起来处理）、A16 节日覆盖、C4 标题体例；② 要新截图（3 条）：A10 可点值配色、B2 日历头部、B14 班次圆点。**A5 的 6 段录屏已判读完**：5 个调用点定位 + 机制见 `docs/待裁决清单.md`「A5 录屏复核记录」，方案在下文、状态 `待确认`，等用户回「改吧」才动代码；A5 不单独出包，等攒批。下次开工先问用户要图，别再猜。**工具侧**：`tools/check_refs.py` 已落地**并已推送**（2026-11-09，`bd6e646`），`release.sh --check` 与 CI 各接一处；CI run 42542356988 里 `Check doc references` 与全量单测、lint 全绿。文档里的 `文件:行号#锚点` 指不准会直接红——改完文档先跑它。扫描范围按位置切（交接条之后 → 第一个 `## v1.`），不认小节名，方案改名/结案不会把它变成路障。
+- **下一步**：清单里**能靠代码判定的已经全部做完**，剩 9 条卡在两件事上——① 要用户拍板（6 条）：A3 弹窗收尾、A8 吸顶（结构改造）、A13 默认值、A14 父标题常驻（后半即 C3，合起来处理）、A16 节日覆盖、C4 标题体例；② 要新截图（3 条）：A10 可点值配色、B2 日历头部、B14 班次圆点。引导结束那句提示的「跨页残留」已落地（见下文「Toast 无避让」节），**剩的避让那一半与这 3 张截图一起看**；改动攒在 299 里，不单独出包。下次开工先问用户要图，别再猜。**工具侧**：`tools/check_refs.py` 已落地**并已推送**（2026-11-09，`bd6e646`），`release.sh --check` 与 CI 各接一处；CI run 42542356988 里 `Check doc references` 与全量单测、lint 全绿。文档里的 `文件:行号#锚点` 指不准会直接红——改完文档先跑它。扫描范围按位置切（交接条之后 → 第一个 `## v1.`），不认小节名，方案改名/结案不会把它变成路障。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
 - **待用户真机验收**：正式包 NAS `apk/weekday-alarm-1.23.13.apk`（与线上 Release 同一个）。重点验：**排班选「自定义」、周日和周一设为休息日，点「今天要加班」→ 按钮文案与日历格子应当一起变（今天那格转橙底，紫框和 4dp 白环保留）**；点「请假」同理。另外确认**未标记时今天仍是淡紫**，别被上一个修复带成浅灰。v1.23.11 那批四处（4×2 七格「休」、首页「休」字对齐、锁屏 Toast、七天全休的空态文案）仍未验收，一并看。
-- **清单**：39 条正文在 `docs/待裁决清单.md`，**状态列只在那份文件改**。已做 14 条、部分已做 4 条、复核不成立 5 条、判定不改 6 条；剩 10 条待裁决（6 条要拍板 / 3 条要截图；A5 图已给完、方案 `待确认`；A14 的后半即 C3，算同一条）。这行数字由 `tools/check_version.py` 校验，和清单对不上直接红。
-- **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。**A5 方案 `待确认`**：没回「改吧」之前不写第一行代码，也不单独出包。
+- **清单**：39 条正文在 `docs/待裁决清单.md`，**状态列只在那份文件改**。已做 14 条、部分已做 5 条、复核不成立 5 条、判定不改 6 条；剩 9 条待裁决（6 条要拍板 / 3 条要截图；A14 的后半即 C3，算同一条）。这行数字由 `tools/check_version.py` 校验，和清单对不上直接红。
+- **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。**引导收尾提示已改完但没出包**：改动攒在 299 里，别单独发版；它剩的避让那一半没解决，别当成修好了。
 
-## A5 · Toast 无避让（2026-11-09 提出）
+## A5 · Toast 无避让（2026-11-09 提出，当天落地）
 
-> 状态：**待确认**（用户 07:51「A5 应该就这些，先处理吧」= 让先出方案，不是批准；08:47 选定改法「保留，引导后等权限框处理完再显示」= ① 的时序 + ④ 的范围，**仍没说「改吧」**；AGENTS 一节「追加反馈不等于批准」，只有回「改吧 / 现在就改」才动第一行代码）
-> 目标版本：299（patch 版，只改提示的显示时机，不动界面元素与文案）
-> 依据：6 段录屏判读，结论已记进 `docs/待裁决清单.md`「A5 录屏复核记录」
-> 行号核验：本文代码引用已于 2026-11-09 逐条 `grep` 复核（含三轮交叉复审修正：v5 回程、重建边界、弹框判定、`FloatingAlarm` 降级、`requestNotification` 调用点数）
-> 批准记录：待用户回「改吧」，届时把原话抄进本行并把状态改成 `已批准`
+> 状态：**已落地**（代码改完，全量单测与 lint 绿），**未出包、未动 `versionCode`**。
+> 批准原话：2026-11-09 09:40「改吧」。
+> 目标版本：299（patch，随其余待裁决条目攒批发版；本轮只改代码，不升版本号）
+> 依据：6 段录屏判读 + 三轮交叉复核，结论记在 `docs/待裁决清单.md`「A5 录屏复核记录」
+> 行号核验：本文引用已于 2026-11-09 落地后逐条 `grep` 复核，`tools/check_refs.py` 会把关
 
-**根因**：Toast 是系统 `TYPE_TOAST` 窗口，不跟 Activity 走。`GuideActivity.complete()`
-在 `GuideActivity.java:1543#Toast.makeText` `show()`（`LENGTH_LONG` 约 3.5s）之后立刻 `finish()`；
-`MainActivity.onResume()`（`MainActivity.java:291-296#requestNotification`）随后调
-`PermissionGuides.requestNotification()`，由 `PermissionGuides.java:113#requestPermissions` 的
-`requestPermissions` 弹出系统通知权限框。录屏逐帧实测：Toast 1.48s 出现、到录屏结束
-4.29s 仍在；权限框 1.65–1.81s 渐入、3.34–3.46s 渐出；**两者共存约 1.5s，且权限框
-消失后 Toast 还留着**——于是 Toast 盖在权限框上。v5 的「飘到设置页」是同一机制。
+**根因（修复前）**：Toast 是系统 `TYPE_TOAST` 窗口，不跟 Activity 走。
+`GuideActivity.complete()`（`GuideActivity.java:1510#private void complete`）弹完立刻 `finish()`；
+首页 `MainActivity.onResume()`（`MainActivity.java:312-314#PermissionGuides.requestNotification`）
+随后请求通知权限，由 `PermissionGuides.java:128#requestPermissions` 弹出系统框。录屏逐帧实测：
+提示 1.48s 出现、4.29s 仍在；权限框 1.65–1.81s 渐入、3.34–3.46s 渐出；**两者共存约 1.5 秒，
+且框消失后提示还留着**——于是提示盖在框的说明文字上。v5 的「飘到设置页」是同一机制。
 
-**5 个调用点**（6 段录屏按代码行合并，v5 / v6 共用 1543 同一句 Toast）：
+**5 个调用点**（6 段录屏按代码行合并，v5 / v6 原本共用同一句 Toast）：
 
-| 调用点 | 场景 | 备注 |
+| 调用点 | 场景 | 处理 |
 | --- | --- | --- |
-| `SettingsActivity.java:508#已是最新` | 设置页检查更新 | v1 |
-| `AboutActivity.java:171-173#about_check_update_latest_toast` | 关于页检查更新 | v2 |
-| `GuideActivity.java:1228-1229#Toast.makeText` | 引导页锁屏自测 `lockHintToast` | v3；v1.23.6 已在 `onPause()` 收走 |
-| `GuideActivity.java:946#已发出` | 引导页测试通知 | v4 |
-| `GuideActivity.java:1543#Toast.makeText` | 引导页收尾 `complete()` | v5 / v6；文案 1534 / 1536 两个分支 |
+| `SettingsActivity.java:508#已是最新` | 设置页检查更新（v1） | 不动：压的是分组标题，属避让 |
+| `AboutActivity.java:171-173#about_check_update_latest_toast` | 关于页检查更新（v2） | 不动：压的是许可小字 |
+| `GuideActivity.java:1228-1229#Toast.makeText` | 引导页锁屏自测（v3） | 不动：v1.23.6 已在 `onPause()` 收走 |
+| `GuideActivity.java:945#已发出` | 引导页测试通知（v4） | 不动：`LENGTH_SHORT`，压说明小字 |
+| `GuideActivity.java:1510#private void complete` | 引导页收尾（v5 / v6） | **本次只改这一处** |
 
-**怎么改（方向已定：2026-11-09 08:47 用户选「保留，引导后等权限框处理完再显示」= ① 的思路 + ④ 的范围）**：
+**落地结果**：
 
-- ① **延后显示**：`complete()` 不再 `show()`，把 tip 交给 MainActivity，等权限框回调
-  `onRequestPermissionsResult` 之后再提示。治本，但要碰首次引导时序，测试面最大。
-- ② **统一收走**：仿 v1.23.6 对 `lockHintToast` 的先例，给 5 处 Toast 在页面退出 /
-  `onPause()` 里 `cancel()`。改动面最小、有先例；代价是快速切页时提示可能一闪而过。
-- ③ **换成带避让的悬浮提示**（`FloatingAlarm.flash` 那套），统一样式与位置。顺带解决
-  「Toast 无避让」，但涉及悬浮窗权限降级分支，且属视觉改动，必须先真机确认。
-- ④ **只修 1543 这一例**（v6 权限框共存），其余 4 处不动。
+| 文件 | 改了什么 |
+| --- | --- |
+| `GuideActivity.java:1510-1548#private void complete` | `complete()` 首次引导只调 `GuideActivity.java:1542#PendingTip.put`，不再 `show()`；重看引导（`firstRun == false`）仍当场说「设置已更新」（`GuideActivity.java:1545#Toast.makeText`） |
+| `PendingTip.java` | 新增：两句文案的暂存处，静态字段 + 一次性 `take()`，取走即清 |
+| `MainActivity.java:306-315#PendingTip.has()` | `onResume`：有 pending 就先弹框——弹了等回调（`308`），没弹当场说（`310`） |
+| `MainActivity.java:342#onRequestPermissionsResult` | 新增回调，只认 `REQUEST_NOTIFICATION`，别的权限结果不碰 |
+| `MainActivity.java:352#showPendingTip` | 按共用的 `canNotify()` 选 ok / warn，说完即清 |
+| `MainActivity.java:173#!PendingTip.has()` | 重建守卫：有 pending 时 `onCreate` 不抢着弹框，交给 `onResume` 统一走 |
+| `PermissionGuides.java:124#static boolean requestNotification` | 改为返回 boolean（真弹了没有），不让调用方复刻判断条件 |
+| `PermissionGuides.java:143#static boolean canNotify` | 判据上收；`GuideActivity.canNotify()` 变成一行转调 |
 
-**改哪个文件 / 会不会碰到别处**：① 碰 `GuideActivity` + `MainActivity`（首次引导时序）；
-② 只碰上表 4 个文件里的 Toast 调用点及其 `onPause()`；③ 额外碰 `FloatingAlarm`；
-④ 只碰 `GuideActivity.java:1543#Toast.makeText`。
+**测试**：新增 `GuideTipTimingTest`（7 条）。**先红后绿**：把 `complete()` 临时还原成旧行为
+（引导页直接 `show()`），5 条立刻红——引导页弹了 / 首页没人说 / 拒绝后仍报时间 /
+重复回调叠第二句 / 不弹框时永久不说；改回来 7 条全绿，全量单测与 lint 也绿。
 
-**推荐（2026-11-09 复核后修正）：④ 的范围 + ① 的思路，其余 4 处不动。**
-上一稿推荐「② 统一收走」，复核代码后发现对 `1543` 有害：`complete()` 在 `1543`
-`show()` 完立刻 `finish()`（`1544`），`onPause()` 紧随，`cancel()` 会把刚弹的提示直接
-收走——而 `1524-1530` 的注释写明「从『稍后设置』出去、通知又没开时，必须把『不会响』
-说出来」，这句是安全提示，不能吞。v1.23.6 的 `lockHintToast` 先例能成立，是因为那条
-是「锁屏后不该继续显示」，与「刚说完就退出」不同。
+**七个坑的处置**（分析时列的，落地逐条对照）：
 
-- 真正算 bug 的只有 `1543`：v5 / v6 共用这一句，但只有 **v6** 构成层叠——首次引导收尾后
-  `MainActivity.onResume` 紧接着弹权限框，Toast 压上去（共存约 1.5s）；**v5** 是从设置页
-  重看引导，回程没有权限框，压的是设置页「导出配置」行，属 A5b 视觉范畴（本方案不解，
-  见坑 4）。`v1 / v2 / v4` 压的是说明小字、且 `LENGTH_SHORT` 一闪而过，属**视觉避让**
-  （美丑），按 AGENTS 不凭代码猜 → 维持不动，攒到 A10 / B2 / B14 那批截图一起看。
-  `v3` 已由 v1.23.6 在 `onPause()` 收走，不动。
-- **范围坦白（2026-11-09 二轮复核补，三轮修正拆条建议）**：本方案只解掉 A5 的**一半**——
-  「Toast 跨页残留压住权限框」。A5 原文是「Toast 无避让」，`v1 / v2 / v4` 压住说明小字那半
-  仍在。所以落地后清单状态**不得写「已做」**，应记「部分已做」，并在该行注明「跨页残留已修 /
-  避让待 A10·B2·B14 截图批」。
-  **不拆成 A5a / A5b**（三轮修正上一稿建议）：清单从 39 条变 40 条，交接条 `PLAN.md:13`
-  那一行里的 6 个数字（39 / 14 / 4 / 5 / 6 / 10）和括号里的「6 条要拍板 / 3 条要截图」
-  得一起重算，且 `check_version.py` 的「交接条与清单」段（`254` 行 `pending = {...}`）是拿
-  「交接条点到的编号」和「清单待裁决编号」**按集合比**的，拆出新编号就得同步改交接条与
-  脚本预期；而 A5a / A5b 不是用户给的原始编号，凭空多两个代号反而难对。
-  只改状态档位（部分已做 4 → 5、待裁决 10 → 9，总条数仍 39），交接条改那一行的 3 个数字
-  加半句描述即可。
-- ③ 治不了根：`FloatingAlarm.java:421-422#canFloat` 与 `FloatingAlarm.java:444-445#wm == null` 在没有悬浮窗权限时仍退回
-  `Toast.makeText`（另有一处 `catch` 异常兜底同样退回，不在权限判据内），而首次引导刚
-  结束恰恰最可能没有该权限（就是 v6 的场景），且多一层视觉改动。
-- ① 的**七个**坑（二轮补第 3、三轮补第 4、四轮补第 6–7）：
-  1. `MainActivity` 全仓没有 `onRequestPermissionsResult` 钩子，要新增；
-  2. `PermissionGuides.requestNotification`（108-117）只在 Android 13+ 且未授权时弹框，
-     已授权 / Android 12 以下都不弹，必须配「不弹框就立即显示」的分支；
-  3. **回调里必须按 `canNotify()` 重新选文案**——录屏 v6 用户点的是「始终允许」，若点
-     「拒绝」还照搬 `firstRun` 分支的「已排好班，07:30 会响」，就是一句假话（正是
-     `1524-1527` 注释要防的那种）。补上这条等于顺手修掉一个既有缺陷。
-  4. **v5 路径的回程不是 `MainActivity`**（三轮复核新发现，上一稿漏了）：引导页有两个
-     入口——首次安装走 `MainActivity.java:167#startActivity`，从设置重看走 `SettingsActivity.java:179#row_onboard`。
-     后者 `finish()` 后栈顶是 `SettingsActivity`（`onResume:222`），**`MainActivity.onResume`
-     根本不触发**。若把 v5 的「设置已更新」也塞进交给 `MainActivity` 的 pendingTip，这句
-     会**永久丢失**。所以 `complete()` 要按 `firstRun`（`1512` 求值，早于 `1516` 写标记）
-     分两路：`firstRun == true` 才延后；`firstRun == false`（从设置重看）**保持原样直接
-     `show()`**——这条路径回设置页、不弹权限框，没有层叠问题。
-     ⚠️ 因此本方案**不解 v5**：录屏里那句「设置已更新」飘到设置页、压住「导出配置」行
-     的现象依旧存在，归 A5b，等截图批一起看。别把它当成修好了。
-  5. **通道与 requestCode**：`MainActivity.java:167#startActivity` 是普通 `startActivity`（无 forResult），
-     tip 传过去要另找通道——`MainActivity` 此时是**已存在的实例**（`onResume` 复用），
-     Intent extra 走不通，得用静态字段或 `Prefs` 临时标记，**一次性消费、用完即清**；
-     `requestCode` 全 App 共用 `1`（`PermissionGuides.java:114#POST_NOTIFICATIONS`），回调里必须判
-     `requestCode == 1`，否则会吞掉别处的权限结果。
-  6. **重建边界（四轮复核补）**：`MainActivity` 在下层被系统回收、`GuideActivity` 存活时
-     （MIUI 激进回收不罕见），`complete()` 后回来的是**新建实例**，`onCreate` 的 else
-     分支（`169`）会先 `requestNotification` 弹框，`onResume` 再消费 pendingTip → Toast
-     又压在框上，原问题原地复现；若进程被杀，静态 pendingTip 直接丢失 → 提示静默消失。
-     处置：`169` 加 `if (!PendingTip.has())` 守卫，把弹框交给 `onResume` 的统一流程。
-  7. **「弹没弹框」判不了（四轮复核补）**：`requestNotification` 是 `void`（`109`），没有
-     返回值。要判断「不弹框就立即显示」，只能自己复刻 `SDK>=33 && 未授权` 的条件——两处
-     条件写不一致就会「以为弹了其实没弹」，提示永久不显示。建议把它改成返回 `boolean`
-     （`requestNotification` 全仓只有 2 个调用点：`MainActivity:169 / 295`，改动可控），
-     别复制判断逻辑。
-- `MainActivity.java:161-162#通知权限请求刻意推迟` 注释写明「通知权限请求刻意推迟到引导关闭之后」，**权限框
-  时序不能动**。
+| 坑 | 落地怎么处理 |
+| --- | --- |
+| 1 首页没有权限回调 | 新增 `MainActivity.java:342#onRequestPermissionsResult` |
+| 2 不弹框时没有回调 | `requestNotification` 返回 boolean，`false` 就当场说（`MainActivity.java:310#showPendingTip`） |
+| 3 拒绝后不能承诺「会响」 | 文案存两句，回调后按 `canNotify()` 重选（`MainActivity.java:352#showPendingTip`）；`backOnHome_denied_saysItWontRing` 钉住 |
+| 4 v5 回程是设置页 | `complete()` 按 `GuideActivity.java:1511#boolean firstRun` 分两路，`false` 仍当场说——所以 **v5 没修**，见下 |
+| 5 通道与 requestCode | 静态 `PendingTip` + `PermissionGuides.java:114#REQUEST_NOTIFICATION = 1`，回调只认这个码 |
+| 6 重建边界 | `onCreate` 加 `MainActivity.java:173#!PendingTip.has()` 守卫 |
+| 7 弹没弹框判不了 | 同坑 2：返回值取代复刻条件 |
 
-**已定（2026-11-09 08:47，用户原话「保留，引导后等权限框处理完再显示」）**：
-引导结束那句「已排好班…」**保留**，但不在 `complete()` 里 `show()`，改为等权限框处理完
-再显示。采纳 ① 的时序 + ④ 的范围（只此一处，其余 4 处不动）。这条同时把 ① 的「拒绝
-分支」变成必须做的：用户点拒绝时不能照搬「07:30 会响」，得按 `canNotify()` 重选文案。
+**没解决的一半（别再当成修好了）**：v5 从设置页重看引导，`finish()` 后栈顶是
+`SettingsActivity.java:222#protected void onResume`，`MainActivity.onResume` 根本不触发——
+那句「设置已更新」仍会飘到设置页、压住「导出配置」行；v1 / v2 / v4 压说明小字那半也没动。
+清单只记「部分已做」，避让那一半归 A10 · B2 · B14 的截图批。
 
-**「并入 `warnIfNotificationOff`」已复核否决（2026-11-09）**，三个硬伤：
+**为什么不选 ② 统一收走 / ③ 悬浮提示**：② 对这句有害——`complete()` 弹完立刻 `finish()`，
+`onPause()` 的 `cancel()` 会把刚说的话收走，而它在「稍后设置 + 通知没开」时是唯一的安全提示。
+③ 在没悬浮窗权限时仍退回 Toast（`FloatingAlarm.java:421-422#canFloat`、
+`FloatingAlarm.java:444-445#wm == null`），而首次引导刚结束恰恰最可能没有该权限，
+且属视觉改动，得先真机看。
 
-- 该方法**全仓没有调用点**（`PermissionGuides.` 的 5 处调用是 `openAutoStart` ×1 /
-  `requestExactAlarm` ×1 / `openBackgroundPopup` ×1 / `requestNotification` ×2；全仓 grep
-  只命中定义 120 行、一条历史版本记录、本方案）。并进去之后引导结束时根本不触发；要让它
-  生效得先接调用点，反而不「省」，而接在 `onResume` 又会撞回权限框。
-- hero 卡在关键场景下**会误导**：`GuideActivity.java:892-893#闹钟照样排上了` 的 `canNotify()` 注释写明
-  「从『稍后设置』出去时权限没开，闹钟照样排上了，只是第二天不会响」；闹钟排上了 → `nextRingAt != null` →
-  倒计时条显示 `TodayCard.ringText()`（836-849，「明天 07:30 起床」），看着一切正常。
-  `1529-1530` 那句是**唯一戳破这个假象的提示**，删掉等于让用户对着一个不响的时刻放心。
-  且 hero 卡是常驻状态不是即时反馈，`nextRingAt == null` 时整条收起（v1.23.10），
-  v1.23.9 还特意删掉副信息里的「下次闹钟…」避免重复（809）。
-- 语义降级且覆盖不全：`warnIfNotificationOff` 文案是「提醒可能不显示」，比「闹钟不会响」
-  轻得多；`complete()` 的 tip 有三个分支（1530 警告 / 1533-1534 首次成功反馈 /
-  1536「设置已更新」），只有第一条能被它覆盖，另两条信息会凭空消失。
-
-**Y 的内核值得吸收**：「别在即将 `finish()` 的 Activity 里弹浮层」正是层叠的根因，
-方案 X 本就这么做。由此还引出一个更干净但更大的方向——把这句改成**主页面内的行内提示**
-而非任何浮层，就不需要 `onRequestPermissionsResult`、不需要猜时序、三个分支都能保留；
-代价是 UI 改动（一次性提示还要管「显示过就消掉」的状态），属交互改动，等真机定，不替
-用户选。
-
-**要不要升版本**：真正改代码时属行为修复，按惯例升 patch（下一个是 299）；但 A5 不单独
-出包、不单独推，与其余待裁决条目攒批发版。`versionCode` 一动就立刻推（用户规矩）。
-
-**不做什么**：不改任何 Toast 文案；不动 v1.23.6 已有的 `lockHintToast` 收走逻辑；
-不改权限申请时机（`MainActivity.onResume()` 291）；不动 `FloatingAlarm` 的悬浮窗降级
-分支（除非选 ③）；不出包、不推 main、不改 `versionCode`、不建临时 PAT（本轮不碰
-`.github/workflows/`）；不顺带修清单里其它 9 条。
-
-**越界表**：`PermissionGuides.warnIfNotificationOff`（120-126）全仓无调用点，疑似 `save()`
-路径重构后遗留的死方法；发现于 A5 方案复核，本轮只记录、不顺手删（AGENTS 一节）。
+**越界表**：`PermissionGuides.java:151#warnIfNotificationOff` 全仓无调用点，疑似 `save()`
+路径重构后遗留的死方法；本轮只记录、不顺手删（AGENTS 一节）。落地时也没并进去——
+它覆盖不了「已排好班，07:30 会响」和「设置已更新」这两句，且 hero 卡会在闹钟排上却不会响时
+显得一切正常。
 
 ---
 
@@ -177,9 +108,9 @@
 **锚点写法**（这是本方案相对上一版新增的部分，用户 08:32 指定要）：
 
 ```
-GuideActivity.java:1228-1229#Toast.makeText
-PermissionGuides.java:120-126#warnIfNotificationOff
-MainActivity.java:161-162#通知权限请求刻意推迟
+GuideActivity.java:<行号>#Toast.makeText
+PermissionGuides.java:<行号>#warnIfNotificationOff
+MainActivity.java:<行号>#通知权限请求刻意推迟
 ```
 
 `#` 后面是「这段区间里必须出现的一段原文」，可以是标识符，也可以是注释片段（这个仓库
@@ -193,8 +124,8 @@ MainActivity.java:161-162#通知权限请求刻意推迟
 
 - **A · 脚本与接入**：脚本本身 + 两处调用。**无锚点的引用只做 1–3，输出 warning 不挡
   CI**（历史引用不可能一次补齐，硬挡会天天红）。
-- **B · 补锚点**：只给**被扫范围**里的引用补，共 **25 处**（`PLAN.md` 当前方案节 16 处、
-  清单复核记录表 9 处；去重后 20 个不同引用，`GuideActivity.java:1543#Toast.makeText` 出现 3 次）。
+- **B · 补锚点**：只给**被扫范围**里的引用补，当时共 **25 处**（`PLAN.md` 当前方案节 16 处、
+  清单复核记录表 9 处；去重后 20 个不同引用，`complete()` 那句 Toast 出现 3 次）。
   历史版本节不动——那些行号是当时快照，补了也会再漂。
 
 **扫描范围**（误报是这类脚本唯一的死因，所以先划小）：只扫 `PLAN.md` 的**当前方案节**

@@ -52,6 +52,11 @@ public class MainActivity extends AppCompatActivity {
     /** 新手引导（v0.23.0）：本次启动是否拉起过引导页；onResume 计次用于延后权限请求。 */
     private boolean firstRunGuideShown;
     private boolean resumedOnce;
+    /**
+     * A5（2026-11-09）：引导收尾那句话正等通知权限框的结果。
+     * 拦住「弹了框、又 resume 一次、再弹一次」的重入，也让无关的 resume 不来抢这句话。
+     */
+    private boolean tipAwaitingPermission;
     private LinearLayout alarmList;
     /** 闹钟行渲染（v0.52.2 从本类拆出），只画界面，改动仍回本类处理。 */
     private AlarmRowRenderer alarmRowRenderer;
@@ -165,7 +170,11 @@ public class MainActivity extends AppCompatActivity {
             // 以前在拉起前就写，用户中途退出（或被杀进程）就再也看不到引导。
             firstRunGuideShown = true;
             startActivity(new Intent(this, GuideActivity.class));
-        } else {
+        } else if (!PendingTip.has()) {
+            // 2026-11-09（A5）：引导页刚说完「已排好班…」、等首页弹权限框时，这句提示还挂在
+            // PendingTip 里。此时若在这里弹框，首页回来后 onResume 再把提示放出来，又压一层
+            // ——同一页两套时序。所以有 pending 就让 onResume 统一走「弹框 → 等结果 → 说话」，
+            // 这里不抢。被系统回收后重建的那个实例走的正是这条路。
             PermissionGuides.requestNotification(this);
         }
     }
@@ -290,7 +299,17 @@ public class MainActivity extends AppCompatActivity {
 
         // 首次引导关闭后回到主界面，这时才请求通知权限（onCreate 那次已跳过）。
         // resumedOnce 用来跳过 onCreate 之后紧接着的那一次 onResume——那时引导页还没起来。
-        if (firstRunGuideShown && resumedOnce) {
+        //
+        // 2026-11-09（A5）：引导页把收尾那句话留在了 PendingTip 里。这里先弹框，
+        // 弹了就把话留到 onRequestPermissionsResult；没弹（已授权 / Android 12 以下）
+        // 就当场说完——否则这句话永远不出现。
+        if (PendingTip.has() && !tipAwaitingPermission) {
+            firstRunGuideShown = false;
+            tipAwaitingPermission = PermissionGuides.requestNotification(this);
+            if (!tipAwaitingPermission) {
+                showPendingTip();
+            }
+        } else if (firstRunGuideShown && resumedOnce) {
             firstRunGuideShown = false;
             PermissionGuides.requestNotification(this);
         }
@@ -307,6 +326,34 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         // 退到后台就停：一秒一次 setText 在前台无所谓，在后台是白耗电
         ticker.removeCallbacks(tickRunnable);
+    }
+
+    /**
+     * 通知权限框的结果（A5，2026-11-09 新增）。
+     *
+     * <p>引导页不再自己把「已排好班…」弹出来，而是等这里——权限框收起之后再说，
+     * 提示就不会压在框上。文案按 {@link PermissionGuides#canNotify} 重选：
+     * 用户点「拒绝」时不能照搬「07:30 会响」，那是句假话（见 {@code GuideActivity.complete()}）。
+     *
+     * <p>只认 {@link PermissionGuides#REQUEST_NOTIFICATION}：这个 requestCode 全 App 共用，
+     * 别的权限结果从这儿过时不能顺手把这句话放出去。
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != PermissionGuides.REQUEST_NOTIFICATION || !tipAwaitingPermission) {
+            return;
+        }
+        tipAwaitingPermission = false;
+        showPendingTip();
+    }
+
+    /** 把引导收尾那句说出来。取走即清，重复调用不会再弹第二遍。 */
+    private void showPendingTip() {
+        PendingTip tip = PendingTip.take();
+        if (tip == null) return;
+        Toast.makeText(this, PermissionGuides.canNotify(this) ? tip.ok : tip.warn,
+                Toast.LENGTH_LONG).show();
     }
 
     /**

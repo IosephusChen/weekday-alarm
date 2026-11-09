@@ -53,6 +53,31 @@ public class FreshInstallTest {
     }
 
     /**
+     * 全新安装、没选过班表：默认是双休（v1.23.21）。
+     *
+     * <p>v1.23.17 让「稍后设置」什么都不写，于是 {@code week_mode} 这个键不存在；
+     * 原来读不到键时给 0，正好是<b>大小周</b>——一个完全没概念的人被排成
+     * 「这周上 5 天、下周上 6 天」，小周那个周六 07:30 会响。
+     */
+    @Test
+    public void 全新安装默认双休() {
+        assertEquals("键不存在时应当按双休算",
+                WeekSchedule.Mode.DOUBLE_REST, Prefs.getWeekMode(ctx()));
+    }
+
+    /**
+     * 老用户存的就是大小周（值 0），不能被上面那条顺手改掉。
+     *
+     * <p>「键不存在」和「键存在且等于 0」必须分开判——这是这次改动唯一的风险点。
+     */
+    @Test
+    public void 老用户的大小周不被改掉() {
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.BIG_SMALL);
+        assertEquals("显式存过的大小周要保持原样",
+                WeekSchedule.Mode.BIG_SMALL, Prefs.getWeekMode(ctx()));
+    }
+
+    /**
      * 老版单闹钟升级：{@code alarm_hour / alarm_min} 是唯一的值，必须迁成一条「起床」。
      *
      * <p>这条守的是「取消预置」最危险的那一刀：判据写成「全新安装一律不建」很容易，

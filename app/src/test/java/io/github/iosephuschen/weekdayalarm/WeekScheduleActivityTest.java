@@ -234,6 +234,34 @@ public class WeekScheduleActivityTest {
                 hasText(a.findViewById(android.R.id.content), "我的班表"));
     }
 
+    /**
+     * 轮班页：逐日改一格班次，保存按钮必须变亮（v1.23.21 修）。
+     *
+     * <p>坏的版本里，点某一格选完班次只调了 {@code renderRotation()}，没有通知宿主；
+     * 而保存按钮的可用性只在 {@code reload()} 末尾刷新。于是进来就是轮班（按钮本来
+     * 就是灰的）→ 逐日选完白班夜班 → {@code dirty} 已经是 true，按钮却还是灰的、
+     * 点不动。改周期长度和「今天第几天」都走 reload()，所以只有这一条路坏。
+     */
+    @Test
+    public void changingOneShiftEnablesSave() {
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleStart(ctx(), java.time.LocalDate.now());
+        Prefs.setShiftCycle(ctx(), new int[]{2, 2, -1, -1});
+        Prefs.setShifts(ctx(), java.util.Arrays.asList(
+                new Shift(2, "白班", 8 * 60, Shift.END_UNKNOWN, 0)));
+
+        WeekScheduleActivity a = open();
+        View save = a.findViewById(R.id.btn_save);
+        assertFalse("刚进来没有改动，保存按钮应当是灰的", save.isEnabled());
+
+        a.planCardsForTest().applyCycleShift(2, 2);
+        ShadowLooper.idleMainLooper();
+
+        assertTrue("改了某一格的班次，保存按钮必须变亮", save.isEnabled());
+    }
+
     private static boolean hasText(View root, String want) {
         if (root instanceof TextView) {
             return want.contentEquals(((TextView) root).getText());

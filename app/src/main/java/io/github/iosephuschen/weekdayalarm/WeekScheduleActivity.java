@@ -73,6 +73,17 @@ public class WeekScheduleActivity extends AppCompatActivity {
         tryFinish();
     }
 
+    /**
+     * 包级可见：单测用来直接驱动卡片。
+     *
+     * <p>「点某一格选班次」要真对话框（{@code ShiftCycleSheet.showShiftPicker}），
+     * Robolectric 里点不到；{@link PlanCardsView#applyCycleShift} 是它的落点，
+     * 从这里进去就能测到「改完按钮亮不亮」这个真正会坏的环节。
+     */
+    PlanCardsView planCardsForTest() {
+        return planCards;
+    }
+
     private void syncSaveButton() {
         if (btnSave == null) return;
         btnSave.setEnabled(draft.dirty);

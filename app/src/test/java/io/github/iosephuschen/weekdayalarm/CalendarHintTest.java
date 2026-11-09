@@ -27,15 +27,17 @@ import java.lang.reflect.Method;
 import java.time.LocalDate;
 
 /**
- * 日历下方那条一次性提示（v1.23.20）。
+ * 日历下方那条一次性提示（v1.23.20，v1.23.21 补文案分支）。
  *
- * <p>它的职责只有一个：告诉用户这张表能点。所以四条用例覆盖的也是「说什么、什么时候不说」：
+ * <p>它的职责只有一个：告诉用户这张表能点。所以用例覆盖的是「说什么、什么时候不说」：
  *
  * <ul>
  *   <li>首次进首页要说；</li>
  *   <li>点掉之后永远闭嘴；</li>
- *   <li>用户真的标了一天，也闭嘴——他已经会了再留着就是说明书；</li>
- *   <li>标记写过之后，重建首页不再冒出来。</li>
+ *   <li>点开某一天的菜单，当场闭嘴——不用等他真选了某一项；</li>
+ *   <li>标记写过之后，重建首页不再冒出来；</li>
+ *   <li>文案跟着班表走：有班次才写「调班」，没有就只写「请假 / 加班」；</li>
+ *   <li>提示正显示时把班表改成轮班，回到首页它要跟着改口（用户跳过引导后再设班表就是这条路）。</li>
  * </ul>
  *
  * <p>不测文案的字体颜色与间距：那属于观感，按 `AGENTS.md` 第六节「美丑不许凭代码猜」等真机截图。
@@ -103,15 +105,16 @@ public class CalendarHintTest {
         assertEquals("看过之后再进首页不该冒出来", View.GONE, hintVisibility(a));
     }
 
-    // ---------- 标了一天，也收走 ----------
+    // ---------- 点开菜单就收走（v1.23.21）----------
 
     /**
-     * 点一个未来的上班日、选「请假」：提示应当同时消失。
+     * 点开某一天的菜单，提示当场收走，不用等他真选了某一项。
      *
-     * <p>这条比「点提示」更重要：用户真正用上这张表之后，那句说明还挂着就是噪音。
+     * <p>原来要等真选了「请假」才收。中间那段时间最难堪：菜单开着，提示还挂在下面，
+     * 两处说的选项数还不一样（提示两项或三项、菜单另一套）。现在点开就算会用。
      */
     @Test
-    public void markingADay_hidesHintToo() throws Exception {
+    public void openingADay_hidesHintRightAway() throws Exception {
         resetPrefs();
         MainActivity a = launch();
         LocalDate day = futureWorkday();
@@ -119,17 +122,80 @@ public class CalendarHintTest {
         clickDay(a, day);
         AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestDialog();
         assertNotNull("点一天应当弹出菜单", d);
+
+        assertEquals("菜单一开，提示就该收走", View.GONE, hintVisibility(a));
+        assertTrue("点开等于已经会用", Prefs.isCalHintSeen(ctx()));
+        assertFalse("还没选任何一项，这天不该被标上", Prefs.isVacation(ctx(), day));
+
+        // 菜单第一项就是「请假」，点下去仍然要真的标上
         LinearLayout list = d.findViewById(R.id.dlg_pick_list);
         assertNotNull("自绘列表应有容器", list);
         list.getChildAt(0).performClick();
         ShadowLooper.idleMainLooper();
-
-        assertEquals("标完一天，提示也该收走", View.GONE, hintVisibility(a));
-        assertTrue("标完一天等于已经会用", Prefs.isCalHintSeen(ctx()));
         assertTrue("这一天应当真的标上了请假", Prefs.isVacation(ctx(), day));
     }
 
+    // ---------- 文案跟着班表变（v1.23.21）----------
+
+    @Test
+    public void plainSchedule_saysLeaveAndOvertime() {
+        resetPrefs();   // 新装缺省 = 双休，没有班次
+
+        MainActivity a = launch();
+
+        assertEquals("没有班次就不该提「调班」，菜单里根本没这一项",
+                "点任意一天，标请假 / 加班", hintText(a));
+    }
+
+    @Test
+    public void rotationSchedule_addsShiftSwap() {
+        resetPrefs();
+        setRotation();
+
+        MainActivity a = launch();
+
+        assertEquals("轮班的上班日菜单里有「调班」，提示要一并写上",
+                "点任意一天，标请假 / 调班 / 加班", hintText(a));
+    }
+
+    /**
+     * 提示正显示时把班表改成轮班，回到首页它要跟着改口。
+     *
+     * <p>这正是「跳过引导 → 大小周/双休 → 去我的班表设成轮班 → 回来」那条路：
+     * 文案如果只在构造时定一次，这里就会一直写两项，而菜单已经有三项。
+     */
+    @Test
+    public void switchingToRotation_whileVisible_rewritesText() {
+        resetPrefs();
+        MainActivity a = launch();
+        assertEquals("点任意一天，标请假 / 加班", hintText(a));
+
+        setRotation();
+        // 「我的班表」保存后 finish，首页 onResume → refreshAll → calendarPanel.refresh()
+        a.onResume();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("改了班表回来，提示要改成三项",
+                "点任意一天，标请假 / 调班 / 加班", hintText(a));
+    }
+
     // ---------- 辅助 ----------
+
+    private String hintText(MainActivity a) {
+        return ((android.widget.TextView) a.findViewById(R.id.tv_cal_hint))
+                .getText().toString();
+    }
+
+    /** 造一张 4 天一轮、带一个白班的轮班表。 */
+    private void setRotation() {
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleKind(ctx(), Prefs.CYCLE_KIND_ROTATION);
+        Prefs.setCycleLen(ctx(), 4);
+        Prefs.setCycleStart(ctx(), LocalDate.now());
+        Prefs.setShiftCycle(ctx(), new int[]{2, 2, -1, -1});
+        Prefs.setShifts(ctx(), java.util.Arrays.asList(
+                new Shift(2, "白班", 8 * 60, Shift.END_UNKNOWN, 0)));
+    }
 
     /** 拿首页内嵌的日历面板，直接触发某一天的点击。 */
     private void clickDay(MainActivity a, LocalDate d) throws Exception {

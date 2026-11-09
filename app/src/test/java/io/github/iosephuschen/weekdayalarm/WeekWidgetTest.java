@@ -78,6 +78,9 @@ public class WeekWidgetTest {
 
     @Test
     public void model_titleMatchesBigOrSmallWeek() {
+        // v1.23.21：新装缺省改成双休了，这条测的是大小周的标题，得自己先设成大小周——
+        // 否则算标题的那几行（anchor / isBigWeekNow）对着双休永远对不上。
+        Prefs.setWeekMode(ctx(), WeekSchedule.Mode.BIG_SMALL);
         WeekWidgetRender.WeekModel m = WeekWidgetRender.computeModel(ctx());
         boolean big = WeekSchedule.isBigWeekNow(LocalDate.now(), Prefs.getAnchor(ctx()));
         // v0.27.1：标题从「本周 · 大周（休2天）」精简为「大周 · 休 2 天」，格子窄，前缀留给制度

@@ -152,8 +152,12 @@ public final class Prefs {
      * 否则一升级日历全变、闹钟全错。
      */
     public static WeekSchedule.Mode getWeekMode(Context c) {
-        int i = sp(c).getInt(KEY_WEEK_MODE, 0);
-        return WeekSchedule.Mode.fromOrdinal(i);
+        SharedPreferences p = sp(c);
+        // v1.23.21：键不存在 = 从没设过（新装、或跳过了引导）。原来这里顺手给 0（大小周），
+        // 于是一个选项都没选的人被排成大小周——小周那个周六 07:30 会响。
+        // 只影响从没写过这个键的安装：老用户哪怕存的就是 0，也走下面那行、仍是大小周。
+        if (!p.contains(KEY_WEEK_MODE)) return WeekSchedule.Mode.DOUBLE_REST;
+        return WeekSchedule.Mode.fromOrdinal(p.getInt(KEY_WEEK_MODE, 0));
     }
 
     public static void setWeekMode(Context c, WeekSchedule.Mode mode) {

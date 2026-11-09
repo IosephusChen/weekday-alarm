@@ -170,11 +170,15 @@ public class MainActivity extends AppCompatActivity {
             // 以前在拉起前就写，用户中途退出（或被杀进程）就再也看不到引导。
             firstRunGuideShown = true;
             startActivity(new Intent(this, GuideActivity.class));
-        } else if (!PendingTip.has()) {
+        } else if (!PendingTip.has() && !alarms.isEmpty()) {
             // 2026-11-09（A5）：引导页刚说完「已排好班…」、等首页弹权限框时，这句提示还挂在
             // PendingTip 里。此时若在这里弹框，首页回来后 onResume 再把提示放出来，又压一层
             // ——同一页两套时序。所以有 pending 就让 onResume 统一走「弹框 → 等结果 → 说话」，
             // 这里不抢。被系统回收后重建的那个实例走的正是这条路。
+            //
+            // v1.23.17（C）：一条闹钟都没有就别请求通知权限。用户点「稍后设置」什么都没建，
+            // 这时弹「允许发送通知吗」他只会拒绝；而系统这个框每装一次只给一次机会，
+            // 用掉就没了（拒绝后只能去设置里手动开）。留到他真建了闹钟再问。
             PermissionGuides.requestNotification(this);
         }
     }
@@ -305,11 +309,14 @@ public class MainActivity extends AppCompatActivity {
         // 就当场说完——否则这句话永远不出现。
         if (PendingTip.has() && !tipAwaitingPermission) {
             firstRunGuideShown = false;
-            tipAwaitingPermission = PermissionGuides.requestNotification(this);
+            // v1.23.17（C）：跳过引导时一条闹钟都没有，别为此用掉系统唯一一次通知弹窗。
+            // requestNotification 返回「真弹了没有」，没弹就当现场说完（下面那行会兜住）。
+            tipAwaitingPermission = !alarms.isEmpty()
+                    && PermissionGuides.requestNotification(this);
             if (!tipAwaitingPermission) {
                 showPendingTip();
             }
-        } else if (firstRunGuideShown && resumedOnce) {
+        } else if (firstRunGuideShown && resumedOnce && !alarms.isEmpty()) {
             firstRunGuideShown = false;
             PermissionGuides.requestNotification(this);
         }

@@ -666,9 +666,9 @@ public class GuideActivity extends AppCompatActivity {
     /**
      * 收尾时保证「真有闹钟会响」。
      *
-     * <p>首次安装已经有一条预置的「起床」（07:30、仅上班日、开着——v1.0.1 起不再顺带
-     * 预置那条关闭的「午休」），所以这里通常不用新建；空列表时才补一条「上班」，
-     * 保证点完「开始使用」真会有闹钟响。
+     * <p>v1.23.17 起全新安装是空列表（「稍后设置」什么都不设），所以「新建一条」不再是
+     * 兜底，而是新手点「开始使用」时真正建闹钟的那一步：按页面上选的时间建一条「起床」。
+     * 已有闹钟（从设置页重看引导）时改的是第一条，不新建。
      *
      * @return 是否新建了闹钟（只影响提示文案）
      */
@@ -677,7 +677,7 @@ public class GuideActivity extends AppCompatActivity {
         boolean created = false;
         Alarm target;
         if (alarms.isEmpty()) {
-            target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "上班", draftRepeat, true);
+            target = new Alarm(Prefs.nextAlarmId(this), hour, minute, "起床", draftRepeat, true);
             alarms.add(target);
             created = true;
         } else {
@@ -1513,16 +1513,24 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 完成（或点「稍后设置」）：落库、排程、写标记，然后关闭。
+     * 完成（或点「稍后设置」）：写标记、关闭。
      *
-     * @param fromSkip true = 顶栏那个出口。它和「开始使用」做的事完全一样（班表落库、
-     *                 建闹钟、排程），区别只在这句 Toast：权限没开时得把后果说出来。
+     * <p>两条出口做的事**不再一样**（v1.23.17 起）：「开始使用」= 接受这一遍的班表与
+     * 时间，落库并建闹钟；「稍后设置」= 什么都没设，不落班表、不建闹钟，直接进首页空态
+     * （那里本来就有「还没有闹钟」的引导）。
+     *
+     * @param fromSkip true = 顶栏那个出口。用户按下一个写着「稍后」的按钮，期待的是
+     *                 「什么都别发生」——以前它和「开始使用」完全一样，会留下一条
+     *                 明早真会响的闹钟，与他刚做的事相反（2026-11-09 用户提出）。
      */
     private void complete(boolean fromSkip) {
         boolean firstRun = !Prefs.isOnboardDone(this);
         // v1.10.0：班表与闹钟到这一刻才落盘——没点「开始使用」就退出，什么都没改
-        draft.commit(this);
-        ensureAlarm();
+        // v1.23.17（C）：跳过同样不落盘。用户没确认过的时间，不该变成一条会响的闹钟。
+        if (!fromSkip) {
+            draft.commit(this);
+            ensureAlarm();
+        }
         Prefs.setOnboardDone(this, true);
         // 引导走完就把页码清掉：下次从设置里重看，从第 1 页看起
         Prefs.setGuidePage(this, 0);
@@ -1562,10 +1570,12 @@ public class GuideActivity extends AppCompatActivity {
         // 不来自一次性完成——所以只有这里回同步，其余界面侧路径仍走 Reschedule。
         ScheduleManager.rescheduleAll(this);
         if (firstRun) {
-            PendingTip.put(okTip, warnTip);
+            // v1.23.17（C）：跳过什么都不说。首页那条空态自己写着「还没有闹钟 /
+            // 点下面「+ 添加闹钟」建一个」，再弹一句就是同一件事说两遍。
+            if (!fromSkip) PendingTip.put(okTip, warnTip);
         } else {
             // 重看引导（设置页进来）：回程不弹权限框，也有可能是「稍后设置」出去
-            Toast.makeText(this, fromSkip && !canNotify() ? warnTip : "设置已更新",
+            Toast.makeText(this, fromSkip ? "设置未改动" : "设置已更新",
                     Toast.LENGTH_LONG).show();
         }
         finish();

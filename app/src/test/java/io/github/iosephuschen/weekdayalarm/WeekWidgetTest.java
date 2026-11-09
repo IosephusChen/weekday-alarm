@@ -87,6 +87,10 @@ public class WeekWidgetTest {
 
     @Test
     public void model_subtitleSaysAlarmsOn() {
+        // v1.23.17 起全新安装不再预置闹钟；这条测的是「有开着的闹钟时报已开启」，
+        // 得自己放一条进去，否则永远测的是「没有闹钟」那一支。
+        Prefs.setAlarms(ctx(), java.util.Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
         assertTrue(WeekWidgetRender.computeModel(ctx()).subtitle.contains("已开启"));
     }
 

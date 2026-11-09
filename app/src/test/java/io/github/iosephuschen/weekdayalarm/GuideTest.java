@@ -106,7 +106,10 @@ public class GuideTest {
 
     /**
      * 把闹钟列表换成指定内容。
-     * 必须先读一次触发「首次读取预置」，否则下一次 getAlarms 又会塞回起床 / 午休。
+     *
+     * <p>先读一次是为了把「首次读取」这一步走完：v1.23.17 之前它会预置一条「起床」，
+     * 现在改为写入「已迁移」标记 + 空列表。两种行为下这一步都不能省，否则后面的
+     * {@code setAlarms} 可能被迁移分支覆盖。
      */
     private void seedAlarms(Alarm... items) {
         wipe();
@@ -839,7 +842,7 @@ public class GuideTest {
         assertEquals("07:30", text(a, R.id.tv_time));
     }
 
-    /** 改时间后点「开始使用」：改的是预置的「起床」，不是又加一个。 */
+    /** 改时间后点「开始使用」：新建一条，时间就是页面上那个，不会多出第二条。 */
     @Test
     public void complete_editsSeededAlarmAndTurnsSwitchOn() {
         GuideActivity a = fresh();
@@ -852,8 +855,7 @@ public class GuideTest {
         tap(a, R.id.btn_next); // 末页 = 开始使用（v0.84.1 起四页）
 
         List<Alarm> alarms = Prefs.getAlarms(ctx());
-        assertEquals("只有预置的「起床」一条（v1.0.1 起不再预置午休），不该多出第二条",
-                1, alarms.size());
+        assertEquals("只该建一条，不该多出第二条", 1, alarms.size());
         Alarm first = alarms.get(0);
         assertEquals(8, first.hour);
         assertEquals(45, first.minute);
@@ -1681,69 +1683,42 @@ public class GuideTest {
         assertEquals("点还是四个", 4, dots.getChildCount());
     }
 
-    /** 点「稍后设置」= 我知道了：照样留下能响的闹钟、照样写标记。 */
+    /**
+     * 点「稍后设置」= 什么都没设（v1.23.17，C）。
+     *
+     * <p>这个出口以前和「开始使用」做的事完全一样：落班表、建闹钟、排程，只换一句提示。
+     * 用户按下一个写着「稍后」的按钮，得到的却是一条明早 07:30 真会响的闹钟——
+     * 与他刚做的事相反（2026-11-09 用户提出）。现在它只写「已看过引导」的标记。
+     */
     @Test
-    public void skip_marksOnboardAndTurnsSwitchOn() {
+    public void skip_marksOnboardButLeavesNoAlarm() {
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
-        assertTrue(Prefs.isOnboardDone(ctx()));
-        assertTrue("稍后设置也要有能响的闹钟", anyEnabledAlarm());
+        assertTrue("跳过也要记住「看过引导」，否则每次启动都被拦一次",
+                Prefs.isOnboardDone(ctx()));
+        assertFalse("「稍后设置」不该留下会响的闹钟，实际：" + Prefs.getAlarms(ctx()).size() + " 条",
+                anyEnabledAlarm());
+        assertTrue("跳过同样要能从空列表点「+ 添加闹钟」建起来",
+                Prefs.getAlarms(ctx()).isEmpty());
         assertTrue(a.isFinishing());
     }
 
     /**
-     * 「稍后设置」+ 通知没开：必须说清「照响，但要进 App 关」（2026-11-05，2026-11-09 修正）。
+     * 跳过时不留下任何提示（v1.23.17，C）。
      *
-     * <p>这个出口以前叫「跳过」，用户心理上是「我放弃了」，没响也认；改叫「稍后设置」，
-     * 变成「先这样，回头再说」——可闹钟已经排上、通知却没开，那用户就得知道
-     * 响的时候没有通知栏入口。
-     *
-     * <p><b>2026-11-09 修正</b>：原话说的是「不会响」，与实现相反——锁屏走
-     * {@code AlarmReceiver.startActivity} 拉整屏页、解锁走悬浮窗，两条都不碰通知。
-     * 项目自己在 Changelog v0.73.5 就记着「通知权限降为建议（进 App 也能关）」。
+     * <p>首页那条空态本来就写着「还没有闹钟 / 点下面「+ 添加闹钟」建一个」，
+     * 收尾再弹一句是同一件事说两遍——v1.23.9 删掉「下次闹钟」那句重复文案时
+     * 定的就是这条原则。
      */
     @Test
-    public void later_whenNotifyOff_warnsHowToStop() {
-        // 先给授权再把系统总开关关掉：这样测的才是「通知这条路不通」，
-        // 而不是 Robolectric 默认没授 POST_NOTIFICATIONS
-        shadowOf((Application) ctx())
-                .grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
-        NotificationManager nm = (NotificationManager)
-                ctx().getSystemService(Context.NOTIFICATION_SERVICE);
-        shadowOf(nm).setNotificationsEnabled(false);
-
+    public void skip_saysNothing() {
+        PendingTip.clear();   // 静态状态，前一条用例可能留了一句
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
-        // A5（2026-11-09）：首次引导不再在引导页弹这句话——它马上 finish，提示会压在
-        // 紧接着弹出的系统权限框上。改由首页在框关闭之后说。所以这里验的是「话没被弄丢」：
-        // 备着的那两句里，通知不通的那句必须说清「不影响响铃」和「划掉后看自启动」。
-        // 端到端在 GuideTipTimingTest。
-        PendingTip tip = PendingTip.take();
-        assertNotNull("「稍后设置」出去必须留一句话给首页", tip);
-        assertTrue("要说清通知这一项管什么，实际：" + tip.warn, tip.warn.contains("不影响响铃"));
-        assertTrue("被划掉后响不响归自启动，不能漏，实际：" + tip.warn, tip.warn.contains("自启动"));
-        assertFalse("闹钟照响，不能说成不会响，实际：" + tip.warn, tip.warn.contains("不会响"));
-    }
-
-    /** 对照：通知开着时照旧报时间，不念那句警告——否则每次点都在重复后果。 */
-    @Test
-    public void later_whenNotifyOn_reportsTime() {
-        shadowOf((Application) ctx())
-                .grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
-        NotificationManager nm = (NotificationManager)
-                ctx().getSystemService(Context.NOTIFICATION_SERVICE);
-        shadowOf(nm).setNotificationsEnabled(true);
-
-        GuideActivity a = fresh();
-        tap(a, R.id.btn_skip);
-
-        // 同上：话说给首页了，这里验「通知通的时候说的是时间、不是后果」
-        PendingTip tip = PendingTip.take();
-        assertNotNull("完成时要有反馈", tip);
-        assertTrue("要有具体时间，实际：" + tip.ok, tip.ok.startsWith("已排好班"));
-        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("不影响响铃"));
+        assertFalse("首页空态已经说明白了，不该再弹一句", PendingTip.has());
+        assertTrue(a.isFinishing());
     }
 
     /**
@@ -2230,7 +2205,9 @@ public class GuideTest {
     /** 对照组：没排班次时第 2 页照旧 07:30，不冒预览行。 */
     @Test
     public void weeklySecondPage_keepsDefaultTime() {
-        wipe();
+        // 必须真有一条闹钟：断言的是「偏移没被写进那条闹钟」。v1.23.17 起新装不再预置，
+        // 不 seed 就会在 get(0) 上越界（而且越界本身并不能证明偏移没被写）。
+        seedAlarms(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         GuideActivity a = launch();
 
@@ -2249,7 +2226,8 @@ public class GuideTest {
      */
     @Test
     public void weeklyWithLeftoverShifts_ignoresThem() {
-        wipe();
+        // 同上：没有那条闹钟，「偏移没被写」就无从验起。
+        seedAlarms(new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true));
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         Prefs.setShifts(ctx(), java.util.Arrays.asList(
                 new Shift(1, "白班", 8 * 60, 16 * 60, 0),

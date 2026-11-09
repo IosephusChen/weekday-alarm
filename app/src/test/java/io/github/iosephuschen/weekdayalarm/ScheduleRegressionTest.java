@@ -36,6 +36,17 @@ public class ScheduleRegressionTest {
         return ApplicationProvider.getApplicationContext();
     }
 
+    /**
+     * 小睡挂在 {@code alarmId} 上，而 {@code cancelAllIncludingTransient} 是按闹钟列表
+     * 逐条取消的——列表为空就什么也不取消。v1.23.17 起全新安装不再预置「起床」，
+     * 这里得自己把那条 id=1 放回去，否则测的就不是「取消」，而是「列表为空什么也没做」。
+     */
+    private void seedAlarmId1() {
+        Prefs.getAlarms(ctx());   // 先走完首次读取，别让 setAlarms 被迁移分支覆盖
+        Prefs.setAlarms(ctx(), java.util.Arrays.asList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
+    }
+
     @Before
     public void setUp() {
         Application app = (Application) ctx();
@@ -89,6 +100,7 @@ public class ScheduleRegressionTest {
     /** 彻底停掉要连「稍后提醒」一起清，否则点了小睡再删掉闹钟，几分钟后照样响。 */
     @Test
     public void cancelAllIncludingTransient_clearsSnooze() {
+        seedAlarmId1();
         LocalDate day = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
         assertTrue(ScheduleManager.isSnoozeRegistered(ctx(), 1, day));
@@ -101,6 +113,7 @@ public class ScheduleRegressionTest {
     /** cancelAll 不能误伤小睡（响铃后重排时小睡要存活）。 */
     @Test
     public void cancelAll_keepsSnooze() {
+        seedAlarmId1();
         LocalDate day = snoozeDay();
         ScheduleManager.snooze(ctx(), 1, "起床");
         ScheduleManager.cancelAll(ctx());

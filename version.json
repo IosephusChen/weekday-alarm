@@ -1,13 +1,13 @@
 {
-  "versionCode": 302,
-  "versionName": "1.23.17",
+  "versionCode": 303,
+  "versionName": "1.23.18",
   "published": "2026-11-09",
-  "title": "跳过就是真的没设",
+  "title": "权限检查有了自己的入口",
   "notes": [
-    "「稍后设置」不再顺手建一条明早会响的闹钟",
-    "新装不再预置「起床 07:30」，首页直接从空列表开始",
-    "老版本升级的闹钟照旧迁移，一条都不会丢"
+    "设置页新增「权限与自启动」，点一下直接到权限清单",
+    "五项权限都能点着跳系统设置，回来立刻刷新状态",
+    "不再为了查开关，从四页引导的第 1 页一路翻过去"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.17/weekday-alarm-1.23.17.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.17"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.18/weekday-alarm-1.23.18.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.18"
 }

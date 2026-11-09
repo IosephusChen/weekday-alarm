@@ -75,8 +75,11 @@
     <string name="more_section_check">帮助与关于</string>
     <string name="more_run_status_title">运行状态</string>
     <string name="more_run_status_default">—</string>
-    <string name="more_onboard_title">新手引导与权限</string>
+    <!-- v1.23.18：「与权限」三个字从这里挪走，权限单独一行。 -->
+    <string name="more_onboard_title">新手引导</string>
     <string name="more_onboard_action">重看</string>
+    <string name="more_permissions_title">权限与自启动</string>
+    <string name="more_permissions_action">检查</string>
     <string name="more_help_title">使用说明</string>
     <!-- v1.1.0：more_help_action（「查看」）删了——三个动作入口只留箭头。 -->
     <string name="more_changelog_title">更新日志</string>

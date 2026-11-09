@@ -1,6 +1,7 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -47,7 +48,7 @@ public class GuideActivity extends AppCompatActivity {
     private static final int PAGES = 4;
 
     /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
-    private static final int PAGE_PERMISSIONS = 2;
+    static final int PAGE_PERMISSIONS = 2;
 
     /**
      * 四屏页头的步骤名与图标（v1.14.0）。下标与 {@link #PAGES} 同一套。
@@ -94,6 +95,24 @@ public class GuideActivity extends AppCompatActivity {
      * 位置指引就必须是同一句话：两行写法不同时，用户会以为要跑两个地方去开两个东西。
      */
     private static final String HINT_OTHER_PERMS = "去开启 · 在「其他权限」里";
+
+    /**
+     * 「只看权限」模式（v1.23.18）。
+     *
+     * <p>设置页那行「权限与自启动」用它直接落到第 3 页。这一页本来就是权限清单：
+     * 五行各自可点、跳对应系统页，{@link #onResume()} 里还会重刷勾选状态。单独再做
+     * 一个 {@code PermissionActivity} 等于把同一份清单抄两遍——以后加一项权限要改两处，
+     * 正是这个项目一直在避免的重复。
+     *
+     * <p>带了这个 extra 就不翻页、不落班表、不写 {@code onboard_done}、不清引导页码：
+     * 用户只是来检查开关的，不该顺手改到他别的东西。
+     */
+    public static final String EXTRA_PERMISSIONS_ONLY = "permissions_only";
+
+    /** 设置页「权限与自启动」的入口（v1.23.18）。 */
+    static Intent permissionsIntent(Context c) {
+        return new Intent(c, GuideActivity.class).putExtra(EXTRA_PERMISSIONS_ONLY, true);
+    }
 
     /** 预置第一条闹钟的时刻（07:30）。判断「用户还没动过」要用它。 */
     static final int DEFAULT_ALARM_MIN = 7 * 60 + 30;
@@ -176,11 +195,16 @@ public class GuideActivity extends AppCompatActivity {
     private int hour = 7;
     private int minute = 30;
 
+    /** 只看权限模式（v1.23.18），见 {@link #EXTRA_PERMISSIONS_ONLY}。 */
+    private boolean permissionsOnly;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sAlive = true;
         setContentView(R.layout.activity_guide);
+
+        permissionsOnly = getIntent().getBooleanExtra(EXTRA_PERMISSIONS_ONLY, false);
 
         flipper = findViewById(R.id.flipper);
         dots = findViewById(R.id.dots);
@@ -226,7 +250,10 @@ public class GuideActivity extends AppCompatActivity {
         bindPermissions();
 
         btnNext.setOnClickListener(v -> {
-            if (index < PAGES - 1) {
+            if (permissionsOnly) {
+                // v1.23.18：只看权限，点「完成」就回去——不写标记、不落班表、不清页码
+                finish();
+            } else if (index < PAGES - 1) {
                 goTo(index + 1);
             } else {
                 complete(false);
@@ -246,6 +273,9 @@ public class GuideActivity extends AppCompatActivity {
         // v1.0.5：从测试通知点回来时，哪怕引导早就走完了，也要接着那一页（见 EXTRA_RESUME）。
         if (savedInstanceState != null) {
             index = savedInstanceState.getInt(STATE_PAGE, index);
+        } else if (permissionsOnly) {
+            // v1.23.18：只看权限，永远落在第 3 页，不读 guide_page（那是引导自己的进度）
+            index = PAGE_PERMISSIONS;
         } else if (getIntent().getBooleanExtra(EXTRA_RESUME, false) || !Prefs.isOnboardDone(this)) {
             // 平时从设置里重看引导，从第 1 页看起；只有「没走完」和「从通知回来」才续页
             index = Math.min(Prefs.getGuidePage(this), PAGES - 1);
@@ -927,6 +957,9 @@ public class GuideActivity extends AppCompatActivity {
         Intent open = new Intent(this,
                 returnToGuideOnNotify() ? GuideActivity.class : MainActivity.class)
                 .putExtra(EXTRA_RESUME, true)
+                // v1.23.18：从设置页进来查权限时，点通知回来仍是「只看权限」那一页，
+                // 不能因为重启一次就变回四页引导的第 1 页
+                .putExtra(EXTRA_PERMISSIONS_ONLY, permissionsOnly)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
                         | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -1379,6 +1412,19 @@ public class GuideActivity extends AppCompatActivity {
 
     /** 末页按钮改「开始使用」并隐藏「稍后设置」；第一页隐藏「上一步」。 */
     private void updateChrome() {
+        if (permissionsOnly) {
+            // v1.23.18：单独进来看权限，不给翻页。第 1、2 页会改班表和时间，
+            // 用户只是来检查开关的，让他往左滑过去顺手改掉班表，是这版最不该发生的事。
+            // btnSkip 用 INVISIBLE 而不是 GONE，和末页同一个理由：顶栏一塌，页头整体上移。
+            btnNext.setText("完成");
+            btnPrev.setVisibility(View.INVISIBLE);
+            btnSkip.setVisibility(View.INVISIBLE);
+            btnImport.setVisibility(View.GONE);
+            dots.setVisibility(View.GONE);
+            renderHeader();
+            return;
+        }
+        dots.setVisibility(View.VISIBLE);
         boolean last = index == PAGES - 1;
         btnNext.setText(last ? "开始使用" : "下一步");
         // v0.85.3：末页的「稍后设置」用 INVISIBLE 而不是 GONE——GONE 会让顶栏塌掉，
@@ -1524,6 +1570,13 @@ public class GuideActivity extends AppCompatActivity {
      *                 明早真会响的闹钟，与他刚做的事相反（2026-11-09 用户提出）。
      */
     private void complete(boolean fromSkip) {
+        if (permissionsOnly) {
+            // v1.23.18：防御。这一模式下顶栏没有「开始使用 / 稍后设置」，但按钮若被
+            // 程序触发（测试直接 performClick、无障碍服务），不能落到下面去写 onboard_done
+            // ——用户只是来检查权限的，不该被记成「引导走完了」。
+            finish();
+            return;
+        }
         boolean firstRun = !Prefs.isOnboardDone(this);
         // v1.10.0：班表与闹钟到这一刻才落盘——没点「开始使用」就退出，什么都没改
         // v1.23.17（C）：跳过同样不落盘。用户没确认过的时间，不该变成一条会响的闹钟。

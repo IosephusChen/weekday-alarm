@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(301, "1.23.16", "2026/11/09", "响不响，先看自启动",
+                    "通知没开不影响响铃；划掉 App 后还响不响，看自启动",
+                    "第 3 页副标题改成：响不响看自启动，其余管怎么响、准不准、怎么关",
+                    "悬浮窗没开时是退回整屏；后台弹出也没开，就只剩声音"),
             new Entry(300, "1.23.15", "2026/11/09", "「闹钟不会响」这句错话改掉了",
                     "通知没开时闹钟照样响，只是通知栏没有入口",
                     "改成「照响，但要进 App 才能关」",

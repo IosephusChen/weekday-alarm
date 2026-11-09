@@ -1,13 +1,13 @@
 {
-  "versionCode": 300,
-  "versionName": "1.23.15",
+  "versionCode": 301,
+  "versionName": "1.23.16",
   "published": "2026-11-09",
-  "title": "「闹钟不会响」这句错话改掉了",
+  "title": "响不响，先看自启动",
   "notes": [
-    "通知没开时闹钟照样响，只是通知栏没有入口",
-    "改成「照响，但要进 App 才能关」",
-    "引导第三页同步：悬浮窗没开是整屏弹出，不是进通知栏找"
+    "通知没开不影响响铃；划掉 App 后还响不响，看自启动",
+    "第 3 页副标题改成：响不响看自启动，其余管怎么响、准不准、怎么关",
+    "悬浮窗没开时是退回整屏；后台弹出也没开，就只剩声音"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.15/weekday-alarm-1.23.15.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.15"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.16/weekday-alarm-1.23.16.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.16"
 }

@@ -624,6 +624,28 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
+            <!-- 一次性提示（v1.23.20）：告诉用户这张表能点。
+                 不做浮层遮罩：遮罩会挡住它正在解释的格子，而这里要的只是「把这一句
+                 放在格子下面」，用户点任意一天就消失（CalendarPanel 里同一处判断）。
+                 走 action_bg / action_line，日夜两套色都是现成的。 -->
+            <TextView
+                android:id="@+id/tv_cal_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/space_10"
+                android:background="@drawable/bg_cal_hint"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="7dp"
+                android:paddingBottom="7dp"
+                android:text="点任意一天，标请假 / 加班"
+                android:textColor="@color/indigo"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
             <!-- 本月统计（v0.92.0）：与 4×4 小部件底部那一句同源（MonthStats）。
                  放在格子下方、图例上方——扫完 42 格，下一步想知道的就是「上了多少天」；
                  颜色图例只有第一次看才需要，排在最后。 -->

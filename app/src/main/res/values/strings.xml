@@ -199,7 +199,7 @@
     <string name="toast_no_file_manager_export">没有可用的文件管理器，无法导出</string>
     <string name="toast_no_file_manager_import">没有可用的文件管理器，无法导入</string>
     <string name="dialog_export_failed_title">导出失败</string>
-    <string name="dialog_import_done_title">导入完成</string>
+    <string name="dialog_import_done_title">已导入</string>
     <string name="import_done_tail">已按新配置重新排程，返回主界面即可看到结果。</string>
 
     <!-- ===== 导入导出结构化版式（v0.76.5）=====

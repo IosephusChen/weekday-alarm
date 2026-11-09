@@ -31,6 +31,11 @@ jobs:
       - name: Check version and docs consistency
         run: python3 tools/check_version.py
 
+      # 2026-11-09：文档里的 `文件:行号#锚点` 会随代码漂移。与 release.sh 共用同一份
+      # 实现（tools/check_refs.py），本机能过 CI 就能过。只扫当前方案节，历史节不扫。
+      - name: Check doc references
+        run: python3 tools/check_refs.py
+
   # 2026-11-07：test 与 release 合并成一个 job。
   # 原来两个 job 各自 checkout、装 JDK、装 Android SDK、冷启 Gradle，一次发版
   # 光这些启动就白等两分钟，而它们要做的事在同一个 workspace 里就能接上。

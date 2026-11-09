@@ -6,12 +6,12 @@
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 取凭据：读网盘 `/weekday-alarm/nas-access.docx`（连接器四步 → `bash tools/load-access.sh`，实测 20 秒，坑在 AGENTS 第三节），读不到再问用户要。**必须在 ① 之后**——`load-access.sh` 在仓库里，没 clone 就没有它。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
-- **做到哪**：**v1.23.15 / 300 已出包、已发布**（2026-11-09）：修正「通知没开就不会响」这句错话——闹钟照响，只是通知栏没有入口、要进 App 关；引导第 3 页三处文案同步（副标题分工、通知行、悬浮窗行）。上一版 v1.23.14 / 299 含 A5 跨页残留修复与四条拍板，也还没验收。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
+- **做到哪**：**v1.23.16 / 301 已出包、已发布**（2026-11-09）：给 v1.23.15 的「闹钟照响」补上前提——广播能不能送到取决于自启动，App 被划掉后不响；引导第 3 页四处文案改成「一句只说一项」。上一版 v1.23.15 / 300 修的是「通知没开就不会响」，v1.23.14 / 299 含 A5 跨页残留修复与四条拍板，两版都还没验收。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
 - **下一步**：改动已发布，等你真机验收（重点见下条「待用户真机验收」）。清单剩 5 条，卡在两件事上：① **要单独一轮**（2 条）：A8 分组名吸顶、A14 子弹窗拼父级标题——方向都已拍板 A，但都是结构改造，不与文案改动混在同一版，否则真机分不清哪条带来的手感变化；② **要新截图**（3 条）：A10 可点值配色、B2 日历头部、B14 班次圆点。拍板结论已写回清单「拍板待选」节，不用重放讨论。开工先问用户要图，别再猜。**工具侧**：`tools/check_refs.py` 已落地并已推送（2026-11-09，`bd6e646`），`release.sh --check` 与 CI 各接一处；文档里的 `文件:行号#锚点` 指不准会直接红——改完文档先跑它。扫描范围按位置切，不认小节名。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
-- **待用户真机验收**：NAS `apk/weekday-alarm-1.23.15.apk`（本地出包）。重点四件：① **首次装完点「开始使用」→ 系统通知权限框先出来，关掉之后才出现「已排好班，07:30 会响」**；点「拒绝」应变成「**已排好班。通知没开：闹钟照响，但要进 App 才能关**」——上一版这里是「闹钟不会响」，是错的；② 引导第 3 页：副标题末尾多了「通知只决定响时能不能从通知栏关」，通知行写「不开也照响…」，悬浮窗行写「会整屏弹出来」；③ 设置 → 响铃 → 「响铃时长」点一项，对话框立刻关、值当场变（1.23.14 的改动，若已验过可跳过）；④ 从设置页重看引导时那句**仍会飘到设置页**——已知未修的一半，别当回归。v1.23.11 那批四处仍未验收，一并看。
+- **待用户真机验收**：NAS `apk/weekday-alarm-1.23.16.apk`（本地出包）。重点三件：① **首次装完点「开始使用」→ 系统通知权限框先出来，关掉之后才出现「已排好班，07:30 会响」**；点「拒绝」应变成「**已排好班。通知没开不影响响铃；划掉 App 后还响不响，看自启动**」——看不出来就截图；② 引导第 3 页：副标题是「**决定响不响的是自启动；其余决定怎么响、准不准、怎么关**」，通知行「不开不影响响铃…」，悬浮窗行「…退回整屏或只剩声音」；③ 从设置页重看引导时那句**仍会飘到设置页**——已知未修的一半，别当回归。v1.23.14 的「响铃时长点一项即生效」与 v1.23.15 的文案，若已验过可跳过。
 - **清单**：39 条正文在 `docs/待裁决清单.md`，**状态列只在那份文件改**。已做 16 条、部分已做 5 条、复核不成立 6 条、判定不改 7 条；剩 5 条待裁决（2 条要单独一轮 / 3 条要截图；A14 的后半即 C3，算同一条）。这行数字由 `tools/check_version.py` 校验，和清单对不上直接红。
-- **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。**引导收尾提示的避让那一半没解决**（设置页回程仍残留），别当成修好了。**文案里别再出现「通知没开就不会响」**——闹钟照响，这是 v1.23.15 修掉的错话。
+- **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。**引导收尾提示的避让那一半没解决**（设置页回程仍残留），别当成修好了。**文案里别再出现「通知没开就不会响」，也别再写「闹钟照响」这种没前提的结论**——v1.23.15 修了前半句，v1.23.16 又修了后半句。一句只说一项开关管什么（自启动＝响不响，其余＝怎么响 / 准不准 / 怎么关）。
 
 ## A5 · Toast 无避让（2026-11-09 提出，当天落地）
 
@@ -22,7 +22,7 @@
 > 行号核验：本文引用已于 2026-11-09 落地后逐条 `grep` 复核，`tools/check_refs.py` 会把关
 
 **根因（修复前）**：Toast 是系统 `TYPE_TOAST` 窗口，不跟 Activity 走。
-`GuideActivity.complete()`（`GuideActivity.java:1516#private void complete`）弹完立刻 `finish()`；
+`GuideActivity.complete()`（`GuideActivity.java:1521#private void complete`）弹完立刻 `finish()`；
 首页 `MainActivity.onResume()`（`MainActivity.java:312-314#PermissionGuides.requestNotification`）
 随后请求通知权限，由 `PermissionGuides.java:128#requestPermissions` 弹出系统框。录屏逐帧实测：
 提示 1.48s 出现、4.29s 仍在；权限框 1.65–1.81s 渐入、3.34–3.46s 渐出；**两者共存约 1.5 秒，
@@ -36,13 +36,13 @@
 | `AboutActivity.java:171-173#about_check_update_latest_toast` | 关于页检查更新（v2） | 不动：压的是许可小字 |
 | `GuideActivity.java:1228-1229#Toast.makeText` | 引导页锁屏自测（v3） | 不动：v1.23.6 已在 `onPause()` 收走 |
 | `GuideActivity.java:946#已发出` | 引导页测试通知（v4） | 不动：`LENGTH_SHORT`，压说明小字 |
-| `GuideActivity.java:1516#private void complete` | 引导页收尾（v5 / v6） | **本次只改这一处** |
+| `GuideActivity.java:1521#private void complete` | 引导页收尾（v5 / v6） | **本次只改这一处** |
 
 **落地结果**：
 
 | 文件 | 改了什么 |
 | --- | --- |
-| `GuideActivity.java:1516-1564#private void complete` | `complete()` 首次引导只调 `GuideActivity.java:1556#PendingTip.put`，不再 `show()`；重看引导（`firstRun == false`）仍当场说「设置已更新」（`GuideActivity.java:1559#Toast.makeText`） |
+| `GuideActivity.java:1521-1569#private void complete` | `complete()` 首次引导只调 `GuideActivity.java:1565#PendingTip.put`，不再 `show()`；重看引导（`firstRun == false`）仍当场说「设置已更新」（`GuideActivity.java:1568#Toast.makeText`） |
 | `PendingTip.java` | 新增：两句文案的暂存处，静态字段 + 一次性 `take()`，取走即清 |
 | `MainActivity.java:306-315#PendingTip.has()` | `onResume`：有 pending 就先弹框——弹了等回调（`308`），没弹当场说（`310`） |
 | `MainActivity.java:342#onRequestPermissionsResult` | 新增回调，只认 `REQUEST_NOTIFICATION`，别的权限结果不碰 |
@@ -62,7 +62,7 @@
 | 1 首页没有权限回调 | 新增 `MainActivity.java:342#onRequestPermissionsResult` |
 | 2 不弹框时没有回调 | `requestNotification` 返回 boolean，`false` 就当场说（`MainActivity.java:310#showPendingTip`） |
 | 3 拒绝后不能承诺「会响」 | 文案存两句，回调后按 `canNotify()` 重选（`MainActivity.java:352#showPendingTip`）；`backOnHome_denied_saysItWontRing` 钉住 |
-| 4 v5 回程是设置页 | `complete()` 按 `GuideActivity.java:1517#boolean firstRun` 分两路，`false` 仍当场说——所以 **v5 没修**，见下 |
+| 4 v5 回程是设置页 | `complete()` 按 `GuideActivity.java:1522#boolean firstRun` 分两路，`false` 仍当场说——所以 **v5 没修**，见下 |
 | 5 通道与 requestCode | 静态 `PendingTip` + `PermissionGuides.java:114#REQUEST_NOTIFICATION = 1`，回调只认这个码 |
 | 6 重建边界 | `onCreate` 加 `MainActivity.java:173#!PendingTip.has()` 守卫 |
 | 7 弹没弹框判不了 | 同坑 2：返回值取代复刻条件 |
@@ -166,6 +166,50 @@ MainActivity.java:<行号>#通知权限请求刻意推迟
 
 ---
 
+## v1.23.16 · 「照响」补上前提：划掉 App 就不响（2026-11-09 提出并当天发布）
+
+> 状态：**已出包 · 批准已作废**
+> 出包：2026-11-09 11:59（再出包须重写方案并重新确认）（用户 2026-11-09 11:38「国产系统不用加，你确认没问题就可以发布」）
+> 目标版本：301（patch）
+> 触发原话：2026-11-09 11:30「其实我感觉这样写还是有问题，因为 app 如果在后台被杀掉了，
+> 还是不会响，你觉得怎么描述比较好」
+
+### 错在哪
+
+v1.23.15 把「通知没开就不响」改成「闹钟照响」。这半句仍然是无条件保证：到点先要收到
+`AlarmManager` 的广播，广播能不能送达取决于**自启动**——没有它，App 被划掉后进程起不来，
+广播被系统直接丢弃（`GuideActivity.java:785#没有它` 的注释原文：「没有它，App 被划掉后
+闹钟到点广播直接被丢弃」）。这跟通知无关，跟悬浮窗、后台弹出界面也无关：那几项的前提是
+「广播已经到了」。用户刚在引导里被叮嘱开自启动，转头读到「照响」，很容易理解成「那几项可以不开」。
+
+### 措辞原则：一句只说一项
+
+不再写「闹钟会 / 不会响」这种全局结论。五项各管什么：自启动＝还响不响；后台弹出界面＝
+能不能自动拉起整屏；显示悬浮窗＝横幅还是整屏；精确闹钟＝准不准；通知＝通知栏里有没有「停止」。
+
+### 改了四处
+
+| 位置 | v1.23.15 | v1.23.16 |
+|---|---|---|
+| `GuideActivity.java:1558#final String warnTip` | 已排好班。通知没开：闹钟照响，但要进 App 才能关 | 已排好班。通知没开不影响响铃；划掉 App 后还响不响，看自启动 |
+| `GuideActivity.java:1374#决定响不响的是自启动` | 这些开关决定闹钟响不响、准不准；通知只决定响时能不能从通知栏关 | 决定响不响的是自启动；其余决定怎么响、准不准、怎么关 |
+| `activity_guide.xml:523#不开不影响响铃` | 不开也照响，只是通知栏没有入口，要到 App 里关。 | 不开不影响响铃，只是通知栏没有入口，要到 App 里关。 |
+| `activity_guide.xml:583#退回整屏或只剩声音` | 不开的话，响铃时顶部不弹横幅，会整屏弹出来。 | 不开的话，响铃时顶部不弹横幅，退回整屏或只剩声音。 |
+
+「自启动」那一行不动（`activity_guide.xml:755`「不开的话，划掉 App 后闹钟到点不响。」）——
+它本来就是这个说法，错的是别处没服从它。悬浮窗行补「或只剩声音」：整屏那条又受
+「后台弹出界面」管，两样都没开时只剩声音，只说整屏仍漏一种情况。
+
+### 测试
+
+`GuideTest.later_whenNotifyOff_warnsHowToStop`、`GuideTipTimingTest.backOnHome_denied_saysHowToStop`
+的断言从 `contains("进 App")` 改为 `contains("不影响响铃")` + `contains("自启动")`——两条都要，
+只验前半正是 v1.23.15 的老毛病。副标题断言同步。全量 1151 条 / 0 失败 / 3 跳过。
+
+**越界表**：无（纯文案，无布局、无逻辑）。
+
+---
+
 ## v1.23.15 · 修正「通知没开就不会响」（2026-11-09 提出并当天发布）
 
 > 状态：**已发布**（2026-11-09 11:22）：Release `v1.23.15` 带 APK 与 mapping，NAS 已放同一份；**待真机验收**。
@@ -176,7 +220,7 @@ MainActivity.java:<行号>#通知权限请求刻意推迟
 
 ### 为什么是错的
 
-那句话是 `GuideActivity.java:1549#final String warnTip`（v1.23.14 里还是「通知权限没开，闹钟不会响」）。
+那句话是 `GuideActivity.java:1558#final String warnTip`（v1.23.14 里还是「通知权限没开，闹钟不会响」）。
 响铃有三条通道，通知只占第三条：
 
 | 通道 | 代码 | 用不用通知 |
@@ -193,7 +237,7 @@ MainActivity.java:<行号>#通知权限请求刻意推迟
 
 | 位置 | 原话 | 现话 |
 |---|---|---|
-| `GuideActivity.java:1549#final String warnTip` | 已排好班。通知权限没开，闹钟不会响 | 已排好班。通知没开：闹钟照响，但要进 App 才能关 |
+| `GuideActivity.java:1558#final String warnTip` | 已排好班。通知权限没开，闹钟不会响 | 已排好班。通知没开：闹钟照响，但要进 App 才能关 |
 | `GuideActivity.java:1369#这些开关决定闹钟响不响` | 这些开关决定闹钟响不响、准不准 | …；通知只决定响时能不能从通知栏关 |
 | `activity_guide.xml:521#不开也照响` | 不开的话，闹钟响时没有通知。 | 不开也照响，只是通知栏没有入口，要到 App 里关。 |
 | `activity_guide.xml:579#会整屏弹出来` | 不开的话，响铃时顶部不弹横幅，只能进通知栏找。 | 不开的话，响铃时顶部不弹横幅，会整屏弹出来。 |

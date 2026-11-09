@@ -134,7 +134,7 @@ public class GuideTipTimingTest {
         String toast = ShadowToast.getTextOfLatestToast();
         assertNotNull(toast);
         assertTrue("授权了就该报具体时间，实际：" + toast, toast.startsWith("已排好班"));
-        assertFalse("授权了不该念后果，实际：" + toast, toast.contains("进 App"));
+        assertFalse("授权了不该念后果，实际：" + toast, toast.contains("不影响响铃"));
     }
 
     @Test
@@ -152,8 +152,11 @@ public class GuideTipTimingTest {
         String toast = ShadowToast.getTextOfLatestToast();
         // 录屏 v6 里用户点的是「始终允许」；拒绝的用户不能听到「07:30 会响」——
         // 他的通知栏里不会有入口。但也**不能**说「不会响」：闹钟照响，那是 2026-11-09 修正的错话。
-        assertTrue("拒绝了要说清怎么关，实际：" + toast,
-                toast != null && toast.contains("进 App"));
+        // v1.23.16：只陈述通知这一项（不影响响铃）＋划掉后归自启动，不下全局结论。
+        assertTrue("拒绝了要说清通知这一项管什么，实际：" + toast,
+                toast != null && toast.contains("不影响响铃"));
+        assertTrue("被划掉后响不响归自启动，不能漏，实际：" + toast,
+                toast != null && toast.contains("自启动"));
         assertFalse("闹钟照响，不能说成不会响，实际：" + toast,
                 toast != null && toast.contains("不会响"));
     }

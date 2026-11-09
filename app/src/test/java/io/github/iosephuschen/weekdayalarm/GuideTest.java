@@ -1247,8 +1247,10 @@ public class GuideTest {
             // 「系统读不到」，任何分母都会被读成「剩下几项呢」，用户 2026-11-08 要求去掉。
             // v1.23.15：后半句补上通知那项的分工——原话把通知也算进「响不响」，
             // 读起来就是「通知不开就不响」，与实现相反（闹钟照响，只是没入口）。
+            // v1.23.16：「响不响」只归自启动——App 被划掉后广播先被系统丢了，
+            // 后台弹出界面开着也没用。其余四项各管一段。
             assertEquals("副标题只说这一页是什么意思，不再报计数",
-                    "这些开关决定闹钟响不响、准不准；通知只决定响时能不能从通知栏关",
+                    "决定响不响的是自启动；其余决定怎么响、准不准、怎么关",
                     text(a, R.id.tv_guide_sub));
         } finally {
             // 桌面默认是「没给」。还原成默认而不是还原成 true，测试之间才不会串。
@@ -1716,11 +1718,12 @@ public class GuideTest {
 
         // A5（2026-11-09）：首次引导不再在引导页弹这句话——它马上 finish，提示会压在
         // 紧接着弹出的系统权限框上。改由首页在框关闭之后说。所以这里验的是「话没被弄丢」：
-        // 备着的那两句里，通知不通的那句必须说清「照响、要进 App 关」。
+        // 备着的那两句里，通知不通的那句必须说清「不影响响铃」和「划掉后看自启动」。
         // 端到端在 GuideTipTimingTest。
         PendingTip tip = PendingTip.take();
         assertNotNull("「稍后设置」出去必须留一句话给首页", tip);
-        assertTrue("要说清怎么关，实际：" + tip.warn, tip.warn.contains("进 App"));
+        assertTrue("要说清通知这一项管什么，实际：" + tip.warn, tip.warn.contains("不影响响铃"));
+        assertTrue("被划掉后响不响归自启动，不能漏，实际：" + tip.warn, tip.warn.contains("自启动"));
         assertFalse("闹钟照响，不能说成不会响，实际：" + tip.warn, tip.warn.contains("不会响"));
     }
 
@@ -1740,7 +1743,7 @@ public class GuideTest {
         PendingTip tip = PendingTip.take();
         assertNotNull("完成时要有反馈", tip);
         assertTrue("要有具体时间，实际：" + tip.ok, tip.ok.startsWith("已排好班"));
-        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("进 App"));
+        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("不影响响铃"));
     }
 
     /**

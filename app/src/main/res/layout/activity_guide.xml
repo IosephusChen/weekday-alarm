@@ -513,12 +513,14 @@
                                 <!-- v1.23.15：原话「不开的话，闹钟响时没有通知」容易被读成
                                      「不开就不响」。实际两条响铃通道（锁屏整屏 / 解锁悬浮窗）
                                      都不经过通知，没通知的差别只是「通知栏没有入口」。
-                                     照实写，并点明补救方式。 -->
+                                     照实写，并点明补救方式。
+                                     v1.23.16：「不开也照响」仍是句没前提的保证——App 被划掉后
+                                     广播就没了，那与通知无关。只说这一项管什么。 -->
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开也照响，只是通知栏没有入口，要到 App 里关。"
+                                    android:text="不开不影响响铃，只是通知栏没有入口，要到 App 里关。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 
@@ -571,12 +573,14 @@
                                 <!-- v1.23.15：原话「只能进通知栏找」在通知也没开时不成立——
                                      那时通知栏里什么都没有。真机路径是悬浮窗挂不上就
                                      退回整屏响铃页（AlarmService.openAlarmPage），
-                                     所以「整屏弹出来」才是实际会发生的事。 -->
+                                     所以「整屏弹出来」才是实际会发生的事。
+                                     v1.23.16：整屏那条又受「后台弹出界面」管，两样都没开时
+                                     只剩声音——不能只说整屏，把这条兜底也写上。 -->
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_marginTop="1dp"
-                                    android:text="不开的话，响铃时顶部不弹横幅，会整屏弹出来。"
+                                    android:text="不开的话，响铃时顶部不弹横幅，退回整屏或只剩声音。"
                                     android:textColor="@color/sub"
                                     android:textSize="11sp" />
 

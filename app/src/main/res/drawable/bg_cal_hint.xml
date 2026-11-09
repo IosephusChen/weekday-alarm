@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 日历下方那条一次性提示的底（v1.23.20）。
+
+     和 bg_action_emphasis 同一族色（action_bg 底 + action_line 描边），只把圆角
+     改成 999dp——那条是「卡片」，这条是「一句话」，胶囊形状才不像又一张卡。
+
+     日夜两套色跟着 colors.xml 里那两个 token 走，不要再写死 #EEF0FE：
+     夜间 action_bg 是 #2A2350，配 indigo 的夜间值才够读。 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1F4F46E5">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/action_bg" />
+            <corners android:radius="999dp" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/action_line" />
+        </shape>
+    </item>
+</ripple>

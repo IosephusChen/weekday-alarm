@@ -75,9 +75,12 @@
     <string name="more_section_check">帮助与关于</string>
     <string name="more_run_status_title">运行状态</string>
     <string name="more_run_status_default">—</string>
-    <!-- v1.23.18：「与权限」三个字从这里挪走，权限单独一行。 -->
-    <string name="more_onboard_title">新手引导</string>
-    <string name="more_onboard_action">重看</string>
+    <!-- v1.23.18：「与权限」三个字从这里挪走，权限单独一行。
+         v1.23.20：引导页那个出口改叫「稍后设置」，「重看」就接不住了——名字承诺
+         「稍后」，设置里必须有一处能补。改成「补全设置 · 重看引导」：左边说目的，
+         右边说动作，和上一行「权限与自启动 · 检查」同一句式。 -->
+    <string name="more_onboard_title">补全设置</string>
+    <string name="more_onboard_action">重看引导</string>
     <string name="more_permissions_title">权限与自启动</string>
     <string name="more_permissions_action">检查</string>
     <string name="more_help_title">使用说明</string>

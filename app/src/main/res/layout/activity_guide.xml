@@ -30,7 +30,7 @@
 
         <!-- 导入（v1.16.0 回到顶栏左侧）：第 1 页正文全给了五张制度卡，末尾再挂一行
              「从旧手机搬过来？导入配置」会把列表撑成六行，也会让人以为它是第六种制度。
-             它本来就是「我不想从头选」的出口，和右上角「跳过」是同一类，放回顶栏才对。
+             它本来就是「我不想从头选」的出口，和右上角「稍后设置」是同一类，放回顶栏才对。
              与 btn_skip 一左一右，只在第 1 页出现（updateChrome 按页号切换）。 -->
         <TextView
             android:id="@+id/btn_import"
@@ -61,7 +61,7 @@
             android:gravity="center"
             android:paddingStart="@dimen/space_10"
             android:paddingEnd="@dimen/space_10"
-            android:text="跳过"
+            android:text="稍后设置"
             android:textColor="@color/sub"
             android:textSize="14sp" />
     </FrameLayout>

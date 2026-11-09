@@ -1660,6 +1660,21 @@ public class GuideTest {
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));
     }
 
+    /**
+     * 那个出口的文案（v1.23.20）：叫「稍后设置」。
+     *
+     * <p>用户 2026-11-09 14:54 否掉了「我熟悉，直接进入」——与这套界面不搭；也没让藏起来。
+     * 改名只是把行为说准：它确实什么都不设（v1.23.17），「跳过」听起来像「跳过就算了」。
+     */
+    @Test
+    public void skipButton_readsLaterSettings() {
+        GuideActivity a = fresh();
+
+        assertEquals("稍后设置", text(a, R.id.btn_skip));
+        assertEquals("位置与可见性不变——藏起来就变回配置向导了",
+                View.VISIBLE, visibility(a, R.id.btn_skip));
+    }
+
     // ================= 只看权限（v1.23.18）=================
 
     /**

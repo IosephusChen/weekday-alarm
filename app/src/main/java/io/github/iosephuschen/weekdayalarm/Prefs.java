@@ -57,6 +57,9 @@ public final class Prefs {
     public static final String KEY_PRE_NOTICE_LAST = "pre_notice_last_minutes";
     public static final String KEY_GUIDE_SEEN = "guide_seen";             // 使用说明是否已自动展开过（v0.22.1）
     public static final String KEY_ONBOARD_DONE = "onboard_done";         // 新手引导是否已看过（v0.23.0）
+    // v1.23.20：日历下方那条「点任意一天」的提示是否已经出现过。
+    // 记布尔而不是记次数：它只说一件事，说过一次就够了；用户点掉或标了任意一天都算说过。
+    public static final String KEY_CAL_HINT_SEEN = "cal_hint_seen";
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
@@ -1090,10 +1093,19 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_ONBOARD_DONE, v).apply();
     }
 
+    /** 日历那条一次性提示是否已经说过（v1.23.20）。 */
+    public static boolean isCalHintSeen(Context c) {
+        return sp(c).getBoolean(KEY_CAL_HINT_SEEN, false);
+    }
+
+    public static void setCalHintSeen(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_CAL_HINT_SEEN, v).apply();
+    }
+
     /**
      * 引导页停在哪一页（v1.0.3）。
      *
-     * <p>GuideActivity 是叠在 MainActivity 之上的第二层，只有点「开始使用 / 跳过」才写
+     * <p>GuideActivity 是叠在 MainActivity 之上的第二层，只有点「开始使用 / 稍后设置」才写
      * {@link #KEY_ONBOARD_DONE}。所以中途退出的人，任务栈里留着
      * {@code MainActivity → GuideActivity}；此时从通知或桌面图标再进来，系统会重建根
      * Activity、把上面这层销毁重开，页码只存在成员变量里就必然回到第 1 页——

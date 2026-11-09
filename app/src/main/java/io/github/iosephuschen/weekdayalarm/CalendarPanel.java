@@ -55,6 +55,15 @@ final class CalendarPanel {
     /** 标记变化后通知宿主：重排闹钟 + 刷新首页（含本面板）。 */
     private final Runnable onChanged;
 
+    /**
+     * 格子下方那条一次性提示（v1.23.20）。
+     *
+     * <p>它只说一句话：这张表能点。引导页里没有日历的篇幅（`AGENTS.md` 第六节把引导页
+     * 定位成「默认值确认页」），所以把这句话放在用户真正看见这张表的地方。点掉或标了
+     * 任意一天就写标记，此后不再出现。
+     */
+    private final TextView tvHint;
+
     private int year, month;
 
     /**
@@ -86,6 +95,8 @@ final class CalendarPanel {
         tvStats = root.findViewById(R.id.tv_cal_stats);
         calRows = root.findViewById(R.id.cal_rows);
         legendRow = root.findViewById(R.id.legend_row);
+        tvHint = root.findViewById(R.id.tv_cal_hint);
+        tvHint.setOnClickListener(v -> dismissHint());
         for (int i = 0; i < dow.length; i++) {
             dow[i] = root.findViewById(DOW_IDS[i]);
         }
@@ -104,6 +115,19 @@ final class CalendarPanel {
     /** 重画整个面板。首页每次全局刷新都会调。 */
     void refresh() {
         renderCalendar();
+        // 每次刷新都按标记重算，不在构造时定死：用户从引导页回来、改完设置回来都会走这里。
+        tvHint.setVisibility(Prefs.isCalHintSeen(host) ? View.GONE : View.VISIBLE);
+    }
+
+    /**
+     * 收走那条提示（v1.23.20）。
+     *
+     * <p>两条触发：点提示本身、或者真的标了一天。后一条更重要——用户已经会用了，
+     * 再把这句话留着，等于在他刚做完的事旁边贴一张说明书。
+     */
+    private void dismissHint() {
+        Prefs.setCalHintSeen(host, true);
+        tvHint.setVisibility(View.GONE);
     }
 
     private void shiftMonth(int delta) {
@@ -511,6 +535,7 @@ final class CalendarPanel {
 
     /** 切换某天的请假标记。上班日标了才影响闹钟，休息日上的老数据只做清理。 */
     private void toggleVacation(LocalDate d, boolean work, boolean past) {
+        dismissHint();      // 用户已经用上了这张表，那句话的使命结束（v1.23.20）
         String dateText = TimeText.monthDayWeek(d);
         if (Prefs.isVacation(host, d)) {
             Prefs.removeVacation(host, d);
@@ -541,6 +566,7 @@ final class CalendarPanel {
      * <p>过去的日子同样只问班次、不提闹钟——那天已经过完了。
      */
     private void onOvertimeClick(LocalDate d, boolean work, boolean past) {
+        dismissHint();      // 同上：已经走到「改这一天」了，提示不必再留着（v1.23.20）
         String dateText = TimeText.monthDayWeek(d);
         Integer ov = Prefs.getRule(host).effectiveOverride(Prefs.getDayShift(host, d));
         if (ov != null && ov != WeekSchedule.DAY_LEAVE) {

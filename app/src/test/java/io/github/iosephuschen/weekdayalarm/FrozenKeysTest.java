@@ -80,6 +80,9 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_PRE_NOTICE_LAST", "pre_notice_last_minutes");
         PREFS_KEYS.put("KEY_GUIDE_SEEN", "guide_seen");
         PREFS_KEYS.put("KEY_ONBOARD_DONE", "onboard_done");
+        // v1.23.20：日历那条一次性提示是否说过。运行时状态，不进备份——
+        // 换手机导入配置的人已经走完过引导，这条提示本来也不该再冒出来。
+        PREFS_KEYS.put("KEY_CAL_HINT_SEEN", "cal_hint_seen");
         // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
         // 改名等于让升级的人回到第 1 页重填一遍。
         PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");

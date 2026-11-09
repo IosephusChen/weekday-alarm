@@ -132,8 +132,9 @@
   **首选做法（2026-11-09 核实）**：给那把 fine-grained 勾上
   Repository permissions → **Workflows: Read and write**（GitHub 文档「Repository
   permissions」表里有 `workflows` / `write`）。勾上就不必用 classic，账号级那把可以删。
-  2026-11-08 为推 workflow 建过一把 classic，用完用户判断以后还用得上、刻意留着；
-  那只是应急，不是唯一解法。
+  2026-11-08 为推 workflow 建过一把 classic（名 `weekday-alarm-push`，scope 是 `repo`
+  + `workflow`，**7 天有效、2026-11-16 到期**），用完用户判断以后还用得上、刻意留着；
+  那只是应急，不是唯一解法，也别假设它长期有效——过期了就得重新建或改用 fine-grained。
   无论哪把：**只在当次 push 里用环境变量注入**，不写进 `/root/.github_token`、不写进
   `.git/config`——classic 是账号级 `repo` 权限，覆盖用户所有仓库，比 fine-grained 危险一个量级。
 - 推 GitHub 卡住：先按 `docs/流程规范.md` 第十三条跑三条探测，分清是链路还是协议。

@@ -41,6 +41,12 @@ jobs:
       - name: Check doc references
         run: python3 tools/check_refs.py
 
+      # 2026-11-10：内置节假日数据有没有欠账。与 release.sh 共用一份实现。
+      # 平时永远绿（「明年还没公布，催还早」）；每年 12 月起才红，红的意思就是
+      # 「国务院安排了，内置层还没有」——v1.23.22 那笔就是这么漏的。
+      - name: Check built-in holiday horizon
+        run: python3 tools/check_holiday_horizon.py
+
   # 2026-11-07：test 与 release 合并成一个 job。
   # 原来两个 job 各自 checkout、装 JDK、装 Android SDK、冷启 Gradle，一次发版
   # 光这些启动就白等两分钟，而它们要做的事在同一个 workspace 里就能接上。

@@ -83,6 +83,9 @@ public class FrozenKeysTest {
         // v1.23.20：日历那条一次性提示是否说过。运行时状态，不进备份——
         // 换手机导入配置的人已经走完过引导，这条提示本来也不该再冒出来。
         PREFS_KEYS.put("KEY_CAL_HINT_SEEN", "cal_hint_seen");
+        // v1.23.23：是否已为通知权限主动弹过一次系统框。同样是运行时状态，不进备份——
+        // 换手机之后系统那边也是全新的一次，该有新的机会被问。
+        PREFS_KEYS.put("KEY_NOTIFY_ASKED", "notify_asked");
         // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
         // 改名等于让升级的人回到第 1 页重填一遍。
         PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");

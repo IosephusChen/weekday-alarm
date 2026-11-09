@@ -634,7 +634,35 @@ public class MainActivity extends AppCompatActivity {
      */
     /** 添加 / 编辑闹钟的对话框交给 {@link AlarmEditor}（v0.52.2 拆分）。 */
     private void showAlarmEditDialog(Alarm target) {
-        AlarmEditor.show(this, alarms, target, this::applySettingsNow);
+        AlarmEditor.show(this, alarms, target, () -> {
+            applySettingsNow();
+            askNotificationAfterSave();
+        });
+    }
+
+    /**
+     * 建完第一条闹钟，当场问通知权限（v1.23.23）。
+     *
+     * <p>v1.23.17 把「一条闹钟都没有就别用掉系统那一次弹窗机会」做对了，却只做了一半：
+     * 跳过引导的人回首页时一条都没有，权限框被跳过；之后他在首页点「＋」建第一条，
+     * {@code AlarmEditor} 是首页自己的对话框，关掉不会触发 {@code onResume}——
+     * 那条注释里承诺的「留到他真建了闹钟再问」就再也没机会兑现，只能等他某次退到桌面再进来。
+     *
+     * <p>所以钩子挂在保存回调上，不挂在 {@code onResume}。一次为限：系统这个框每装一次
+     * 只给有限几次机会，被拒之后 {@code requestPermissions} 会立刻回调，再问纯属打扰。
+     *
+     * <p>包级可见是为了让单测能绕开对话框直接调——真跑一遍 {@code AlarmEditor} 要填时间、
+     * 点确定，测的就不是这条判断了（同 {@code PlanCardsView.applyCycleShift}）。
+     */
+    void askNotificationAfterSave() {
+        if (Prefs.isNotifyAsked(this)) return;
+        // 现读一遍而不是看字段：保存回调里 applySettingsNow 的重排是异步的，
+        // 字段可能还没刷到含新闹钟的那份列表
+        if (Prefs.getAlarms(this).isEmpty()) return;
+        // 已授权、或通知总开关被关掉：都不是这个框能解决的，交给设置页
+        if (PermissionGuides.canNotify(this)) return;
+        Prefs.setNotifyAsked(this, true);
+        PermissionGuides.requestNotification(this);
     }
 
     /**

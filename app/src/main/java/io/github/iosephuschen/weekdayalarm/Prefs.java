@@ -60,6 +60,10 @@ public final class Prefs {
     // v1.23.20：日历下方那条「点任意一天」的提示是否已经出现过。
     // 记布尔而不是记次数：它只说一件事，说过一次就够了；用户点掉或标了任意一天都算说过。
     public static final String KEY_CAL_HINT_SEEN = "cal_hint_seen";
+    // v1.23.23：已经为「通知权限」主动弹过一次系统框。
+    // 系统这个框在 Android 13+ 每装一次只给有限几次机会，问过就该收手——
+    // 更关键的是别让「拒绝过」的人每次保存闹钟都被拦一次。
+    public static final String KEY_NOTIFY_ASKED = "notify_asked";
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
@@ -1104,6 +1108,15 @@ public final class Prefs {
 
     public static void setCalHintSeen(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_CAL_HINT_SEEN, v).apply();
+    }
+
+    /** 是否已经为通知权限主动弹过一次系统框（v1.23.23）。 */
+    public static boolean isNotifyAsked(Context c) {
+        return sp(c).getBoolean(KEY_NOTIFY_ASKED, false);
+    }
+
+    public static void setNotifyAsked(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_NOTIFY_ASKED, v).apply();
     }
 
     /**

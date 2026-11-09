@@ -1,13 +1,13 @@
 {
-  "versionCode": 307,
-  "versionName": "1.23.22",
+  "versionCode": 308,
+  "versionName": "1.23.23",
   "published": "2026-11-10",
-  "title": "2027 年的假，断网也认得",
+  "title": "建完第一条闹钟，当场问通知",
   "notes": [
-    "2027 年放假与补班打进安装包，不联网也算得准",
-    "春节 2/5–2/13 连休九天，2/14 要上班",
-    "提醒范围那页的说明改成「内置到 2027 年底」"
+    "「稍后设置」进来的人，建好第一条就弹通知权限框",
+    "以前要等下次退到桌面再进来才问，多数人等不到",
+    "只问一次：拒绝之后再建闹钟不会反复来打扰"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.22/weekday-alarm-1.23.22.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.22"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.23/weekday-alarm-1.23.23.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.23"
 }

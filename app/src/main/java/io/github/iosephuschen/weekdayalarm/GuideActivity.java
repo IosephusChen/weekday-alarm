@@ -891,13 +891,12 @@ public class GuideActivity extends AppCompatActivity {
      *
      * <p>抽出来是因为 {@link #complete(boolean)} 也要问同一个问题：从「稍后设置」
      * 出去时权限没开，闹钟照样排上了，只是第二天不会响——那句话得说出来。
+     *
+     * <p>2026-11-09（A5）：判据搬进 {@link PermissionGuides#canNotify(android.content.Context)}，
+     * 这里只转调。首页接手说那句话时要问的是同一个问题，两处各写一份迟早写岔。
      */
     private boolean canNotify() {
-        boolean granted = android.os.Build.VERSION.SDK_INT < 33
-                || ContextCompat.checkSelfPermission(this,
-                        android.Manifest.permission.POST_NOTIFICATIONS)
-                == android.content.pm.PackageManager.PERMISSION_GRANTED;
-        return granted && NotificationManagerCompat.from(this).areNotificationsEnabled();
+        return PermissionGuides.canNotify(this);
     }
 
     /**
@@ -1525,22 +1524,27 @@ public class GuideActivity extends AppCompatActivity {
         // 那个出口以前叫「跳过」，用户心理上是「我放弃了」；现在叫「稍后设置」，
         // 心理上是「先这样，回头再说」——而他回头之前，闹钟一声都不会响。
         // 别的路径不换文案：第 4 页刚验过通知，再说一遍是噪音。
-        final String tip;
-        if (fromSkip && !canNotify()) {
-            tip = "已排好班。通知权限没开，闹钟不会响";
-        } else if (firstRun) {
-            tip = isRotationNow() && shiftBaseStart >= 0
-                    ? "已排好班，跟着班次走"
-                    : "已排好班，" + TimeText.clock(hour, minute) + " 会响";
-        } else {
-            tip = "设置已更新";
-        }
+        //
+        // 2026-11-09（A5）：首次引导这句话不在这里说。本方法紧接着 finish()，首页一回来就弹
+        // 系统通知权限框，而 Toast 是系统窗口、不跟页面走——提示会压在框上（录屏里共存 1.5s）。
+        // 所以交给首页：这里只把两句话备好，等 onRequestPermissionsResult 有了结果再挑一句。
+        // 「设置已更新」这条不受影响：从设置页重看引导，回程是设置页、没有权限框，直接说。
+        final String okTip = isRotationNow() && shiftBaseStart >= 0
+                ? "已排好班，跟着班次走"
+                : "已排好班，" + TimeText.clock(hour, minute) + " 会响";
+        final String warnTip = "已排好班。通知权限没开，闹钟不会响";
         // v0.74.3：这条路径改回同步。二轮审查发现：引导刚设完进程就被杀（MIUI 激进）
         // 时，后台重排可能还没执行，结果是「一条闹钟都没排上」，而用户下次打开 App
         // 前不会知道。这是一次性点击，阻塞几百毫秒无感；ANR 风险来自反复操作，
         // 不来自一次性完成——所以只有这里回同步，其余界面侧路径仍走 Reschedule。
         ScheduleManager.rescheduleAll(this);
-        Toast.makeText(this, tip, Toast.LENGTH_LONG).show();
+        if (firstRun) {
+            PendingTip.put(okTip, warnTip);
+        } else {
+            // 重看引导（设置页进来）：回程不弹权限框，也有可能是「稍后设置」出去
+            Toast.makeText(this, fromSkip && !canNotify() ? warnTip : "设置已更新",
+                    Toast.LENGTH_LONG).show();
+        }
         finish();
     }
 

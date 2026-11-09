@@ -1707,8 +1707,12 @@ public class GuideTest {
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertTrue("要说清不会响，实际：" + toast, toast != null && toast.contains("不会响"));
+        // A5（2026-11-09）：首次引导不再在引导页弹这句话——它马上 finish，提示会压在
+        // 紧接着弹出的系统权限框上。改由首页在框关闭之后说。所以这里验的是「话没被弄丢」：
+        // 备着的那两句里，通知不通的那句必须明说不会响。端到端在 GuideTipTimingTest。
+        PendingTip tip = PendingTip.take();
+        assertNotNull("「稍后设置」出去必须留一句话给首页", tip);
+        assertTrue("要说清不会响，实际：" + tip.warn, tip.warn.contains("不会响"));
     }
 
     /** 对照：通知开着时照旧报时间，不念那句警告——否则每次点都在重复后果。 */
@@ -1723,10 +1727,11 @@ public class GuideTest {
         GuideActivity a = fresh();
         tap(a, R.id.btn_skip);
 
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertNotNull("完成时要有反馈", toast);
-        assertTrue("要有具体时间，实际：" + toast, toast.startsWith("已排好班"));
-        assertFalse("权限开着不该念后果，实际：" + toast, toast.contains("不会响"));
+        // 同上：话说给首页了，这里验「通知通的时候说的是时间、不是后果」
+        PendingTip tip = PendingTip.take();
+        assertNotNull("完成时要有反馈", tip);
+        assertTrue("要有具体时间，实际：" + tip.ok, tip.ok.startsWith("已排好班"));
+        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("不会响"));
     }
 
     /**

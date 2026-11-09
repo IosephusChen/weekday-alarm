@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
 /**
@@ -105,15 +107,44 @@ final class PermissionGuides {
         return false;
     }
 
-    /** Android 13+ 的通知权限。未授予时静默请求，不解释——系统弹窗自带说明。 */
-    static void requestNotification(Activity activity) {
+    /**
+     * 通知权限请求用的 requestCode。全 App 只有这一个值——回调里必须靠它分辨，
+     * 否则会把别处的权限结果一起吃掉。
+     */
+    static final int REQUEST_NOTIFICATION = 1;
+
+    /**
+     * Android 13+ 的通知权限。未授予时静默请求，不解释——系统弹窗自带说明。
+     *
+     * @return true = 真弹了框，调用方要等 {@link Activity#onRequestPermissionsResult}；
+     *         false = 没弹（已授权，或 Android 12 及以下根本没这个权限），调用方该当场把话说完。
+     *         <p>2026-11-09 加返回值（A5）：原来靠调用方自己复刻「SDK≥33 且未授权」去猜弹没弹，
+     *         两处条件一旦写岔，就会出现「以为弹了其实没弹」，那句话永远不说。
+     */
+    static boolean requestNotification(Activity activity) {
         if (Build.VERSION.SDK_INT >= 33) {
             if (ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(activity,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATION);
+                return true;
             }
         }
+        return false;
+    }
+
+    /**
+     * 通知这条路通不通：权限给了，且系统里的通知总开关也没关。
+     *
+     * <p>2026-11-09 从 {@code GuideActivity} 搬过来（原来那份是 private 实例方法）：引导页说完
+     * 「会响」、首页接手说同一句话，两处必须问同一个问题。{@code GuideActivity.canNotify()}
+     * 现在只是转调这里，判据只有这一份实现。
+     */
+    static boolean canNotify(Context context) {
+        boolean granted = Build.VERSION.SDK_INT < 33
+                || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+        return granted && NotificationManagerCompat.from(context).areNotificationsEnabled();
     }
 
     /** 保存后提醒一句「通知没开」——不弹权限框，避免打断用户当前操作。 */

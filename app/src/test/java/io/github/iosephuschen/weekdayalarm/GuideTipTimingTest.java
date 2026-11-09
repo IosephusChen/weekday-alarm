@@ -36,7 +36,7 @@ import org.robolectric.shadows.ShadowToast;
  * <ol>
  *   <li>首次引导页<b>不弹</b>这句话（旧代码在这一条上是红的）；</li>
  *   <li>回到首页、权限框有结果之后才说，且说的是「会响」；</li>
- *   <li>用户点「拒绝」时改口说「不会响」——不能承诺一件不会发生的事；</li>
+ *   <li>用户点「拒绝」时改口说「要进 App 才能关」——闹钟照样响，只是没入口；</li>
  *   <li>从设置页重看引导仍当场说「设置已更新」（回程是设置页，没有权限框可等）。</li>
  * </ol>
  */
@@ -134,11 +134,11 @@ public class GuideTipTimingTest {
         String toast = ShadowToast.getTextOfLatestToast();
         assertNotNull(toast);
         assertTrue("授权了就该报具体时间，实际：" + toast, toast.startsWith("已排好班"));
-        assertFalse("授权了不该念后果，实际：" + toast, toast.contains("不会响"));
+        assertFalse("授权了不该念后果，实际：" + toast, toast.contains("进 App"));
     }
 
     @Test
-    public void backOnHome_denied_saysItWontRing() {
+    public void backOnHome_denied_saysHowToStop() {
         finishFirstRun();
         int afterGuide = ShadowToast.shownToastCount();
 
@@ -150,9 +150,12 @@ public class GuideTipTimingTest {
 
         assertEquals("框收起来了，这句话要补上", afterGuide + 1, ShadowToast.shownToastCount());
         String toast = ShadowToast.getTextOfLatestToast();
-        // 录屏 v6 里用户点的是「始终允许」；要是照搬那句「07:30 会响」，拒绝的用户第二天
-        // 会对着一个一声不响的手机等——这正是 GuideActivity.complete() 里 2026-11-05 那段注释要防的
-        assertTrue("拒绝了就必须明说不会响，实际：" + toast, toast != null && toast.contains("不会响"));
+        // 录屏 v6 里用户点的是「始终允许」；拒绝的用户不能听到「07:30 会响」——
+        // 他的通知栏里不会有入口。但也**不能**说「不会响」：闹钟照响，那是 2026-11-09 修正的错话。
+        assertTrue("拒绝了要说清怎么关，实际：" + toast,
+                toast != null && toast.contains("进 App"));
+        assertFalse("闹钟照响，不能说成不会响，实际：" + toast,
+                toast != null && toast.contains("不会响"));
     }
 
     /** 一次性的：回调重复来一遍，不能再弹第二句。 */

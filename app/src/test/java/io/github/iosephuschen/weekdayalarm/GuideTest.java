@@ -1245,8 +1245,11 @@ public class GuideTest {
                     View.GONE, a.findViewById(R.id.divider_exact).getVisibility());
             // v1.23.5：副标题不再报「已开启 N / M 项」。这一页 5 行里两行明写
             // 「系统读不到」，任何分母都会被读成「剩下几项呢」，用户 2026-11-08 要求去掉。
+            // v1.23.15：后半句补上通知那项的分工——原话把通知也算进「响不响」，
+            // 读起来就是「通知不开就不响」，与实现相反（闹钟照响，只是没入口）。
             assertEquals("副标题只说这一页是什么意思，不再报计数",
-                    "这些开关决定闹钟响不响、准不准", text(a, R.id.tv_guide_sub));
+                    "这些开关决定闹钟响不响、准不准；通知只决定响时能不能从通知栏关",
+                    text(a, R.id.tv_guide_sub));
         } finally {
             // 桌面默认是「没给」。还原成默认而不是还原成 true，测试之间才不会串。
             org.robolectric.shadows.ShadowAlarmManager.setCanScheduleExactAlarms(false);
@@ -1688,14 +1691,18 @@ public class GuideTest {
     }
 
     /**
-     * 「稍后设置」+ 通知没开：必须说「不会响」（2026-11-05）。
+     * 「稍后设置」+ 通知没开：必须说清「照响，但要进 App 关」（2026-11-05，2026-11-09 修正）。
      *
      * <p>这个出口以前叫「跳过」，用户心理上是「我放弃了」，没响也认；改叫「稍后设置」，
-     * 变成「先这样，回头再说」——可闹钟已经排上、通知却没开，回头之前一声都不会响。
-     * 这句话不在这里说出来，用户要到第二天早上才发现。
+     * 变成「先这样，回头再说」——可闹钟已经排上、通知却没开，那用户就得知道
+     * 响的时候没有通知栏入口。
+     *
+     * <p><b>2026-11-09 修正</b>：原话说的是「不会响」，与实现相反——锁屏走
+     * {@code AlarmReceiver.startActivity} 拉整屏页、解锁走悬浮窗，两条都不碰通知。
+     * 项目自己在 Changelog v0.73.5 就记着「通知权限降为建议（进 App 也能关）」。
      */
     @Test
-    public void later_whenNotifyOff_warnsItWontRing() {
+    public void later_whenNotifyOff_warnsHowToStop() {
         // 先给授权再把系统总开关关掉：这样测的才是「通知这条路不通」，
         // 而不是 Robolectric 默认没授 POST_NOTIFICATIONS
         shadowOf((Application) ctx())
@@ -1709,10 +1716,12 @@ public class GuideTest {
 
         // A5（2026-11-09）：首次引导不再在引导页弹这句话——它马上 finish，提示会压在
         // 紧接着弹出的系统权限框上。改由首页在框关闭之后说。所以这里验的是「话没被弄丢」：
-        // 备着的那两句里，通知不通的那句必须明说不会响。端到端在 GuideTipTimingTest。
+        // 备着的那两句里，通知不通的那句必须说清「照响、要进 App 关」。
+        // 端到端在 GuideTipTimingTest。
         PendingTip tip = PendingTip.take();
         assertNotNull("「稍后设置」出去必须留一句话给首页", tip);
-        assertTrue("要说清不会响，实际：" + tip.warn, tip.warn.contains("不会响"));
+        assertTrue("要说清怎么关，实际：" + tip.warn, tip.warn.contains("进 App"));
+        assertFalse("闹钟照响，不能说成不会响，实际：" + tip.warn, tip.warn.contains("不会响"));
     }
 
     /** 对照：通知开着时照旧报时间，不念那句警告——否则每次点都在重复后果。 */
@@ -1731,7 +1740,7 @@ public class GuideTest {
         PendingTip tip = PendingTip.take();
         assertNotNull("完成时要有反馈", tip);
         assertTrue("要有具体时间，实际：" + tip.ok, tip.ok.startsWith("已排好班"));
-        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("不会响"));
+        assertFalse("权限开着不该念后果，实际：" + tip.ok, tip.ok.contains("进 App"));
     }
 
     /**

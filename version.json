@@ -1,14 +1,13 @@
 {
-  "versionCode": 299,
-  "versionName": "1.23.14",
+  "versionCode": 300,
+  "versionName": "1.23.15",
   "published": "2026-11-09",
-  "title": "引导提示不再压住系统权限框",
+  "title": "「闹钟不会响」这句错话改掉了",
   "notes": [
-    "以前引导页说完就弹提示，系统权限框紧跟着盖上来",
-    "现在等框关掉再说；点了拒绝会听到「闹钟不会响」",
-    "响铃时长点一项就生效，不必再点「确定」",
-    "「导入完成」改叫「已导入」，与「已导出」同一体例"
+    "通知没开时闹钟照样响，只是通知栏没有入口",
+    "改成「照响，但要进 App 才能关」",
+    "引导第三页同步：悬浮窗没开是整屏弹出，不是进通知栏找"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.14/weekday-alarm-1.23.14.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.14"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.15/weekday-alarm-1.23.15.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.15"
 }

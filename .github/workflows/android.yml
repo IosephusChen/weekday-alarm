@@ -1,3 +1,8 @@
+# 2026-11-09：改本文件要 token 带 `Workflows` 权限。fine-grained 勾 Repository permissions
+# → Workflows: Read and write 就够，不必动用账号级 `repo` 权限的 classic（当天实测通过）。
+# 缺这项时 git 与 REST 都拒，报 "refusing to allow a Personal Access Token to create or
+# update workflow"——那不是配置坏了，是缺权限。
+
 name: Android CI
 
 on:

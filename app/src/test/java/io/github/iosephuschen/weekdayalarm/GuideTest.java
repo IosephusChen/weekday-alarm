@@ -71,7 +71,7 @@ public class GuideTest {
         ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit().clear().commit();
     }
 
-    /** 全新安装：数据清空后拉起引导（此时 Prefs 会预置起床 / 午休两条）。 */
+    /** 全新安装：数据清空后拉起引导（v1.23.17 起不再预置任何闹钟，首页是空态）。 */
     private GuideActivity fresh() {
         wipe();
         return launch();
@@ -79,6 +79,14 @@ public class GuideTest {
 
     private GuideActivity launch() {
         ActivityController<GuideActivity> ctl = Robolectric.buildActivity(GuideActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        return ctl.get();
+    }
+
+    /** 带 intent 拉起（v1.23.18：设置页「权限与自启动」走 EXTRA_PERMISSIONS_ONLY）。 */
+    private GuideActivity launch(Intent intent) {
+        ActivityController<GuideActivity> ctl =
+                Robolectric.buildActivity(GuideActivity.class, intent).setup();
         ShadowLooper.idleMainLooper();
         return ctl.get();
     }
@@ -1650,6 +1658,72 @@ public class GuideTest {
 
         tap(a, R.id.btn_prev);
         assertEquals("可以退回去改制度", "下一步", text(a, R.id.btn_next));
+    }
+
+    // ================= 只看权限（v1.23.18）=================
+
+    /**
+     * 设置页「权限与自启动」进来的样子：直接落在第 3 页，只有一个出口。
+     *
+     * <p>不给翻页是刻意的：第 1、2 页会改班表和时间，用户只是来检查开关的，
+     * 让他往回滑一页顺手改掉班表，是这版最不该发生的事。
+     */
+    @Test
+    public void permissionsOnly_landsOnPermissionPage() {
+        wipe();
+        GuideActivity a = launch(GuideActivity.permissionsIntent(ctx()));
+
+        assertEquals("要直接落在权限页，实际第 " + (flipperIndex(a) + 1) + " 页",
+                GuideActivity.PAGE_PERMISSIONS, flipperIndex(a));
+        assertEquals("这一模式只有一个出口", "完成", text(a, R.id.btn_next));
+        assertEquals("不给往前翻", View.INVISIBLE, visibility(a, R.id.btn_prev));
+        assertEquals("不给「稍后设置」", View.INVISIBLE, visibility(a, R.id.btn_skip));
+        assertEquals("只来查权限，没有「导入」", View.GONE, visibility(a, R.id.btn_import));
+        assertEquals("圆点是「第几步」的语义，单独查看时没有意义",
+                View.GONE, visibility(a, R.id.dots));
+    }
+
+    /**
+     * 看完点「完成」什么都不写（v1.23.18）。
+     *
+     * <p>这一条比界面重要：如果 `complete()` 照常跑，新装用户从设置里查一次权限，
+     * {@code onboard_done} 就被写成 true——本该出现的引导从此再也不出现，
+     * 而他其实一步都没走过。
+     */
+    @Test
+    public void permissionsOnly_finishLeavesGuideStateAlone() {
+        wipe();
+        Prefs.setGuidePage(ctx(), 1);
+        GuideActivity a = launch(GuideActivity.permissionsIntent(ctx()));
+        tap(a, R.id.btn_next);
+
+        assertTrue("要关掉这一页", a.isFinishing());
+        assertFalse("只是来查权限，不能被记成「引导走完了」", Prefs.isOnboardDone(ctx()));
+        assertEquals("也不该把引导页码清零，下次重看要接着第 2 页", 1, Prefs.getGuidePage(ctx()));
+    }
+
+    /**
+     * 这一页的「测试通知」点回来仍是权限页，不能变回四页引导的第 1 页。
+     *
+     * <p>和 {@code notifyTest_pointsBackToGuideWhileOnboarding} 同一类问题：
+     * 通知的 intent 若不带 EXTRA_PERMISSIONS_ONLY，进程被回收后重建就落到普通引导。
+     */
+    @Test
+    public void permissionsOnly_notifyTestComesBackToPermissionPage() {
+        NotificationManager nm =
+                (NotificationManager) ctx().getSystemService(Context.NOTIFICATION_SERVICE);
+        shadowOf((Application) ctx()).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
+        shadowOf(nm).setNotificationsEnabled(true);
+        wipe();
+
+        GuideActivity a = launch(GuideActivity.permissionsIntent(ctx()));
+        tap(a, R.id.btn_notify_try);
+
+        Notification n = shadowOf(nm).getNotification(9401);
+        assertNotNull(n);
+        Intent open = shadowOf(n.contentIntent).getSavedIntent();
+        assertTrue("通知的 intent 要带上「只看权限」，否则回来会落到第 1 页",
+                open.getBooleanExtra(GuideActivity.EXTRA_PERMISSIONS_ONLY, false));
     }
 
     /**

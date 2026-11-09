@@ -175,6 +175,9 @@ public class SettingsActivity extends AppCompatActivity {
         // v0.24.0：配置导出 / 导入
         bind(R.id.row_export, v -> exportConfig());
         bind(R.id.row_import, v -> importConfig());
+        // v1.23.18：权限检查单独一行，直接落到引导第 3 页。那一页本来就是权限清单
+        // （五行可点、回来会重刷勾选），不为它再做一个页面。
+        bind(R.id.row_permissions, v -> startActivity(GuideActivity.permissionsIntent(this)));
         // v0.23.0：新手引导随时重看（首次安装仍会自动展示）
         bind(R.id.row_onboard, v -> startActivity(new Intent(this, GuideActivity.class)));
         // v0.29.0：更新日志——每版改了什么都能翻，不联网

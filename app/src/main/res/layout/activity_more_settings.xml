@@ -401,6 +401,41 @@
                             </LinearLayout>
 
                             <View style="@style/SettingsDivider" />
+                            <!-- v1.23.18：权限检查独立成行。原来只有「新手引导与权限 · 重看」，
+                                 点进去是四页引导的第 1 页，想查开关得连翻三页——而第 1、2 页
+                                 是改班表和时间的地方，跟「检查权限」毫不相干。 -->
+                            <LinearLayout
+                                android:id="@+id/row_permissions"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:minHeight="54dp"
+                                android:orientation="horizontal"
+                                android:paddingStart="@dimen/space_16"
+                                android:paddingEnd="14dp"
+                                android:paddingTop="@dimen/space_10"
+                                android:paddingBottom="@dimen/space_10">
+
+                                <TextView
+                                    style="@style/SettingsTitle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/more_permissions_title" />
+
+                                <TextView
+                                    style="@style/SettingsValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/more_permissions_action" />
+
+                                <TextView style="@style/SettingsChevron" />
+                            </LinearLayout>
+
+                            <View style="@style/SettingsDivider" />
                             <LinearLayout
                                 android:id="@+id/row_onboard"
                                 android:layout_width="match_parent"

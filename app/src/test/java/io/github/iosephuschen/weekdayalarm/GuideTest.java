@@ -2371,7 +2371,7 @@ public class GuideTest {
         //   自定义班表默认跟节假日（Prefs.isCycleHoliday 缺省 true）→ WeekSchedule
         //   先判 isMakeupWorkday，补班日直接返回 MAKEUP_WORK（上班）→ 七格全「休」
         //   也挡不住 nextRing 非空 → 这一行仍 VISIBLE。
-        // 补班日来自内置表（只到 2026）或启动时自动拉的 remote；App 里只有
+        // 补班日来自内置表（只到 2027）或启动时自动拉的 remote；App 里只有
         // !BuildConfig.DEBUG 才检查，debug 不拉、release 拉，于是同一份代码两个变体
         // 结论不同。2026-11-08 全量跑 release 时实测到一次「整周全休却仍 VISIBLE」。
         wipe();

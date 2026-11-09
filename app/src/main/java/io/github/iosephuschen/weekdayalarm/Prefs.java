@@ -640,7 +640,7 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_SMALL_REST_SAT, v).apply();
     }
 
-    /** 提醒范围（天）：默认 90，可选 90 / 180 / 365。节假日数据只内置到 2026 年底，超出部分按纯大小周规则推算。 */
+    /** 提醒范围（天）：默认 90，可选 90 / 180 / 365。节假日数据只内置到 2027 年底，超出部分按纯大小周规则推算。 */
     public static int getHorizonDays(Context c) {
         return sp(c).getInt(KEY_HORIZON, 90);
     }

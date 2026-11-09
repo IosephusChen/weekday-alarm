@@ -126,8 +126,8 @@ public class HolidayUpdaterTest {
         HolidayUpdater.loadCached(ctx);   // 不该抛异常
 
         assertFalse("坏缓存不该合入任何年份", HolidayData.hasRemote());
-        assertFalse("坏缓存不该被当成 2027 有数据",
-                HolidayData.isHoliday(LocalDate.of(2027, 1, 1)));
+        assertFalse("坏缓存不该被当成 2028 有数据",
+                HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
         assertEquals("schema 保持新版本号", SCHEMA_VERSION, sp.getInt(KEY_SCHEMA, 0));
     }
 

@@ -133,7 +133,7 @@ public class HolidayDataTest {
         // 内置数据仍然可用
         assertTrue(HolidayData.isHoliday(LocalDate.of(2026, 10, 1)));
         assertFalse(HolidayData.hasRemote());
-        assertEquals(2026, HolidayData.effectiveYear());
+        assertEquals(2027, HolidayData.effectiveYear());
     }
 
     /**

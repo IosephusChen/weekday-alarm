@@ -62,19 +62,19 @@ public class HolidayCountdownTest {
 
     @Test
     public void missingNameDegradesOutsideHoliday() {
-        // 2027 增量拉到了但没带名字（holiday-cn 提前建文件、days 里没有 name 的年份）
-        HolidayData.applyRemoteJson("{\"version\":2027,\"published\":\"2026-11-04\","
-                + "\"holidays\":[[\"2027-01-01\",\"2027-01-03\"]],\"makeups\":[]}");
+        // 2028 增量拉到了但没带名字（holiday-cn 提前建文件、days 里没有 name 的年份）
+        HolidayData.applyRemoteJson("{\"version\":2028,\"published\":\"2027-11-04\","
+                + "\"holidays\":[[\"2028-01-01\",\"2028-01-03\"]],\"makeups\":[]}");
         // 12/30 → 1/1 还有 2 天
-        assertEquals("距下次放假还有 2 天", text(LocalDate.of(2026, 12, 30)));
+        assertEquals("距下次放假还有 2 天", text(LocalDate.of(2027, 12, 30)));
         // 假期里没名字：说「假期第 k 天」，不编一个名字
-        assertEquals("假期第 2 天", text(LocalDate.of(2027, 1, 2)));
+        assertEquals("假期第 2 天", text(LocalDate.of(2028, 1, 2)));
     }
 
     @Test
     public void beyondScanWindowIsHidden() {
-        // 2026-11-15：往后 120 天内没有任何假日数据（2027 增量未拉到）→ 不显示
-        HolidayCountdown.Result r = HolidayCountdown.compute(LocalDate.of(2026, 11, 15));
+        // 2027-11-15：往后 120 天内没有任何假日数据（2028 增量未拉到；内置只到 2027 年底）
+        HolidayCountdown.Result r = HolidayCountdown.compute(LocalDate.of(2027, 11, 15));
         assertFalse("窗口内无假日数据时应隐藏", r.visible);
     }
 
@@ -100,9 +100,9 @@ public class HolidayCountdownTest {
 
     @Test
     public void scanWindowIsBounded() {
-        // 窗口就是 120 天：基准日选在内置数据耗尽之后（2026-10-20，后面只剩远程数据），
-        // 否则会先撞见 9/25 中秋，测不到边界本身
-        LocalDate today = LocalDate.of(2026, 10, 20);
+        // 窗口就是 120 天：基准日选在内置数据耗尽之后（2027-10-20，当年只剩远程数据），
+        // 否则会先撞见国庆或次年元旦，测不到边界本身
+        LocalDate today = LocalDate.of(2027, 10, 20);
         LocalDate far = today.plusDays(121);
         HolidayData.applyRemoteJson("{\"version\":" + far.getYear() + ",\"published\":\"2026-11-04\","
                 + "\"holidays\":[[\"" + far + "\",\"" + far + "\"]],\"makeups\":[]}");

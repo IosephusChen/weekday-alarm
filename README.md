@@ -25,7 +25,7 @@
   轮班默认不跟节假日（医院、工厂春节照上班），想要放假可自己打开
 - **按班表换时间**：班表里给每天填过时刻的，闹钟选「跟随我的班表」就连时间一起跟——
   早班 7:30、晚班 19:30，一条闹钟跟着走，不必按班型建两条
-- **节假日与调休**：内置 2007–2026 年法定节假日数据，可在线增量更新
+- **节假日与调休**：内置 2007–2027 年法定节假日数据，可在线增量更新
 - **日历标记**：农历节日、二十四节气、基督教节日可开关；请假 / 加班手动标，标了当天不响
 - **提醒链路**：睡前提醒（明天要不要早起）→ 响铃前提前提醒 → 响铃 → 稍后提醒，环环可配
 - **响铃**：铃声（全局默认 + 每条闹钟可单独指定）、音量（直接就是系统「闹钟」那一档）、渐响；解锁使用时是小悬浮窗，锁屏 / 息屏直接全屏
@@ -51,7 +51,7 @@
 
 ## 下载
 
-**v1.23.21（2026-11-10）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.21/weekday-alarm-1.23.21.apk)
+**v1.23.22（2026-11-10）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.22/weekday-alarm-1.23.22.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
@@ -221,7 +221,7 @@ weekly alarm is wrong roughly half the time.
 This app computes actual workdays from three inputs:
 
 - your schedule pattern (5-day / 6-day / alternating 5–6)
-- Chinese public holidays and make-up workdays (fetched online, bundled fallback for 2007–2026)
+- Chinese public holidays and make-up workdays (fetched online, bundled fallback for 2007–2027)
 - your own leave / overtime marks
 
 …and only rings on days you actually work. Bedtime reminder → pre-alarm notice → alarm →

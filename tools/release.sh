@@ -74,6 +74,16 @@ if ! python3 tools/check_refs.py; then
     exit 1
 fi
 
+# 2026-11-10：内置节假日数据有没有欠账。2027 年那笔就是被写进交接条「欠账」段、
+# 发版时没人照做，直到用户问「你是不是忘了更新内置数据」才补上（v1.23.22）。
+# 备忘录不算数，挡在出包这一步才算数。11/15 起只 WARN，12 月起 FAIL。
+echo "-- 内置节假日数据 --"
+if ! python3 tools/check_holiday_horizon.py; then
+    echo
+    echo "内置层缺明年的数据，先补上再出包（上面的「怎么办」列了四处）。"
+    exit 1
+fi
+
 echo "-- version.json --"
 # 版本清单（v0.89.0）：仓库根目录的 version.json 是「检查更新」唯一的数据源。
 # 手写它必然会在某次发版时忘改——忘了的后果是「提示有新版本，下载到旧包」，

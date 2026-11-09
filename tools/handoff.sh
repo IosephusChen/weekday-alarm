@@ -97,6 +97,11 @@ fi
 stats=$(python3 tools/check_version.py --stats 2>/dev/null) || stats=""
 if [ -n "$stats" ]; then row "清单" "${stats#清单 }"; else row "清单" "统计失败，跑 python3 tools/check_version.py 看原因"; fi
 
+# 2026-11-10：内置节假日够不够覆盖明年。平时永远是「ok」，只在 12 月起缺数据时变红——
+# 只放在它自己那一行，不和版本 / 清单混，免得平时也要读一遍。
+holiday=$(python3 tools/check_holiday_horizon.py 2>/dev/null | head -1)
+row "节假日" "$(echo "$holiday" | sed -e 's/^ *ok *//' -e 's/^ *WARN *//' -e 's/^ *FAIL *//')"
+
 echo
 echo "-- PLAN.md 交接条 --"
 awk '/^## 交接条/{f=1;next} f&&/^## /{exit} f&&NF' PLAN.md

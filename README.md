@@ -51,7 +51,7 @@
 
 ## 下载
 
-**v1.23.26（2026-11-10）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.26/weekday-alarm-1.23.26.apk)
+**v1.23.27（2026-11-10）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.27/weekday-alarm-1.23.27.apk)
 · [上一版 v1.23.25](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.25/weekday-alarm-1.23.25.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 

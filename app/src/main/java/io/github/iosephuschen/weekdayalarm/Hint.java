@@ -44,10 +44,25 @@ final class Hint {
 
     /** 在页面底部浮一条提示。非 Activity 退化为系统 Toast。 */
     static void show(Context c, CharSequence text) {
-        show(c, text, DEFAULT_MS);
+        show(c, text, DEFAULT_MS, null);
     }
 
     static void show(Context c, CharSequence text, long durationMs) {
+        show(c, text, durationMs, null);
+    }
+
+    /**
+     * 在页面底部浮一条提示，但让过 {@code above}。
+     *
+     * <p><b>为什么要这个参数</b>（v1.23.30，用户 2026-11-11 01:12 的三张引导页截图）：
+     * 提示条贴在 content 底边往上 24dp，而引导页那一条「上一步 / 开始使用」页脚
+     * 也在同一条带上——「开始使用」被整条压住，2.6 秒里点不到；锁屏自测那条更长，
+     * 连「上一步」也盖掉一半。这个提示条本身是不拦触摸的，但用户看不见按钮就不会去点。
+     *
+     * <p>传页脚，提示条就落在页脚顶边再往上 12dp。不写死「抬高 80dp」是因为
+     * 系统字体放大时按钮会跟着长高，硬编码只在大字号下重新压上去。
+     */
+    static void show(Context c, CharSequence text, long durationMs, View above) {
         if (c == null || text == null || text.length() == 0) return;
         Activity a = asActivity(c);
         ViewGroup root = a == null ? null : contentOf(a);
@@ -58,7 +73,7 @@ final class Hint {
         }
         removeNow(root);           // 连续提示只留最新一条，不叠罗汉
         TextView bar = build(a, text);
-        root.addView(bar, params(a, bar));
+        root.addView(bar, params(a, root, above));
         bar.setAlpha(0f);
         bar.setTranslationY(dp(a, 8));
         bar.animate().alpha(1f).translationY(0f).setDuration(FADE_MS).start();
@@ -135,12 +150,39 @@ final class Hint {
         return t;
     }
 
-    private static FrameLayout.LayoutParams params(Activity a, TextView bar) {
+    private static FrameLayout.LayoutParams params(Activity a, ViewGroup root, View above) {
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-        lp.bottomMargin = dp(a, BOTTOM_MARGIN_DP);
+        lp.bottomMargin = bottomMargin(a, root, above);
         return lp;
+    }
+
+    /**
+     * 提示条离 content 底边的距离。
+     *
+     * <p>默认 24dp。给了 {@code above}（页面底部的固定操作栏）就改成
+     * 「页脚高 + 12dp」——提示条坐在页脚上沿，按钮照旧露着。
+     * 拿不到页脚位置（还没布局、不在同一棵树里）时退回默认值，不为了抬高而错位。
+     */
+    private static int bottomMargin(Activity a, ViewGroup root, View above) {
+        int fallback = dp(a, BOTTOM_MARGIN_DP);
+        if (above == null || root.getHeight() <= 0) return fallback;
+        int top = topIn(root, above);
+        if (top <= 0 || top >= root.getHeight()) return fallback;
+        return root.getHeight() - top + dp(a, 12);
+    }
+
+    /** {@code v} 在 {@code root} 里的顶边（相对坐标）：逐层累加 getTop，不依赖屏坐标。 */
+    private static int topIn(ViewGroup root, View v) {
+        int y = 0;
+        View cur = v;
+        while (cur != null && cur != root) {
+            y += cur.getTop();
+            android.view.ViewParent p = cur.getParent();
+            cur = p instanceof View ? (View) p : null;
+        }
+        return cur == root ? y : 0;
     }
 
     private static void fadeOut(ViewGroup root, View bar) {

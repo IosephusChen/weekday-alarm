@@ -1012,8 +1012,10 @@ public class GuideActivity extends AppCompatActivity {
                         .setAutoCancel(true);
         try {
             NotificationManagerCompat.from(this).notify(9401, nb.build());
-            // A5（2026-11-10）：原来压在底部说明与「上一步 / 开始使用」之间
-            Hint.show(this, "已发出，下拉通知栏看看");
+            // A5（2026-11-10）：原来压在底部说明与「上一步 / 开始使用」之间。
+            // v1.23.30：实测那条「之间」其实就是页脚本身——传页脚，提示条让到它上方
+            Hint.show(this, "已发出，下拉通知栏看看", Hint.DEFAULT_MS,
+                    findViewById(R.id.guide_footer));
             markTried(R.id.try_state_notify);
         } catch (Exception e) {
             // 个别 ROM 会因「通知总开关」拒绝；这里不静默吞掉，给一句人话
@@ -1297,8 +1299,11 @@ public class GuideActivity extends AppCompatActivity {
         refreshLockState();
         refreshLockTryRow();
         // A5（2026-11-10）：改成页面内的条，onPause 里直接 cancel（见下方），
-        // 不再依赖系统 Toast 那截「消不掉」的时长
-        Hint.show(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下", 6000L);
+        // 不再依赖系统 Toast 那截「消不掉」的时长。
+        // v1.23.30：这句 22 个字，贴在底边时把「上一步」和「开始使用」一起盖住——
+        // 传页脚让开，用户锁屏前还能看见按钮在哪
+        Hint.show(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下", 6000L,
+                findViewById(R.id.guide_footer));
     }
 
     private void openNotificationSettings() {

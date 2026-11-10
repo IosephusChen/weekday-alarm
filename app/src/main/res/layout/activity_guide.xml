@@ -1072,7 +1072,10 @@
          旧版这一行才是引导页该有的样子：两个方向左右成对，主按钮只占右下角。
          「上一步」在第 1 页没有可回的地方，用 invisible 占位——不能用 gone，
          否则按钮会跟着往左挪，四页的位置就不一样了。 -->
+    <!-- v1.23.30：这一栏加了 id。应用内提示条要落在它上方——
+         它原来被提示条整条压住，2.6 秒里「开始使用」点不到。 -->
     <LinearLayout
+        android:id="@+id/guide_footer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"

@@ -9,6 +9,8 @@ import android.app.Activity;
 import android.app.Application;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -114,5 +116,59 @@ public class HintTest {
         ShadowLooper.idleMainLooper();
         assertEquals("设置已更新", ((TextView) bar(a)).getText().toString());
         assertFalse("取走即清，第二次 onResume 不能再重说一遍", Hint.hasPending());
+    }
+
+    // ==================== 让开底部操作栏（v1.23.30） ====================
+
+    /**
+     * 现场：引导页「上一步 / 开始使用」被提示条整条压住（用户 01:12 的截图），
+     * 2.6 秒里主按钮点不到。
+     *
+     * <p>这里搭一个和引导页同构的页面：上面是内容，底部一栏 80dp 的页脚。
+     * 传了页脚，提示条的底边就要落在页脚上沿之上（多 12dp 间距）。
+     */
+    @Test
+    public void barSitsAboveTheFooterWhenGiven() {
+        Activity a = act();
+        ViewGroup root = a.findViewById(android.R.id.content);
+        LinearLayout page = new LinearLayout(a);
+        page.setOrientation(LinearLayout.VERTICAL);
+        page.addView(new View(a), new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        View footer = new View(a);
+        page.addView(footer, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(a, 80)));
+        root.addView(page, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1800, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 1080, 1800);
+
+        Hint.show(a, "已发出，下拉通知栏看看", Hint.DEFAULT_MS, footer);
+
+        FrameLayout.LayoutParams lp =
+                (FrameLayout.LayoutParams) bar(a).getLayoutParams();
+        assertEquals("提示条要整条坐在 80dp 页脚之上（再加 12dp 间距）",
+                dp(a, 80) + dp(a, 12), lp.bottomMargin);
+    }
+
+    /** 不传页脚的页面维持原样：24dp。别为了引导页把设置页、关于页的条一起抬高。 */
+    @Test
+    public void barKeepsDefaultMarginWithoutFooter() {
+        Activity a = act();
+        ViewGroup root = a.findViewById(android.R.id.content);
+        root.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1800, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 1080, 1800);
+
+        Hint.show(a, "已是最新版本");
+
+        FrameLayout.LayoutParams lp =
+                (FrameLayout.LayoutParams) bar(a).getLayoutParams();
+        assertEquals(dp(a, 24), lp.bottomMargin);
+    }
+
+    private static int dp(Activity a, int v) {
+        return Math.round(v * a.getResources().getDisplayMetrics().density);
     }
 }

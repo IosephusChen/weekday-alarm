@@ -29,8 +29,11 @@ import java.util.List;
  *
  * <p>行数是动态的，两条判据都成立才显示对应那行：
  * <ul>
- *   <li><b>自启动</b> —— {@code !Prefs.isOnboardDone}。走过引导的人在第 3 页已逐项看过，
- *       再说一遍是重复；而自启动状态 AOSP 读不到，只能「请确认」，读不到还要说就是噪音。</li>
+ *   <li><b>权限与自启动</b> —— {@code !Prefs.isPermSeen}。判据是「第 3 页那张清单露过面没有」，
+ *       不是 {@code onboard_done}：「稍后设置」和返回键都会写后者（为了让引导页不再自动弹），
+ *       可用户完全可能在第 1 页就退出，清单一次都没看到。
+ *       文案不写「自启动」三个字：点进去的是第 3 页那张五项清单（通知 / 悬浮窗 /
+ *       后台弹出 / 精确闹钟 / 自启动），只提自启动，用户会以为只补这一项就走（v1.23.25 用户指出）。</li>
  *   <li><b>班表</b> —— {@code !Prefs.hasWeekModeChosen}。键不存在 = 从没选过，此刻按双休在排。</li>
  * </ul>
  *
@@ -69,8 +72,8 @@ final class CatchUpCard {
      */
     static List<Row> rows(final Activity host) {
         List<Row> out = new ArrayList<>(2);
-        if (!Prefs.isOnboardDone(host)) {
-            out.add(new Row("自启动", "划掉 App 就不响", () -> {
+        if (!Prefs.isPermSeen(host)) {
+            out.add(new Row("权限与自启动", "通知、悬浮窗等几项", () -> {
                 // 标记先写：用户可能在引导页里直接按返回键，那条路不经过 complete()，
                 // 但回来时同样要补问通知
                 Prefs.setCatchUpPending(host, true);

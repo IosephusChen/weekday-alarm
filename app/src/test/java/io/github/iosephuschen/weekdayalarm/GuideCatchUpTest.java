@@ -29,7 +29,7 @@ import org.robolectric.shadows.ShadowLooper;
  * <table>
  *   <tr><th>入口</th><th>按钮</th><th>走完去哪</th></tr>
  *   <tr><td>设置页「权限与自启动」</td><td>完成</td><td>直接回</td></tr>
- *   <tr><td>「还差两件」卡上的自启动行</td><td>下一步</td><td>第 4 页测试 →「完成」回</td></tr>
+ *   <tr><td>「还差两件」卡上「权限与自启动」那行</td><td>下一步</td><td>第 4 页测试 →「完成」回</td></tr>
  * </table>
  *
  * <p>差别不是随手的：后者是用户刚建完一条闹钟、心里正问「这样就行了吗」的时刻，

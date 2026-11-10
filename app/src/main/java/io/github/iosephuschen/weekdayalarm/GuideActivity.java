@@ -132,7 +132,7 @@ public class GuideActivity extends AppCompatActivity {
         return new Intent(c, GuideActivity.class).putExtra(EXTRA_PERMISSIONS_ONLY, true);
     }
 
-    /** 「还差两件」卡上「自启动」那行的入口（v1.23.24）：权限页 → 测试页。 */
+    /** 「还差两件」卡上「权限与自启动」那行的入口（v1.23.24）：权限页 → 测试页。 */
     static Intent catchUpIntent(Context c) {
         return new Intent(c, GuideActivity.class)
                 .putExtra(EXTRA_PERMISSIONS_ONLY, true)
@@ -334,6 +334,7 @@ public class GuideActivity extends AppCompatActivity {
         updateTimeText();
         renderDots();
         updateChrome();
+        markPermSeenIfShown();
     }
 
     @Override
@@ -1342,6 +1343,23 @@ public class GuideActivity extends AppCompatActivity {
         // 从第 3 页串到第 4 页不该在他的引导进度里留下「他看到第 4 页了」。
         if (!permissionsOnly) Prefs.setGuidePage(this, target);
         updateChrome();
+        markPermSeenIfShown();
+    }
+
+    /**
+     * 第 3 页露过面就记一笔（v1.23.25）。
+     *
+     * <p>补课卡上「权限与自启动」那一行，判据从这里来：用户有没有机会看见那张清单。
+     * 不能用 {@code onboard_done} 代替——「稍后设置」和返回键都会写它（为了让引导页
+     * 不再自动弹），可用户完全可能在第 1 页就退出，权限清单一次都没看到。
+     *
+     * <p>写得宽松：翻过去、什么都没开也算「看见过」。这一行问的是「要不要去确认一下」，
+     * 不是「开好了没有」——后两项系统读不到状态，想记也记不准。
+     */
+    private void markPermSeenIfShown() {
+        if (index >= PAGE_PERMISSIONS && !Prefs.isPermSeen(this)) {
+            Prefs.setPermSeen(this, true);
+        }
     }
 
     /**
@@ -1679,12 +1697,25 @@ public class GuideActivity extends AppCompatActivity {
     }
 
     /**
-     * 返回键 = 中途退出，不写标记：下次启动还会出现。
-     * 想彻底关掉，点「稍后设置」——那也算「我知道了」。
+     * 返回键 = 我不看了，同样写标记（v1.23.25 改）。
+     *
+     * <p>以前这里什么都不写：理由是「半路退 = 还没弄完，下次接着来」。用户实测下来的
+     * 感受是「我都回到首页了，怎么再打开又弹一遍」——他不知道「稍后设置」才是那个
+     * 唯一的出口，而顶栏那个按钮看起来更像「跳过这一页」。
+     *
+     * <p>敢让它不再出现，是因为缺席的代价已经有两条兜底：建第一条闹钟那张补课卡
+     * （权限与自启动 / 班表），和设置页「补全设置 · 重看引导」。所以这里只写标记、
+     * 不落班表、不建闹钟，也不弹「设置未改动」——用户没点任何按钮，不该收到回执。
+     *
+     * <p>只看权限模式不写：那是设置页或补课卡进来查开关的，不代表他走完了引导。
      */
-    @SuppressLint("MissingSuperCall") // 返回键 = 中途退出，不写「已引导」标记
+    @SuppressLint("MissingSuperCall") // 返回键 = 主动关掉，写标记后自己 finish
     @Override
     public void onBackPressed() {
+        if (!permissionsOnly) {
+            Prefs.setOnboardDone(this, true);
+            Prefs.setGuidePage(this, 0);
+        }
         finish();
     }
 }

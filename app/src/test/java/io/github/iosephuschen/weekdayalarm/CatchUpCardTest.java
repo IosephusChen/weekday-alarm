@@ -39,7 +39,7 @@ import java.util.List;
  *
  * <p>这里钉五件事：
  * <ol>
- *   <li>跳过引导的人：卡上两行（自启动、班表），保存那一刻<b>不</b>弹系统框；</li>
+ *   <li>跳过引导的人：卡上两行（权限与自启动、班表），保存那一刻<b>不</b>弹系统框；</li>
  *   <li>走过完整引导的人：一行都不剩，卡根本不弹；</li>
  *   <li>卡弹过一次就不再弹；编辑已有闹钟也不弹（这张卡只属于「第一次有闹钟」）；</li>
  *   <li>从卡进引导页、回来还没开通知 → 这时候才补系统框，且只问一次；</li>
@@ -92,10 +92,10 @@ public class CatchUpCardTest {
         List<CatchUpCard.Row> rows = CatchUpCard.rows(a);
 
         assertEquals("跳过引导的人这两样都没设过", 2, rows.size());
-        assertEquals("自启动决定响不响，排在前面", "自启动", rows.get(0).title);
+        assertEquals("点进去是五项清单，标题不能只说自启动", "权限与自启动", rows.get(0).title);
         assertEquals("班表决定哪天响", "班表", rows.get(1).title);
-        assertTrue("副文案要把后果说出来，不能只留个词",
-                rows.get(0).sub.contains("不响"));
+        assertEquals("副文案要点出里面不止一项，不能只提自启动",
+                "通知、悬浮窗等几项", rows.get(0).sub);
 
         ctl.pause().stop().destroy();
     }
@@ -103,6 +103,7 @@ public class CatchUpCardTest {
     @Test
     public void 走过引导_一行都不剩() {
         Prefs.setOnboardDone(ctx(), true);
+        Prefs.setPermSeen(ctx(), true);
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.DOUBLE_REST);
         ActivityController<MainActivity> ctl = homeSkipped();
         MainActivity a = ctl.get();
@@ -116,6 +117,41 @@ public class CatchUpCardTest {
     @Test
     public void 只差班表_只剩一行() {
         Prefs.setOnboardDone(ctx(), true);
+        Prefs.setPermSeen(ctx(), true);
+        ActivityController<MainActivity> ctl = homeSkipped();
+        MainActivity a = ctl.get();
+
+        List<CatchUpCard.Row> rows = CatchUpCard.rows(a);
+        assertEquals(1, rows.size());
+        assertEquals("班表", rows.get(0).title);
+
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 真正点「稍后设置」的人：引导页关了，可第 3 页那张清单一次都没露过面。
+     *
+     * <p>这条是 v1.23.25 补的：判据原来用 {@code onboard_done}，而点「稍后设置」会写它
+     * （为了让引导页不再自动弹），于是这一行恰好对<b>最该看到它的人</b>不显示。
+     */
+    @Test
+    public void 跳过引导没翻到权限页_卡上仍有权限那行() {
+        Prefs.setOnboardDone(ctx(), true);
+        ActivityController<MainActivity> ctl = homeSkipped();
+        MainActivity a = ctl.get();
+
+        List<CatchUpCard.Row> rows = CatchUpCard.rows(a);
+        assertEquals("班表和权限两样都缺", 2, rows.size());
+        assertEquals("权限与自启动", rows.get(0).title);
+
+        ctl.pause().stop().destroy();
+    }
+
+    /** 翻到过第 3 页再退出的人：清单看过了，卡上不该再提。 */
+    @Test
+    public void 翻到过权限页_卡上不再提权限() {
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setPermSeen(ctx(), true);
         ActivityController<MainActivity> ctl = homeSkipped();
         MainActivity a = ctl.get();
 
@@ -181,7 +217,7 @@ public class CatchUpCardTest {
     /**
      * 用户记的那个顺序：<b>先引导，引导完了还没开通知，再弹系统框</b>。
      *
-     * <p>标记只在这一条链路上置位（点了卡上「自启动」那行），所以「点完知道了就走」
+     * <p>标记只在这一条链路上置位（点了卡上「权限与自启动」那行），所以「点完知道了就走」
      * 的人不会在几天后某次回前台时突然被一个权限框拦住。
      */
     @Test
@@ -240,10 +276,9 @@ public class CatchUpCardTest {
     // ================= 四、点了去哪 =================
 
     @Test
-    public void 点自启动_进引导页的补课链路() {
+    public void 点权限那行_进引导页的补课链路() {
         ActivityController<MainActivity> ctl = homeSkipped();
         MainActivity a = ctl.get();
-        Prefs.setOnboardDone(ctx(), false);
 
         CatchUpCard.rows(a).get(0).action.run();
 
@@ -263,7 +298,8 @@ public class CatchUpCardTest {
     public void 点班表_进我的班表页() {
         ActivityController<MainActivity> ctl = homeSkipped();
         MainActivity a = ctl.get();
-        Prefs.setOnboardDone(ctx(), true); // 只差班表，卡上只剩这一行
+        Prefs.setOnboardDone(ctx(), true);
+        Prefs.setPermSeen(ctx(), true); // 只差班表，卡上只剩这一行
 
         CatchUpCard.rows(a).get(0).action.run();
 

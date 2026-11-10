@@ -1,13 +1,13 @@
 {
-  "versionCode": 312,
-  "versionName": "1.23.27",
+  "versionCode": 313,
+  "versionName": "1.23.28",
   "published": "2026-11-10",
-  "title": "法定节假日改到右上角",
+  "title": "小部件也有了节假日三角",
   "notes": [
-    "黄底换成右上角一个小三角，节日名照旧写在格子里",
-    "轮班制也能看到春节了：以前春节上班跟平常一样",
-    "图例「节假日」同步改成小三角"
+    "桌面小部件右上角加一个三角，和 App 里日历一致",
+    "小部件里法定假不再写「假」，改写「休」——「假」现在只表示请假",
+    "轮班制也能在小部件上看到春节了"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.27/weekday-alarm-1.23.27.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.27"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.28/weekday-alarm-1.23.28.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.28"
 }

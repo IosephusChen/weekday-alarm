@@ -1,5 +1,6 @@
 package io.github.iosephuschen.weekdayalarm;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
@@ -88,22 +89,30 @@ public class MonthWidgetTest {
     }
 
     /**
-     * 没有具体名字的法定假，格子里必须写「假」而不是「休」（v0.91.8）。
+     * 没有具体名字的法定假，格子里写「休」，靠右上角三角跟普通周末区分（v1.23.28）。
      *
-     * <p>这是用户 2026-10-30 对着桌面小部件截图报的问题：10/2 到 10/7 全写「休」，
-     * 和 10/11、10/18 那些普通周末长得一模一样，扫一眼桌面会以为这个月只有 1 号特殊。
+     * <p>v0.91.8 这里守的是「必须写『假』」：那时小部件没有角标，「假」是唯一能把
+     * 法定假和普通周末分开的手段（用户 2026-10-30 报的问题就是 10/2 到 10/7 全写
+     * 「休」，扫一眼以为这个月只有 1 号特殊）。
      *
-     * <p>根因是这里少走了一步：原来只有「有节日名」时才换字，没名字就落到
-     * {@code work ? "班" : "休"}，而 {@link WeekSchedule.DayType#HOLIDAY} 自带的
-     * 「假」从来没被用过。现在两边一起走 {@link DayTag}。
+     * <p>2026-11-10 用户推翻了它：主日历改成「休 + 右上角三角」之后，小部件还写
+     * 「假」，同一个意思两处两种说法；更要紧的是「假」和请假的「假」撞成一个字，
+     * 只靠字色分，而字色在紫渐变上看不出来。现在三角接管了「这天是法定假」，
+     * 字回到「这天去不去上班」，两处终于说同一句话。
+     *
+     * <p>所以这条断言的**重点从字转移到了三角**：字必须是「休」（与主日历一致），
+     * 三角必须在（不丢信息）。
      */
     @Test
-    public void holidayWithoutName_writesHolidayNotRest() {
+    public void holidayWithoutName_writesRestWithDot() {
         MonthWidgetRender.Model m = oct2026();
         assertEquals("2", m.nums[4]);
-        assertEquals("法定假没有名字时也该写「假」", "假", m.tags[4]);
+        assertEquals("法定假没有名字时写「休」", "休", m.tags[4]);
+        assertTrue("但没有名字的法定假，三角必须在", m.dot[4]);
         assertEquals("3", m.nums[5]);
-        assertEquals("假", m.tags[5]);
+        assertEquals("休", m.tags[5]);
+        assertTrue(m.dot[5]);
+        assertFalse("普通周末不能有三角", m.dot[11]);
     }
 
     /**

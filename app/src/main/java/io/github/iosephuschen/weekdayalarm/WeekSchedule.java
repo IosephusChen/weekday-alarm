@@ -642,11 +642,37 @@ public final class WeekSchedule {
                 // v1.3.0：术语收口。「自定义」「轮班」两个词从界面上退场——
                 // 前者叫「每周固定」，后者按它本来的形状叫「N 天一轮」。
                 if (len == 7) return "每周固定 · 休 " + rest + " 天";
+                // v1.23.29：一段连上、一段连休的周期，「上 a 休 b」已经把天数说全
+                // （a + b = N），再前置一个「N 天一轮」是同一句话说了两遍。这就是 R4
+                // 给「双休 · 休 2 天」删掉后一半的那把尺子，只是这次量的是前缀。
+                // 现实里大家也这么叫：排班 App 的班型名是「上二休二 / 做二休二」，
+                // 「四班两倒」那种正式名要四个班组的信息，本 App 只知道哪天上班。
+                // 断成两段以上的周期（比如两周排得不一样）说不成「上几休几」，
+                // 才需要「N 天一轮」——那是唯一能把天数讲清楚的地方。
+                if (isSingleRun(mask, len)) return "上 " + work + " 休 " + rest;
                 return len + " 天一轮 · 上 " + work + " 休 " + rest;
             }
             case BIG_SMALL:
             default:
                 return isBigWeekNow(today, rule.anchor) ? "大周 · 休 2 天" : "小周 · 休 1 天";
         }
+    }
+
+    /**
+     * 这个周期是不是「一段连上 + 一段连休」——把周期首尾接成一个环，1 只连成一片。
+     *
+     * <p>为什么按环算：周期从哪天开始是用户定的。{@code 上2休2} 从休息那天起始，
+     * 存成 {@code 0b1100}，字面看是「休休上上」，接成环仍是完整的一片 1。
+     * 只按线性数连续段会把它误判成两段。
+     *
+     * <p>全上、全休已在调用前返回，这里只处理两段都有的情形。
+     * 判据：把 mask 循环左移一位后与原值取交，1 的个数少一个，说明只有一处断口。
+     */
+    static boolean isSingleRun(long mask, int len) {
+        long full = Rule.maskOf(len);
+        long m = mask & full;
+        if (m == 0 || m == full) return true;
+        long rotated = ((m << 1) | (m >>> (len - 1))) & full;
+        return Long.bitCount(m & rotated) == Long.bitCount(m) - 1;
     }
 }

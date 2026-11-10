@@ -204,8 +204,35 @@ public class CycleScheduleTest {
 
     @Test
     public void describe_rotationShowsCycleAndWorkDays() {
-        // v1.3.0 术语收口：按形状叫「N 天一轮」，不再叫「轮班」
-        assertEquals("4 天一轮 · 上 2 休 2", WeekSchedule.describe(shang2xiu2(START), START));
+        // v1.23.29：一段连上 + 一段连休不再前置「4 天一轮」——「上 2 休 2」已经说完了。
+        assertEquals("上 2 休 2", WeekSchedule.describe(shang2xiu2(START), START));
+    }
+
+    /**
+     * 周期从哪天起算是用户定的：上 2 休 2 从休息日那天起，存成 {@code 0b1100}。
+     * 字面上是「休休上上」，接成环它还是一片，同样不该带「N 天一轮」。
+     */
+    @Test
+    public void describe_runWrappingAroundStartStillDropsPrefix() {
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(4, 0b1100L, START, null, false);
+        assertEquals("上 2 休 2", WeekSchedule.describe(r, START));
+    }
+
+    /** 6 天里连上 4 休 2，也是一段连上，同样只说形状。 */
+    @Test
+    public void describe_sixDaySingleRunDropsPrefix() {
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(6, 0b001111L, START, null, false);
+        assertEquals("上 4 休 2", WeekSchedule.describe(r, START));
+    }
+
+    /**
+     * 一周期里断成两段（周三休、周日休）就说不成「上几休几」了，
+     * 必须留着「N 天一轮」——那是唯一把天数交代清楚的地方。
+     */
+    @Test
+    public void describe_brokenCycleKeepsPrefix() {
+        WeekSchedule.Rule r = WeekSchedule.Rule.cycle(8, 0b01101101L, START, null, false);
+        assertEquals("8 天一轮 · 上 5 休 3", WeekSchedule.describe(r, START));
     }
 
     @Test

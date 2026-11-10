@@ -50,6 +50,9 @@ public class GuideActivity extends AppCompatActivity {
     /** 权限页的下标（v0.84.1 拆页后固定是第 3 页）。导入完直接送用户到这里开权限。 */
     static final int PAGE_PERMISSIONS = 2;
 
+    /** 测试页的下标（v1.23.24 起补课链路要单独引用，不再写 {@code PAGES - 1}）。 */
+    static final int PAGE_TEST = 3;
+
     /**
      * 四屏页头的步骤名与图标（v1.14.0）。下标与 {@link #PAGES} 同一套。
      *
@@ -109,9 +112,31 @@ public class GuideActivity extends AppCompatActivity {
      */
     public static final String EXTRA_PERMISSIONS_ONLY = "permissions_only";
 
+    /**
+     * 补课链路（v1.23.24）：从「还差两件」卡进来，权限页往前一步是测试页。
+     *
+     * <p>和不带这个标记的「只看权限」差一件事：那一页的按钮是「完成」，点完就回；
+     * 这条链路的按钮是「下一步」，走完权限进测试页，验一次通知真的能响，再「完成」回首页。
+     *
+     * <p>为什么只在卡这条链路上串：用户是从「我刚建好一条闹钟，但好像还有事没做」
+     * 进来的，验一下正是他接下来要问的问题。设置页那行「权限与自启动」是来检查开关的，
+     * 检查完就走，再把他送去测试页属于替他决定下一步。
+     *
+     * <p>第 4 页的「上一步」能回权限页，但回不到第 1、2 页——那两页会改班表和时间，
+     * 用户只是来补开关的（v1.23.18 的原话，这里沿用）。
+     */
+    public static final String EXTRA_CATCH_UP = "catch_up";
+
     /** 设置页「权限与自启动」的入口（v1.23.18）。 */
     static Intent permissionsIntent(Context c) {
         return new Intent(c, GuideActivity.class).putExtra(EXTRA_PERMISSIONS_ONLY, true);
+    }
+
+    /** 「还差两件」卡上「自启动」那行的入口（v1.23.24）：权限页 → 测试页。 */
+    static Intent catchUpIntent(Context c) {
+        return new Intent(c, GuideActivity.class)
+                .putExtra(EXTRA_PERMISSIONS_ONLY, true)
+                .putExtra(EXTRA_CATCH_UP, true);
     }
 
     /** 预置第一条闹钟的时刻（07:30）。判断「用户还没动过」要用它。 */
@@ -198,6 +223,9 @@ public class GuideActivity extends AppCompatActivity {
     /** 只看权限模式（v1.23.18），见 {@link #EXTRA_PERMISSIONS_ONLY}。 */
     private boolean permissionsOnly;
 
+    /** 从补课卡进来，权限页之后要串一页测试（v1.23.24），见 {@link #EXTRA_CATCH_UP}。 */
+    private boolean catchUp;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -205,6 +233,7 @@ public class GuideActivity extends AppCompatActivity {
         setContentView(R.layout.activity_guide);
 
         permissionsOnly = getIntent().getBooleanExtra(EXTRA_PERMISSIONS_ONLY, false);
+        catchUp = permissionsOnly && getIntent().getBooleanExtra(EXTRA_CATCH_UP, false);
 
         flipper = findViewById(R.id.flipper);
         dots = findViewById(R.id.dots);
@@ -251,8 +280,14 @@ public class GuideActivity extends AppCompatActivity {
 
         btnNext.setOnClickListener(v -> {
             if (permissionsOnly) {
-                // v1.23.18：只看权限，点「完成」就回去——不写标记、不落班表、不清页码
-                finish();
+                // v1.23.18：只看权限，不写标记、不落班表、不清页码。
+                // v1.23.24：从补课卡进来的那条链路，权限页按的是「下一步」——
+                // 五项都开完了，紧接着要问的正是「真响起来是什么样」，第 4 页就是答案。
+                if (catchUp && index == PAGE_PERMISSIONS) {
+                    goTo(PAGE_TEST);
+                } else {
+                    finish();
+                }
             } else if (index < PAGES - 1) {
                 goTo(index + 1);
             } else {
@@ -960,6 +995,9 @@ public class GuideActivity extends AppCompatActivity {
                 // v1.23.18：从设置页进来查权限时，点通知回来仍是「只看权限」那一页，
                 // 不能因为重启一次就变回四页引导的第 1 页
                 .putExtra(EXTRA_PERMISSIONS_ONLY, permissionsOnly)
+                // v1.23.24：同上，补课链路的「下一步 → 测试页」也要跟着走，
+                // 否则从通知点回来，第 4 页的按钮会变回「完成」之前的那个状态
+                .putExtra(EXTRA_CATCH_UP, catchUp)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP
                         | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -1299,8 +1337,10 @@ public class GuideActivity extends AppCompatActivity {
             syncTimeFromShift();
             updateTimeText();
         }
-        // 每翻一页就落盘：进程随时可能被杀，等 onPause 再写就晚了
-        Prefs.setGuidePage(this, target);
+        // 每翻一页就落盘：进程随时可能被杀，等 onPause 再写就晚了。
+        // v1.23.24：只看权限模式不写——那是引导自己的进度，用户只是来补开关的，
+        // 从第 3 页串到第 4 页不该在他的引导进度里留下「他看到第 4 页了」。
+        if (!permissionsOnly) Prefs.setGuidePage(this, target);
         updateChrome();
     }
 
@@ -1416,8 +1456,12 @@ public class GuideActivity extends AppCompatActivity {
             // v1.23.18：单独进来看权限，不给翻页。第 1、2 页会改班表和时间，
             // 用户只是来检查开关的，让他往左滑过去顺手改掉班表，是这版最不该发生的事。
             // btnSkip 用 INVISIBLE 而不是 GONE，和末页同一个理由：顶栏一塌，页头整体上移。
-            btnNext.setText("完成");
-            btnPrev.setVisibility(View.INVISIBLE);
+            //
+            // v1.23.24：补课链路多一站。权限页写「下一步」（去测试页），测试页写「完成」，
+            // 那一页的「上一步」可见、能回权限页——但仍然回不到第 1、2 页，理由同上。
+            btnNext.setText(catchUp && index == PAGE_PERMISSIONS ? "下一步" : "完成");
+            btnPrev.setVisibility(catchUp && index > PAGE_PERMISSIONS
+                    ? View.VISIBLE : View.INVISIBLE);
             btnSkip.setVisibility(View.INVISIBLE);
             btnImport.setVisibility(View.GONE);
             dots.setVisibility(View.GONE);

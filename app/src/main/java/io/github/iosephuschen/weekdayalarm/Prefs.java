@@ -64,6 +64,14 @@ public final class Prefs {
     // 系统这个框在 Android 13+ 每装一次只给有限几次机会，问过就该收手——
     // 更关键的是别让「拒绝过」的人每次保存闹钟都被拦一次。
     public static final String KEY_NOTIFY_ASKED = "notify_asked";
+    // v1.23.24：建完第一条闹钟那张「还差两件」卡是否弹过。
+    // 和 KEY_NOTIFY_ASKED 分开记：那个记的是「系统框问过没有」，这张卡讲的是自启动和
+    // 班表，两件事的答案互不推算。卡只弹一次，弹过即记。
+    public static final String KEY_CATCHUP_SHOWN = "catchup_shown";
+    // v1.23.24：从卡上「自启动」那行进引导页了，回来还没开通知就补一个系统框。
+    // 只在这一条链路上置位：从卡进「我的班表」、或用户直接点「知道了」，都不该在
+    // 某次无关的 onResume 里突然冒出一个权限框。
+    public static final String KEY_CATCHUP_PENDING = "catchup_pending";
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
@@ -1117,6 +1125,39 @@ public final class Prefs {
 
     public static void setNotifyAsked(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_NOTIFY_ASKED, v).apply();
+    }
+
+    /** 建完第一条闹钟那张补课卡是否弹过（v1.23.24）。 */
+    public static boolean isCatchUpShown(Context c) {
+        return sp(c).getBoolean(KEY_CATCHUP_SHOWN, false);
+    }
+
+    public static void setCatchUpShown(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_CATCHUP_SHOWN, v).apply();
+    }
+
+    /** 是否正等着「从补课卡进引导页、回来补问通知」（v1.23.24）。 */
+    public static boolean isCatchUpPending(Context c) {
+        return sp(c).getBoolean(KEY_CATCHUP_PENDING, false);
+    }
+
+    public static void setCatchUpPending(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_CATCHUP_PENDING, v).apply();
+    }
+
+    /**
+     * 用户有没有亲手选过班表（v1.23.24）。
+     *
+     * <p>判据是「键存不存在」，不是「值等不等于默认值」——新装默认就是双休，
+     * 一个什么都没选的人与一个认真选了双休的人，值一模一样。补课卡要问的正是前者。
+     * 引导页点「开始使用」会把草稿落盘（{@code draft.commit}），所以走过引导的人这里有键；
+     * 点「稍后设置」跳过的没有——那正是这张卡存在的理由。
+     *
+     * <p>老用户升级上来一般有这个键（v0.27.0 起就有），但万一没有，最坏结果只是多弹
+     * 一次卡，不影响任何排班。
+     */
+    public static boolean hasWeekModeChosen(Context c) {
+        return sp(c).contains(KEY_WEEK_MODE);
     }
 
     /**

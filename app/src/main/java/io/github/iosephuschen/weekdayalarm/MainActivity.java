@@ -301,6 +301,23 @@ public class MainActivity extends AppCompatActivity {
         // 代价极小，却能自愈「被系统清理 / 强制停止后再打开」的情况。
         BedtimeReminder.reschedule(this);
 
+        // v1.23.24：从补课卡上「自启动」进引导页，回来还没开通知，这时候才补一个系统框
+        // ——用户记的那个顺序：先引导，引导完了仍没开，再问。
+        //
+        // 位置在最前面，且不在下面那条 else-if 链里，两个理由：
+        //   一、它必须优先。这条链路是「用户刚在权限页看过这一项」，问的正是他刚看的，
+        //       比下面两条「猜他现在愿不愿意被问」更该先用掉系统那次机会；
+        //   二、pending 只要有就必须消费掉。留在链里被前面条件挡住的话，它会一直挂着，
+        //       某天用户从别处回到前台时突然冒出一个框，跟他刚做的事毫无关系。
+        boolean notifyRequested = false;
+        if (Prefs.isCatchUpPending(this)) {
+            Prefs.setCatchUpPending(this, false);
+            if (!Prefs.isNotifyAsked(this) && !PermissionGuides.canNotify(this)) {
+                Prefs.setNotifyAsked(this, true);
+                notifyRequested = PermissionGuides.requestNotification(this);
+            }
+        }
+
         // 首次引导关闭后回到主界面，这时才请求通知权限（onCreate 那次已跳过）。
         // resumedOnce 用来跳过 onCreate 之后紧接着的那一次 onResume——那时引导页还没起来。
         //
@@ -311,15 +328,20 @@ public class MainActivity extends AppCompatActivity {
             firstRunGuideShown = false;
             // v1.23.17（C）：跳过引导时一条闹钟都没有，别为此用掉系统唯一一次通知弹窗。
             // requestNotification 返回「真弹了没有」，没弹就当现场说完（下面那行会兜住）。
-            tipAwaitingPermission = !alarms.isEmpty()
+            tipAwaitingPermission = !notifyRequested && !alarms.isEmpty()
                     && PermissionGuides.requestNotification(this);
             if (!tipAwaitingPermission) {
                 showPendingTip();
             }
         } else if (firstRunGuideShown && resumedOnce && !alarms.isEmpty()) {
             firstRunGuideShown = false;
-            PermissionGuides.requestNotification(this);
+            // v1.23.24：上面刚问过就别再来一次。同一个来回连弹两个框，
+            // 用户只会觉得这 App 在追着问。
+            if (!notifyRequested && !Prefs.isNotifyAsked(this)) {
+                PermissionGuides.requestNotification(this);
+            }
         }
+
         resumedOnce = true;
 
         // v0.30.0：回到前台才开始跳秒。放在 onResume 而不是 onCreate，是因为
@@ -634,35 +656,37 @@ public class MainActivity extends AppCompatActivity {
      */
     /** 添加 / 编辑闹钟的对话框交给 {@link AlarmEditor}（v0.52.2 拆分）。 */
     private void showAlarmEditDialog(Alarm target) {
+        // 打开这一刻的列表还没有这次要建的那条——「原本一条都没有」只能在这儿记，
+        // 保存回调里 Prefs 已经写进去了，那时再问永远是「非空」
+        final boolean openingEmpty = alarms.isEmpty();
         AlarmEditor.show(this, alarms, target, () -> {
             applySettingsNow();
-            askNotificationAfterSave();
+            showCatchUpAfterSave(openingEmpty);
         });
     }
 
     /**
-     * 建完第一条闹钟，当场问通知权限（v1.23.23）。
+     * 建完第一条闹钟，弹「还差两件」补课卡（v1.23.24）。
      *
-     * <p>v1.23.17 把「一条闹钟都没有就别用掉系统那一次弹窗机会」做对了，却只做了一半：
-     * 跳过引导的人回首页时一条都没有，权限框被跳过；之后他在首页点「＋」建第一条，
-     * {@code AlarmEditor} 是首页自己的对话框，关掉不会触发 {@code onResume}——
-     * 那条注释里承诺的「留到他真建了闹钟再问」就再也没机会兑现，只能等他某次退到桌面再进来。
+     * <p>v1.23.23 在这里无条件弹了系统通知框，v1.23.24 换成这张卡，理由是顺序错了：
+     * 跳过引导的人手里缺三样，按「这一项决定什么」排，自启动（响不响）该在通知
+     * （响了从哪儿关）之前。系统通知框挪到「从卡的引导页回来还没开」那一步
+     * （见 {@link #onResume()} 末尾）。
      *
-     * <p>所以钩子挂在保存回调上，不挂在 {@code onResume}。一次为限：系统这个框每装一次
-     * 只给有限几次机会，被拒之后 {@code requestPermissions} 会立刻回调，再问纯属打扰。
+     * <p>只认「原本一条都没有」这一次：卡讲的是自启动和班表，那是「刚有了第一条闹钟、
+     * 还没把它调对」的时刻。已经用了一阵的人再建第 N 条，这张卡就是干扰。
      *
-     * <p>包级可见是为了让单测能绕开对话框直接调——真跑一遍 {@code AlarmEditor} 要填时间、
-     * 点确定，测的就不是这条判断了（同 {@code PlanCardsView.applyCycleShift}）。
+     * @param openingEmpty 打开编辑框那一刻列表是不是空的
      */
-    void askNotificationAfterSave() {
-        if (Prefs.isNotifyAsked(this)) return;
-        // 现读一遍而不是看字段：保存回调里 applySettingsNow 的重排是异步的，
-        // 字段可能还没刷到含新闹钟的那份列表
-        if (Prefs.getAlarms(this).isEmpty()) return;
-        // 已授权、或通知总开关被关掉：都不是这个框能解决的，交给设置页
-        if (PermissionGuides.canNotify(this)) return;
-        Prefs.setNotifyAsked(this, true);
-        PermissionGuides.requestNotification(this);
+    void showCatchUpAfterSave(boolean openingEmpty) {
+        if (!openingEmpty) return;
+        if (Prefs.isCatchUpShown(this)) return;
+        Prefs.setCatchUpShown(this, true);
+        // 这一轮的「首次回首页问通知」交给这张卡了（卡上第 1 行会把人送去权限页）。
+        // 不清掉这个标记，用户点完「知道了」、下次退到桌面再进来时，onResume 还会
+        // 补刀问一次——同一个意思问两遍。
+        firstRunGuideShown = false;
+        CatchUpCard.show(this);
     }
 
     /**

@@ -1,13 +1,13 @@
 {
-  "versionCode": 308,
-  "versionName": "1.23.23",
+  "versionCode": 309,
+  "versionName": "1.23.24",
   "published": "2026-11-10",
-  "title": "建完第一条闹钟，当场问通知",
+  "title": "建完第一条，先补两样",
   "notes": [
-    "「稍后设置」进来的人，建好第一条就弹通知权限框",
-    "以前要等下次退到桌面再进来才问，多数人等不到",
-    "只问一次：拒绝之后再建闹钟不会反复来打扰"
+    "「稍后设置」进来的人，建好第一条后弹一张两行卡",
+    "先自启动（划掉就不响），再班表（现在按双休排）",
+    "点自启动进权限页，走完当场试一次；回来还没开通知才弹系统框"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.23/weekday-alarm-1.23.23.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.23"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.24/weekday-alarm-1.23.24.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.24"
 }

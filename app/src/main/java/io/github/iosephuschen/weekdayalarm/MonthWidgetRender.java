@@ -138,6 +138,14 @@ final class MonthWidgetRender {
     private static final int C_OT = 0xFF7DD3A8;
 
     /**
+     * 普通日期的数字色（v1.23.30）。与两份布局里 {@code m_num_N} 的
+     * {@code android:textColor="#FFFFFF"} 同值——还要在代码里再写一遍的原因见
+     * {@link #build(Context, Model, int, boolean)} 里那段注释：颜色必须每格每次下发，
+     * 不能指望布局默认值，因为启动器复用的是上一轮的 View。
+     */
+    private static final int C_NUM = 0xFFFFFFFF;
+
+    /**
      * 法定节假日三角：紫底上的琥珀。
      *
      * <p>不直接用日历页的 {@code day_holiday_text}（#B45309）：那个色值是给
@@ -323,14 +331,17 @@ final class MonthWidgetRender {
         for (int i = 0; i < CELLS; i++) {
             rv.setTextViewText(NUM_IDS[i], m.nums[i]);
             rv.setTextViewText(TAG_IDS[i], m.tags[i]);
-            rv.setTextColor(TAG_IDS[i], m.colors[i]);
-            // v1.1.0：今天那格换成实心白底（见 bg_widget_today_solid），字必须跟着加深，
-            // 否则白字压在白块上等于没字。只切颜色不动背景资源——setBackgroundResource
-            // 是反射调用，部分启动器会让整次更新失败。
-            if (m.today[i]) {
-                rv.setTextColor(NUM_IDS[i], C_TODAY_TEXT);
-                rv.setTextColor(TAG_IDS[i], C_TODAY_TEXT);
-            }
+            // v1.23.30：数字色必须**每一格每轮都写**，不能只在「今天」那格写。
+            // 现场（用户 2026-11-11 06:5x）：系统日期从 11 月 11 日切到 2027 年 2 月后，
+            // 2 月 17 日的「17」几乎看不见；切到 10 月，看不清的是 10 月 13 日。
+            // 两格都是第 3 行第 3 列——11 月 11 日做「今天」时正好落在同一个槽位（index 16），
+            // 数字被染成 C_TODAY_TEXT（深紫）。启动器复用同一棵 View 树，而原来只在
+            // m.today[i] 为 true 时才下发颜色，这个槽位此后就再没人把它写回白色，
+            // 深紫压在紫底上等于没有字。
+            // 今天那格换成实心白底（见 bg_widget_today_solid），字必须跟着加深，
+            // 否则白字压在白块上等于没字——那一半逻辑原样保留，只是两边都改为无条件下发。
+            rv.setTextColor(NUM_IDS[i], m.today[i] ? C_TODAY_TEXT : C_NUM);
+            rv.setTextColor(TAG_IDS[i], m.today[i] ? C_TODAY_TEXT : m.colors[i]);
             // 今天：只切高亮层的可见性，不换背景资源——setInt(..., "setBackgroundResource")
             // 是反射调用，在部分启动器上会让整次更新失败，组件停在旧内容
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);

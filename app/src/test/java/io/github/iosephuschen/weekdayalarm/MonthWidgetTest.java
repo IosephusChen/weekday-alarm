@@ -11,6 +11,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -286,5 +287,35 @@ public class MonthWidgetTest {
         assertNotNull(v.findViewById(R.id.widget_month_title));
         assertNotNull(v.findViewById(R.id.m_num_0));
         assertNotNull(v.findViewById(R.id.m_tag_41));
+    }
+
+    /**
+     * 启动器复用同一棵 View 树时，上一轮「今天」那格的深色字必须被写回白色（v1.23.30）。
+     *
+     * <p>现场（用户 2026-11-11 06:5x 的桌面截图）：系统日期从 11 月 11 日切到 2027 年 2 月，
+     * 2 月 17 日的「17」几乎看不见；切到 10 月，看不清的是 10 月 13 日。两格都是
+     * 第 3 行第 3 列——11 月 11 日做「今天」时正好落在同一个槽位（index 16），
+     * 数字被染成 {@code C_TODAY_TEXT}（深紫），此后没人把它写回去，深紫压在紫底上等于没字。
+     *
+     * <p>用 {@code reapply} 而不是 {@code apply}：只有复用同一棵树，才能复现启动器的行为。
+     * 新建一棵树时缺了那条颜色 action 也会用布局默认值，看上去一切正常——这正是这个 bug
+     * 在单测里一直没露头的原因。
+     */
+    @Test
+    public void reusedViewDropsTheOldTodayColor() {
+        View tree = MonthWidgetRender.build(ctx(),
+                MonthWidgetRender.compute(ctx(), LocalDate.of(2026, 11, 11)))
+                .apply(ctx(), new FrameLayout(ctx()));
+        TextView slot = tree.findViewById(R.id.m_num_16);
+        assertEquals("前提：11 月 11 日占 index 16，这一格该是深色",
+                0xFF3B2E9E, slot.getCurrentTextColor());
+
+        MonthWidgetRender.build(ctx(),
+                MonthWidgetRender.compute(ctx(), LocalDate.of(2027, 2, 11)))
+                .reapply(ctx(), tree);
+
+        assertEquals("启动器复用 View 时，上一轮的深紫必须被写回白色",
+                0xFFFFFFFF,
+                ((TextView) tree.findViewById(R.id.m_num_16)).getCurrentTextColor());
     }
 }

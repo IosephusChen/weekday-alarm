@@ -51,8 +51,8 @@
 
 ## 下载
 
-**v1.23.28（2026-11-10）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.28/weekday-alarm-1.23.28.apk)
-· [上一版 v1.23.25](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.25/weekday-alarm-1.23.25.apk)
+**v1.23.29（2026-11-11）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.29/weekday-alarm-1.23.29.apk)
+· [上一版 v1.23.28](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.28/weekday-alarm-1.23.28.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。

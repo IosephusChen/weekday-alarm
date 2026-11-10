@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(314, "1.23.29", "2026/11/11", "班型说法与提示方式都改了",
+                    "轮班的班型只说「上 2 休 2」，不再重复天数",
+                    "关于页三处长文加了小标题，段落一眼分得清",
+                    "提示改成页面内浮出，不再飘到别的页面"),
             new Entry(313, "1.23.28", "2026/11/10", "小部件也有了节假日三角",
                     "桌面小部件右上角加一个三角，和 App 里日历一致",
                     "小部件里法定假不再写「假」，改写「休」——「假」现在只表示请假",

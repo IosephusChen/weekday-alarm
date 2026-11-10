@@ -104,9 +104,13 @@
     <color name="day_rest_stroke">#CBD5E1</color>
     <color name="day_rest_text">#64748B</color>
 
+    <!-- v1.23.27：bg/stroke 暂时没有消费者了（法定假不再占底色），
+         但配置备份和老版本回滚还要能对上这个名字，先留着。
+         text 现在就是格子右上角那个三角的颜色：一小片面积，要压得住灰底又不脏，
+         所以从 amber-800 提到 amber-700。 -->
     <color name="day_holiday_bg">#FEF3C7</color>
     <color name="day_holiday_stroke">#FDE68A</color>
-    <color name="day_holiday_text">#92400E</color>
+    <color name="day_holiday_text">#B45309</color>
 
     <color name="day_makeup_bg">#FEE2E2</color>
     <color name="day_makeup_stroke">#FECACA</color>

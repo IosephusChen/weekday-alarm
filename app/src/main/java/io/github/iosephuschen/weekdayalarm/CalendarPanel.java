@@ -1,7 +1,12 @@
 package io.github.iosephuschen.weekdayalarm;
 
 import android.app.Activity;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
@@ -239,6 +244,14 @@ final class CalendarPanel {
                     // 这段原来在这里和 MonthWidgetRender 各写一份，然后两边漂了——
                     // 小部件少了节气、最后一级也没用 type.label，法定假变成「休」。
                     label = DayTag.of(d, type, lunar, solarTerms, christian);
+                    // v1.23.27：没有节日名的法定假日不再写「假」。
+                    // 那个字原来是这块底色唯一的主人，现在底色说班/休、角标说是不是
+                    // 法定假，「假」被两处重复说了两遍，字位该让出来写「休」。
+                    // 有名字的日子（春节 / 国庆 / 清明）照旧写名字，那是角标给不了的。
+                    if (type == WeekSchedule.DayType.HOLIDAY
+                            && WeekSchedule.DayType.HOLIDAY.label.equals(label)) {
+                        label = WeekSchedule.DayType.REST.label;
+                    }
                     switch (type) {
                         case MAKEUP_WORK:
                             bgRes = R.drawable.bg_day_makeup;
@@ -246,9 +259,14 @@ final class CalendarPanel {
                             textColorRes = R.color.day_makeup_text;
                             break;
                         case HOLIDAY:
-                            bgRes = R.drawable.bg_day_holiday;
-                            bgColorRes = R.color.day_holiday_bg;
-                            textColorRes = R.color.day_holiday_text;
+                            // v1.23.27：法定假不占底色了（方向二）。
+                            // 底色只回答「今天上不上班」，法定假那天本来就不上班，
+                            // 所以和普通休息日同一片灰；「这天是法定假」交给右上角三角。
+                            // 为什么必须让位：轮班的人春节照上班，节假日一占底色，
+                            // 「班」就没了——那个 bug 的根子就在这里。
+                            bgRes = R.drawable.bg_day_rest;
+                            bgColorRes = R.color.day_rest_bg;
+                            textColorRes = R.color.day_rest_text;
                             break;
                         case WORK:
                             bgRes = R.drawable.bg_day_work;
@@ -299,6 +317,17 @@ final class CalendarPanel {
                             ? ContextCompat.getColor(host, R.color.day_work_label)
                             : color;
                 }
+
+                // v1.23.27：法定节假日标记（方向二）。判据用 HolidayData.isHoliday，
+                // 不用 type == HOLIDAY——轮班默认不跟法定节假日，type 在轮班下永远是
+                // WORK / REST，照 type 判就又把轮班漏掉了（用户 2026-11-10 报的就是这个）。
+                // 请假 / 加班那天也照画：底色说「我请假了」，角标说「这天还是春节」，两层各说各的。
+                boolean legalHoliday = inMonth && HolidayData.isHoliday(d);
+                cell.setForeground(legalHoliday
+                        ? new CornerMark(ContextCompat.getColor(host, R.color.day_holiday_text),
+                                11 * density)
+                        : null);
+
                 if (d.equals(today)) {
                     // v1.23.13：这一行原来无条件换成 bg_day_today，而它内层是实色淡紫，
                     // 于是今天那格永远看不出自己标了加班 / 请假——用户 2026-11-08 装机实测
@@ -656,7 +685,8 @@ final class CalendarPanel {
         LinearLayout row1 = newLegendRow(density, false);
         addLegendItem(row1, density, R.color.day_work_bg, R.color.day_work_stroke, 1, "上班");
         addLegendItem(row1, density, R.color.day_rest_bg, R.color.day_rest_stroke, 1, "休息");
-        addLegendItem(row1, density, R.color.day_holiday_bg, R.color.day_holiday_stroke, 1, "节假日");
+        // v1.23.27：节假日那一格跟着格子一起变——整块金色换成一个三角
+        addLegendMark(row1, density, "节假日");
         LinearLayout row2 = newLegendRow(density, true);
         addLegendItem(row2, density, R.color.day_makeup_bg, R.color.day_makeup_stroke, 1, "调休补班");
         addLegendItem(row2, density, R.color.day_vacation_bg, R.color.day_vacation_stroke, 1, "请假");
@@ -693,7 +723,37 @@ final class CalendarPanel {
         View blockView = new View(host);
         blockView.setLayoutParams(new LinearLayout.LayoutParams(block, block));
         blockView.setBackground(swatch);
+        addLegendPair(row, density, blockView, text);
+    }
 
+    /**
+     * 图例里的「法定节假日」（v1.23.27）：休息日底色 + 右上角同一个三角。
+     *
+     * <p>必须和格子上看到的是同一样东西。图例要是还画整块金色，用户会去日历上
+     * 找一块已经不存在的颜色；反过来只画一个三角，又说不清它贴在哪。
+     * 12dp 的块上画 7dp 三角——再大会把块吃光，再小在手机上只剩一个灰点。
+     */
+    private void addLegendMark(LinearLayout row, float density, String text) {
+        int block = (int) (12 * density);
+        int radius = (int) (3 * density);
+
+        GradientDrawable swatch = new GradientDrawable();
+        swatch.setShape(GradientDrawable.RECTANGLE);
+        swatch.setColor(ContextCompat.getColor(host, R.color.day_rest_bg));
+        swatch.setCornerRadius(radius);
+        swatch.setStroke((int) (density + 0.5f),
+                ContextCompat.getColor(host, R.color.day_rest_stroke));
+
+        View blockView = new View(host);
+        blockView.setLayoutParams(new LinearLayout.LayoutParams(block, block));
+        blockView.setBackground(swatch);
+        blockView.setForeground(new CornerMark(
+                ContextCompat.getColor(host, R.color.day_holiday_text), 7 * density));
+        addLegendPair(row, density, blockView, text);
+    }
+
+    /** 色块 + 文字 的组装，两种图例项共用——一处改左对齐，另一处不会漏。 */
+    private void addLegendPair(LinearLayout row, float density, View blockView, String text) {
         TextView label = new TextView(host, null, 0, R.style.FieldHint);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -713,5 +773,54 @@ final class CalendarPanel {
         item.addView(blockView);
         item.addView(label);
         row.addView(item);
+    }
+
+    /**
+     * 格子右上角那个三角：法定节假日的标记（v1.23.27，方向二）。
+     *
+     * <p>为什么自己画而不用一张图：三角要贴在格子右上角、尺寸跟着 density 走，
+     * 三个模式下格子高度不同，九宫格拉伸会把角拉歪。二十行代码比九张切图好维护。
+     *
+     * <p>为什么是右上角：今天那一格已经有一条紫框 + 白环，整格描边会和它抢同一个位置；
+     * 底部色条在圆角上会被切掉一截，连排时又像一条虚线。右上角是唯一空着的地方。
+     *
+     * <p>颜色由调用方给（{@code day_holiday_text}）：它本来就是「法定假在这套配色里
+     * 的文字色」，夜里会自动换成 amber-300，不用在这里再写一份明暗两套。
+     */
+    private static final class CornerMark extends Drawable {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float size;
+
+        CornerMark(int color, float sizePx) {
+            paint.setColor(color);
+            paint.setStyle(Paint.Style.FILL);
+            size = sizePx;
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            Path p = new Path();
+            p.moveTo(b.right, b.top);
+            p.lineTo(b.right - size, b.top);
+            p.lineTo(b.right, b.top + size);
+            p.close();
+            canvas.drawPath(p, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter cf) {
+            paint.setColorFilter(cf);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 }

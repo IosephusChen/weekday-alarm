@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(312, "1.23.27", "2026/11/10", "法定节假日改到右上角",
+                    "黄底换成右上角一个小三角，节日名照旧写在格子里",
+                    "轮班制也能看到春节了：以前春节上班跟平常一样",
+                    "图例「节假日」同步改成小三角"),
             new Entry(311, "1.23.26", "2026/11/10", "班次列表去掉色点",
                     "行首那颗彩色圆点撤掉了，名字直接靠左",
                     "它只在列表里出现，日历里查不到它代表什么",

@@ -91,6 +91,9 @@ public class FrozenKeysTest {
         // 那时候这张卡该弹；把「弹过」带过去等于让新机器永远看不到它。
         PREFS_KEYS.put("KEY_CATCHUP_SHOWN", "catchup_shown");
         PREFS_KEYS.put("KEY_CATCHUP_PENDING", "catchup_pending");
+        // v1.23.25：引导第 3 页那张权限清单露过面没有。同样不进备份——换手机的人
+        // 在新机上重走一遍引导会重新写它，把这个「看过」带过去只会让补课卡少一行。
+        PREFS_KEYS.put("KEY_PERM_SEEN", "perm_seen");
         // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
         // 改名等于让升级的人回到第 1 页重填一遍。
         PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");

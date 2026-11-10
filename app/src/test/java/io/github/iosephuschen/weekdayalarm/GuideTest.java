@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  *       单休顺手把「休周日 / 休周六」定对</li>
  *   <li>第二页默认 07:30，改时间改的是第一个闹钟，不能凭空多出一个</li>
  *   <li>第三页四项权限状态跟系统真实状态一致</li>
- *   <li>「看过」的标记只在点「开始使用 / 稍后设置」时写，返回键退出不写</li>
+ *   <li>「看过」的标记在点「开始使用 / 稍后设置」和返回键时都写（v1.23.25 起）</li>
  * </ol>
  *
  * <p>注意一个容易踩空的前提：{@link Prefs#getAlarms} 首次读取会预置两条闹钟
@@ -1836,17 +1836,47 @@ public class GuideTest {
     }
 
     /**
-     * 返回键 = 中途退出，不写标记。
-     * 老版本在拉起引导前就写，用户按一次返回就再也见不到引导了。
+     * 返回键 = 「我不看了」，同样写标记（v1.23.25 改）。
+     *
+     * <p>老版本这里什么都不写：理由是「半路退 = 还没弄完，下次接着来」。真机上用户的
+     * 感受是「我都回到首页了，怎么再打开又弹一遍」——他不知道顶栏那个「稍后设置」
+     * 才是唯一的出口，而它看起来更像「跳过这一页」。
+     *
+     * <p>敢让它不再出现，是因为缺席的代价已有两条兜底：建第一条闹钟那张补课卡、
+     * 设置页「补全设置 · 重看引导」。
      */
     @Test
-    public void backWithoutFinish_doesNotMarkOnboard() {
+    public void backAlsoMarksOnboard() {
         GuideActivity a = fresh();
         a.onBackPressed();
         ShadowLooper.idleMainLooper();
 
         assertTrue(a.isFinishing());
-        assertFalse("半路退下次还要出现", Prefs.isOnboardDone(ctx()));
+        assertTrue("按返回也算看过，下次启动不再自动弹", Prefs.isOnboardDone(ctx()));
+        assertEquals("走过的人不该再续到半截那页", 0, Prefs.getGuidePage(ctx()));
+    }
+
+    /** 只看权限模式按返回不写：那是来查开关的，不代表他走完了引导（v1.23.18 的老规矩）。 */
+    @Test
+    public void backInPermissionsOnly_doesNotMarkOnboard() {
+        GuideActivity a = launch(GuideActivity.permissionsIntent(ctx()));
+        a.onBackPressed();
+        ShadowLooper.idleMainLooper();
+
+        assertTrue(a.isFinishing());
+        assertFalse("只看权限不等于走完引导", Prefs.isOnboardDone(ctx()));
+    }
+
+    /** 第 3 页露过面就记一笔：补课卡上那一行问的是「这张清单他有没有机会看到」（v1.23.25）。 */
+    @Test
+    public void reachingPermissionsPage_marksPermSeen() {
+        GuideActivity a = fresh();
+        assertFalse("第 1 页还没看过清单", Prefs.isPermSeen(ctx()));
+
+        tap(a, R.id.btn_next);
+        tap(a, R.id.btn_next);
+
+        assertTrue("翻到了就要记，哪怕一项都没开", Prefs.isPermSeen(ctx()));
     }
 
     // ================= 导入旧备份（v0.57.0）=================

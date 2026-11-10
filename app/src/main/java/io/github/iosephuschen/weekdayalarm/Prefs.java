@@ -72,6 +72,12 @@ public final class Prefs {
     // 只在这一条链路上置位：从卡进「我的班表」、或用户直接点「知道了」，都不该在
     // 某次无关的 onResume 里突然冒出一个权限框。
     public static final String KEY_CATCHUP_PENDING = "catchup_pending";
+    // v1.23.25：第 3 页那张权限清单，用户到底翻到过没有。
+    // 不能拿 KEY_ONBOARD_DONE 代替：点「稍后设置」和按返回键都会写它（为了让引导页
+    // 不再自动弹），于是「引导关掉了」和「权限清单看过了」变成同一个答案，
+    // 补课卡就只能对按返回的人显示那一行——真正点「稍后设置」的人反而看不到。
+    // 只在第 3 页真的显示出来时写，哪怕用户什么都没开、直接翻走。
+    public static final String KEY_PERM_SEEN = "perm_seen";
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
@@ -1143,6 +1149,20 @@ public final class Prefs {
 
     public static void setCatchUpPending(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_CATCHUP_PENDING, v).apply();
+    }
+
+    /**
+     * 第 3 页的权限清单，用户看见过没有（v1.23.25）。
+     *
+     * <p>判据是「第 3 页显示过」，不是「权限开没开」——自启动和锁屏显示系统读不到状态，
+     * 想记「开好了」也记不准。补课卡要问的只是「这张清单他有没有机会看到」。
+     */
+    public static boolean isPermSeen(Context c) {
+        return sp(c).getBoolean(KEY_PERM_SEEN, false);
+    }
+
+    public static void setPermSeen(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_PERM_SEEN, v).apply();
     }
 
     /**

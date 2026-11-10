@@ -1,13 +1,13 @@
 {
-  "versionCode": 309,
-  "versionName": "1.23.24",
+  "versionCode": 310,
+  "versionName": "1.23.25",
   "published": "2026-11-10",
-  "title": "建完第一条，先补两样",
+  "title": "引导页不再反复出现",
   "notes": [
-    "「稍后设置」进来的人，建好第一条后弹一张两行卡",
-    "先自启动（划掉就不响），再班表（现在按双休排）",
-    "点自启动进权限页，走完当场试一次；回来还没开通知才弹系统框"
+    "新装第一次进去，按返回键退出也算看过了",
+    "以前退出再打开又弹一遍，点「稍后设置」才不弹",
+    "补课卡那行改叫「权限与自启动」：点进去是五项清单"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.24/weekday-alarm-1.23.24.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.24"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.25/weekday-alarm-1.23.25.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.25"
 }

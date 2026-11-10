@@ -3,6 +3,10 @@ package io.github.iosephuschen.weekdayalarm;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -65,6 +69,29 @@ final class MonthWidgetRender {
     };
 
     /**
+     * 法定节假日的右上角三角（v1.23.28）。
+     *
+     * <p>与主日历是同一层意思、同一种画法：格子里的字说「这天去不去上班」，
+     * 右上角三角说「这天是不是法定假」。以前小部件没有这一层，于是「假」这一格
+     * 既是法定假的意思、又和请假的「假」撞成一个字——用户 2026-11-10 的原话是
+     * 「一边写的是休一边写的是假，两个位置的表达不统一」。
+     *
+     * <p>小部件没有格子底色（整张卡是紫渐变），所以字色接着替底色干「班 / 休」，
+     * 三角照旧贴着每个格子的右上角。判据直接问 {@code HolidayData.isHoliday}，
+     * 不经过 {@code dayType}——轮班关掉「跳过法定节假日」时 {@code dayType} 永远
+     * 不返回 HOLIDAY，只有绕开它，轮班的人春节才看得见。
+     */
+    private static final int[] DOT_IDS = {
+            R.id.m_dot_0, R.id.m_dot_1, R.id.m_dot_2, R.id.m_dot_3, R.id.m_dot_4, R.id.m_dot_5,
+            R.id.m_dot_6, R.id.m_dot_7, R.id.m_dot_8, R.id.m_dot_9, R.id.m_dot_10, R.id.m_dot_11,
+            R.id.m_dot_12, R.id.m_dot_13, R.id.m_dot_14, R.id.m_dot_15, R.id.m_dot_16, R.id.m_dot_17,
+            R.id.m_dot_18, R.id.m_dot_19, R.id.m_dot_20, R.id.m_dot_21, R.id.m_dot_22, R.id.m_dot_23,
+            R.id.m_dot_24, R.id.m_dot_25, R.id.m_dot_26, R.id.m_dot_27, R.id.m_dot_28, R.id.m_dot_29,
+            R.id.m_dot_30, R.id.m_dot_31, R.id.m_dot_32, R.id.m_dot_33, R.id.m_dot_34, R.id.m_dot_35,
+            R.id.m_dot_36, R.id.m_dot_37, R.id.m_dot_38, R.id.m_dot_39, R.id.m_dot_40, R.id.m_dot_41,
+    };
+
+    /**
      * 标记颜色。
      *
      * <p>不读 {@code R.color.*}：小部件的底是固定的紫色渐变，不随系统深浅模式变，
@@ -110,6 +137,16 @@ final class MonthWidgetRender {
     private static final int C_LEAVE = 0xFFFFD166;
     private static final int C_OT = 0xFF7DD3A8;
 
+    /**
+     * 法定节假日三角：紫底上的琥珀。
+     *
+     * <p>不直接用日历页的 {@code day_holiday_text}（#B45309）：那个色值是给
+     * 浅黄底 / 白底用的深琥珀，压在这张紫渐变上会暗成一粒污渍。
+     */
+    private static final int C_DOT = 0xFFFBBF24;
+    /** 今天那格是实心白底，亮琥珀压不住——换深琥珀，与日历页同一个色值。 */
+    private static final int C_DOT_TODAY = 0xFFB45309;
+
     private MonthWidgetRender() {
     }
 
@@ -126,6 +163,8 @@ final class MonthWidgetRender {
         final String[] tags = new String[CELLS];
         final int[] colors = new int[CELLS];
         final boolean[] today = new boolean[CELLS];
+        /** 右上角三角：这天是不是法定节假日（v1.23.28）。判据与主日历角标同一个。 */
+        final boolean[] dot = new boolean[CELLS];
 
         /** 底部那一行：统计 + （有闹钟时的）下次响铃。 */
         String footerText() {
@@ -216,10 +255,20 @@ final class MonthWidgetRender {
                 // 于是法定假「假」变成了「休」，和普通周末看不出区别，
                 // 补班日「补」变成「班」。用户 2026-10-30 对着桌面截图问了这件事。
                 m.tags[i] = DayTag.of(d, type, lunarOn, termsOn, christOn);
+                // v1.23.28：没有节日名的法定假不再写「假」，改回「休」——与日历页一致。
+                // 「假」现在专指请假（C_LEAVE 那格），一个字只有一个意思。
+                // 有节日名的（国庆 / 春节）保持原名：三角给不了名字。
+                if (type == WeekSchedule.DayType.HOLIDAY
+                        && WeekSchedule.DayType.HOLIDAY.label.equals(m.tags[i])) {
+                    m.tags[i] = WeekSchedule.DayType.REST.label;
+                }
                 // v1.1.0：整月大多数格子写的是「班」，压暗它，把有信息的那几格让出来
                 if (work && "班".equals(m.tags[i])) m.colors[i] = C_WORK_PLAIN;
             }
             m.today[i] = d.equals(today);
+            // v1.23.28：三角问的是「这天是不是法定假」，不是「这天放不放假」。
+            // 轮班的 dayType 永远不返回 HOLIDAY，绕开它，春节上班才看得见。
+            m.dot[i] = HolidayData.isHoliday(d);
         }
 
         // v0.80.2：前面补「本月」——单独一句「20 天班 · 11 天休」没有主语，用户
@@ -285,6 +334,15 @@ final class MonthWidgetRender {
             // 今天：只切高亮层的可见性，不换背景资源——setInt(..., "setBackgroundResource")
             // 是反射调用，在部分启动器上会让整次更新失败，组件停在旧内容
             rv.setViewVisibility(HL_IDS[i], m.today[i] ? View.VISIBLE : View.GONE);
+            // v1.23.28：法定假的右上角三角。只给有三角的格子塞位图，其余只改可见性——
+            // 42 格全塞等于每次更新背 42 张图过 IPC。
+            if (m.dot[i]) {
+                rv.setImageViewBitmap(DOT_IDS[i],
+                        dotBitmap(ctx, m.today[i] ? C_DOT_TODAY : C_DOT, dotSizeDp(layout)));
+                rv.setViewVisibility(DOT_IDS[i], View.VISIBLE);
+            } else {
+                rv.setViewVisibility(DOT_IDS[i], View.GONE);
+            }
         }
 
         bindAlarm(rv, ctx, withFooter);
@@ -301,6 +359,49 @@ final class MonthWidgetRender {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.widget_month_root, pi);
         return rv;
+    }
+
+    /**
+     * 三角边长：4×4 是 6dp，4×3 格子更扁用 5dp。
+     *
+     * <p>这两个数与两份布局里 {@code m_dot_N} 的 {@code layout_width} 必须一致；
+     * 不一致时 ImageView 的 FIT_CENTER 会缩放，边缘就糊了。
+     */
+    private static float dotSizeDp(int layout) {
+        return layout == R.layout.widget_month_compact ? 5f : 6f;
+    }
+
+    /** 两种颜色的三角各缓存一份：一次更新最多两种，不必每格新建位图。 */
+    private static Bitmap dotGold;
+    private static Bitmap dotDark;
+
+    /**
+     * 右上角三角：抗锯齿的实心直角三角形，直角在右上。
+     *
+     * <p>必须在本进程画好再交给启动器——小部件不能自绘，主日历那个
+     * {@code CornerMark} 搬不过来；{@code ShapeDrawable} 的三角形路径在部分
+     * 启动器上也不认，位图是唯一稳的载体。
+     */
+    private static Bitmap dotBitmap(Context ctx, int color, float sizeDp) {
+        int px = Math.max(3,
+                Math.round(sizeDp * ctx.getResources().getDisplayMetrics().density));
+        Bitmap cached = color == C_DOT_TODAY ? dotDark : dotGold;
+        if (cached != null && cached.getWidth() == px) return cached;
+
+        Bitmap b = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setColor(color);
+        Path path = new Path();
+        path.moveTo(px, 0);     // 右上角
+        path.lineTo(px, px);    // 右下
+        path.lineTo(0, 0);      // 左上
+        path.close();
+        c.drawPath(path, p);
+
+        if (color == C_DOT_TODAY) dotDark = b;
+        else dotGold = b;
+        return b;
     }
 
     /**

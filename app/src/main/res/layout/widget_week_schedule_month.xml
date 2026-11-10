@@ -161,6 +161,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_0"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -200,6 +209,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_1"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -242,6 +260,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_2"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -280,6 +307,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_3"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -322,6 +358,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_4"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -362,6 +407,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_5"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -400,6 +454,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_6"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -450,6 +513,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_7"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -488,6 +560,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_8"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -530,6 +611,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_9"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -568,6 +658,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_10"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -610,6 +709,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_11"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -650,6 +758,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_12"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -688,6 +805,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_13"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -738,6 +864,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_14"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -776,6 +911,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_15"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -818,6 +962,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_16"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -856,6 +1009,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_17"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -898,6 +1060,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_18"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -938,6 +1109,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_19"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -976,6 +1156,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_20"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1026,6 +1215,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_21"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1064,6 +1262,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_22"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1106,6 +1313,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_23"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1144,6 +1360,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_24"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1186,6 +1411,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_25"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1226,6 +1460,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_26"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1264,6 +1507,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_27"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1314,6 +1566,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_28"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1352,6 +1613,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_29"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1394,6 +1664,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_30"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1432,6 +1711,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_31"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1474,6 +1762,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_32"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1514,6 +1811,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_33"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1552,6 +1858,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_34"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1602,6 +1917,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_35"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1640,6 +1964,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_36"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1682,6 +2015,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_37"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1720,6 +2062,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_38"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -1762,6 +2113,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_39"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1802,6 +2162,15 @@
                 android:background="@drawable/bg_widget_today_solid"
                 android:visibility="gone" />
 
+            <ImageView
+                android:id="@+id/m_dot_40"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -1840,6 +2209,15 @@
                 android:layout_height="match_parent"
                 android:layout_margin="1.5dp"
                 android:background="@drawable/bg_widget_today_solid"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/m_dot_41"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="2.5dp"
+                android:layout_marginEnd="2.5dp"
                 android:visibility="gone" />
 
             <LinearLayout

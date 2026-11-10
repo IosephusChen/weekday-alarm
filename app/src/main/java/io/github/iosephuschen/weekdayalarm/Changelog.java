@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(313, "1.23.28", "2026/11/10", "小部件也有了节假日三角",
+                    "桌面小部件右上角加一个三角，和 App 里日历一致",
+                    "小部件里法定假不再写「假」，改写「休」——「假」现在只表示请假",
+                    "轮班制也能在小部件上看到春节了"),
             new Entry(312, "1.23.27", "2026/11/10", "法定节假日改到右上角",
                     "黄底换成右上角一个小三角，节日名照旧写在格子里",
                     "轮班制也能看到春节了：以前春节上班跟平常一样",

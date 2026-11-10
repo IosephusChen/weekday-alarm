@@ -26,7 +26,12 @@ public final class Shift {
     /** {@link #end} 的「不知道」值：老数据只记了上班时刻，没有下班时刻。 */
     public static final int END_UNKNOWN = -1;
 
-    /** 可选配色数量（含默认色）。只影响显示，坏掉最多颜色不对。 */
+    /**
+     * 配色下标的上界（含默认色）。
+     *
+     * <p>v1.23.26 起不再用于显示，仍需这个上界：{@link #clampColor} 要用它把老数据里
+     * 越界的值夹回 0，否则读一份手工改过的备份就可能拿到下标外的数。
+     */
     public static final int COLOR_COUNT = 6;
 
     public int id;
@@ -47,6 +52,17 @@ public final class Shift {
      */
     public int end;
 
+    /**
+     * 配色下标，0 ~ {@link #COLOR_COUNT}-1（v1.8.0）。
+     *
+     * <p><b>v1.23.26（B14）起界面不再显示它。</b>班次列表行首那个色点（22dp 淡色圆底 +
+     * 9dp 实心点）原本承诺的是「日历按班次上色」，可日历格只写「班 / 休」，
+     * 全 App 再没有一处读得出班次颜色——一条查不到兑现处的色标只会让人以为还有别处能看到。
+     * 班次名（白班 / 夜班 / 中班）本来就是最直接的识别依据，不需要颜色复述。
+     *
+     * <p>字段本身保留：老配置、备份文件里带着这个键，删字段等于让那些数据解析失败。
+     * 与 {@code Alarm.color} 同一处理（见 {@code AlarmColorTest}）。
+     */
     public int color;
 
     public Shift(int id, String name, int start, int end, int color) {

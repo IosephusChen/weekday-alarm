@@ -10,7 +10,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -127,7 +126,7 @@ public final class ShiftBookDialog {
         current = new java.lang.ref.WeakReference<>(d);
     }
 
-    /** 一行卡片：色点 + 名字 / 时段 + 箭头。点进去编辑，长按删除。 */
+    /** 一行卡片：名字 / 时段 + 箭头。点进去编辑，长按删除。 */
     private static View row(Context ctx, Shift s, OnChanged cb) {
         LinearLayout row = new LinearLayout(ctx);
         row.setOrientation(LinearLayout.HORIZONTAL);
@@ -138,25 +137,13 @@ public final class ShiftBookDialog {
         row.setClickable(true);
         row.setFocusable(true);
 
-        View dot = new View(ctx);
-        GradientDrawable g = new GradientDrawable();
-        g.setShape(GradientDrawable.OVAL);
-        g.setColor(ShiftColors.of(ctx, s.color));
-        dot.setBackground(g);
-        // v1.9.1：9dp 实心点 → 22dp 淡色圆底 + 9dp 实心点。
-        // 单颗小点在白卡里几乎没有分量，一眼扫过去只看到两行灰字；
-        // 一层 20% 的同色底把「这条是哪个班」变成能扫读的色标。
-        FrameLayout badge = new FrameLayout(ctx);
-        View halo = new View(ctx);
-        GradientDrawable hg = new GradientDrawable();
-        hg.setShape(GradientDrawable.OVAL);
-        hg.setColor((ShiftColors.of(ctx, s.color) & 0x00FFFFFF) | 0x33000000);
-        halo.setBackground(hg);
-        badge.addView(halo, new FrameLayout.LayoutParams(dp(ctx, 22), dp(ctx, 22)));
-        badge.addView(dot, new FrameLayout.LayoutParams(dp(ctx, 9), dp(ctx, 9), Gravity.CENTER));
-        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(ctx, 22), dp(ctx, 22));
-        dlp.setMarginEnd(dp(ctx, 12));
-        row.addView(badge, dlp);
+        // v1.23.26（B14）：撤掉行首的色点（v1.9.1 加的 22dp 淡色圆底 + 9dp 实心点）。
+        // 那个色点承诺的是「日历按班次上色」——ShiftColors 的注释就这么写的，
+        // 但日历格只写「班 / 休」，全 App 再没有一处读得出班次颜色。
+        // 一条查不到兑现处的色标，只会让人以为还有别的地方能看到它。
+        // 班次名（白班 / 夜班 / 中班）本来就是最直接的识别依据，不需要颜色复述。
+        // 字段 Shift.color 保留：老配置和备份里带着这个键，删字段等于让那些数据解析失败，
+        // 与 Alarm.color 同一处理（见 AlarmColorTest）。
 
         LinearLayout mid = new LinearLayout(ctx);
         mid.setOrientation(LinearLayout.VERTICAL);

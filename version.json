@@ -1,13 +1,13 @@
 {
-  "versionCode": 310,
-  "versionName": "1.23.25",
+  "versionCode": 311,
+  "versionName": "1.23.26",
   "published": "2026-11-10",
-  "title": "引导页不再反复出现",
+  "title": "班次列表去掉色点",
   "notes": [
-    "新装第一次进去，按返回键退出也算看过了",
-    "以前退出再打开又弹一遍，点「稍后设置」才不弹",
-    "补课卡那行改叫「权限与自启动」：点进去是五项清单"
+    "行首那颗彩色圆点撤掉了，名字直接靠左",
+    "它只在列表里出现，日历里查不到它代表什么",
+    "白班、夜班、中班本来就分得清，不用颜色再讲一遍"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.25/weekday-alarm-1.23.25.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.25"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.26/weekday-alarm-1.23.26.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.26"
 }

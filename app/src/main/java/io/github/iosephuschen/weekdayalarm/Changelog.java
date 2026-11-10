@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(311, "1.23.26", "2026/11/10", "班次列表去掉色点",
+                    "行首那颗彩色圆点撤掉了，名字直接靠左",
+                    "它只在列表里出现，日历里查不到它代表什么",
+                    "白班、夜班、中班本来就分得清，不用颜色再讲一遍"),
             new Entry(310, "1.23.25", "2026/11/10", "引导页不再反复出现",
                     "新装第一次进去，按返回键退出也算看过了",
                     "以前退出再打开又弹一遍，点「稍后设置」才不弹",

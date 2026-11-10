@@ -59,8 +59,9 @@ public final class ShiftBookDialog {
     /** 打开班次列表。 */
     public static void show(Context ctx, OnChanged cb) {
         if (ctx == null) return;
-        androidx.appcompat.app.AlertDialog old = current.get();
-        if (old != null && old.isShowing()) old.dismiss();
+        // v1.23.30：走 dismissSafely——上一张列表可能挂在已经销毁的 Activity 上，
+        // 直接 dismiss() 会抛「not attached to window manager」，见 DialogKit 那条注释
+        DialogKit.dismissSafely(current.get());
         List<Shift> shifts = new ArrayList<>(Prefs.getShifts(ctx));
 
         LinearLayout box = new LinearLayout(ctx);
@@ -283,7 +284,7 @@ public final class ShiftBookDialog {
             // 按「9 小时班」补一个，跨午夜自动折回 0~1439
             save(ctx, base, label, start[0], (start[0] + 9 * 60) % 1440);
             // 先关自己再开列表：不然新列表会开在这张编辑页下面，一闪而过
-            d.dismiss();
+            DialogKit.dismissSafely((android.app.Dialog) d);
             show(ctx, cb);
         });
         // v1.8.2：删除原来是长按——没有入口提示，等于只有开发者知道。
@@ -436,7 +437,7 @@ public final class ShiftBookDialog {
                         touched = true;
                     }
                     if (touched) Prefs.setAlarms(ctx, alarms);
-                    d.dismiss();
+                    DialogKit.dismissSafely((android.app.Dialog) d);
                     show(ctx, cb);
                 })
                 .show();

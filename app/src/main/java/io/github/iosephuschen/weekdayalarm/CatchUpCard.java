@@ -113,7 +113,9 @@ final class CatchUpCard {
 
     /** 关掉当前这张卡（行点击后、跳转前）。没有卡在屏上就什么都不做。 */
     private static void dismiss() {
-        if (current != null && current.isShowing()) current.dismiss();
+        // v1.23.30：和班次列表同一种残留——这张卡存着静态引用，宿主 Activity
+        // 被回收后窗口没了而 isShowing() 还是 true
+        DialogKit.dismissSafely(current);
         current = null;
     }
 

@@ -523,4 +523,59 @@ public class DialogKitTest {
         assertTrue("组标题要比选项主文案小一档",
                 title.getTextSize() < optionTitle.getTextSize());
     }
+
+    // ==================== 关掉「窗口已经不在了」的弹窗（v1.23.30） ====================
+
+    /**
+     * 崩溃现场：班表页点开班次列表，show() 开头先关上一张列表，抛
+     * {@code IllegalArgumentException: ... not attached to window manager}。
+     *
+     * <p>这里用一张「自称开着、一关就抛」的假弹窗复现那一刻的状态——真机上
+     * 是 Activity 被回收后窗口被摘走、{@code mShowing} 没跟着变，Robolectric
+     * 造不出那个窗口状态，但异常本身可以原样递进来。
+     */
+    @Test
+    public void dismissSafely_swallowsTheDialogWhoseWindowIsAlreadyGone() {
+        AlertDialog gone = new GoneDialog(ctx());
+        // 不抛就是通过：这张弹窗本来就不在屏幕上，关不掉不叫失败
+        DialogKit.dismissSafely(gone);
+    }
+
+    /** 正常那张仍然要真的关掉——兜底不能变成「什么都不关」。 */
+    @Test
+    public void dismissSafely_closesALiveDialog() {
+        MainActivity host = Robolectric.buildActivity(MainActivity.class).setup().get();
+        AlertDialog live = new RoundedDialog.Builder(host).setTitle("班次").show();
+        assertTrue("前提：这张是开着的", live.isShowing());
+        DialogKit.dismissSafely(live);
+        assertFalse("活着的弹窗必须真的关掉", live.isShowing());
+    }
+
+    /** 空引用、没 show 过的，静默跳过。 */
+    @Test
+    public void dismissSafely_ignoresNullAndNeverShown() {
+        MainActivity host = Robolectric.buildActivity(MainActivity.class).setup().get();
+        DialogKit.dismissSafely(null);
+        AlertDialog never = new RoundedDialog.Builder(host).setTitle("班次").create();
+        DialogKit.dismissSafely(never);
+        assertFalse(never.isShowing());
+    }
+
+    /** 自称「开着」、一关就抛「not attached to window manager」的旧弹窗。 */
+    private static final class GoneDialog extends AlertDialog {
+        GoneDialog(Context c) {
+            super(c);
+        }
+
+        @Override
+        public boolean isShowing() {
+            return true;
+        }
+
+        @Override
+        public void dismiss() {
+            throw new IllegalArgumentException(
+                    "View=DecorView{5363a9}[WeekScheduleActivity] not attached to window manager");
+        }
+    }
 }

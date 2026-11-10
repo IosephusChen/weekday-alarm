@@ -788,6 +788,36 @@ public final class DialogKit {
         return t;
     }
 
+    /**
+     * 关掉一张可能已经「离开窗口」的对话框（v1.23.30）。
+     *
+     * <p><b>崩溃现场</b>（用户 2026-11-10 22:40，1.23.27）：
+     * {@code WeekScheduleActivity} 里点开班次列表 →
+     * {@code IllegalArgumentException: View=DecorView{...}[WeekScheduleActivity]
+     * not attached to window manager}。堆栈落在
+     * {@code ShiftBookDialog.show()} 开头那句「先关掉上一张列表」。
+     *
+     * <p><b>为什么 {@code isShowing()} 说开着、窗口却没了</b>：这张列表是静态弱引用
+     * 存着的。Activity 被系统回收或重建（低内存、深色模式切换、字体缩放）时，
+     * 它的窗口被 WindowManager 一并摘掉，而对话框自己没走 {@code dismiss()}，
+     * {@code mShowing} 仍是 true。等用户在新页面上再点一次班次入口，
+     * {@code show()} 拿到的就是这张「还自称开着、其实早已不在窗口上」的旧列表——
+     * {@code dismiss()} 走到 {@code removeViewImmediate} 找不到 View，直接抛。
+     *
+     * <p><b>为什么不先判断 attach 再关</b>：能不能关由 Activity 生命周期决定，
+     * 我们只能看一眼再动手，而看和动手之间状态还会变。这里直接关、只把
+     * 「窗口已经不在了」这一种结果接住：那张对话框本来就不在屏幕上，关不关结果一样。
+     * catch 只包住 {@code dismiss()} 这一句，别的异常照旧抛出去。
+     */
+    static void dismissSafely(android.app.Dialog d) {
+        if (d == null || !d.isShowing()) return;
+        try {
+            d.dismiss();
+        } catch (IllegalArgumentException alreadyGone) {
+            // 所属 Activity 已经把这张窗口带走，没有可摘的 View 了
+        }
+    }
+
     private static int dp(Context c, int v) {
         return Math.round(v * c.getResources().getDisplayMetrics().density);
     }

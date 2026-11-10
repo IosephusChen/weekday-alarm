@@ -72,7 +72,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/SettingsChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
 
         <View
@@ -114,7 +114,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/SettingsChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
     </LinearLayout>
 

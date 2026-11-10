@@ -307,7 +307,7 @@
                         android:textColor="@color/indigo"
                         android:textSize="14sp" />
 
-                    <TextView style="@style/SettingsChevron" />
+                    <TextView style="@style/ValueChevron" />
                 </LinearLayout>
 
                 <!-- v0.85.0：删掉「之后可以在主界面加更多闹钟」这一行。

@@ -140,7 +140,7 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <TextView style="@style/SettingsChevron" />
+        <TextView style="@style/ValueChevron" />
     </LinearLayout>
 
     <TextView
@@ -224,7 +224,7 @@
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <TextView style="@style/SettingsChevron" />
+        <TextView style="@style/ValueChevron" />
     </LinearLayout>
 
     <!-- v1.27：只有选中「仅一次」才出现的那一天。默认隐藏，

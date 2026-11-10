@@ -183,10 +183,20 @@
         <item name="android:textSize">@dimen/font_chevron</item>
     </style>
 
-    <!-- 响铃细节弹层（v1.19.0 美化）专用。
-         行尾箭头用次色而不是 SettingsChevron 的主色：这一层右侧数值已经是主色，
-         箭头再上主色会连成两块紫，读起来像两个入口。这里只表示「这一行能点」。 -->
-    <style name="RingChevron">
+    <!-- 「右侧有值」的行专用箭头（v1.23.27 / A10）。
+         规则只有一条：一行右侧的「值」和「箭头」里，只能有一个用主色。
+         值是这一行要读的东西（08:00、7 天、仅上班日），它就是主色；
+         箭头只说「这一行能点」，降为次色——两个都紫会连成两块紫，读起来像两个入口。
+
+         没有值的行（标题 + 副文案 + 箭头）继续用 SettingsChevron：那种行里
+         箭头是唯一的「能点」信号，主色该给它。
+
+         原来这个 style 叫 RingChevron，只在响铃弹层用，注释写的是同一条道理。
+         A10 全 App 查下来，值紫箭头也紫的地方有六处：引导页「重复」、闹钟弹窗
+         两行摘要、班表弹层的「周期」「第 1 天是」、班次弹窗的编辑行。
+         既然讲的是通用规则，名字就不该绑在一个弹层上——改成 ValueChevron，
+         六处一起收过来。 -->
+    <style name="ValueChevron">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginStart">@dimen/space_6</item>

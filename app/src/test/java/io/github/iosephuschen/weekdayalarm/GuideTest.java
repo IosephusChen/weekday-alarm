@@ -1491,7 +1491,7 @@ public class GuideTest {
      * 现在由 {@code onPause()} 主动 cancel——锁屏盖住页面时走的就是这条。
      */
     @Test
-    public void lockProbeHint_showsToastButDropsItOnPause() {
+    public void lockProbeHint_showsBarAndDropsItOnPause() {
         GuideActivity a = fresh();
         for (int i = 0; i < 3; i++) {
             a.findViewById(R.id.btn_next).performClick();
@@ -1501,22 +1501,30 @@ public class GuideTest {
         androidx.appcompat.app.AlertDialog d = (androidx.appcompat.app.AlertDialog)
                 org.robolectric.shadows.ShadowAlertDialog.getLatestDialog();
 
-        int before = ShadowToast.shownToastCount();
         d.getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
         ShadowLooper.idleMainLooper();
 
-        assertEquals("这条提示要留着：点完马上按电源键，只有它当面说得清",
-                before + 1, ShadowToast.shownToastCount());
-        assertTrue("步骤文案一字不改，实际：" + ShadowToast.getTextOfLatestToast(),
-                ShadowToast.getTextOfLatestToast().contains("按电源键锁屏"));
+        // A5（2026-11-10）：从系统 Toast 换成页面内的提示条。守的东西没变——
+        // 这句必须当面说清「按电源键锁屏」，而且离开前台时要收走。
+        android.view.View bar = hintBar(a);
+        assertNotNull("这条提示要留着：点完马上按电源键，只有它当面说得清", bar);
+        assertTrue("步骤文案一字不改，实际：" + ((android.widget.TextView) bar).getText(),
+                ((android.widget.TextView) bar).getText().toString().contains("按电源键锁屏"));
 
-        android.widget.Toast t = ShadowToast.getLatestToast();
-        assertNotNull(t);
         // 按电源键锁屏 → 引导页先 onPause，就是这一步把它收走
         a.onPause();
         ShadowLooper.idleMainLooper();
-        assertTrue("页面离开前台必须 cancel，否则 Toast 会叠在锁屏上（v1.23.6）",
-                ((ShadowToast) org.robolectric.shadow.api.Shadow.extract(t)).isCancelled());
+        assertNull("页面离开前台必须收走，否则回来时那 6 秒计时还在跑（v1.23.6）",
+                hintBar(a));
+    }
+
+    /** 页面里的提示条（A5 之后 Toast 的替身）。 */
+    private static android.view.View hintBar(android.app.Activity a) {
+        android.view.ViewGroup root = a.findViewById(android.R.id.content);
+        for (int i = 0; i < root.getChildCount(); i++) {
+            if (Hint.TAG.equals(root.getChildAt(i).getTag())) return root.getChildAt(i);
+        }
+        return null;
     }
 
     /**

@@ -225,6 +225,9 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         refreshAll();
+        // A5（2026-11-10）：引导页重看结束时存下的那句（「设置已更新 / 设置未改动」）
+        // 在这里浮出来——存的那一页已经 finish，只有当目标页是我们时才说
+        Hint.showPending(this);
         // v0.91.1：音量是设备状态，用户随时可能在系统音量条上按一下。
         // 只靠 onResume 读一次，页面开着的时候数字就是死的。
         // v1.0.3：二级页没有音量行（tvVolume == null），那一页不必轮询——
@@ -508,8 +511,10 @@ public class SettingsActivity extends AppCompatActivity {
                 case ALREADY_LATEST:
                     refreshAll();
                     // v1.20.0：同 holidayDataLabel()，在线数据不带发布日期，别拼内置兜底值
-                    Toast.makeText(this, "已是最新（" + HolidayData.effectiveYear()
-                            + " 年 · 在线）", Toast.LENGTH_SHORT).show();
+                    // A5（2026-11-10）：这条压在「稍后 / 更多」分组之间，改应用内提示条，
+                    // 位置固定在页面底部、跟着页面走
+                    Hint.show(this, "已是最新（" + HolidayData.effectiveYear()
+                            + " 年 · 在线）");
                     break;
                 default:
                     refreshAll();

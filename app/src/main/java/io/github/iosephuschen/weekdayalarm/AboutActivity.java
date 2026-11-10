@@ -173,9 +173,9 @@ public class AboutActivity extends AppCompatActivity {
             }
             refreshUpdateLabel();
             if (result == UpdateChecker.Result.UP_TO_DATE) {
-                Toast.makeText(this,
-                        getString(R.string.about_check_update_latest_toast, versionNameOnly()),
-                        Toast.LENGTH_SHORT).show();
+                // A5（2026-11-10）：原来压在底部版本 / MIT 许可小字上，改应用内提示条
+                Hint.show(this,
+                        getString(R.string.about_check_update_latest_toast, versionNameOnly()));
             } else {
                 showUpdateFailed();
             }

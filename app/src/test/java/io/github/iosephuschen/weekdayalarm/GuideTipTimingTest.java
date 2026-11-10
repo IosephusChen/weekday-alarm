@@ -204,7 +204,7 @@ public class GuideTipTimingTest {
     // ================= 三、从设置页重看：当场说，不等 =================
 
     @Test
-    public void rewatchFromSettings_saysUpdatedImmediately() {
+    public void rewatchFromSettings_handsTipToSettingsPage() {
         wipe();
         Prefs.setOnboardDone(ctx(), true); // 已引导过 = 从设置页重看
         int before = ShadowToast.shownToastCount();
@@ -214,10 +214,31 @@ public class GuideTipTimingTest {
             tap(a, R.id.btn_next);
         }
 
-        assertEquals("重看引导的回程是设置页，没有权限框可等，必须当场说",
-                before + 1, ShadowToast.shownToastCount());
-        assertEquals("设置已更新", ShadowToast.getTextOfLatestToast());
-        assertFalse("这条路没有首页来消费，塞进去等于永远丢", PendingTip.has());
+        // A5（2026-11-10）：这句不能再走系统 Toast（会飘到设置页上空、压住「导出配置」行），
+        // 但也不能在本页浮——下一行就 finish()，提示条会跟着页面一起没。
+        // 所以存给设置页，由它的 onResume 浮出来。这里守「存了、没丢、没退回 Toast」。
+        assertTrue("要存给设置页", Hint.hasPending());
+        assertEquals("不能退回系统 Toast，实际弹了 " + (ShadowToast.shownToastCount() - before) + " 次",
+                before, ShadowToast.shownToastCount());
+        assertFalse("这条路没有首页来消费，塞进 PendingTip 等于永远丢", PendingTip.has());
+    }
+
+    /** 存下的那句，设置页 onResume 要真的浮出来，且取走即清。 */
+    @Test
+    public void settingsPageShowsTheHandedTip() {
+        wipe();
+        Hint.next("设置已更新");
+        SettingsActivity s = Robolectric.buildActivity(SettingsActivity.class).setup().get();
+        ShadowLooper.idleMainLooper();
+
+        android.view.ViewGroup root = s.findViewById(android.R.id.content);
+        android.view.View bar = null;
+        for (int i = 0; i < root.getChildCount(); i++) {
+            if (Hint.TAG.equals(root.getChildAt(i).getTag())) bar = root.getChildAt(i);
+        }
+        assertNotNull("设置页要把存下的那句浮出来", bar);
+        assertEquals("设置已更新", ((android.widget.TextView) bar).getText().toString());
+        assertFalse("取走即清，不能每次 onResume 都重说一遍", Hint.hasPending());
     }
 
     // ================= 四、不弹框的情形：当场说，别等一个不会来的回调 =================

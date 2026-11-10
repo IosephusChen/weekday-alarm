@@ -214,7 +214,7 @@ public class GuideActivity extends AppCompatActivity {
     private TextView stNotif, stFsi, stOverlay, stLock, stExact;
     private View rowExact, dividerExact;
     /** 锁屏自测那条提示（v1.23.6）。留个句柄只为在 {@link #onPause()} 里 cancel。 */
-    private Toast lockHintToast;
+
 
     private int index = 0;
     private int hour = 7;
@@ -379,13 +379,10 @@ public class GuideActivity extends AppCompatActivity {
             volumeWatcher.stop();
             volumeWatcher = null;
         }
-        // v1.23.6：锁屏自测那条 Toast 在这里收走。按电源键后这一页会先 onPause
-        // （锁屏把页面盖住），Toast 却是系统的 TYPE_TOAST 窗口，不跟着页面走——
-        // 不主动 cancel 的话，剩下的那截时长会叠在锁屏上（2026-11-08 用户截图）。
-        if (lockHintToast != null) {
-            lockHintToast.cancel();
-            lockHintToast = null;
-        }
+        // v1.23.6 起：锁屏自测那条提示在这里收走。按电源键后这一页会先 onPause
+        // （锁屏把页面盖住）；A5（2026-11-10）换成应用内提示条之后它本来就不会挂到
+        // 锁屏上，但 6 秒的计时还在跑，回到页面时会突然冒出来——照样要主动收。
+        Hint.cancel(this);
         super.onPause();
     }
 
@@ -1015,7 +1012,8 @@ public class GuideActivity extends AppCompatActivity {
                         .setAutoCancel(true);
         try {
             NotificationManagerCompat.from(this).notify(9401, nb.build());
-            Toast.makeText(this, "已发出，下拉通知栏看看", Toast.LENGTH_SHORT).show();
+            // A5（2026-11-10）：原来压在底部说明与「上一步 / 开始使用」之间
+            Hint.show(this, "已发出，下拉通知栏看看");
             markTried(R.id.try_state_notify);
         } catch (Exception e) {
             // 个别 ROM 会因「通知总开关」拒绝；这里不静默吞掉，给一句人话
@@ -1298,9 +1296,9 @@ public class GuideActivity extends AppCompatActivity {
         LockProbe.start(this);
         refreshLockState();
         refreshLockTryRow();
-        lockHintToast = Toast.makeText(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下",
-                Toast.LENGTH_LONG);
-        lockHintToast.show();
+        // A5（2026-11-10）：改成页面内的条，onPause 里直接 cancel（见下方），
+        // 不再依赖系统 Toast 那截「消不掉」的时长
+        Hint.show(this, "现在按电源键锁屏，6 秒后屏幕会自己亮一下", 6000L);
     }
 
     private void openNotificationSettings() {
@@ -1689,9 +1687,11 @@ public class GuideActivity extends AppCompatActivity {
             // 点下面「+ 添加闹钟」建一个」，再弹一句就是同一件事说两遍。
             if (!fromSkip) PendingTip.put(okTip, warnTip);
         } else {
-            // 重看引导（设置页进来）：回程不弹权限框，也有可能是「稍后设置」出去
-            Toast.makeText(this, fromSkip ? "设置未改动" : "设置已更新",
-                    Toast.LENGTH_LONG).show();
+            // 重看引导（设置页进来）：回程不弹权限框，也有可能是「稍后设置」出去。
+            // A5（2026-11-10）：这句必须跨页——下一行就 finish()，应用内提示条会跟着
+            // 页面一起没。改成存给设置页，由它在 onResume 里浮出来：既不飘在别的页面
+            // 上空，也不再压住「导出配置」那行。
+            Hint.next(fromSkip ? "设置未改动" : "设置已更新");
         }
         finish();
     }

@@ -86,6 +86,11 @@ public class FrozenKeysTest {
         // v1.23.23：是否已为通知权限主动弹过一次系统框。同样是运行时状态，不进备份——
         // 换手机之后系统那边也是全新的一次，该有新的机会被问。
         PREFS_KEYS.put("KEY_NOTIFY_ASKED", "notify_asked");
+        // v1.23.24：建完第一条闹钟那张补课卡弹过没有 / 是否正等着回来补问通知。
+        // 都是运行时状态，不进备份——换手机重装本来就会再遇到一次「刚有第一条闹钟」，
+        // 那时候这张卡该弹；把「弹过」带过去等于让新机器永远看不到它。
+        PREFS_KEYS.put("KEY_CATCHUP_SHOWN", "catchup_shown");
+        PREFS_KEYS.put("KEY_CATCHUP_PENDING", "catchup_pending");
         // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
         // 改名等于让升级的人回到第 1 页重填一遍。
         PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");

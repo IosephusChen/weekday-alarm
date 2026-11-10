@@ -20,6 +20,29 @@ public class AlarmReceiver extends BroadcastReceiver {
      */
     public static final String EXTRA_SNOOZE_ORIGIN = "snooze_origin";
 
+    /** 时钟跳变后的重排节流水位：一次跳变会连着来几百条陈旧广播，只让第一条去排。 */
+    private static long lastJumpRescheduleAt;
+
+    /**
+     * 这一条是不是「时钟被大幅拨动后，从过去捞出来的」旧实例（v1.23.30）。
+     *
+     * <p>AlarmManager 的 RTC 闹钟一旦触发时刻落到过去，时间一跳就会被立即派发。
+     * 我们给 90 天窗口里的每一天都注册了实例，把日期跳到三个月后等于一次派发几百个。
+     *
+     * <p>判据是「日期差 &gt; 1 天」：正常实例的 date 就是今天；跨午夜的 Doze 延迟
+     * 最多差一天（23:59 的闹钟 00:30 才响），再宽就会把真的补响一起吞掉。
+     * 日期解析不出来时一律当正常实例——宁可多响一次，也不能吞掉真闹钟。
+     */
+    private static boolean isStale(String dateStr) {
+        if (dateStr == null || dateStr.isEmpty()) return false;
+        try {
+            return java.time.temporal.ChronoUnit.DAYS.between(
+                    java.time.LocalDate.parse(dateStr), java.time.LocalDate.now()) > 1;
+        } catch (Exception notADate) {
+            return false;
+        }
+    }
+
     @Override
     public void onReceive(Context context, Intent intent) {
         // data URI 形如 weekdayalarm://alarm/{alarmId}/{date}；lastPathSegment 是日期
@@ -29,6 +52,36 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (label == null) label = "闹钟";
         if (intent.getData() != null) {
             dateStr = intent.getData().getLastPathSegment();
+        }
+        if (isStale(dateStr)) {
+            // v1.23.30：时钟被大幅拨动后，系统会把 90 天窗口里所有落到过去的实例
+            // 一次性派发过来，几百条连着进——每一条都拉全屏、起前台服务，
+            // 听上去就是闹钟狂响（用户 2026-11-11 07:0x 报的就是这个）。
+            // 这些不是「迟到的闹钟」，是跳变的副产物，直接丢掉。
+            // 但系统里现存的实例已经全部过期，得重排一次；几百条广播只让第一条去排。
+            boolean firstAfterJump = false;
+            synchronized (AlarmReceiver.class) {
+                long now = System.currentTimeMillis();
+                if (now - lastJumpRescheduleAt > 5000) {
+                    lastJumpRescheduleAt = now;
+                    firstAfterJump = true;
+                }
+            }
+            if (firstAfterJump) {
+                final PendingResult pending = goAsync();
+                final Context app = context.getApplicationContext();
+                new Thread(() -> {
+                    try {
+                        ScheduleManager.rescheduleAll(app);
+                        Widgets.updateAll(app);
+                    } catch (Throwable ignore) {
+                        // 排不上由下一次开机 / 响铃再补
+                    } finally {
+                        pending.finish();
+                    }
+                }, "clock-jump-reschedule").start();
+            }
+            return;
         }
         // 锁屏 / 息屏：直接拉整屏（那时候通知和小窗都没人看得见）。
         // 解锁使用中：不在这里拉界面，交给 AlarmService 弹一个 300dp 的小悬浮窗——

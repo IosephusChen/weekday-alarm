@@ -88,15 +88,20 @@ public class AboutActivity extends AppCompatActivity {
     private void bindRows() {
         findViewById(R.id.row_check_update).setOnClickListener(v -> checkUpdate());
         findViewById(R.id.row_source).setOnClickListener(v -> openSource());
+        // 这三条走 showSections（2026-11-10，C5）：正文都是三段，抬头在 *_heads 里，
+        // 顺序与 body 的 \n\n 拆段一一对应。以前三段全是 13sp 灰字，读不出重点。
         findViewById(R.id.row_license).setOnClickListener(v ->
-                DialogKit.showMessage(this, getString(R.string.about_license),
-                        getString(R.string.about_license_body)));
+                DialogKit.showSections(this, getString(R.string.about_license),
+                        getResources().getStringArray(R.array.about_license_heads),
+                        getString(R.string.about_license_body).split("\n\n")));
         findViewById(R.id.row_disclaimer).setOnClickListener(v ->
-                DialogKit.showMessage(this, getString(R.string.about_disclaimer),
-                        getString(R.string.about_disclaimer_body)));
+                DialogKit.showSections(this, getString(R.string.about_disclaimer),
+                        getResources().getStringArray(R.array.about_disclaimer_heads),
+                        getString(R.string.about_disclaimer_body).split("\n\n")));
         findViewById(R.id.row_privacy).setOnClickListener(v ->
-                DialogKit.showMessage(this, getString(R.string.about_privacy),
-                        getString(R.string.about_privacy_body)));
+                DialogKit.showSections(this, getString(R.string.about_privacy),
+                        getResources().getStringArray(R.array.about_privacy_heads),
+                        getString(R.string.about_privacy_body).split("\n\n")));
         findViewById(R.id.row_export_crash).setOnClickListener(v -> exportCrash());
     }
 

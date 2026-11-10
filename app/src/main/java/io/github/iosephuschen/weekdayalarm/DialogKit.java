@@ -2,6 +2,7 @@ package io.github.iosephuschen.weekdayalarm;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,6 +32,9 @@ import androidx.core.content.ContextCompat;
  * <p>两者都走 {@link RoundedDialog}，圆角与底色和其它对话框一致。
  */
 public final class DialogKit {
+
+    /** 抬头字重。用系统 BOLD 而不是 medium：medium 在部分 ROM 上缺字重、会退回 regular。 */
+    private static final Typeface MEDIUM = Typeface.DEFAULT_BOLD;
 
     private DialogKit() {
     }
@@ -155,6 +159,76 @@ public final class DialogKit {
             }
         }
         return view;
+    }
+
+    // ==================== 带小标题的消息型（2026-11-10，C5）====================
+
+    /**
+     * 带小标题的消息框：{@code heads[i]} 是 {@code bodies[i]} 的抬头。
+     *
+     * <p>「重要场合请另设备用闹钟」和「MIT 许可」原来都是三段 13sp 灰字并列，
+     * 扫过去只有一片灰，读者看不出哪段最要紧。加抬头之后，两秒内能认出这段在说什么。
+     *
+     * <p><b>层级靠字重和颜色，不靠字号</b>：抬头 13sp + {@code ink} + medium，正文
+     * 13sp + {@code body} + regular。抬头比正文小会读成注释，比正文大又会把弹窗
+     * 撑成一篇文档——这两头在 320dp 宽的弹窗里都难看。
+     *
+     * <p>{@code heads} 为 {@code null} 或长度与 {@code bodies} 不等时退回纯段落排法，
+     * 不会把抬头错配到别的段上。
+     */
+    public static void showSections(Context c, String title, String[] heads, String[] bodies) {
+        RoundedDialog.Builder b = new RoundedDialog.Builder(c);
+        b.setView(sectionsView(c, title, heads, bodies));
+        b.setPositiveButton(c.getString(R.string.button_got_it), null);
+        b.show();
+    }
+
+    /** {@link #showSections} 的视图部分，单独拿出来是为了能脱离窗口直接量、直接画。 */
+    public static View sectionsView(Context c, String title, String[] heads, String[] bodies) {
+        View view = messageShell(c, title);
+        LinearLayout box = view.findViewById(R.id.message_body);
+        addSections(c, box, heads, bodies);
+        return view;
+    }
+
+    /** 按段填正文；每段前面有抬头就先放一行抬头。段间 16dp、抬头与正文间 4dp。 */
+    private static void addSections(Context c, LinearLayout box, String[] heads, String[] bodies) {
+        if (bodies == null) return;
+        boolean withHeads = heads != null && heads.length == bodies.length;
+        for (int i = 0; i < bodies.length; i++) {
+            String body = bodies[i] == null ? "" : bodies[i].trim();
+            if (body.isEmpty()) continue;
+            String head = withHeads && heads[i] != null ? heads[i].trim() : "";
+            if (!head.isEmpty()) {
+                TextView h = new TextView(c);
+                h.setText(head);
+                h.setTextColor(ContextCompat.getColor(c, R.color.ink));
+                h.setTypeface(MEDIUM);
+                h.setTextSize(13);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                // 16dp：比段间 14dp 再宽一点，抬头才像「新的一节」而不是又一段
+                if (box.getChildCount() > 0) lp.topMargin = dp(c, 16);
+                h.setLayoutParams(lp);
+                box.addView(h);
+            }
+            TextView t = new TextView(c);
+            t.setText(body);
+            t.setTextColor(ContextCompat.getColor(c, R.color.body));
+            t.setTextSize(13);
+            t.setLineSpacing(0, 1.5f);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (!head.isEmpty()) {
+                lp.topMargin = dp(c, 4);
+            } else if (box.getChildCount() > 0) {
+                lp.topMargin = dp(c, 14);
+            }
+            t.setLayoutParams(lp);
+            box.addView(t);
+        }
     }
 
     /** 消息框外壳：inflate {@code dialog_message} 并填标题；正文容器留给调用方。 */

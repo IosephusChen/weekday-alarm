@@ -81,7 +81,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/RingChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
 
         <View style="@style/RingDivider" />
@@ -113,7 +113,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/RingChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
 
         <View style="@style/RingDivider" />
@@ -145,7 +145,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/RingChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
 
         <View style="@style/RingDivider" />
@@ -179,7 +179,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/RingChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
 
         <View style="@style/RingDivider" />
@@ -211,7 +211,7 @@
                 android:textColor="@color/indigo"
                 android:textSize="14sp" />
 
-            <TextView style="@style/RingChevron" />
+            <TextView style="@style/ValueChevron" />
         </LinearLayout>
     </LinearLayout>
 

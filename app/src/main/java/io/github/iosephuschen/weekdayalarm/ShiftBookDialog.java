@@ -331,10 +331,13 @@ public final class ShiftBookDialog {
         value.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
 
         // 编辑页这几行是「左标签右值」，箭头只是提示可点，不用写「改」
+        // v1.23.27（A10）：箭头从主色降到次色。右侧的值本来就是主色，
+        // 两个都紫会连成两块紫——和 themes.xml 里 ValueChevron 讲的是同一条规矩，
+        // 这里是自己用代码建的行，所以颜色得手写一遍。
         TextView arrow = new TextView(ctx);
         arrow.setText("›");
         arrow.setTextSize(17);
-        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.indigo));
+        arrow.setTextColor(ContextCompat.getColor(ctx, R.color.sub));
         arrow.setPadding(dp(ctx, 6), 0, 0, 0);
         arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
 

@@ -192,6 +192,37 @@ public class SettingsLayoutTest {
         ctl.pause().stop().destroy();
     }
 
+    /**
+     * 引导入口退回用户认得的名字：新手引导 · 重看（v1.23.30）。
+     *
+     * <p>v1.23.20 为了让这行接住引导页「稍后设置」的承诺，改成「补全设置 ·
+     * 重看引导」。用户看着「补全设置」觉得拗口——他记这件事用的词就是
+     * 「新手引导」，另造一个词等于让他重新认一遍。这条钉住旧名不许回来。
+     */
+    @Test
+    public void onboardRow_isCalledWhatUsersCallIt() {
+        ActivityController<MoreSettingsActivity> ctl =
+                Robolectric.buildActivity(MoreSettingsActivity.class).setup();
+        ShadowLooper.idleMainLooper();
+        MoreSettingsActivity a = ctl.get();
+
+        ViewGroup row = (ViewGroup) a.findViewById(R.id.row_onboard);
+        assertNotNull("帮助与关于组里应有引导入口", row);
+        String title = null, action = null;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View c = row.getChildAt(i);
+            if (!(c instanceof TextView)) continue;
+            CharSequence t = ((TextView) c).getText();
+            if (t == null || t.length() == 0) continue;   // 右边的箭头没有字
+            if (title == null) title = t.toString();
+            else if (action == null) action = t.toString();
+        }
+        assertEquals("新手引导", title);
+        assertEquals("标题已含「引导」，动作只留「重看」", "重看", action);
+
+        ctl.pause().stop().destroy();
+    }
+
     /** 继承来的绑定确实生效：二级页点「响铃时长」能弹出对话框。 */
     @Test
     public void morePage_rowsStillBound() {

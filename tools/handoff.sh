@@ -52,7 +52,7 @@ fi
 if [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
-    row "凭据" "$nas_desc / $gh_desc ← 网盘 /weekday-alarm/nas-access.docx → tools/load-access.sh"
+    row "凭据" "$nas_desc / $gh_desc ← 向用户要 NAS 账号 → tools/set-access.sh"
 fi
 
 # 2026-11-09：密钥不再指望「上次那个沙箱」，统一从 NAS 取。这里只报状态不自动拉——
@@ -178,7 +178,7 @@ row "上次测试" "$res_msg"
 # 把排序写进脚本：阻塞项（凭据 / 落后 / 密钥 / 测试基线）排在前面，脏工作区放最后当提醒。
 STEPS=()
 if [ "$NAS_OK" -eq 0 ] || [ "$GH_OK" -eq 0 ]; then
-    STEPS+=("取凭据：网盘 /weekday-alarm/nas-access.docx → bash tools/load-access.sh")
+    STEPS+=("取凭据：向用户要 NAS 账号 → bash tools/set-access.sh")
 fi
 if [ "$remote_known" -eq 1 ] && [ "$behind" -gt 0 ]; then
     STEPS+=("落后远端 $behind 个提交 —— git pull --rebase，再动版本号")

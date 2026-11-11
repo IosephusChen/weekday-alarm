@@ -4,7 +4,7 @@
 
 - **开工**：每个会话都是全新沙箱（没有仓库、没有 SDK、没有 git 身份、**没有凭据**）。三步，**顺序别换**：
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
-  ② 取凭据：读网盘 `/weekday-alarm/nas-access.docx`（连接器四步 → `bash tools/load-access.sh`，实测 20 秒，坑在 AGENTS 第三节），读不到再问用户要。**必须在 ① 之后**——`load-access.sh` 在仓库里，没 clone 就没有它。
+  ② 取凭据：向用户要一次 NAS 账号 → `bash tools/set-access.sh --user=U --pass=P`（写 600 + 探活 + 不通回滚；GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回）。**必须在 ① 之后**——脚本在仓库里，没 clone 就没有它。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
 - **做到哪**：**v1.23.33 / 318 已出包、已发布**（2026-11-11）——`4×3 也写闹钟状态了`：两个变体的标题行都显示「闹钟已开启 / 未开启」，按实测宽度决定，装不下时保住月份标题。全量 1269 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.32 / 317 已发布**（2026-11-11）：2,914,997 字节 / MD5 `b586d8e5ebc38a4bc93420ebf7abc786`。上一版 **v1.23.31 / 316 已发布**（2026-11-11）：2,914,478 字节 / MD5 `968a49994aa40beb32720cf062394812`。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
 - **下一步**：**等真机验收 v1.23.33 / 318，一件**（2026-11-11 14:3x）：**4×3 的本月班表标题行应当出现「闹钟已开启 / 未开启」**，与 4×4 同一句、同一字号（10sp，比周次 chip 淡一档）；周次 chip（「双休」「上 2 休 2」）仍在，月份标题不换行、不出现省略号。字体调到 130% / 145% 时三样都不该变高——框架字号是钉住的，变化只发生在格子里。**为什么之前没有**：v1.0.2 去掉它的理由是排版放不下（当时 chip 写「大周 · 休 2 天」），v1.23.29 收短 chip、v1.23.32 钉住框架字号之后，250dp 下还余 54dp，理由不成立了。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。

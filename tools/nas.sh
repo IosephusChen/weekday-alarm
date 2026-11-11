@@ -5,8 +5,12 @@
 # 上百个文件翻不到；TRAE 手机版下不了 APK；网盘连接器只有读权限。走 NAS 是唯一
 # 「沙箱写、手机读」都通的路径，而 WebDAV 是 NAS 上现成的、不需要装客户端的接口。
 #
-# 它只做四件事：列目录、下载、上传、删除。别往里塞业务逻辑——出包归 release.sh，
+# 它只做五件事：列目录、下载、上传、删除、探活。别往里塞业务逻辑——出包归 release.sh，
 # 拉密钥归 tools/fetch-keys.sh。
+#
+# ping（2026-11-11 加）：只回一个 HTTP 码，给 tools/set-access.sh 判凭据对不对用。
+# 单独加在这里而不是在 set-access.sh 里再写一份 URL——中文目录那串百分号编码
+# 只该有一处维护，抄第二遍迟早对不上。
 #
 # 凭据从哪来（顺序固定，与 tools/push.sh 取 token 的思路一致）：
 #   1. /root/.nas_credentials（600，单行 user:pass）
@@ -18,6 +22,7 @@
 #   tools/nas.sh get <远端路径> <本地文件>
 #   tools/nas.sh put <本地文件> <远端路径>
 #   tools/nas.sh rm  <远端路径>
+#   tools/nas.sh ping                      # 只回 HTTP 码（207 通 / 401 凭据错 / 000 网络不通）
 #
 # 远端路径相对 weekday-alarm/，例如 apk/weekday-alarm-1.23.13.apk、keys/xxx.jks。
 #
@@ -50,6 +55,13 @@ PY
 
 cmd="${1:-ls}"
 case "$cmd" in
+ping)
+    # Depth: 0 只问「这个集合存不存在、我有没有权限」，不列内容，最便宜的一次往返。
+    # 不加 -f：401/403 也要把码原样带出来，调用方靠码区分「密码错」和「网络不通」。
+    code=$(curl -sS -o /dev/null -u "$CRED" -X PROPFIND -H 'Depth: 0' \
+        --url "$BASE/" --connect-timeout 10 --max-time 20 -w '%{http_code}' 2>/dev/null) || code=000
+    echo "${code:-000}"
+    ;;
 ls)
     remote="$(encode_path "${2:-apk/}")"
     [ -n "$remote" ] || remote=""

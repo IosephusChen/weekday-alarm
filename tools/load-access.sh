@@ -1,11 +1,14 @@
 #!/bin/bash
-# 从网盘 docx 的正文恢复凭据，写进 /root/.nas_credentials 与 /root/.github_token。
+# 从一段 KEY=VALUE 文本恢复凭据，写进 /root/.nas_credentials 与 /root/.github_token。
 #
 # 为什么要有这个脚本：新沙箱是空盘，/root 下两个凭据文件每次都得重新注入。
-# 凭据存在用户百度网盘的 /weekday-alarm/nas-access.docx，agent 用网盘连接器读出正文，
-# 管道喂给这里，就还原成两个文件——用户不用再手打密码。
 #
-# 用法（agent 侧的第 4 步）：
+# 入口在 2026-11-11 变了：百度网盘连接器已解绑，读 docx 那条路不通了。
+# 主路径换成 tools/set-access.sh（一个 user:pass 就够，带探活与失败回滚）。
+# 本脚本保留下来给两种旧输入：手里还有那份 docx 的正文，或者一次要写全四个字段
+# （WebDAV 基址、账号、密码、GitHub PAT）——它按 KEY= 切分的逻辑就是为这种文本写的。
+#
+# 用法（旧输入形态；新会话请优先用 tools/set-access.sh）：
 #   bash tools/load-access.sh <<'EOF'
 #   <file_content_get 返回的 content 原样粘贴>
 #   EOF

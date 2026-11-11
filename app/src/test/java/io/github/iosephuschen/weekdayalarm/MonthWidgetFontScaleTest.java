@@ -156,6 +156,44 @@ public class MonthWidgetFontScaleTest {
         assertTrue("不该放大，实际 " + num.getTextSize(), num.getTextSize() <= xml + 0.5f);
     }
 
+    /**
+     * 145% 下 4×3 的字必须真的涨起来（v1.23.32）。
+     *
+     * <p>这条钉的是用户 2026-11-11 12:21 的反馈：「4×4 变了，4×3 没有变化」。
+     * 原因有两层——框架跟着字体一起涨，把格子挤矮；判据又按 6dp 富余卡，
+     * 等于白扣一倍余量。两层叠起来，4×3 在 130% 只到 1.07 倍，肉眼等于没动。
+     * 现在框架钉住、判据按 3dp，145% 能到 1.26 倍；低于 1.2 就是回退了。
+     */
+    @Test
+    public void fontScale145_compactStillGrows() {
+        setFontScale(1f);
+        TextView b = render(L3, false, 343, 264).findViewById(R.id.m_num_0);
+        float base = b.getTextSize();
+        setFontScale(1.45f);
+        TextView g = render(L3, false, 343, 264).findViewById(R.id.m_num_0);
+        float grown = g.getTextSize();
+        assertTrue("145% 下 4×3 的数字至少该涨到 1.2 倍，实际 "
+                        + (grown / base) + " 倍（" + base + "px → " + grown + "px）",
+                grown >= base * 1.2f);
+    }
+
+    /**
+     * 字体放大时，框架（月份标题、星期表头）保持布局原值（v1.23.32）。
+     *
+     * <p>卡片高度是锁死的，框架涨 1.45 倍等于从 6 行格子里抢走两行——省下这些高度，
+     * 「今天几号、班还是休」才涨得上去。标题在卡片上只是标签，不该跟正文抢空间。
+     */
+    @Test
+    public void fontScale145_frameStaysAtXmlSize() {
+        setFontScale(1.45f);
+        View root = render(L4, true, 343, 359);
+        TextView title = root.findViewById(R.id.widget_month_title);
+        TextView head = root.findViewById(R.id.m_head_0);
+        float d = ctx().getResources().getDisplayMetrics().density;
+        assertEquals("月份标题应钉在 13sp", 13f * d, title.getTextSize(), 1f);
+        assertEquals("星期表头应钉在 8.5sp", 8.5f * d, head.getTextSize(), 1f);
+    }
+
     private int numId(int i) {
         return ctx().getResources().getIdentifier("m_num_" + i, "id",
                 ctx().getPackageName());

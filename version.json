@@ -1,13 +1,12 @@
 {
-  "versionCode": 316,
-  "versionName": "1.23.31",
+  "versionCode": 317,
+  "versionName": "1.23.32",
   "published": "2026-11-11",
-  "title": "大字体下的小部件不再挤字",
+  "title": "4×3 小部件的字也跟上了",
   "notes": [
-    "系统字体调到最大，小部件里的「班 / 休」不再被压成一条",
-    "闹钟没设成功会自己再试一次，打开 App 时也会补上",
-    "日历格和首页的几种提示也改成页面内浮出"
+    "系统字体调大后，4×3 小部件的日期和班休也会跟着变大",
+    "两张卡上的月份和星期几固定大小，把高度让给格子里的字"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.31/weekday-alarm-1.23.31.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.31"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.32/weekday-alarm-1.23.32.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.32"
 }

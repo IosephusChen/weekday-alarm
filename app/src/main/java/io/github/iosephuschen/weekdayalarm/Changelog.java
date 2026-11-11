@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(317, "1.23.32", "2026/11/11", "4×3 小部件的字也跟上了",
+                    "系统字体调大后，4×3 小部件的日期和班休也会跟着变大",
+                    "两张卡上的月份和星期几固定大小，把高度让给格子里的字"),
             new Entry(316, "1.23.31", "2026/11/11", "大字体下的小部件不再挤字",
                     "系统字体调到最大，小部件里的「班 / 休」不再被压成一条",
                     "闹钟没设成功会自己再试一次，打开 App 时也会补上",

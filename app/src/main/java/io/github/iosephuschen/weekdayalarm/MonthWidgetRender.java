@@ -400,14 +400,20 @@ final class MonthWidgetRender {
     }
 
     /**
-     * 按「这次拿到的卡尺寸」给整卡定字号（v1.23.31）。
+     * 按「这次拿到的卡尺寸」给整卡定字号（v1.23.31 引入，v1.23.32 改成「框架不涨」）。
      *
-     * <p>装得下就一个 {@code RemoteViews} action 都不发，走布局里写死的 sp——绝大多数
-     * 更新走的都是这条路，改动只作用在「真的装不下」的那一刻。
+     * <p><b>框架钉住、正文跟随</b>：月份、周次、闹钟状态、星期表头、底部统计这些
+     * 「框架」恒为布局里写的那一档，不跟系统字体放大；只有格子里的日期与「班 / 休」跟随。
      *
-     * <p>尺寸不靠公式猜，而是把布局真的摆一次量出来。理由是这套布局的固定开销
-     * （标题行、表头、底部统计）本身也随字体涨，用系数估算两头都会偏：4×4 会低估、
-     * 4×3 会高估，同一个桌面上的两张卡就缩成了两种比例。
+     * <p>为什么这么分：小部件的几何是锁死的（两个变体都 {@code resizeMode="none"}），
+     * 卡片就那么高。框架跟着涨 1.45 倍，等于从 6 行格子里硬抢走两行的空间——用户
+     * 2026-11-11 12:21 的截图正是这个结果：4×4 的字放大了，4×3 一个字没动，
+     * 因为 4×3 涨高的框架把格子挤到只容得下标准字号，收敛逻辑只能把它按回 1.0。
+     * 在同一张卡里，「今天是几号、班还是休」比「月份标题多大」重要得多，高度该给它。
+     *
+     * <p>挡在最前面的仍是 {@link WidgetTextFit}：正文实在装不下时收一点，下限 9 折。
+     * 装得下就一个正文 action 都不发，走布局里写死的 sp——系统字体一变就立即生效，
+     * 不必等小部件下一次刷新重推。
      */
     private static void applyTextScale(RemoteViews rv, Context ctx, int layout,
                                        int widthDp, int heightDp) {
@@ -417,19 +423,42 @@ final class MonthWidgetRender {
         float[] budget = measureCell(ctx, layout, w, h);
         if (budget == null) return;
 
-        float scale = WidgetTextFit.scale(budget[0], budget[1], fontScale);
-        if (Math.abs(scale - fontScale) < 0.005f) return;   // 这一档装得下，保持跟随系统
-
         WidgetTextFit.Spec s = WidgetTextFit.specOf(layout);
         float d = ctx.getResources().getDisplayMetrics().density;
-        setPx(rv, R.id.widget_month_title, s.titleSp, scale, d);
-        // chip 与闹钟状态都是 10sp，比月份低一档但同属标题行
-        setPx(rv, R.id.widget_month_sub, 10f, scale, d);
-        setPx(rv, R.id.widget_month_alarm, 10f, scale, d);
-        for (int id : HEAD_IDS) setPx(rv, id, s.headSp, scale, d);
+        // 只在字体被放大时才钉框架：标准字号下钉与不钉是同一个像素值，
+        // 白白多 3 条 action；字体被调小时更该跟着缩，不能钉住。
+        if (fontScale > 1.001f) fixFrameSize(rv, s, d);
+
+        float scale = WidgetTextFit.scale(budget[0], budget[1], fontScale);
+        if (Math.abs(scale - fontScale) < 0.005f) return;   // 正文也装得下：走 XML sp
+
         for (int id : NUM_IDS) setPx(rv, id, s.numSp, scale, d);
         for (int id : TAG_IDS) setPx(rv, id, s.tagSp, scale, d);
-        if (s.footerSp > 0f) setPx(rv, R.id.widget_month_stats, s.footerSp, scale, d);
+    }
+
+    /** 框架一律钉在布局原值：字体放大时把这部分高度让给下面 42 格。 */
+    private static void fixFrameSize(RemoteViews rv, WidgetTextFit.Spec s, float density) {
+        setPx(rv, R.id.widget_month_title, s.titleSp, 1f, density);
+        // chip 与闹钟状态都是 10sp，比月份低一档但同属标题行
+        setPx(rv, R.id.widget_month_sub, 10f, 1f, density);
+        setPx(rv, R.id.widget_month_alarm, 10f, 1f, density);
+        for (int id : HEAD_IDS) setPx(rv, id, s.headSp, 1f, density);
+        if (s.footerSp > 0f) setPx(rv, R.id.widget_month_stats, s.footerSp, 1f, density);
+    }
+
+    /** 量尺寸前把框架钉在布局原值，与 {@link #fixFrameSize} 保持同一口径。 */
+    private static void pinFrameSize(View root, int layout, float density) {
+        WidgetTextFit.Spec s = WidgetTextFit.specOf(layout);
+        pin(root.findViewById(R.id.widget_month_title), s.titleSp, density);
+        pin(root.findViewById(R.id.widget_month_sub), 10f, density);
+        pin(root.findViewById(R.id.widget_month_alarm), 10f, density);
+        for (int id : HEAD_IDS) pin(root.findViewById(id), s.headSp, density);
+        if (s.footerSp > 0f) pin(root.findViewById(R.id.widget_month_stats), s.footerSp, density);
+    }
+
+    private static void pin(TextView v, float sp, float density) {
+        if (v == null) return;
+        v.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp * density);
     }
 
     /**
@@ -470,6 +499,11 @@ final class MonthWidgetRender {
             tag.setText("休");
 
             float d = ctx.getResources().getDisplayMetrics().density;
+            // 与真正下发时同一口径：框架钉在 1.0，只让格子里的两行字跟随字体。
+            // 这里不钉，量到的格子会比渲染时矮一档（框架白占了高度），判据偏保守，
+            // 字就被白白收掉——4×3 在 130% 下「几乎没变化」正是这么来的。
+            pinFrameSize(root, layout, d);
+
             int w = Math.round(wDp * d);
             int h = Math.round(hDp * d);
             root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),

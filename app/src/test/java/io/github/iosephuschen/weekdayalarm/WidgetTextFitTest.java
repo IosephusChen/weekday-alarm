@@ -28,8 +28,8 @@ public class WidgetTextFitTest {
     /** 装不下：按「只留 6dp」倒推要收多少。25dp 的格子、22dp 的字，只能放到 19/22。 */
     @Test
     public void tightCell_pullsBack() {
-        float s = WidgetTextFit.scale(25f, 22f, 1.45f);
-        assertEquals("应收到 1.45 × 19/22", 1.45f * 19f / 22f, s, 0.001f);
+        float s = WidgetTextFit.scale(20f, 22f, 1.45f);
+        assertEquals("应收到 1.45 × 17/22（一格 20dp 扣掉 3dp 余量）", 1.45f * 17f / 22f, s, 0.001f);
         assertTrue("仍应大于标准字号", s > 1f);
     }
 

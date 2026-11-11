@@ -194,6 +194,38 @@ public class MonthWidgetFontScaleTest {
         assertEquals("星期表头应钉在 8.5sp", 8.5f * d, head.getTextSize(), 1f);
     }
 
+    /**
+     * 周次 chip 太长时，宁可收起闹钟状态，也不能让月份标题被压成「2026 …」（v1.23.33）。
+     *
+     * <p>这条是「4×3 也显示闹钟状态」的安全阀：标题是 {@code layout_weight="1"}，
+     * chip 与闹钟先占位、剩下的才轮到它。常规班型的 chip 只有三五个字，250dp 合同宽
+     * 下还余 54dp；但 12 天里断成四段的班型要写「12 天一轮 · 上 6 休 6」，三项加起来
+     * 就顶到卡片外沿了。那时把第三段收起来，卡片至少还是「几月 + 怎么排」。
+     *
+     * <p>必须放在这个类里：判据走 {@code Paint.measureText}，没有 NATIVE 图形模式的
+     * Robolectric 量出来只有 11px（字体没加载），任何长文本都会被判成「放得下」。
+     */
+    @Test
+    public void alarmRow_droppedWhenChipLeavesNoRoomForTitle() {
+        Context c = ctx();
+        Prefs.setAlarms(c, java.util.Collections.singletonList(
+                new Alarm(1, 7, 30, "起床", Alarm.Mode.WORKDAY, true)));
+        Prefs.setWeekMode(c, WeekSchedule.Mode.CYCLE);
+        Prefs.setCycleLen(c, 12);
+        // 1 0 0 1 1 0 0 1 1 0 0 1：断成四段，不会被 describe 约简
+        Prefs.setCycleMask(c, 0b100110011001L);
+
+        View root = render(L3, false, 250, 200);
+        TextView sub = root.findViewById(R.id.widget_month_sub);
+        assertTrue("前提：这一档 chip 得真的长，否则测不到东西；实际 '" + sub.getText() + "'",
+                sub.getText().length() >= 10);
+        assertEquals("标题放不下时该收起闹钟状态", View.GONE,
+                root.findViewById(R.id.widget_month_alarm).getVisibility());
+        TextView title = root.findViewById(R.id.widget_month_title);
+        assertNotNull("标题应有排版结果", title.getLayout());
+        assertEquals("月份标题不许被截断", 0, title.getLayout().getEllipsisCount(0));
+    }
+
     private int numId(int i) {
         return ctx().getResources().getIdentifier("m_num_" + i, "id",
                 ctx().getPackageName());

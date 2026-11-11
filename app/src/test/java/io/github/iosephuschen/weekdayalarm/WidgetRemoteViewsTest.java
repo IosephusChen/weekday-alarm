@@ -266,18 +266,23 @@ public class WidgetRemoteViewsTest {
     }
 
     /**
-     * 闹钟状态行：4×4 恒定显示，4×3 不显示（v1.1.0 起）。
+     * 闹钟状态行：两个变体都显示（v1.23.33 起，v1.1.0~v1.23.32 只有 4×4 显示）。
      *
      * <p>历史：v0.69.0 加「本月班表显示闹钟」开关，为解决「闹钟占一整行把周次挤掉」；
      * v0.70.1 起闹钟并进标题行、只报状态不报时刻；v0.73.4 删开关，两个变体都恒定显示。
      *
-     * <p>v1.1.0 回到「只有 4×4 显示」——不是恢复开关，是排版上放不下：4×3 的标题行
-     * 里「2026 年 10 月」13sp + 「大周 · 休 2 天」chip + 「闹钟已开启」10sp，
-     * 250dp 宽扣掉两侧内边距只剩 226dp，第三段被推到卡片边缘之外（用户截图里直接贴边）。
-     * 而 4×3 底下本来就没有统计行，少这一句不缺信息；4×4 有空间，保留。
+     * <p>v1.1.0 把 4×3 这行藏了——不是改主意，是排版上放不下：当时 chip 写的是
+     * 「大周 · 休 2 天」，加上「2026 年 10 月」和「闹钟已开启」，250dp 宽扣掉两侧
+     * 内边距只剩 226dp，第三段被推到卡片外沿。而 v1.23.29 把 chip 收成「双休 /
+     * 上 2 休 2」，v1.23.32 又把框架字号钉住（不再随系统字体涨），同一行重新量下来
+     * 标题还剩 54dp 富余——当年放不下的理由已经没了。
+     *
+     * <p>用户 2026-11-11 14:24 问「4x3 怎么不显示闹钟已开启」，问的正是这件事：
+     * 两张卡同一句状态，凭什么一张有一张没有。现在按实测宽度决定：装得下就显示
+     * （常规班型都装得下），真放不下时 {@code titleRowFits} 会让标题优先。
      */
     @Test
-    public void monthAlarmRow_onlyIn4x4() {
+    public void monthAlarmRow_inBothVariants() {
         Context c = ctx();
         // v1.23.17 起新装不再预置闹钟，这条要先自己放一条开着的，否则测的是「未开启」。
         Prefs.setAlarms(c, java.util.Collections.singletonList(
@@ -291,8 +296,10 @@ public class WidgetRemoteViewsTest {
                 v4.findViewById(R.id.widget_month_sub).getVisibility());
 
         View v3 = MonthMinimalWidget.build(c).apply(c, new FrameLayout(c));
-        assertEquals("4×3 标题行放不下第三段，v1.1.0 起不显示", View.GONE,
+        assertEquals("4×3 也该显示闹钟状态（与 4×4 同一句）", View.VISIBLE,
                 v3.findViewById(R.id.widget_month_alarm).getVisibility());
+        assertEquals("4×3 的文案与 4×4 一字不差",
+                "闹钟已开启", text(v3, R.id.widget_month_alarm));
         assertEquals("4×3 的周次必须留着", View.VISIBLE,
                 v3.findViewById(R.id.widget_month_sub).getVisibility());
     }

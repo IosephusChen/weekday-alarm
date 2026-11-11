@@ -334,7 +334,12 @@ final class MonthWidgetRender {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), layout);
         // v1.23.31：先把字号定下来，再填内容。系统字体放大到格子装不下时，
         // 这里把字收回来一点——见 WidgetTextFit 的类注释（145% 那档用户截图）。
-        applyTextScale(rv, ctx, layout, widthDp, heightDp);
+        // v1.23.33：同一次摆放顺带量标题行放不放得下「闹钟已开启」，交给 bindAlarm。
+        float wDp = widthDp > 0 ? widthDp : WidgetTextFit.contractWidth(layout);
+        float hDp = heightDp > 0 ? heightDp : WidgetTextFit.contractHeight(layout);
+        String alarmText = Widgets.alarmStatusText(ctx);
+        Probe probe = probe(ctx, layout, wDp, hDp, m, alarmText);
+        applyTextScale(rv, ctx, layout, probe);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
 
@@ -373,7 +378,10 @@ final class MonthWidgetRender {
             }
         }
 
-        bindAlarm(rv, ctx, withFooter);
+        // 4×3 也显示（v1.23.33）。v1.1.0 去掉它是排版上放不下，而不是不想显示；
+        // 现在 chip 从「大周 · 休 2 天」收成「双休 / 上 2 休 2」，框架字号也钉住了，
+        // 250dp 的合同宽下量出来还剩 54dp——所以按实测决定，装得下就给，装不下才藏。
+        bindAlarm(rv, alarmText, probe == null || probe.titleRowFits);
 
         if (withFooter) {
             // 一句话写完两件事。没有启用的闹钟时就只留统计，不做「右边空着」的分栏
@@ -387,6 +395,33 @@ final class MonthWidgetRender {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         rv.setOnClickPendingIntent(R.id.widget_month_root, pi);
         return rv;
+    }
+
+    /** 一次摆放量出的两件事：格子够不够高、标题行放不放得下第三段。 */
+    private static final class Probe {
+        final float cellDp;
+        final float needDp;
+        final boolean titleRowFits;
+
+        Probe(float cellDp, float needDp, boolean titleRowFits) {
+            this.cellDp = cellDp;
+            this.needDp = needDp;
+            this.titleRowFits = titleRowFits;
+        }
+    }
+
+    /**
+     * 月份标题有没有被挤到省略号。标题是 {@code layout_weight="1"}，周次 chip 与
+     * 闹钟状态先按自身宽度占位、剩下的才轮到它——装不下时它第一个被压扁。
+     *
+     * <p>所以这一个判断同时回答了两件事：标题还在（这块卡能看）和第三段放得下。
+     * 判不出来（没量到、宽度为 0）时按「放得下」处理：宁可多显示一句，也别因为
+     * 一次测量异常把信息吞掉。
+     */
+    private static boolean titleRowFits(TextView title) {
+        if (title == null || title.getLayout() == null) return true;
+        float need = title.getPaint().measureText(title.getText().toString());
+        return title.getMeasuredWidth() >= Math.ceil(need) - 1f;
     }
 
     /**
@@ -415,21 +450,16 @@ final class MonthWidgetRender {
      * 装得下就一个正文 action 都不发，走布局里写死的 sp——系统字体一变就立即生效，
      * 不必等小部件下一次刷新重推。
      */
-    private static void applyTextScale(RemoteViews rv, Context ctx, int layout,
-                                       int widthDp, int heightDp) {
+    private static void applyTextScale(RemoteViews rv, Context ctx, int layout, Probe probe) {
+        if (probe == null) return;
         float fontScale = ctx.getResources().getConfiguration().fontScale;
-        float w = widthDp > 0 ? widthDp : WidgetTextFit.contractWidth(layout);
-        float h = heightDp > 0 ? heightDp : WidgetTextFit.contractHeight(layout);
-        float[] budget = measureCell(ctx, layout, w, h);
-        if (budget == null) return;
-
         WidgetTextFit.Spec s = WidgetTextFit.specOf(layout);
         float d = ctx.getResources().getDisplayMetrics().density;
         // 只在字体被放大时才钉框架：标准字号下钉与不钉是同一个像素值，
         // 白白多 3 条 action；字体被调小时更该跟着缩，不能钉住。
         if (fontScale > 1.001f) fixFrameSize(rv, s, d);
 
-        float scale = WidgetTextFit.scale(budget[0], budget[1], fontScale);
+        float scale = WidgetTextFit.scale(probe.cellDp, probe.needDp, fontScale);
         if (Math.abs(scale - fontScale) < 0.005f) return;   // 正文也装得下：走 XML sp
 
         for (int id : NUM_IDS) setPx(rv, id, s.numSp, scale, d);
@@ -484,7 +514,8 @@ final class MonthWidgetRender {
      *
      * @return {@code {cellDp, needDp}}；量不出来返回 {@code null}
      */
-    private static float[] measureCell(Context ctx, int layout, float wDp, float hDp) {
+    private static Probe probe(Context ctx, int layout, float wDp, float hDp,
+                               Model m, String alarmText) {
         try {
             View root = LayoutInflater.from(ctx).inflate(layout, null, false);
             TextView num = root.findViewById(R.id.m_num_0);
@@ -497,6 +528,18 @@ final class MonthWidgetRender {
             // 它量的是静态布局里的空格子。
             num.setText("30");
             tag.setText("休");
+
+            // 标题行按「这三段都显示」摆一次，才能判出放不放得下。真文本、真字号——
+            // 布局里写的是「2026 年 10 月 / 本周 · 大周」，chip 一换字宽就变了。
+            TextView title = root.findViewById(R.id.widget_month_title);
+            TextView sub = root.findViewById(R.id.widget_month_sub);
+            TextView alarm = root.findViewById(R.id.widget_month_alarm);
+            if (title != null) title.setText(m.title);
+            if (sub != null) sub.setText(m.subtitle);
+            if (alarm != null) {
+                alarm.setText(alarmText);
+                alarm.setVisibility(View.VISIBLE);
+            }
 
             float d = ctx.getResources().getDisplayMetrics().density;
             // 与真正下发时同一口径：框架钉在 1.0，只让格子里的两行字跟随字体。
@@ -516,7 +559,7 @@ final class MonthWidgetRender {
             float cellDp = cell.getHeight() / d;
             float needDp = (num.getLayout().getHeight() + tag.getLayout().getHeight()) / d
                     + WidgetTextFit.specOf(layout).innerGapDp;
-            return new float[]{cellDp, needDp};
+            return new Probe(cellDp, needDp, titleRowFits(title));
         } catch (RuntimeException e) {
             // 启动器报了离谱的尺寸时，宁可保持系统字号，也别让整次更新挂掉
             return null;
@@ -566,11 +609,13 @@ final class MonthWidgetRender {
      * <p>两份布局现在结构一致：标题行 = 月份 + 周次 + 闹钟状态，42 格从第二行起。
      * 4×4 因此省下整整一行，格子反而更舒展。
      */
-    private static void bindAlarm(RemoteViews rv, Context ctx, boolean visible) {
-        rv.setTextViewText(R.id.widget_month_alarm, Widgets.alarmStatusText(ctx));
-        // v1.1.0：4×3 不显示这一句。200dp 高的卡上，标题 + 周次 chip + 闹钟状态
-        // 挤在同一行，「闹钟已开启」直接被推到卡片边缘外沿；而 4×3 底下本来就没有
-        // 统计行，少这一句没人会缺信息。
+    private static void bindAlarm(RemoteViews rv, String text, boolean visible) {
+        rv.setTextViewText(R.id.widget_month_alarm, text);
+        // v1.1.0 曾让 4×3 藏起这一句：当时 chip 是「大周 · 休 2 天」，标题 + chip +
+        // 闹钟在 250dp 里排不下，「闹钟已开启」贴到卡片边缘。v1.23.29 把 chip 收成
+        // 「双休 / 上 2 休 2」，v1.23.32 又把框架字号钉住，同一行量下来反而不挤了
+        // ——所以 v1.23.33 改回「两个变体都显示」，与前一年定下的口径一致：
+        // 同一个东西不该有两个样子。真排不下时由 {@link #titleRowFits} 判，标题优先。
         rv.setViewVisibility(R.id.widget_month_alarm,
                 visible ? View.VISIBLE : View.GONE);
         // 「小周 · 休1天」不再给闹钟让位：两者现在并排，各自都有位置

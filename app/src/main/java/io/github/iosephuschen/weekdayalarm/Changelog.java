@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(318, "1.23.33", "2026/11/11", "4×3 也写闹钟状态了",
+                    "本月班表 4×3 的标题行也写「闹钟已开启」，与 4×4 一致",
+                    "周次太长放不下时优先保住月份，不硬挤"),
             new Entry(317, "1.23.32", "2026/11/11", "4×3 小部件的字也跟上了",
                     "系统字体调大后，4×3 小部件的日期和班休也会跟着变大",
                     "两张卡上的月份和星期几固定大小，把高度让给格子里的字"),

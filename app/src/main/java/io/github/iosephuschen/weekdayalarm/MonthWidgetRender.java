@@ -7,8 +7,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.RemoteViews;
+import android.widget.TextView;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -293,7 +296,7 @@ final class MonthWidgetRender {
 
     /** 4×4 完整版（带底部信息行、带闹钟状态）。 */
     static RemoteViews build(Context ctx, Model m) {
-        return build(ctx, m, R.layout.widget_week_schedule_month, true);
+        return build(ctx, m, R.layout.widget_week_schedule_month, true, 0, 0);
     }
 
     /**
@@ -315,9 +318,23 @@ final class MonthWidgetRender {
      *                   4×3 用 {@code widget_month_compact}
      * @param withFooter 是否显示底部「本月统计 + 下次闹钟」
      */
-    static RemoteViews build(Context ctx, Model m, int layout,
-                             boolean withFooter) {
+    static RemoteViews build(Context ctx, Model m, int layout, boolean withFooter) {
+        return build(ctx, m, layout, withFooter, 0, 0);
+    }
+
+    /**
+     * 同上，外加「启动器这次给的宽高」。
+     *
+     * @param widthDp  启动器通过 {@code OPTION_APPWIDGET_MAX_WIDTH} 上报的宽度
+     * @param heightDp 启动器通过 {@code OPTION_APPWIDGET_MAX_HEIGHT} 上报的高度；
+     *                 两个都拿不到就传 0，由 {@link WidgetTextFit} 退回 provider 声明的合同尺寸
+     */
+    static RemoteViews build(Context ctx, Model m, int layout, boolean withFooter,
+                             int widthDp, int heightDp) {
         RemoteViews rv = new RemoteViews(ctx.getPackageName(), layout);
+        // v1.23.31：先把字号定下来，再填内容。系统字体放大到格子装不下时，
+        // 这里把字收回来一点——见 WidgetTextFit 的类注释（145% 那档用户截图）。
+        applyTextScale(rv, ctx, layout, widthDp, heightDp);
         rv.setTextViewText(R.id.widget_month_title, m.title);
         rv.setTextViewText(R.id.widget_month_sub, m.subtitle);
 
@@ -380,6 +397,96 @@ final class MonthWidgetRender {
      */
     private static float dotSizeDp(int layout) {
         return layout == R.layout.widget_month_compact ? 5f : 6f;
+    }
+
+    /**
+     * 按「这次拿到的卡尺寸」给整卡定字号（v1.23.31）。
+     *
+     * <p>装得下就一个 {@code RemoteViews} action 都不发，走布局里写死的 sp——绝大多数
+     * 更新走的都是这条路，改动只作用在「真的装不下」的那一刻。
+     *
+     * <p>尺寸不靠公式猜，而是把布局真的摆一次量出来。理由是这套布局的固定开销
+     * （标题行、表头、底部统计）本身也随字体涨，用系数估算两头都会偏：4×4 会低估、
+     * 4×3 会高估，同一个桌面上的两张卡就缩成了两种比例。
+     */
+    private static void applyTextScale(RemoteViews rv, Context ctx, int layout,
+                                       int widthDp, int heightDp) {
+        float fontScale = ctx.getResources().getConfiguration().fontScale;
+        float w = widthDp > 0 ? widthDp : WidgetTextFit.contractWidth(layout);
+        float h = heightDp > 0 ? heightDp : WidgetTextFit.contractHeight(layout);
+        float[] budget = measureCell(ctx, layout, w, h);
+        if (budget == null) return;
+
+        float scale = WidgetTextFit.scale(budget[0], budget[1], fontScale);
+        if (Math.abs(scale - fontScale) < 0.005f) return;   // 这一档装得下，保持跟随系统
+
+        WidgetTextFit.Spec s = WidgetTextFit.specOf(layout);
+        float d = ctx.getResources().getDisplayMetrics().density;
+        setPx(rv, R.id.widget_month_title, s.titleSp, scale, d);
+        // chip 与闹钟状态都是 10sp，比月份低一档但同属标题行
+        setPx(rv, R.id.widget_month_sub, 10f, scale, d);
+        setPx(rv, R.id.widget_month_alarm, 10f, scale, d);
+        for (int id : HEAD_IDS) setPx(rv, id, s.headSp, scale, d);
+        for (int id : NUM_IDS) setPx(rv, id, s.numSp, scale, d);
+        for (int id : TAG_IDS) setPx(rv, id, s.tagSp, scale, d);
+        if (s.footerSp > 0f) setPx(rv, R.id.widget_month_stats, s.footerSp, scale, d);
+    }
+
+    /**
+     * 用像素下发字号，不走 SP。
+     *
+     * <p>SP 会在启动器里再乘一次 {@code scaledDensity}，而那个值由「系统字体 × 密度」
+     * 得到，浮点相乘之后取整，标签的 View 高度会比排版需要少 1~2px——正是这条逻辑
+     * 要消掉的那种「差一点」。直接给像素，乘法只在这里做一次。
+     */
+    private static void setPx(RemoteViews rv, int viewId, float sp, float scale, float density) {
+        rv.setTextViewTextSize(viewId, TypedValue.COMPLEX_UNIT_PX, sp * scale * density);
+    }
+
+    /**
+     * 按给定宽高把布局摆一次，量出「一格多高」和「两行字要多少」（单位 dp）。
+     *
+     * <p>量的是第 0 格：它会随月份留空，但空格的字号与有字的格子完全一致，
+     * 高度只取决于字体，拿它当样本不会偏。
+     *
+     * <p>用 {@code getLayout().getHeight()} 而不是 {@code getHeight()}：空间不够时
+     * 垂直 LinearLayout 会把子 View 的 measured height 直接压小，View 边界看着是齐的，
+     * 字其实已经被裁掉了（这正是 145% 那档的老毛病）。
+     *
+     * @return {@code {cellDp, needDp}}；量不出来返回 {@code null}
+     */
+    private static float[] measureCell(Context ctx, int layout, float wDp, float hDp) {
+        try {
+            View root = LayoutInflater.from(ctx).inflate(layout, null, false);
+            TextView num = root.findViewById(R.id.m_num_0);
+            TextView tag = root.findViewById(R.id.m_tag_0);
+            if (num == null || tag == null) return null;
+
+            // 必须填上真字再量。布局里的 text 是空的，而空 TextView 的排版高度比
+            // 有字时矮一截（实测 8.5sp 差 8px）——拿空格当样本，need 会偏小，
+            // 算出来的上限偏大，等于没修。这一点也解释了老测试为什么一直绿：
+            // 它量的是静态布局里的空格子。
+            num.setText("30");
+            tag.setText("休");
+
+            float d = ctx.getResources().getDisplayMetrics().density;
+            int w = Math.round(wDp * d);
+            int h = Math.round(hDp * d);
+            root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+            root.layout(0, 0, w, h);
+
+            if (num.getLayout() == null || tag.getLayout() == null) return null;
+            View cell = (View) num.getParent();
+            if (cell == null || cell.getHeight() <= 0) return null;
+            float cellDp = cell.getHeight() / d;
+            float needDp = (num.getLayout().getHeight() + tag.getLayout().getHeight()) / d
+                    + WidgetTextFit.specOf(layout).innerGapDp;
+            return new float[]{cellDp, needDp};
+        } catch (RuntimeException e) {
+            // 启动器报了离谱的尺寸时，宁可保持系统字号，也别让整次更新挂掉
+            return null;
+        }
     }
 
     /** 两种颜色的三角各缓存一份：一次更新最多两种，不必每格新建位图。 */

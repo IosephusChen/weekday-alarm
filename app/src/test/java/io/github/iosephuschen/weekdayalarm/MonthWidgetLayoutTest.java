@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -21,6 +22,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
+
+import java.time.LocalDate;
 
 /**
  * 本月班表两份布局的版式守门：格子不裁字（v0.77.3）、标题行分层与底部按钮不抢戏（v0.77.4）。
@@ -93,14 +96,36 @@ public class MonthWidgetLayoutTest {
                 tv.getHeight() >= tv.getLayout().getHeight());
     }
 
+    /**
+     * 走真正的渲染链路。
+     *
+     * <p>不能再用 {@link #inflate} 静态量：静态布局里 42 格都写着 {@code text=""}，
+     * 而空 TextView 的排版高度比有字时矮 8px——一条一直绿着、其实什么都没测的断言
+     * （v1.23.31 量出来的）。现在由 {@code MonthWidgetRender} 填上真字再量，
+     * 顺带把「按可用高度收字号」那条逻辑也一并通过。
+     */
+    private View render(int layout, boolean withFooter, int heightDp) {
+        Context c = ctx();
+        RemoteViews rv = MonthWidgetRender.build(c,
+                MonthWidgetRender.compute(c, LocalDate.now()), layout, withFooter, W_DP, heightDp);
+        View v = rv.apply(c, new FrameLayout(c));
+        float d = c.getResources().getDisplayMetrics().density;
+        int w = Math.round(W_DP * d);
+        int h = Math.round(heightDp * d);
+        v.measure(MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY));
+        v.layout(0, 0, w, h);
+        return v;
+    }
+
     @Test
     public void month4x3_keepsCellTextInsideCell() {
-        assertNoCellClipped(inflate(R.layout.widget_month_compact, 200));
+        assertNoCellClipped(render(R.layout.widget_month_compact, false, 200));
     }
 
     @Test
     public void month4x4_keepsCellTextInsideCell() {
-        assertNoCellClipped(inflate(R.layout.widget_week_schedule_month, 250));
+        assertNoCellClipped(render(R.layout.widget_week_schedule_month, true, 250));
     }
 
     /**

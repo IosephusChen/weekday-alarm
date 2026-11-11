@@ -72,10 +72,9 @@ public class AlarmReceiver extends BroadcastReceiver {
                 final Context app = context.getApplicationContext();
                 new Thread(() -> {
                     try {
-                        ScheduleManager.rescheduleAll(app);
-                        Widgets.updateAll(app);
-                    } catch (Throwable ignore) {
-                        // 排不上由下一次开机 / 响铃再补
+                        // v1.23.31：走守卫。这里失败最要命——旧实例已全部过期，
+                        // 这次没排上就是零实例，而且没有下一次响铃来「顺带补」。
+                        RescheduleGuard.runTracked(app);
                     } finally {
                         pending.finish();
                     }
@@ -132,11 +131,8 @@ public class AlarmReceiver extends BroadcastReceiver {
         final Context app = context.getApplicationContext();
         new Thread(() -> {
             try {
-                ScheduleManager.rescheduleAll(app);
-                // 响铃后下一个闹钟已变，同步刷新桌面小组件（v0.18.0；v0.24.0 起含本周班表）
-                Widgets.updateAll(app);
-            } catch (Throwable ignore) {
-                // 重排失败不影响本次响铃；下次响铃 / 重启会再补
+                // v1.23.31：响铃后这次重排是全 App 最频繁的一次，失败同样要记账。
+                RescheduleGuard.runTracked(app);
             } finally {
                 pending.finish();
             }

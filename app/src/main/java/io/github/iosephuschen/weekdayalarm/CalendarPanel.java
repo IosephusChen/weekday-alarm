@@ -17,7 +17,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
@@ -501,13 +500,13 @@ final class CalendarPanel {
      * 也会让人以为标了要算工时。休息日本来就不上班，标请假没有意义。过去的日子用同一套菜单——用户补记「上周三请了假」时，不该被一句
      * 「已经过去，不用再标」挡回去，那是记录，不是开关。
      *
-     * <p>过去与未来的差别只在两处措辞：标题多一个「· 已过去」，Toast 说「补记」而不是
+     * <p>过去与未来的差别只在两处措辞：标题多一个「· 已过去」，提示条说「补记」而不是
      * 「当天闹钟跳过」——闹钟早响过了，承诺跳过是假话。数据上两者完全一样，所以日历格子、
      * 统计、清除都不再分时段。
      *
      * <p>用一张张选项卡而不是系统 {@code setItems}：MIUI 主题下系统列表不渲染，
      * 且「一行灰字」跟 App 里其它对话框不是一套东西。选项卡还多出一个副标题的位置，
-     * 把「标了会怎样」直接写在选项旁边——这件事以前只在点完的 Toast 里说。
+     * 把「标了会怎样」直接写在选项旁边——这件事以前只在点完的那句提示里说。
      */
     private void onDayClick(LocalDate d) {
         // v1.23.21：点开某一天就算「已经会用了」，那句话当场收走。
@@ -590,15 +589,16 @@ final class CalendarPanel {
         if (Prefs.isVacation(host, d)) {
             Prefs.removeVacation(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + (past ? " 已取消请假记录"
-                    : " 已恢复上班，闹钟照常"), Toast.LENGTH_SHORT).show();
+            // v1.23.31：改用页面内提示条（与 A5 同一套）。这里是高频操作——
+            // 连点几天会连说几句，系统 Toast 会一条压一条排队播，提示条只留最新一句。
+            Hint.show(host, dateText + (past ? " 已取消请假记录"
+                    : " 已恢复上班，闹钟照常"));
         } else {
             Prefs.addVacation(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + (past
-                            ? " 已补记请假（那天已过去，不影响闹钟）"
-                            : " 已标记请假" + (work ? "，当天闹钟跳过" : "")),
-                    Toast.LENGTH_SHORT).show();
+            Hint.show(host, dateText + (past
+                    ? " 已补记请假（那天已过去，不影响闹钟）"
+                    : " 已标记请假" + (work ? "，当天闹钟跳过" : "")));
         }
     }
 
@@ -622,8 +622,7 @@ final class CalendarPanel {
         if (ov != null && ov != WeekSchedule.DAY_LEAVE) {
             Prefs.clearDayShift(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + (work ? " 已恢复原班次" : " 已取消加班记录"),
-                    Toast.LENGTH_SHORT).show();
+            Hint.show(host, dateText + (work ? " 已恢复原班次" : " 已取消加班记录"));
             return;
         }
 
@@ -633,11 +632,10 @@ final class CalendarPanel {
         if (!Prefs.getRule(host).hasShifts() || shifts.isEmpty()) {
             Prefs.addOvertime(host, d);
             onChanged.run();
-            Toast.makeText(host, dateText + (past
-                            ? " 已补记（那天已过去，不影响闹钟）"
-                            : (work ? " 已记录（当天按原时刻，闹钟不变）"
-                            : " 已标记加班，当天按上班日排程")),
-                    Toast.LENGTH_SHORT).show();
+            Hint.show(host, dateText + (past
+                    ? " 已补记（那天已过去，不影响闹钟）"
+                    : (work ? " 已记录（当天按原时刻，闹钟不变）"
+                    : " 已标记加班，当天按上班日排程")));
             return;
         }
 
@@ -654,10 +652,9 @@ final class CalendarPanel {
                     Shift s = shifts.get(which);
                     Prefs.setDayShift(host, d, s.id);
                     onChanged.run();
-                    Toast.makeText(host, dateText + " 已标记「" + s.name + "」"
-                                    + (past ? "（那天已过去，只作记录）"
-                                    : "，当天按 " + s.startText() + " 排程"),
-                            Toast.LENGTH_SHORT).show();
+                    Hint.show(host, dateText + " 已标记「" + s.name + "」"
+                            + (past ? "（那天已过去，只作记录）"
+                            : "，当天按 " + s.startText() + " 排程"));
                 });
     }
 

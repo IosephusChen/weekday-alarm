@@ -125,6 +125,21 @@ public class PastMarkTest {
         ShadowLooper.idleMainLooper();
     }
 
+    /**
+     * 页面上那条提示条的文字（v1.23.31：日历格的标记反馈改成提示条了）。
+     * 没有就返回 null。
+     */
+    private static String hintText(MainActivity a) {
+        ViewGroup root = a.findViewById(android.R.id.content);
+        if (root == null) return null;
+        for (int i = root.getChildCount() - 1; i >= 0; i--) {
+            if (Hint.TAG.equals(root.getChildAt(i).getTag())) {
+                return ((TextView) root.getChildAt(i)).getText().toString();
+            }
+        }
+        return null;
+    }
+
     /** 选项卡主文案（卡片第一个子视图是文字列，列里第一个 TextView 是主文案）。 */
     private static String optionTitle(View card) {
         ViewGroup col = (ViewGroup) ((ViewGroup) card).getChildAt(0);
@@ -197,7 +212,7 @@ public class PastMarkTest {
         assertEquals("第二项叫调班", "调班", items[1]);
     }
 
-    /** 补记昨天的请假：真的写进 Prefs，Toast 用「补记」而不是「当天闹钟跳过」。 */
+    /** 补记昨天的请假：真的写进 Prefs，提示说「补记」而不是「当天闹钟跳过」。 */
     @Test
     public void pastDay_canBeMarkedAsVacation() throws Exception {
         resetPrefs();
@@ -208,8 +223,8 @@ public class PastMarkTest {
         clickItem(latestDialog(), 0);   // 「请假」
 
         assertTrue("过去的日子应能补记请假", Prefs.isVacation(ctx(), past));
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertNotNull(toast);
+        String toast = hintText(a);
+        assertNotNull("标记完要在页面里说一句", toast);
         assertTrue("应说明是补记，实际：" + toast, toast.contains("补记"));
         assertFalse("不该承诺过去的闹钟会跳过，实际：" + toast, toast.contains("跳过"));
     }

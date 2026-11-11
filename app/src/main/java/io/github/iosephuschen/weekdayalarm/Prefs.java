@@ -78,6 +78,9 @@ public final class Prefs {
     // 补课卡就只能对按返回的人显示那一行——真正点「稍后设置」的人反而看不到。
     // 只在第 3 页真的显示出来时写，哪怕用户什么都没开、直接翻走。
     public static final String KEY_PERM_SEEN = "perm_seen";
+    // v1.23.31：上一次全量重排没成功，系统里可能一个实例都不剩。
+    // 标记跨进程持久化，等下一次开机 / 响铃 / 用户打开 App 时补排。
+    public static final String KEY_RESCHEDULE_PENDING = "reschedule_pending";
     public static final String KEY_LEGACY_ALARMS_CLEANED = "legacy_alarms_cleaned"; // 旧 requestCode 残留是否已清理（v0.23.0）
     public static final String KEY_LEGACY_SCHEME_CLEANED = "legacy_scheme_cleaned"; // 旧 URI scheme 残留是否已清理（v0.87.2）
     // v0.87.5：被「这次不响」跳过的实例（"alarmId:yyyy-MM-dd"）。重排只认列表开关，
@@ -1149,6 +1152,15 @@ public final class Prefs {
 
     public static void setCatchUpPending(Context c, boolean v) {
         sp(c).edit().putBoolean(KEY_CATCHUP_PENDING, v).apply();
+    }
+
+    /** 上一次全量重排是不是没成功、还欠着一次补排（v1.23.31）。 */
+    public static boolean isReschedulePending(Context c) {
+        return sp(c).getBoolean(KEY_RESCHEDULE_PENDING, false);
+    }
+
+    public static void setReschedulePending(Context c, boolean v) {
+        sp(c).edit().putBoolean(KEY_RESCHEDULE_PENDING, v).apply();
     }
 
     /**

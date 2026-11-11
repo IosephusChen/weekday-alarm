@@ -94,6 +94,10 @@ public class FrozenKeysTest {
         // v1.23.25：引导第 3 页那张权限清单露过面没有。同样不进备份——换手机的人
         // 在新机上重走一遍引导会重新写它，把这个「看过」带过去只会让补课卡少一行。
         PREFS_KEYS.put("KEY_PERM_SEEN", "perm_seen");
+        // v1.23.31：上一次全量重排没成功、还欠一次补排。运行时状态，不进备份——
+        // 换手机导入配置的人在新机上会当场重排一次，把这个「欠着」带过去毫无意义。
+        // 名字要稳定：被改写等于欠账凭空消失，那台机器就可能一个闹钟都没有。
+        PREFS_KEYS.put("KEY_RESCHEDULE_PENDING", "reschedule_pending");
         // v1.0.3：引导页停在哪一页。要稳定——它记的是「用户已填到哪」，
         // 改名等于让升级的人回到第 1 页重填一遍。
         PREFS_KEYS.put("KEY_GUIDE_PAGE", "guide_page");

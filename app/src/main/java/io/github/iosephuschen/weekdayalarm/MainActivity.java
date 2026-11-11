@@ -109,7 +109,9 @@ public class MainActivity extends AppCompatActivity {
                 Prefs.removeSkipOnce(MainActivity.this, a.id, day);
                 applyAlarmChange();
                 String when = day.equals(LocalDate.now()) ? "今天" : "明天";
-                Toast.makeText(MainActivity.this, when + "恢复响铃", Toast.LENGTH_SHORT).show();
+                // v1.23.31：页面内提示条（A5 那条约定的延续）。这行在首页列表上，
+                // 用户眼睛正看着被改的那一条，提示条贴在页面底部比系统 Toast 更贴位置。
+                Hint.show(MainActivity.this, when + "恢复响铃");
             }
         });
 
@@ -162,6 +164,14 @@ public class MainActivity extends AppCompatActivity {
         // 睡前提醒、编辑弹窗四处补一句「总开关还关着」，不如不要。
 
         refreshAll();
+
+        // v1.23.31：上一次全量重排失败留了欠账（见 RescheduleGuard）。进首页补排一次——
+        // 设备长期不重启、期间也没有新闹钟时，这是唯一还能自愈的入口。
+        // 放后台线程：重排要取消并重设上百个系统闹钟，主线程做会卡住首帧。
+        if (Prefs.isReschedulePending(this)) {
+            final Context app = getApplicationContext();
+            Reschedule.run(this, () -> RescheduleGuard.runIfPending(app), null);
+        }
 
         // v0.23.0：首次安装先看新手引导（v0.84.1 起 4 页）。通知权限请求刻意推迟到引导关闭之后
         // （见 onResume），否则系统权限对话框会盖在引导页上，两套引导互相打架。
@@ -284,10 +294,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }, "upgrade-reschedule").start();
         }
-        // 启动时静默检查若拿到新数据，此时提示用户（避免冷启动时 Toast 被桌面盖住）
+        // 启动时静默检查若拿到新数据，此时提示用户（避免冷启动时提示被桌面盖住）
         if (HolidayUpdater.consumePendingNotice(this)) {
-            Toast.makeText(this, "节假日数据已更新至 " + HolidayData.effectiveYear()
-                    + " 年安排", Toast.LENGTH_LONG).show();
+            Hint.show(this, "节假日数据已更新至 " + HolidayData.effectiveYear() + " 年安排");
         }
         // v0.51.0：不再清过去标记。过去的请假 / 加班从「排程开关」变成了「记录」——
         // 闹钟早响过了，改它不影响任何事，但翻日历该看得见那天请了假。
@@ -381,8 +390,10 @@ public class MainActivity extends AppCompatActivity {
     private void showPendingTip() {
         PendingTip tip = PendingTip.take();
         if (tip == null) return;
-        Toast.makeText(this, PermissionGuides.canNotify(this) ? tip.ok : tip.warn,
-                Toast.LENGTH_LONG).show();
+        // v1.23.31：与引导页里说的同一句话，就该是同一个样子。
+        // 原来引导页内用提示条、走「首页补问权限」这条路却是系统 Toast，
+        // 同一句话在两条路径上长得不一样。
+        Hint.show(this, PermissionGuides.canNotify(this) ? tip.ok : tip.warn);
     }
 
     /**
@@ -537,7 +548,7 @@ public class MainActivity extends AppCompatActivity {
         alarms.add(copy);
         Prefs.setAlarms(this, alarms);
         applySettingsNow();
-        Toast.makeText(this, "已复制「" + copy.label + "」", Toast.LENGTH_SHORT).show();
+        Hint.show(this, "已复制「" + copy.label + "」");
     }
 
     /**

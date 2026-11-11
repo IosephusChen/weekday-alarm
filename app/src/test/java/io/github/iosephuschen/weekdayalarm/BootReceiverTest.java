@@ -71,13 +71,25 @@ public class BootReceiverTest {
      * 后者在后台线程写入、测试线程读取，跨线程读 shadow 状态不可靠。
      */
     private void assertReschedules(String action) {
-        ScheduleManager.cancelAll(ctx());
-        assertTrue("前提：取消后不该还有排程记录", Prefs.getScheduledDates(ctx()).isEmpty());
-
         // 走真实广播派发：本接收器用 goAsync() 把重排放到后台线程，直接 new 出来调
         // onReceive 会拿到空的 PendingResult，生产路径与这里不一致。
         Intent intent = new Intent(action);
         intent.setPackage(ctx().getPackageName());
+        assertReschedules(intent);
+    }
+
+    /**
+     * 显式广播版本（v1.23.31 的重试用这条）。
+     *
+     * <p>重试的 action 没有写在 manifest 的 intent-filter 里——它只靠生产代码里那句
+     * 显式 Intent（组件已在 Intent 里指定）送到，所以测试也得显式指定组件，
+     * 否则包内广播根本匹配不到这个接收器。
+     */
+    private void assertReschedules(Intent intent) {
+        String action = intent.getAction();
+        ScheduleManager.cancelAll(ctx());
+        assertTrue("前提：取消后不该还有排程记录", Prefs.getScheduledDates(ctx()).isEmpty());
+
         ctx().sendBroadcast(intent);
         shadowOf(Looper.getMainLooper()).idle();
 
@@ -123,5 +135,32 @@ public class BootReceiverTest {
         new BootReceiver().onReceive(ctx(), new Intent(Intent.ACTION_SCREEN_ON));
 
         assertTrue("无关广播不该产生排程记录", Prefs.getScheduledDates(ctx()).isEmpty());
+    }
+
+    /**
+     * v1.23.31：60 秒前那次重排失败挂下的重试广播，要真补排上并把欠账清掉。
+     *
+     * <p>这条链路不测的话，重试只是「看起来挂了」——action 对不上、或者忘了清标记，
+     * CI 都是绿的，而它恰恰只在「正常路径已经失败过一次」之后才会被走到。
+     */
+    @Test
+    public void retryAction_reschedulesAndClearsMark() {
+        ScheduleManager.cancelAll(ctx());
+        Prefs.setReschedulePending(ctx(), true);
+
+        assertReschedules(new Intent(ctx(), BootReceiver.class)
+                .setAction(RescheduleGuard.ACTION_RETRY));
+
+        // 重排落地与清标记之间只隔一条赋值，但都在后台线程，给一点余量
+        long deadline = System.currentTimeMillis() + AWAIT_MS;
+        while (Prefs.isReschedulePending(ctx()) && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        assertFalse("补排成功后要清掉欠账", Prefs.isReschedulePending(ctx()));
     }
 }

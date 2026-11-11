@@ -3,6 +3,7 @@ package io.github.iosephuschen.weekdayalarm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -12,6 +13,8 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -72,6 +75,24 @@ public class GuideTipTimingTest {
         ShadowLooper.idleMainLooper();
     }
 
+    /**
+     * 页面上那条提示条（v1.23.31：首页的收尾提示也改用它了，不再是系统 Toast）。
+     * 没有就返回 null。
+     */
+    private static View hint(android.app.Activity a) {
+        ViewGroup root = a.findViewById(android.R.id.content);
+        if (root == null) return null;
+        for (int i = root.getChildCount() - 1; i >= 0; i--) {
+            if (Hint.TAG.equals(root.getChildAt(i).getTag())) return root.getChildAt(i);
+        }
+        return null;
+    }
+
+    private static String hintText(android.app.Activity a) {
+        View bar = hint(a);
+        return bar == null ? null : ((TextView) bar).getText().toString();
+    }
+
     /** 全新安装走完四页，停在「开始使用」按下的那一刻。 */
     private GuideActivity finishFirstRun() {
         wipe();
@@ -110,6 +131,7 @@ public class GuideTipTimingTest {
         assertTrue("引导要走完才算数", a.isFinishing());
         assertEquals("引导页马上 finish，这句话得留给首页说——在这里弹就会压在系统权限框上",
                 before, ShadowToast.shownToastCount());
+        assertNull("提示条同样不能留在这个即将销毁的页面上", hint(a));
         assertTrue("没说的话要挂在这里，等首页来接", PendingTip.has());
     }
 
@@ -130,9 +152,10 @@ public class GuideTipTimingTest {
                 new int[]{PackageManager.PERMISSION_GRANTED});
         ShadowLooper.idleMainLooper();
 
-        assertEquals("框收起来了，这句话要补上", afterGuide + 1, ShadowToast.shownToastCount());
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertNotNull(toast);
+        assertEquals("框收起来了，这句话要补上——而且只能出现在页面里，不许退回系统 Toast",
+                afterGuide, ShadowToast.shownToastCount());
+        String toast = hintText(ctl.get());
+        assertNotNull("首页要浮出这条提示", toast);
         assertTrue("授权了就该报具体时间，实际：" + toast, toast.startsWith("已排好班"));
         assertFalse("授权了不该念后果，实际：" + toast, toast.contains("不影响响铃"));
     }
@@ -148,8 +171,9 @@ public class GuideTipTimingTest {
                 new int[]{PackageManager.PERMISSION_DENIED});
         ShadowLooper.idleMainLooper();
 
-        assertEquals("框收起来了，这句话要补上", afterGuide + 1, ShadowToast.shownToastCount());
-        String toast = ShadowToast.getTextOfLatestToast();
+        assertEquals("框收起来了，这句话要补上——同样走页面里的提示条",
+                afterGuide, ShadowToast.shownToastCount());
+        String toast = hintText(ctl.get());
         // 录屏 v6 里用户点的是「始终允许」；拒绝的用户不能听到「07:30 会响」——
         // 他的通知栏里不会有入口。但也**不能**说「不会响」：闹钟照响，那是 2026-11-09 修正的错话。
         // v1.23.16：只陈述通知这一项（不影响响铃）＋划掉后归自启动，不下全局结论。
@@ -173,13 +197,16 @@ public class GuideTipTimingTest {
                 new String[]{Manifest.permission.POST_NOTIFICATIONS},
                 new int[]{PackageManager.PERMISSION_GRANTED});
         ShadowLooper.idleMainLooper();
-        assertEquals("第一次要弹", before + 1, ShadowToast.shownToastCount());
+        assertNotNull("第一次要说", hint(ctl.get()));
+        String first = hintText(ctl.get());
 
         ctl.get().onRequestPermissionsResult(PermissionGuides.REQUEST_NOTIFICATION,
                 new String[]{Manifest.permission.POST_NOTIFICATIONS},
                 new int[]{PackageManager.PERMISSION_GRANTED});
         ShadowLooper.idleMainLooper();
-        assertEquals("同一句不该叠第二遍", before + 1, ShadowToast.shownToastCount());
+        assertEquals("同一句不该叠第二遍（提示条只留一条，内容也不许变）",
+                first, hintText(ctl.get()));
+        assertEquals("全程不许退回系统 Toast", before, ShadowToast.shownToastCount());
     }
 
     /** 没有待说话的提示时，别人的权限回调不能顺手弹一句。 */
@@ -199,6 +226,7 @@ public class GuideTipTimingTest {
         ShadowLooper.idleMainLooper();
 
         assertEquals("没等这句话的时候，回调什么都不该说", before, ShadowToast.shownToastCount());
+        assertNull("页面上也不该多出一条提示", hint(ctl.get()));
     }
 
     // ================= 三、从设置页重看：当场说，不等 =================
@@ -257,11 +285,11 @@ public class GuideTipTimingTest {
         int afterGuide = ShadowToast.shownToastCount();
         grantNotification(); // 首页 onResume 时已经授权 → 不弹框
 
-        backToHome();
+        ActivityController<MainActivity> ctl = backToHome();
 
-        assertEquals("不弹框就得当场说", afterGuide + 1, ShadowToast.shownToastCount());
-        String toast = ShadowToast.getTextOfLatestToast();
-        assertNotNull(toast);
+        assertEquals("不弹框就得当场说，且只在页面里说", afterGuide, ShadowToast.shownToastCount());
+        String toast = hintText(ctl.get());
+        assertNotNull("没弹框这条路同样要说话", toast);
         assertTrue("通知通着就该报时间，实际：" + toast, toast.startsWith("已排好班"));
         assertFalse("说完就该清掉，别留到下次启动", PendingTip.has());
     }

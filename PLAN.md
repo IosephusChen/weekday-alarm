@@ -6,7 +6,7 @@
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 取凭据：向用户要一次 NAS 账号 → `bash tools/set-access.sh --user=U --pass=P`（写 600 + 探活 + 不通回滚；GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回）。**必须在 ① 之后**——脚本在仓库里，没 clone 就没有它。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
-- **做到哪**：**v1.23.33 / 318 已出包、已发布**（2026-11-11）——`4×3 也写闹钟状态了`：两个变体的标题行都显示「闹钟已开启 / 未开启」，按实测宽度决定，装不下时保住月份标题。全量 1269 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.32 / 317 已发布**（2026-11-11）：2,914,997 字节 / MD5 `b586d8e5ebc38a4bc93420ebf7abc786`。上一版 **v1.23.31 / 316 已发布**（2026-11-11）：2,914,478 字节 / MD5 `968a49994aa40beb32720cf062394812`。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。**2026-11-11 22:3x 另清了一笔技术债**（`docs/待裁决清单.md` §四 五条陈账回填 + CI 四个 action 升到最新，不占版本、app 代码一行未动，见本文件「技术债清理」节）。
+- **做到哪**：**v1.23.33 / 318 已出包、已发布**（2026-11-11）——`4×3 也写闹钟状态了`：两个变体的标题行都显示「闹钟已开启 / 未开启」，按实测宽度决定，装不下时保住月份标题。全量 1269 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.32 / 317 已发布**（2026-11-11）：2,914,997 字节 / MD5 `b586d8e5ebc38a4bc93420ebf7abc786`。上一版 **v1.23.31 / 316 已发布**（2026-11-11）：2,914,478 字节 / MD5 `968a49994aa40beb32720cf062394812`。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。**2026-11-11 22:3x 另清了一笔技术债**（`docs/待裁决清单.md` §四 五条陈账回填 + CI 五个 action 升到最新，不占版本、app 代码一行未动，见本文件「技术债清理」节）。
 - **下一步**：**等真机验收 v1.23.33 / 318，一件**（2026-11-11 14:3x）：**4×3 的本月班表标题行应当出现「闹钟已开启 / 未开启」**，与 4×4 同一句、同一字号（10sp，比周次 chip 淡一档）；周次 chip（「双休」「上 2 休 2」）仍在，月份标题不换行、不出现省略号。字体调到 130% / 145% 时三样都不该变高——框架字号是钉住的，变化只发生在格子里。**为什么之前没有**：v1.0.2 去掉它的理由是排版放不下（当时 chip 写「大周 · 休 2 天」），v1.23.29 收短 chip、v1.23.32 钉住框架字号之后，250dp 下还余 54dp，理由不成立了。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
 - **验收**：v1.23.25 两件**已通过**（2026-11-10 11:13）：① 清数据重装 → 进引导页 → 直接按返回键回首页 → 退出 App → 再打开，引导页**不再**弹；② 建完第一条闹钟那张卡，第一行是「**权限与自启动** / 通知、悬浮窗等几项」，点进去落在第 3 页五项清单。v1.23.24 及更早（补课卡 → 权限页 → 测试页 → 回来才弹系统框、v1.23.22 的 2027 节假日、v1.23.21 的轮班保存与双休默认）用户**未逐条回报，不再追问**——旧包都在 NAS `apk/` 与 Release 里，要复核直接装回去。
@@ -18,6 +18,7 @@
 
 > 状态：**已完成 · 不占版本（批准已用掉，下次出包须重新确认）**
 > 批准原话：2026-11-11 22:23「A+B」
+> 追加批准：2026-11-12 04:32「a」（`setup-gradle` 从 v4 升到 v6）
 > 目标版本：不占版本（只改 `docs/` 与 `.github/workflows/`，不动 app 代码）
 
 ### 一、为什么现在做
@@ -34,20 +35,24 @@
 ### 三、B：CI action 升到当前版本
 
 `checkout@v4→v7.0.1`（2 处）、`setup-java@v5→v6.2.0`、`setup-android@v3→v4.0.4`、
-`upload-artifact@v4→v7.0.2`。版本号是 2026-11-11 用 `gh api` 现查的，不是凭记忆。
-升级理由从「触发条件已到」变成「现在有窗口」：v1.23.33 刚发完、真机验收还没回来，
-CI 这段空窗正适合付一次跨大版本的钱。
+`upload-artifact@v4→v7.0.2`，外加 11-12 补的 `setup-gradle@v4→v6`。版本号是 2026-11-11
+用 `gh api` 现查的，不是凭记忆。升级理由从「触发条件已到」变成「现在有窗口」：
+v1.23.33 刚发完、真机验收还没回来，CI 这段空窗正适合付一次跨大版本的钱。
 
-四个大版本都只换运行时（node20→node24）与打包方式（ESM），输入项没删：
+五个大版本都只换运行时（node20→node24）与打包方式（ESM），输入项没删：
 - checkout v7 只多一条「`pull_request_target` / `workflow_run` 不许签出 fork PR」——本仓库没有这两类触发
 - upload-artifact v7 只是新增 `archive: false` 直传，`name`/`path` 用法不变
 - setup-java v6 把 Zulu 发现接口换成 Azul 元数据接口——本仓库用 `temurin`，不受影响
 - setup-android v4 把 cmdline-tools 默认升到 20.0——本仓库只装 `platform-tools`，注释里那条「16.0 删了 tools 包」的坑不重演
+- setup-gradle v6 唯一的功能删除是实验性配置缓存，本仓库没开；缓存行为不变，仍是「存 `~/.gradle`、按 wrapper 哈希做 key」
 
 ### 四、不做什么
 
-- **不动 `gradle/actions/setup-gradle@v4`**：v6 把缓存组件抽成闭源 `gradle-actions-caching`，
-  升级即视为接受其 Terms of Use。这是授权决定，不是技术决定，留给用户单独定。
+- **`gradle/actions/setup-gradle` 当天没动，2026-11-12 补升**：v6 把缓存组件抽成闭源的
+  `gradle-actions-caching`，升级即视为接受其 Terms of Use，属授权决定。11-11 当时留在 v4，
+  11-12 04:32 用户回「a」选 A（升级），依据是条款原文「今天的缓存功能对公开仓库保持免费」
+  与本仓库 public / MIT / 个人自用正落这一档；v6 唯一的功能删除（实验性配置缓存）本仓库没用。
+  **这条已定，别再重复讨论**，除非条款再变。
 - 不动一行 app 代码、不升 `versionCode`、不改清单统计口径（仍 41 条）。
 - 不顺手改 CI 的 job 结构、不改 cron、不动 `fetch-depth: 0` 那套 diff 判定。
 

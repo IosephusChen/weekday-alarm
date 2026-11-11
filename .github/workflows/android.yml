@@ -8,9 +8,10 @@
 #   upload-artifact v4→v7.0.2。全是 node20→node24 与 ESM 的运行时切换，输入项没删；
 #   checkout v7 多一条「pull_request_target / workflow_run 不许签出 fork PR」，本仓库
 #   两种触发都没用。要求 runner ≥ 2.327.1，GitHub 托管机早已满足。
-#   **故意留在 v4 不升**：gradle/actions/setup-gradle。它的 v6 把缓存组件抽成闭源的
-#   gradle-actions-caching，升级即视为接受其 Terms of Use——那是授权决定，不是技术决定，
-#   等用户单独定。别顺手升它。
+#   **gradle/actions/setup-gradle 单独定过**：v6 把缓存组件抽成闭源的
+#   gradle-actions-caching，升级即视为接受其 Terms of Use。条款明说「今天的缓存
+#   功能对公开仓库保持免费」，本仓库 public、MIT、个人自用，2026-11-12 用户选了 A
+#   （升级）。所以这里已从 v4 升到 v6。**别再重复讨论这件事**，除非条款再变。
 
 name: Android CI
 
@@ -135,7 +136,7 @@ jobs:
       # 改依赖会 miss 一次，之后继续命中；distribution 那次 sed 后的 URL 是固定的，
       # 不会因为 sed 而每次都 miss。
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Unit tests
         if: ${{ steps.scope.outputs.docs_only != 'true' }}

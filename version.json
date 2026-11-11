@@ -1,14 +1,13 @@
 {
-  "versionCode": 315,
-  "versionName": "1.23.30",
+  "versionCode": 316,
+  "versionName": "1.23.31",
   "published": "2026-11-11",
-  "title": "不会狂响，也不再闪退",
+  "title": "大字体下的小部件不再挤字",
   "notes": [
-    "系统日期往后跳几个月，已经过去的闹钟不会再一口气全响",
-    "点班表页的「班次」，闪退修好了",
-    "桌面小部件切到别的月份，日期数字不再变淡",
-    "引导页底部按钮不再被提示条压住；设置里那行改回「新手引导」"
+    "系统字体调到最大，小部件里的「班 / 休」不再被压成一条",
+    "闹钟没设成功会自己再试一次，打开 App 时也会补上",
+    "日历格和首页的几种提示也改成页面内浮出"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.30/weekday-alarm-1.23.30.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.30"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.31/weekday-alarm-1.23.31.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.31"
 }

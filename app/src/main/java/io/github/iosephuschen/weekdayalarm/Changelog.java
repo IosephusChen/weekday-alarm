@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(316, "1.23.31", "2026/11/11", "大字体下的小部件不再挤字",
+                    "系统字体调到最大，小部件里的「班 / 休」不再被压成一条",
+                    "闹钟没设成功会自己再试一次，打开 App 时也会补上",
+                    "日历格和首页的几种提示也改成页面内浮出"),
             new Entry(315, "1.23.30", "2026/11/11", "不会狂响，也不再闪退",
                     "系统日期往后跳几个月，已经过去的闹钟不会再一口气全响",
                     "点班表页的「班次」，闪退修好了",

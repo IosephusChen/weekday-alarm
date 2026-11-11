@@ -2,6 +2,15 @@
 # → Workflows: Read and write 就够，不必动用账号级 `repo` 权限的 classic（当天实测通过）。
 # 缺这项时 git 与 REST 都拒，报 "refusing to allow a Personal Access Token to create or
 # update workflow"——那不是配置坏了，是缺权限。
+#
+# 2026-11-11：四个 action 一次性升到当时最新（版本用 `gh api` 现查，不背）：
+#   checkout v4→v7.0.1 / setup-java v5→v6.2.0 / setup-android v3→v4.0.4 /
+#   upload-artifact v4→v7.0.2。全是 node20→node24 与 ESM 的运行时切换，输入项没删；
+#   checkout v7 多一条「pull_request_target / workflow_run 不许签出 fork PR」，本仓库
+#   两种触发都没用。要求 runner ≥ 2.327.1，GitHub 托管机早已满足。
+#   **故意留在 v4 不升**：gradle/actions/setup-gradle。它的 v6 把缓存组件抽成闭源的
+#   gradle-actions-caching，升级即视为接受其 Terms of Use——那是授权决定，不是技术决定，
+#   等用户单独定。别顺手升它。
 
 name: Android CI
 
@@ -31,7 +40,7 @@ jobs:
     name: Version consistency
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check version and docs consistency
         run: python3 tools/check_version.py
@@ -64,7 +73,7 @@ jobs:
     steps:
       # fetch-depth: 0：下面那步要拿 github.event.before 做 diff，浅克隆里没有这个对象，
       # 判断会永远失败、永远走全量。仓库只有 7MB，全克隆比再写一套 fetch 逻辑省心。
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -107,7 +116,7 @@ jobs:
         run: sed -i 's|mirrors.cloud.tencent.com/gradle/|services.gradle.org/distributions/|' gradle/wrapper/gradle-wrapper.properties
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -117,7 +126,7 @@ jobs:
       # 于是 sdkmanager --install tools 直接失败（2026-10 首次 CI 就是这么红的）。
       # 只留 platform-tools，平台的下载交给 Gradle 按 compileSdk 自动完成。
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
 
@@ -148,7 +157,7 @@ jobs:
       # 失败时也能看到报告：条数与 XML 结果一起上传，别让 CI 只给一个红叉
       - name: Upload test and lint reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |

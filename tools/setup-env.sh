@@ -157,7 +157,21 @@ else
     ok "Android SDK 齐了（$SDK）"
 fi
 
-# ---- 5. 自检 ---------------------------------------------------------------
+# ---- 5. 凭据（只在有环境变量时做）-----------------------------------------
+# 2026-11-11：NAS_USER / NAS_PASS 由 ~/.codebuddy/settings.json 的 env 字段注入时，
+# 这里自动落盘 + 探活，新会话连「要一次账号」都省了。没配就安静跳过，不算错。
+# </dev/null 是必须的：set-access.sh 在非 tty 下会先读 stdin，不给它一个空的就卡住。
+if [[ -n "${NAS_USER:-}" && -n "${NAS_PASS:-}" ]]; then
+    if bash tools/set-access.sh </dev/null >/dev/null 2>&1; then
+        ok "NAS 凭据已自动落盘并探活"
+    else
+        info "NAS 凭据自动落盘没成功——手动跑 bash tools/set-access.sh 看原因"
+    fi
+else
+    info "没有 NAS_USER/NAS_PASS 环境变量，跳过凭据（要用就 bash tools/set-access.sh）"
+fi
+
+# ---- 6. 自检 ---------------------------------------------------------------
 if [[ $RUN_TEST -eq 0 ]]; then
     ok "环境就绪（--no-test，没跑测试）"
     info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"

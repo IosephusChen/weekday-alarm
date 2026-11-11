@@ -50,10 +50,13 @@ elif [ -z "$NEW_USER" ] && [ -n "$NEW_PASS" ]; then
 fi
 
 # ---- 取新凭据：参数 > stdin > 环境变量 -------------------------------------
+# 三段而不是 elif：stdin 不是 tty 但内容为空时（例如脚本里 < /dev/null 调用），
+# 进了 stdin 分支就再也回不到环境变量，CRED 会空着——setup-env.sh 自动落盘就失效。
 CRED=""
 if [ -n "$NEW_USER" ]; then
     CRED="$NEW_USER:$NEW_PASS"
-elif [ ! -t 0 ]; then
+fi
+if [ -z "$CRED" ] && [ ! -t 0 ]; then
     raw=$(cat)
     # 两种形态都收：四行 KEY=VALUE（旧 docx 正文），或单行 user:pass
     u=$(printf '%s\n' "$raw" | sed -n 's/^NAS_USER=//p' | head -1 | tr -d '\r\n')
@@ -63,7 +66,8 @@ elif [ ! -t 0 ]; then
     else
         CRED=$(printf '%s\n' "$raw" | sed -n '1p' | tr -d '\r\n')
     fi
-elif [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; then
+fi
+if [ -z "$CRED" ] && [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; then
     CRED="$NAS_USER:$NAS_PASS"
 fi
 

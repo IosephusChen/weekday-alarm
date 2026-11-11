@@ -1,13 +1,14 @@
 {
-  "versionCode": 314,
-  "versionName": "1.23.29",
+  "versionCode": 315,
+  "versionName": "1.23.30",
   "published": "2026-11-11",
-  "title": "班型说法与提示方式都改了",
+  "title": "不会狂响，也不再闪退",
   "notes": [
-    "轮班的班型只说「上 2 休 2」，不再重复天数",
-    "关于页三处长文加了小标题，段落一眼分得清",
-    "提示改成页面内浮出，不再飘到别的页面"
+    "系统日期往后跳几个月，已经过去的闹钟不会再一口气全响",
+    "点班表页的「班次」，闪退修好了",
+    "桌面小部件切到别的月份，日期数字不再变淡",
+    "引导页底部按钮不再被提示条压住；设置里那行改回「新手引导」"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.29/weekday-alarm-1.23.29.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.29"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.30/weekday-alarm-1.23.30.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.30"
 }

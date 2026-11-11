@@ -36,7 +36,7 @@ for arg in "$@"; do
         --user=*) NEW_USER="${arg#*=}" ;;
         --pass=*) NEW_PASS="${arg#*=}" ;;
         -h|--help)
-            sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *) die "未知参数：$arg（用 -h 看用法）" ;;
@@ -102,10 +102,8 @@ if [ -z "$CRED" ]; then
         ok "NAS 连通（HTTP $code）"
         exit 0
     fi
-    case $? in
-        1) explain "$code" >&2; exit 1 ;;
-        *) explain "$code" >&2; exit 1 ;;
-    esac
+    printf '✗ 没通过探活：' >&2; explain "$code" >&2
+    exit 1
 fi
 
 # ---- 校验格式 --------------------------------------------------------------

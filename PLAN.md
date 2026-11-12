@@ -20,6 +20,43 @@
 - **历史已重写（2026-11-13，脱敏）**：全部 651 个提交的 SHA **都变了**——邮箱统一成 noreply（原 9 条真 Gmail、6 条 QQ）、`tools/preview-debug.keystore` 从历史移除、NAS 域名 / 端口 / 共享目录名替换成 `<NAS_HOST>:<PORT>` / `<SHARE>`。文档里出现的旧 SHA（`7382876`、`9698d03`、`f203df3` 等）**已不指向任何对象**，查改动请按版本号或 `git log --grep`。远端只剩 `main` 一条分支 + 79 个 tag（7 条零差异旧分支已删）；重写前的完整备份在 NAS `keys/wd-before-rewrite-20261113.bundle`。GitHub 侧旧对象短期仍可能被已知 SHA 取到。
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 
+## 工程配置 · 四项（2026-11-13，待确认）
+
+> 状态：**待确认**
+> 目标版本：不占版本（只改构建与 CI 配置，不动 App 代码、不动 versionCode）
+> 批准：（等用户点头后抄原话）
+> 范围：用户 2026-11-13 说「优化项目文件」。2026-11-12 那轮已做过 Gradle 8.9 / AGP 8.6.1 / version catalog，本轮只做剩下的四件，每件一个提交。
+
+### ① wrapper 加校验和（零风险，已实测）
+
+- 现状：`gradle/wrapper/gradle-wrapper.properties` 没有 `distributionSha256Sum`；CI 里还会把地址从腾讯镜像 `sed` 成官方源，两个源任一被劫持都会直接执行那个 130MB 的 zip。
+- 实测：官方 `services.gradle.org` 与腾讯镜像的 `gradle-8.9-bin.zip` **SHA-256 完全相同**（`d725d707…5cecab`，136,114,148 字节），同一行 hash 对本地与 CI 都成立。
+- 改动：加一行 `distributionSha256Sum=d725d707bfabd4dfdc958c624003b3c80accc03f7037b5122c4b1d0ef15cecab`。
+
+### ② `.gitignore` 补 `*.hprof`
+
+- 现状：`core.*` 与 `hs_err_pid*.log` 已排除，但 JVM 堆转储 `*.hprof`（几百 MB）没排除，OOM 之后一次误 `git add` 就会进库。
+
+### ③ CI 收紧 token 权限
+
+- 现状：`.github/workflows/android.yml` 没有 `permissions:` 段，`GITHUB_TOKEN` 拿默认权限（可写）；两个 job 都只读代码、跑测试。
+- 改动：文件顶部加 `permissions: contents: read`。
+
+### ④ CI 取消被覆盖的旧 run
+
+- 现状：同一分支连续推两次会串行排三个 run（2026-11-11 踩过：一个脚本收尾分三次推，白占 runner，还把「CI 绿」这个判据拖成十几分钟）。
+- 改动：加 `concurrency: { group: ci-${{ github.ref }}, cancel-in-progress: true }`。
+- **代价要说清**：被取消的那个提交**不会留下独立的绿判定**。按「一次改动一次推送」的规矩影响很小，但如果你希望每个提交都有独立记录，这一项就不做。
+
+**不做**：
+- 不加 Java toolchain：实测这个沙箱默认 `java` 是 **JDK 25**，Gradle 8.9 自身跑不了 25（上限 22），声明 toolchain 救不了「裸跑」，`setup-env.sh` 选 17 才是唯一正解。
+- 不抽 `settings.gradle` 里重复的镜像块（重复但可读，抽成闭包反而更难懂）
+- 不引入 Dependabot（会持续开 PR，与「一次改动一个提交」冲突）
+- 不动 `compileSdk` / `targetSdk`（不上商店，没有期限压力）
+- 不升版本、不出包、不碰 App 代码
+
+**验证**：`./gradlew --version` 确认 wrapper 校验生效；`python3 tools/check_version.py` + `python3 tools/check_refs.py`；推完看 CI 两个 job 绿。
+
 ## 源码脱敏（2026-11-13，已实施）
 
 > 状态：**已实施 · 不占版本**

@@ -280,8 +280,10 @@ public class AlarmActivity extends AppCompatActivity {
 
     private void stopAlarm() {
         // 取消尚未触发的「稍后提醒」，避免停止之后又响起来（v0.15.0）
-        ScheduleManager.cancelSnooze(this, alarmId, date);
-        Prefs.clearSnoozeCount(this, alarmId, date);
+        // v1.23.38 D1：与小睡登记/计数用同一个「本轮起始日」（countDate）。
+        // 跨零点时 date 已经是新的一天，用它清计数等于没清，次数被还回去。
+        ScheduleManager.cancelSnooze(this, alarmId, countDate);
+        Prefs.clearSnoozeCount(this, alarmId, countDate);
         // v0.53.1：小睡预告也一并撤掉，否则停止之后通知栏还挂着「N 分钟后再次响铃」
         SnoozeNotice.cancel(this, alarmId);
         // v0.74.3：前台服务被系统拒时那条兜底通知（postFallbackNotification）是 ongoing 的，

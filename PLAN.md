@@ -6,8 +6,8 @@
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
-- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。2026-11-12 另把开发流程四项（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`）落地并推送 `a445874`，只改工具、不占版本。当天「5 处测试缺口」也已补完：14 条新增测试全绿、五处反向验证都红，推送 `fd61e5b`（状态行 `a9b9f93`），只改 `app/src/test/`、不占版本、未跑全量。**2026-11-12 晚又收到封版前全量验收确认的 8 条缺陷（B1/A1/B2/B3/B4/C1/A2/D1），方案见下方「封版验收缺陷 · 8 条修复」节，状态待确认、未动代码。** main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
-- **下一步**：**先等用户对「8 条修复」回「可以 / 改吧」**（下方同名节；目标 323，本轮不出包）；批准后按方案里排好的严重度顺序逐条先红后绿（这组编号只在本节使用，不并入清单口径）。之后仍是 v1.23.37 / 322 真机验收四条（用户 2026-11-12 说「最后统一处理」，不催）——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
+- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。2026-11-12 另把开发流程四项（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`）落地并推送 `a445874`，只改工具、不占版本。当天「5 处测试缺口」也已补完：14 条新增测试全绿、五处反向验证都红，推送 `fd61e5b`（状态行 `a9b9f93`），只改 `app/src/test/`、不占版本、未跑全量。**2026-11-12 晚又收到封版前全量验收确认的 8 条缺陷（B1/A1/B2/B3/B4/C1/A2/D1），方案见下方「封版验收缺陷 · 8 条修复」节——8 条已全部修完并各自先红后绿，目标 323，未出包。** main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
+- **下一步**：**8 条已修完，等用户说「出包」**——届时把 `build.gradle` 322→323 作为 release 提交、跑 `tools/release.sh`，本轮不出包。之后仍是 v1.23.37 / 322 真机验收四条（用户 2026-11-12 说「最后统一处理」，不催）——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
 - **验收**：v1.23.37 **待真机验**四条——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。v1.23.35 **不必真机验**——只改帮助页文案，按发版清单「文案、配色、关于页、图标、更新日志」那行属「可不验」。v1.23.34 两处**已通过**（2026-11-12 11:32，用户「效果还可以」）：① 倒计时左侧完整；② 按钮文案。v1.23.33 四条**已通过**（2026-11-12 05:18）：① 4×3 标题行出现「闹钟已开启」；② chip 与月份完好；③ 130% / 145% 框架不变高；④ 标准字号零变化。证据分两半——用户四张真机截图（100/110/125/145）PIL 逐像素量出标题行 y 坐标四档相同、月份被切成四段宽度四档一致；跨版本则用 `git worktree` 拉 `b34ba87`(v1.23.32) 与当前树跑同一份 Robolectric 渲染（fontScale=1.0、xxhdpi、NATIVE 图形、固定日期 2026-11-12、250dp 宽）后逐像素比：**4×4 两版 PNG 逐字节相同（MD5 `698cf6b0…`，0/562500 像素差异）**，4×3 差异 9542 像素且全在 `x 444–725 / y 28–78` 的标题行内——月份墨迹 x 26–257 两版一致、chip 字形块宽 58px 未变只左移 186px 让位、字号 39/30/30px 与行高 59px 全部相同、格子与表头一个像素没动。**基线图已存 NAS `verify/widget-baseline/`**（`v1.23.32_4x3_font100.png` / `v1.23.32_4x4_font100.png` / `4x3_title_row_old_vs_new.png`，取回 md5 已校验），下次要比不必再建 worktree。**边界**：Robolectric 用的是它自带字体而非手机系统字体，所以它证明的是「代码层面两版渲染等价」——而两版在手机上用的是同一字体，差异只可能来自代码，这条已经排除。v1.23.25 两件**已通过**（2026-11-10 11:13）：① 清数据重装 → 进引导页 → 直接按返回键回首页 → 退出 App → 再打开，引导页**不再**弹；② 建完第一条闹钟那张卡，第一行是「**权限与自启动** / 通知、悬浮窗等几项」，点进去落在第 3 页五项清单。v1.23.24 及更早（补课卡 → 权限页 → 测试页 → 回来才弹系统框、v1.23.22 的 2027 节假日、v1.23.21 的轮班保存与双休默认）用户**未逐条回报，不再追问**——旧包都在 NAS `apk/` 与 Release 里，要复核直接装回去。
 - **欠账（暂时没有）**：2027 那笔已由 v1.23.22 还清。**这类欠账以后不用靠人记**：v1.23.23 起 `tools/check_holiday_horizon.py` 会在 12 月起把 CI、`release.sh`、`handoff.sh` 一起变红，红的时候直接列「怎么办」四处。2028 年安排预计 2027-11 公布，届时照那四处做；`SettingsLayoutTest` 与 `HolidayFreshnessTest` 的年份已改成读常量，只会红「注释 + 测试基准年」。
@@ -26,7 +26,7 @@
 
 ### ① 旧备份恢复丢掉请假 / 加班
 
-现状：`ConfigBackupTest` 只测新格式往返与坏输入。旧备份没有 `day_plan` 键，走 `ConfigBackup.java:302-313#optJSONObject(Prefs.KEY_DAY_PLAN)` 的 `else` 分支清零新表与迁移标记，再由 `Prefs.java:878-904#ensureDayPlanMigrated` 按两个旧集合重迁——这条分支零覆盖。
+现状：`ConfigBackupTest` 只测新格式往返与坏输入。旧备份没有 `day_plan` 键，走 `ConfigBackup.java:329-340#optJSONObject(Prefs.KEY_DAY_PLAN)` 的 `else` 分支清零新表与迁移标记，再由 `Prefs.java:878-904#ensureDayPlanMigrated` 按两个旧集合重迁——这条分支零覆盖。
 
 新建 `LegacyBackupTest`（3 条）：
 
@@ -107,7 +107,7 @@
 > 状态：**已批准**
 > 目标版本：323
 > 批准：2026-11-12「按你建议的，能一口做的都做了」
-> 落地：B1 已完成（2 绿；反向 1 红）；A1 已完成（2 绿；反向 1 红）；B2 已完成（3 绿；反向 1 红）；B3 已完成（3 绿；反向 1 红）；B4 已完成（2 绿；反向 2 红）；C1 已完成（2 绿；反向 2 红）；A2 已完成（1 绿；反向 1 红）
+> 落地：B1 已完成（2 绿；反向 1 红）；A1 已完成（2 绿；反向 1 红）；B2 已完成（3 绿；反向 1 红）；B3 已完成（3 绿；反向 1 红）；B4 已完成（2 绿；反向 2 红）；C1 已完成（2 绿；反向 2 红）；A2 已完成（1 绿；反向 1 红）；D1 已完成（1 绿；反向 1 红）——8/8 全部落地，未出包
 
 ### 核实结论（落笔前已 grep，8 条全部成立）
 
@@ -475,7 +475,7 @@ Trae 沙箱与 WorkBuddy 有三处环境差异，新会话搭环境从 2~3 分�
 | L-2 | 低 | 崩溃日志写 `Android/data/<包名>/files`，API 26–28 上别的应用拿 `READ_EXTERNAL_STORAGE` 就能读 | `CrashLog.dir` 改内部 `getFilesDir()` 优先 |
 
 **证据（改之前）**：
-- M-2：`app/src/main/java/io/github/iosephuschen/weekdayalarm/HolidayData.java:211-236#applyHolidayCnJson` → `app/src/main/java/io/github/iosephuschen/weekdayalarm/WeekSchedule.java:537-539#isWorkday`
+- M-2：`app/src/main/java/io/github/iosephuschen/weekdayalarm/HolidayData.java:211-236#applyHolidayCnJson` → `app/src/main/java/io/github/iosephuschen/weekdayalarm/WeekSchedule.java:541-544#public static boolean isWorkday(LocalDate d, Rule rule)`
 - L-1：`app/src/main/AndroidManifest.xml:26#allowBackup`
 - L-2：改完后在 `app/src/main/java/io/github/iosephuschen/weekdayalarm/CrashLog.java:41-42#getFilesDir`（改之前是 `getExternalFilesDir(null)`，`null` 才退回内部目录）
 
@@ -1383,7 +1383,7 @@ A 把说明蒙在真日历上，出现在他第一次看见这张表的那一刻
 
 **根因（修复前）**：Toast 是系统 `TYPE_TOAST` 窗口，不跟 Activity 走。
 `GuideActivity.complete()`（`GuideActivity.java:1572#private void complete`）弹完立刻 `finish()`；
-首页 `MainActivity.onResume()`（`MainActivity.java:330-348#tipAwaitingPermission = !notifyRequested`）
+首页 `MainActivity.onResume()`（`MainActivity.java:350-358#tipAwaitingPermission = !notifyRequested`）
 随后请求通知权限，由 `PermissionGuides.java:128#requestPermissions` 弹出系统框。录屏逐帧实测：
 提示 1.48s 出现、4.29s 仍在；权限框 1.65–1.81s 渐入、3.34–3.46s 渐出；**两者共存约 1.5 秒，
 且框消失后提示还留着**——于是提示盖在框的说明文字上。v5 的「飘到设置页」是同一机制。

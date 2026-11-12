@@ -1397,19 +1397,20 @@ public final class Prefs {
     }
 
     /**
-     * 清理过期的稍后提醒计数（日期早于今天的全部删除）。
+     * 清理过期的稍后提醒计数（日期早于昨天的全部删除）。
      * 计数按「闹钟 id + 日期」存，不清理会随时间无限增长；
-     * 只保留今天及以后即可——昨天的计数不会影响今天的可用次数。
+     * v1.23.38 D1：必须保留昨天——跨零点的小睡链（23:58 响、计数记昨天、00:03
+     * 小睡触发即重排）如果这时被清掉，次数就归零，用户能无限续睡。
      */
     public static void pruneSnoozeCounts(Context c) {
-        String today = LocalDate.now().toString();
+        String cutoff = LocalDate.now().minusDays(1).toString();
         SharedPreferences.Editor ed = sp(c).edit();
         for (String key : new HashSet<>(sp(c).getAll().keySet())) {
             if (!key.startsWith(KEY_SNOOZE_COUNT_PREFIX)) continue;
             int sep = key.lastIndexOf('_');
             if (sep < 0) continue;
             String date = key.substring(sep + 1);
-            if (date.compareTo(today) < 0) ed.remove(key);   // ISO 日期字符串比较即时间序
+            if (date.compareTo(cutoff) < 0) ed.remove(key);   // ISO 日期字符串比较即时间序
         }
         ed.apply();
     }

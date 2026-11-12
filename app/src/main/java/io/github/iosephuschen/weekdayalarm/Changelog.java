@@ -57,6 +57,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(322, "1.23.37", "2026/11/12", "铃响时，只有你自己能停",
+                    "通知栏的「停止」和「再响」只认这一轮，别的应用替你按不灵了",
+                    "正常点按钮和以前一样，没有多一步"),
             new Entry(321, "1.23.36", "2026/11/12", "三处安全加固",
                     "节假日数据加了条数上限，异常数据整份不用",
                     "不再把班表交给云备份，换手机要重排一次",

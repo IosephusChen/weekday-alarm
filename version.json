@@ -1,13 +1,12 @@
 {
-  "versionCode": 321,
-  "versionName": "1.23.36",
+  "versionCode": 322,
+  "versionName": "1.23.37",
   "published": "2026-11-12",
-  "title": "三处安全加固",
+  "title": "铃响时，只有你自己能停",
   "notes": [
-    "节假日数据加了条数上限，异常数据整份不用",
-    "不再把班表交给云备份，换手机要重排一次",
-    "崩溃日志改存应用内部，别的应用读不到"
+    "通知栏的「停止」和「再响」只认这一轮，别的应用替你按不灵了",
+    "正常点按钮和以前一样，没有多一步"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.36/weekday-alarm-1.23.36.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.36"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.37/weekday-alarm-1.23.37.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.37"
 }

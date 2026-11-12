@@ -2,6 +2,9 @@ package io.github.iosephuschen.weekdayalarm;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /**
  * 「今天状态卡」与 4×2 桌面小组件共用的文案计算（v0.76.1）。
@@ -82,6 +85,45 @@ final class TodayCard {
         String time = TimeText.clock(n.when.getHour(), n.when.getMinute());
         String label = n.label == null || n.label.isEmpty() ? "" : " " + n.label;
         return prefix + time + label;
+    }
+
+    /**
+     * 倒计时药丸那行字的所有候选写法，从最完整到最短（v1.23.34）。
+     *
+     * <p>为什么需要候选：{@code tv_countdown_label} 是单行、{@code weight="1"}，
+     * 右边 {@code tv_countdown} 要多宽给多宽——右侧越长，左侧越短，没有下限。
+     * 4 天以上日期前缀会变长（「11月16日 周一」），系统字体调到 130% 以上更甚，
+     * 完整的一句就放不下，Android 在末尾补省略号，而被截掉的正好是
+     * 「下次几点响」这句最该看的话。
+     *
+     * <p>顺序按「丢了之后还能不能推出来」排：
+     * <ol>
+     *   <li>完整：日期 + 时分 + 闹钟名</li>
+     *   <li>去闹钟名：下方闹钟列表就在同一屏，名字随时看得到</li>
+     *   <li>月日换成周几：7 天内周几唯一，跨月也认不错</li>
+     *   <li>只剩时分：右侧「还有 3 天」仍交代得清是哪天</li>
+     * </ol>
+     * 调用方拿实际可用宽度逐条量，取第一条放得下的，所见即所得。
+     */
+    static List<String> ringTextVariants(ScheduleManager.NextAlarm n, LocalDate today) {
+        LocalDate d = n.when.toLocalDate();
+        long days = ChronoUnit.DAYS.between(today, d);
+        String time = TimeText.clock(n.when.getHour(), n.when.getMinute());
+        String label = n.label == null || n.label.isEmpty() ? "" : " " + n.label;
+        String shortPrefix = days == 0 ? "" : days == 1 ? "明天 " : days == 2 ? "后天 "
+                : TimeText.week(d) + " ";
+        String longPrefix = days <= 2 ? shortPrefix : TimeText.monthDayWeek(d) + " ";
+
+        LinkedHashSet<String> out = new LinkedHashSet<>();
+        out.add(longPrefix + time + label);
+        out.add(longPrefix + time);
+        if (!shortPrefix.equals(longPrefix)) {
+            out.add(shortPrefix + time + label);
+            out.add(shortPrefix + time);
+        }
+        out.add(TimeText.week(d) + " " + time);
+        out.add(time);
+        return new ArrayList<>(out);
     }
 
     /**

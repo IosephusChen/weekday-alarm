@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +12,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -40,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
     private CalendarPanel calendarPanel;
     /** 距下次响铃倒计时（v0.30.0）：每秒跳一次；没有下一次时整条收起（v1.23.10）。 */
     private TextView tvCountdown, tvCountdownLabel;
+    /** 倒计时那串数字的原始字号（px），v1.23.34 起会按需缩，不能反复从缩小后的值再缩。 */
+    private float countdownBasePx;
     /** 倒计时胶囊整条。没有下一次时 GONE——空槽连同「--:--:--」一起收走。 */
     private View boxCountdown;
     /** 下一次真正会响的时刻；null = 没有启用的闹钟。由 refreshStatus 算好，tick 只读。 */
@@ -437,6 +441,65 @@ public class MainActivity extends AppCompatActivity {
             ticker.postDelayed(this, 1000L);
         }
     };
+
+    /**
+     * 按药丸实际可用宽度挑第一条放得下的写法（v1.23.34）。
+     *
+     * <p>必须 post 到布局之后：宽度要等 measure 过才有值，设文本时读到的还是 0。
+     * 只挑一次、不监听重排——每秒跳的是右边那串数字，字号是钉住的，
+     * 不会长回来再把左边挤掉。
+     *
+     * <p>还有一层兜底：320dp 小屏 + 145% 字体时，右侧「还有 3 天 21 小时」会吃掉整行，
+     * 左侧只剩几十像素，连「07:30」都放不下。那种情况下让倒计时缩一档字号
+     * （最多缩到 12sp），把位置让给「几点响」——右侧是可推算的余量，左侧才是答案。
+     */
+    private void fitCountdownLabel(List<String> variants) {
+        boxCountdown.post(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            int inner = boxCountdown.getWidth() - boxCountdown.getPaddingLeft()
+                    - boxCountdown.getPaddingRight();
+            // 第一次进来记下 XML 的 17sp（换算成 px），之后每轮都从它开始，
+            // 否则反复刷新会越缩越小
+            if (countdownBasePx <= 0) countdownBasePx = tvCountdown.getTextSize();
+            float minPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12,
+                    getResources().getDisplayMetrics());
+            fitRingText(variants, tvCountdownLabel, tvCountdown, inner, countdownBasePx, minPx);
+        });
+    }
+
+    /**
+     * {@link #fitCountdownLabel} 的实现体，抽出来是为了能在测试里直调——
+     * 这段逻辑全靠真实测量，只测纯函数等于没测。
+     */
+    static void fitRingText(List<String> variants, TextView label, TextView countdown,
+                            int inner, float basePx, float minPx) {
+        Paint lp = label.getPaint();
+        for (float px = basePx; px >= minPx; px *= 0.88f) {
+            countdown.setTextSize(TypedValue.COMPLEX_UNIT_PX, px);
+            countdown.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            int avail = inner - countdown.getMeasuredWidth();
+            String picked = pickFitting(variants, lp, avail);
+            if (lp.measureText(picked) <= avail) {
+                label.setText(picked);
+                return;
+            }
+        }
+        label.setText(variants.get(variants.size() - 1));
+    }
+
+    /**
+     * 见 {@link TodayCard#ringTextVariants}：逐条量，取第一条放得下的。
+     *
+     * <p>全都放不下时退回最短那条——宁可只剩「07:30」，也不让省略号吃掉时刻。
+     */
+    static String pickFitting(List<String> variants, Paint paint, int availPx) {
+        if (availPx <= 0) return variants.get(variants.size() - 1);
+        for (String s : variants) {
+            if (paint.measureText(s) <= availPx) return s;
+        }
+        return variants.get(variants.size() - 1);
+    }
 
     /** 把剩余时间写进 hero 卡。nextRingAt 为空时 refreshStatus 已经把整条收起来了。 */
     private void updateCountdown() {
@@ -961,7 +1024,9 @@ public class MainActivity extends AppCompatActivity {
             boxCountdown.setVisibility(View.GONE);
         } else {
             boxCountdown.setVisibility(View.VISIBLE);
-            tvCountdownLabel.setText(TodayCard.ringText(next, today));
+            List<String> variants = TodayCard.ringTextVariants(next, today);
+            tvCountdownLabel.setText(variants.get(0));
+            fitCountdownLabel(variants);
             updateCountdown();
         }
 

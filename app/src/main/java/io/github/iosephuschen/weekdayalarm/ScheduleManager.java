@@ -706,15 +706,19 @@ public final class ScheduleManager {
     private static final Object SCHEDULE_LOCK = new Object();
 
     public static int rescheduleAll(Context ctx) {
+        return rescheduleAll(ctx, LocalDateTime.now());
+    }
+
+    /** 单测用：把「现在」固定住，跨天场景才验得了。 */
+    static int rescheduleAll(Context ctx, LocalDateTime now) {
         synchronized (SCHEDULE_LOCK) {
-            return rescheduleAllLocked(ctx);
+            return rescheduleAllLocked(ctx, now);
         }
     }
 
-    private static int rescheduleAllLocked(Context ctx) {
+    private static int rescheduleAllLocked(Context ctx, LocalDateTime now) {
         cancelAll(ctx);
 
-        LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         // v0.87.6：prune 必须排在下面「列表为空就返回」之前——用户删光闹钟那一刻
         // 正是最该清标记的时候，而那条路径会直接 return，标记就永远留着。
@@ -741,8 +745,11 @@ public final class ScheduleManager {
         List<Instance> candidates = new ArrayList<>();
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
-            for (int i = 0; i < horizon; i++) {
-                LocalDate d = today.plusDays(i);
+            for (int i = 0; i <= horizon; i++) {
+                // v1.23.38 B1：窗口起点前移一天。班次偏移可能把实例推到次日
+                // （如 20:00 + 720 = 次日 08:00）；只从今天起算，次日零点后的
+                // 重排会先 cancelAll 再算不出它，那一次就不响。上界 +1 天保证末端不缩。
+                LocalDate d = today.minusDays(1).plusDays(i);
                 // v0.87.5：「这次不响」跳过的实例不许复活。重排只认列表开关，
                 // 没有这笔标记，点完到下一次响铃之间就白点了（真机实测）
                 if (skipOnce.contains(a.id + ":" + d)) continue;
@@ -768,7 +775,7 @@ public final class ScheduleManager {
         int preNotice = Prefs.getPreNoticeMinutes(ctx);
         int limit = Math.min(candidates.size(),
                 preNotice > 0 ? MAX_REGISTERED_ALARMS / 2 : MAX_REGISTERED_ALARMS);
-        LocalDateTime now2 = LocalDateTime.now();
+        LocalDateTime now2 = now;
         for (int i = 0; i < limit; i++) {
             Alarm a = candidates.get(i).alarm;
             LocalDateTime when = candidates.get(i).when;
@@ -878,9 +885,13 @@ public final class ScheduleManager {
      * 传进来一次，三处共用。
      */
     static int countCandidates(Context ctx, List<Alarm> alarms) {
+        return countCandidates(ctx, alarms, LocalDateTime.now());
+    }
+
+    /** 单测用：固定「现在」。 */
+    static int countCandidates(Context ctx, List<Alarm> alarms, LocalDateTime now) {
         if (alarms == null || alarms.isEmpty()) return 0;
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
-        LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         int horizon = Prefs.getHorizonDays(ctx);
         Set<LocalDate> vacations = Prefs.getVacationDates(ctx);
@@ -892,8 +903,9 @@ public final class ScheduleManager {
         int n = 0;
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
-            for (int i = 0; i < horizon; i++) {
-                LocalDate d = today.plusDays(i);
+            for (int i = 0; i <= horizon; i++) {
+                // v1.23.38 B1：与重排同一口径——起点前移一天，跨天实例才数得到。
+                LocalDate d = today.minusDays(1).plusDays(i);
                 if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
@@ -969,8 +981,9 @@ public final class ScheduleManager {
         List<Instance> candidates = new ArrayList<>();
         for (Alarm a : alarms) {
             if (!a.enabled) continue;
-            for (int i = 0; i < horizon; i++) {
-                LocalDate d = today.plusDays(i);
+            for (int i = 0; i <= horizon; i++) {
+                // v1.23.38 B1：与重排同一口径——起点前移一天，跨天实例才找得到。
+                LocalDate d = today.minusDays(1).plusDays(i);
                 int minutes = a.timeOn(d, rule, overtimes.contains(d));
                 if (minutes == Alarm.NO_TIME) continue;
                 LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
@@ -1030,8 +1043,10 @@ public final class ScheduleManager {
                               Set<String> skipOnce,
                               LocalDateTime from, int days) {
         NextAlarm best = null;
-        LocalDate start = from.toLocalDate();
-        for (int i = 0; i < days; i++) {
+        LocalDate start = from.toLocalDate().minusDays(1);
+        // v1.23.38 B1：起点前移一天、上界 +1 天——次日零点后仍要能看见
+        // 「昨天那个逻辑日、明天早上才响」的跨天实例。
+        for (int i = 0; i <= days; i++) {
             LocalDate d = start.plusDays(i);
             // 请假判断原本在闹钟循环之外（整天跳过）。一次性闹钟要豁免，
             // 就只能挪进循环里逐支判断——否则首页会说「明天不响」，而它其实会响

@@ -58,6 +58,23 @@
 
 **验证**：`./gradlew --version` 确认 wrapper 校验生效；`python3 tools/check_version.py` + `python3 tools/check_refs.py`；推完看 CI 两个 job 绿。
 
+## 未用资源清理（2026-11-13，已实施）
+
+> 状态：**已实施 · 不占版本**
+> 批准：2026-11-13「好的，执行吧」（针对 lint 报的 16 条 `UnusedResources`）
+> 落地：删 10 个 drawable（`bg_btn_gradient` / `bg_day_holiday` / `bg_dot_rest` / `bg_dot_work` / `bg_guide_link` / `bg_guide_progress_off` / `bg_guide_progress_on` / `bg_guide_try` / `bg_verdict` / `bg_verdict_tag`）+ 1 个 string（`more_section_ring`）。lint 问题数 659 → **648**，`UnusedResources` 16 → **5**；全量 **1311 / 0 / 3**（与清理前一致），`lintDebug` 0 error，`assembleRelease` 通过，APK 2,608,985 → **2,608,083 字节（-902）**。
+
+**留下的 5 条都是「lint 看不见的活引用」，逐条核过**：
+
+| 资源 | 为什么留 |
+| --- | --- |
+| `bg_action_emphasis` | 被 `bg_cal_hint.xml` 引用；`AGENTS.md` 第四节也把它定为「改变整页结构的动作」专用样式 |
+| `bg_widget_preview` | 被 `layout/dialog_widgets.xml` 引用（组件选择对话框的小预览图） |
+| `day_holiday_bg` / `day_holiday_stroke` | 旁边有原作者的保留说明：备份与回滚时要能对上这个名字 |
+| `widget_rest` | `WeekWidgetRender.java` 与 `ColorTokenTest` 都在用 |
+
+**不做**：不动 `HardcodedText`（236 条，改文案要逐屏渲染核对，投入远大于收益）、不动 `SmallSp`（203 条是小字号紧凑布局的故意设计）、不拆 `GuideActivity`（1726 行，引导页受 `AGENTS.md` 第六节硬约束，维护期重构只带来回归风险）。
+
 ## 源码脱敏（2026-11-13，已实施）
 
 > 状态：**已实施 · 不占版本**

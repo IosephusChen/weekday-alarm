@@ -640,6 +640,15 @@ public class MainActivity extends AppCompatActivity {
                 src.mode, true, onceDate);
         copy.color = src.color;   // 复制出来的用途一样，颜色跟着走
         copy.ringtone = src.ringtone;   // 铃声同理：复制的是同一条闹钟的完整内容
+        // v1.23.38 C1：规则字段也要整条带过去。少一样，副本就变成另一条闹钟——
+        // 静音丢了出去响、跟班次丢了按自己的 hh:mm、自带轮值丢了退回落全局班表。
+        copy.silent = src.silent;
+        copy.shiftIds = src.shiftIds == null ? null : src.shiftIds.clone();
+        copy.offsetMin = src.offsetMin;
+        copy.cycleLen = src.cycleLen;
+        copy.cycleMask = src.cycleMask;
+        copy.cycleStart = src.cycleStart;
+        copy.cycleHoliday = src.cycleHoliday;
         return copy;
     }
 

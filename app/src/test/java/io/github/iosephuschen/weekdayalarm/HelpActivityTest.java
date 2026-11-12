@@ -135,11 +135,17 @@ public class HelpActivityTest {
         assertTrue("应说明今天 / 明天两个按钮", all.contains("今天") && all.contains("明天"));
         assertTrue("应说明标记后变「撤销今天请假」", all.contains("撤销今天请假"));
         assertTrue("应说明日历就在首页", all.contains("日历就在首页"));
-        assertTrue("应说明「回本月」", all.contains("回本月"));
+        // v0.92.0：首页那颗翻月按钮的可见文字缩成「今」，无障碍描述才是「回到本月」
+        assertTrue("应说明日历右上角的「今」", all.contains("右上角的「今」"));
         // v0.83.0：小组件在 v0.80.1 改叫「下次闹钟」，这里跟着对上，别留旧词
-        assertTrue("应说明三个小组件", all.contains("本周班表") && all.contains("下次闹钟"));
+        // v1.23.34：帮助页改用小部件列表里的真名（manifest 的 android:label），
+        // 「下一个闹钟」是用户在列表里真正看到的那个名字
+        assertTrue("应说明三个小组件", all.contains("下一个闹钟") && all.contains("本月班表"));
         assertTrue("应说明导出 / 导入", all.contains("导出配置") && all.contains("导入配置"));
-        assertTrue("应说明后台保活", all.contains("电池"));
+        // v1.23.34：原来断言「电池」——帮助页当时教用户加电池优化白名单，而 v0.58.2
+        // 就删了那行（实测自启动开着时不影响），安装段也写着「电池优化不用管」。
+        // 现在只留唯一必需的那项。
+        assertTrue("应说明自启动是保活关键", all.contains("自启动"));
         // 旧说法：v0.48.1 起日历已内嵌首页，不该再让用户「点『排班日历』进去」
         assertTrue("不该再提已经删掉的独立日历入口", !all.contains("点「排班日历」"));
     }

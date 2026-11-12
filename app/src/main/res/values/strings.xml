@@ -121,7 +121,7 @@
     <!-- v1.11.4：「同一天都标写「假加」」是 v1.11.0 之前的事实——
          现在一天只有一个结果，后标的顶掉先标的，格子上不会再出现「假加」。 -->
     <string name="help_s1_b2">「请假」「调班」「加班」是你自己标的，一天只有一个结果，后标的顶掉先标的</string>
-    <string name="help_s1_b3">点灰字的上月 / 下月日期翻月，回到本月点「回本月」</string>
+    <string name="help_s1_b3">点灰字的上月 / 下月日期翻月，回到本月点日历右上角的「今」</string>
 
     <string name="help_s2_title">闹钟</string>
     <string name="help_s2_b1">「+ 添加闹钟」可以加多个，每条各自选「仅上班日 / 每天 / 仅休息日」</string>
@@ -141,13 +141,13 @@
     <string name="help_s3_b4">标记有误时点该日取消。不提供批量清除，避免误删全部</string>
 
     <string name="help_s4_title">桌面小组件</string>
-    <string name="help_s4_b1">三个组件：今天状态（下次闹钟 + 本周班表）、本月班表 · 完整、本月班表 · 极简</string>
+    <string name="help_s4_b1">三个组件：「下一个闹钟」（大字是今天状态 + 本周七格）、「本月班表 · 完整 4×4」、「本月班表 · 极简 4×3」</string>
     <string name="help_s4_b2">添加路径：长按桌面空白处 →「小部件」→ 选择「打工人闹钟」</string>
     <string name="help_s4_b3">本月班表底部一行字：本月几天班、几天休、下次闹钟什么时候，不用先打开 App</string>
 
     <string name="help_s5_title">设置与备份</string>
     <string name="help_s5_b1">换手机：「导出配置」存成文件，新机「导入配置」，闹钟和排班一起搬过去</string>
-    <string name="help_s5_b2">被系统杀后台漏响：允许自启动、加入电池优化白名单、最近任务里锁定本应用</string>
+    <string name="help_s5_b2">闹钟到点不响：先看系统里「自启动」开没开；界面弹不出来，再看「后台弹出界面」和「锁屏显示」</string>
     <string name="help_s5_b3">日历想清爽点：「节日与节气」里关掉农历节日 / 节气 / 基督教节日</string>
 
     <!-- v1.1.0：删掉了 4 条 help_jump_*（页尾「打开设置 / 去查看」两行路径）。 -->

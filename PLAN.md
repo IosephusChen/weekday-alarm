@@ -20,7 +20,7 @@
 > 状态：**已实施 · 不占版本**（只改 `tools/setup-env.sh`，不动 `versionCode`，不进 APK）
 > 目标版本：不占版本（只改脚本）
 > 批准：2026-11-12「按你的建议进行优化」；同日 `sdkmanager` 换源部分「按这个方案来」
-> 落地：2026-11-12 已改 `tools/setup-env.sh:179-193`（源顺序腾讯优先 + 速度止损）与 `tools/setup-env.sh:202-216`（`sdkmanager` 走腾讯镜像）。端到端实测：全新 SDK 目录从零装完 **18.2 秒**（cmdline-tools 150MB + SDK 310MB），原来约 26 分钟。
+> 落地：2026-11-12 已改 `tools/setup-env.sh:179-193#speed-limit`（源顺序腾讯优先 + 速度止损）与 `tools/setup-env.sh:202-216#SDK_TEST_BASE_URL`（`sdkmanager` 走腾讯镜像）。端到端实测：全新 SDK 目录从零装完 **18.2 秒**（cmdline-tools 150MB + SDK 310MB），原来约 26 分钟。
 
 现象：2026-11-12 新沙箱 `setup-env.sh` 从 19:58 跑到约 20:36，其中约 20 分钟卡在 `cmdline-tools` 下载。`dl.google.com` 经代理只有约 120KB/s，而脚本把它排在第一个；它「能连、只是慢」，所以永远轮不到第二条。
 
@@ -354,7 +354,7 @@ B 会动远端，放最后。
 
 ### A · 开工自检（改 `tools/setup-env.sh`）
 
-**现状**：`tools/setup-env.sh:208-220#----5.凭据` 这一段只在环境里有 `NAS_USER` / `NAS_PASS`
+**现状**：`tools/setup-env.sh:222-234#----5.凭据` 这一段只在环境里有 `NAS_USER` / `NAS_PASS`
 时把凭据落盘，`/root/.github_token` 从来没在这一步恢复过——沙箱一清空，先卡在 push 401，
 再回头手工 `tools/nas.sh get`。缺什么也不汇总，一处一处试。
 

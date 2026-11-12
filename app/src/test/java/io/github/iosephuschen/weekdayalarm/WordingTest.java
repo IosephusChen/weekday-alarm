@@ -58,6 +58,21 @@ public class WordingTest {
     }
 
     /**
+     * v1.23.36 安全加固：`allowBackup` 必须关着。
+     *
+     * <p>开着的话，班表、请假/加班标记、闹钟标签会随云备份与设备迁移整体带走。这些数据
+     * 本就不需要跨设备迁移——重排一次班表，比让作息规律留在备份里便宜。
+     */
+    @Test
+    public void manifest_allowBackupOff() {
+        String manifest = read("app/src/main/AndroidManifest.xml");
+        assertTrue("allowBackup 必须显式写成 false",
+                manifest.contains("android:allowBackup=\"false\""));
+        assertFalse("不能残留 android:allowBackup=\"true\"",
+                manifest.contains("android:allowBackup=\"true\""));
+    }
+
+    /**
      * README 的权限表必须和 Manifest 完全一致。
      *
      * <p>只比「名字集合」，不比顺序和描述文字——那两条改了没有对错，写死反而挡住正常修改。

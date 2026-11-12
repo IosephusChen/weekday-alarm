@@ -188,6 +188,18 @@ public final class HolidayData {
     /** 远程层：按年隔离，拉 2027 不会冲掉 2026 的修正。 */
     private static final Map<Integer, YearData> REMOTE = new ConcurrentHashMap<>();
 
+    /**
+     * 单年放假日上限（v1.23.36 安全加固）。
+     *
+     * <p>holiday-cn 真实年份最多 34 个放假日、6 个补班日。原来只校验「日期年份 == year」，
+     * 于是上游被篡改时可以把整年标成放假——那等于让闹钟整年不响，而界面只是格子变成「休」，
+     * 用户很难察觉。按量级留足余量后设硬上限，超了整份丢弃、已有数据不动。
+     */
+    static final int MAX_OFF_DAYS = 40;
+
+    /** 单年补班日上限，理由同 {@link #MAX_OFF_DAYS}。 */
+    static final int MAX_MAKEUP_DAYS = 20;
+
     /** 远程数据的版本信息（展示用），0 表示未拉取过。 */
     private static volatile int remoteVersion = 0;
     private static volatile String remotePublished = null;
@@ -236,6 +248,11 @@ public final class HolidayData {
             }
             if (hol.isEmpty() && mk.isEmpty()) {
                 lastApplyOk = true;
+                return false;
+            }
+            // v1.23.36：条数远超真实年份 → 上游被篡改或格式变了，整份丢弃。
+            // lastApplyOk 保持 false（方法开头已置），失败原因会经 HolidayUpdater 传给设置页。
+            if (hol.size() > MAX_OFF_DAYS || mk.size() > MAX_MAKEUP_DAYS) {
                 return false;
             }
             YearData nd = new YearData(hol, mk, Collections.emptyMap(), null);

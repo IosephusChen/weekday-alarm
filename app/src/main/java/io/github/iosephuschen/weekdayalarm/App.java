@@ -179,8 +179,9 @@ public class App extends Application {
     }
 
     /**
-     * 崩溃日志自捕获：把未捕获异常的完整栈写到 App 外部 files 目录
-     * （/sdcard/Android/data/io.github.iosephuschen.weekdayalarm/files/crash-*.txt）。
+     * 崩溃日志自捕获：把未捕获异常的完整栈写到 App 内部 files 目录
+     * （v1.23.36 起；之前是外部 {@code Android/data/<包名>/files}，Android 8/9 上别的
+     * 应用拿 {@code READ_EXTERNAL_STORAGE} 就能读）。
      *
      * <p>v0.87.1 修正：这里原来写着「普通用户用文件管理器即可看到」——Android 11 起不对，
      * 那个目录连系统文件管理器都进不去。所以「关于」页加了「导出崩溃日志」，

@@ -31,9 +31,11 @@
 **证据（改之前）**：
 - M-2：`app/src/main/java/io/github/iosephuschen/weekdayalarm/HolidayData.java:211-236#applyHolidayCnJson` → `app/src/main/java/io/github/iosephuschen/weekdayalarm/WeekSchedule.java:537-539#isWorkday`
 - L-1：`app/src/main/AndroidManifest.xml:26#allowBackup`
-- L-2：`app/src/main/java/io/github/iosephuschen/weekdayalarm/CrashLog.java:40-43#getExternalFilesDir`
+- L-2：改完后在 `app/src/main/java/io/github/iosephuschen/weekdayalarm/CrashLog.java:41-42#getFilesDir`（改之前是 `getExternalFilesDir(null)`，`null` 才退回内部目录）
 
-**测试（先红后绿）**：`HolidayCnSourceTest.holidayCn_absurdCountsAreRejected`（60 个放假日必须整份丢弃）、`HolidayCnSourceTest.holidayCn_realisticYearIsStillAccepted`（34 放 + 6 补班仍要合入）、`CrashLogTest.dir_落在内部存储`。
+**测试（先红后绿）**：`HolidayCnSourceTest.holidayCn_absurdCountsAreRejected`（60 个放假日必须整份丢弃）、`HolidayCnSourceTest.holidayCn_realisticYearIsStillAccepted`（34 放 + 6 补班仍要合入）、`CrashLogTest.dir_落在内部存储`、`WordingTest.manifest_allowBackupOff`。
+
+**结果（2026-11-12）**：改之前 4 条里 3 条红（`realisticYear` 本就该绿）；反向验证把三处单点改回去 → 30 条跑出 3 条红，恰好是这 3 条；恢复后全量 **1277 条 / 0 失败 / 3 跳过**，`check_version.py`、`check_refs.py` 通过。`lint` 与出包没跑（本轮不出包）。
 
 **不做什么**：
 - 不改 M-1（通知里的 PendingIntent 可被通知监听者代发）——它改变响铃时「停止」的交互路径，要单独定方案。

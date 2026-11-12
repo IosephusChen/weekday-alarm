@@ -19,9 +19,10 @@ import java.util.Locale;
  * 要放在主页，而它必须和导出用同一份列举结果——两处各写一遍 {@code listFiles} 的过滤条件，
  * 迟早出现「主页说有、导出说没有」。
  *
- * <p>日志写在 {@code Android/data/<包名>/files/crash-*.txt}。选外部私有目录的原因：
- * 覆盖安装不会清它（内部 files 也不会，但外部这个在 App 被「清除数据」外还多活一会），
- * 而 Android 11 起这目录连文件管理器都进不去，所以必须由 App 自己提供导出。
+ * <p>日志写在内部 {@code files/crash-*.txt}（v1.23.36 起）。之前用外部私有目录
+ * {@code Android/data/<包名>/files}，但在 Android 8/9 上只要别的应用拿到
+ * {@code READ_EXTERNAL_STORAGE} 就能读到那份栈；内部目录任何第三方都进不来。
+ * 覆盖安装同样不清它，「清除数据」才会。导出仍由 App 自己提供（见 {@code AboutActivity}）。
  *
  * <p>全部方法都不抛异常：写日志这件事发生在未捕获异常的回调里，那里再抛就会递归崩溃。
  */
@@ -36,10 +37,9 @@ final class CrashLog {
     private CrashLog() {
     }
 
-    /** 日志目录：外部私有目录优先，拿不到（未挂载 / 无权限）退回内部 files。 */
+    /** 日志目录：内部 files。唯一读取入口，改目录只需改这一处。 */
     static File dir(Context c) {
-        File d = c.getExternalFilesDir(null);
-        return d != null ? d : c.getFilesDir();
+        return c.getFilesDir();
     }
 
     /**

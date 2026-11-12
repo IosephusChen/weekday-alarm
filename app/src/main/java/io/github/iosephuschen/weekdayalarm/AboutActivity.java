@@ -268,8 +268,8 @@ public class AboutActivity extends AppCompatActivity {
     /**
      * 导出崩溃日志。
      *
-     * <p>崩溃日志写在 {@code Android/data/<包名>/files/crash-*.txt}，Android 11 起这个目录
-     * 连文件管理器都进不去——写是写了，用户拿不到，等于没写。这里合并成一份让用户自己选去处。
+     * <p>崩溃日志写在 App 内部 {@code files/}（v1.23.36 起；更早是外部私有目录），
+     * 用户自己够不到——写是写了，拿不出来，等于没写。这里合并成一份让用户自己选去处。
      *
      * <p>没有崩溃记录时直接说明，不生成空文件——空文件发到 issue 里只会让人困惑。
      */

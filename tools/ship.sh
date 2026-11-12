@@ -225,8 +225,12 @@ if asset is None:
     print("  APK 资产      找不到")
     bad += 1
 else:
-    anon = requests.get(asset["url"], timeout=300, allow_redirects=True,
-                        headers={"Accept": "application/octet-stream"})
+    # 匿名下载：不带 Authorization，模拟用户点 Release 链接拿到的字节。
+    # 走 browser_download_url（github.com），不走 API 资产地址——后者在共享 IP 上
+    # 会被匿名限流成 403，body 才 279 字节，MD5 必然对不上（2026-11-12 实测）。
+    url = asset.get("browser_download_url") or asset["url"]
+    hdrs = {} if asset.get("browser_download_url") else {"Accept": "application/octet-stream"}
+    anon = requests.get(url, timeout=300, allow_redirects=True, headers=hdrs)
     local = hashlib.md5(open(apk, "rb").read()).hexdigest()
     remote = hashlib.md5(anon.content).hexdigest()
     print("  匿名下载      HTTP %d，%d 字节" % (anon.status_code, len(anon.content)))

@@ -201,9 +201,19 @@ else
 
     # sdkmanager 的协议确认走 stdin，yes 被提前关掉会报 broken pipe，但协议已经写完。
     ( yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} --licenses >/dev/null 2>&1 ) || true
-    info "安装 platform-tools / platform-34 / build-tools 34.0.0"
-    "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
-        "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+    # 2026-11-12：sdkmanager 默认从 dl.google.com 拉 445MB，代理下约 1.2MB/s（6 分钟）。
+    # 腾讯镜像同时托管了 repository2-3.xml，把它喂给 sdkmanager 的 SDK_TEST_BASE_URL
+    # 之后，同一批组件实测 9.5 秒装完（310MB）。这是它的测试钩子、不是公开参数，
+    # 万一某版不认，下面还有一次官方源兜底，不会把环境装死。
+    SDK_MIRROR="https://mirrors.cloud.tencent.com/AndroidSDK/"
+    info "安装 platform-tools / platform-34 / build-tools 34.0.0（优先腾讯镜像）"
+    if ! env "SDK_TEST_BASE_URL=$SDK_MIRROR" "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null; then
+        info "镜像源没装成，回退官方源再试一次"
+        "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+    fi
     [[ -d "$SDK/platforms/android-34" && -d "$SDK/build-tools/34.0.0" ]] \
         || die "装完仍缺组件，手动看：$SDK/cmdline-tools/latest/bin/sdkmanager --list"
     ok "Android SDK 齐了（$SDK）"

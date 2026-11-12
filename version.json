@@ -1,12 +1,14 @@
 {
-  "versionCode": 322,
-  "versionName": "1.23.37",
+  "versionCode": 323,
+  "versionName": "1.23.38",
   "published": "2026-11-12",
-  "title": "铃响时，只有你自己能停",
+  "title": "排班、备份与跨天响铃的八处问题",
   "notes": [
-    "通知栏的「停止」和「再响」只认这一轮，别的应用替你按不灵了",
-    "正常点按钮和以前一样，没有多一步"
+    "跨零点的夜班闹钟不再被次日一早的重排抹掉",
+    "「这次不响」按实际响铃日生效，跨天也不会错位",
+    "备份带上完整班次表，换机恢复后班表不再错乱",
+    "跨零点的小睡次数不再归零，不能无限续睡"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.37/weekday-alarm-1.23.37.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.37"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.38/weekday-alarm-1.23.38.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.38"
 }

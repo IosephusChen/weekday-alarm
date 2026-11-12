@@ -806,7 +806,9 @@ public class PreNoticeTest {
     @Test
     public void pruneSkipOnce_runsEvenWhenAlarmListIsEmpty() {
         reset();
-        Prefs.addSkipOnce(ctx(), 1, LocalDate.now().minusDays(1));
+        // v1.23.38 B2：「这次不响」按响铃日记账，昨天的那条要留着给跨天实例用；
+        // 只有更早的才算过期，这里用前天验证清理仍在跑。
+        Prefs.addSkipOnce(ctx(), 1, LocalDate.now().minusDays(2));
 
         Prefs.setAlarms(ctx(), new java.util.ArrayList<>());
         ScheduleManager.rescheduleAll(ctx());

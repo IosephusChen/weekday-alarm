@@ -132,17 +132,22 @@ public class SnoozePreNoticeTest {
     }
 
     @Test
-    public void pruneSnoozeCounts_dropsPastKeepsTodayAndFuture() {
+    public void pruneSnoozeCounts_keepsYesterdayForCrossMidnightChain() {
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
+        LocalDate twoDaysAgo = today.minusDays(2);
         LocalDate future = today.plusDays(3);
+        Prefs.incrementSnoozeCount(ctx(), 1, twoDaysAgo);
         Prefs.incrementSnoozeCount(ctx(), 1, yesterday);
         Prefs.incrementSnoozeCount(ctx(), 1, today);
         Prefs.incrementSnoozeCount(ctx(), 1, future);
 
         Prefs.pruneSnoozeCounts(ctx());
 
-        assertEquals("昨天的计数应被清理", 0, Prefs.getSnoozeCount(ctx(), 1, yesterday));
+        // v1.23.38 D1：跨零点的小睡链按起始日记账，昨天的必须留着；
+        // 只有前天及更早的才算过期。
+        assertEquals("前天的计数应被清理", 0, Prefs.getSnoozeCount(ctx(), 1, twoDaysAgo));
+        assertEquals("昨天的计数要留着", 1, Prefs.getSnoozeCount(ctx(), 1, yesterday));
         assertEquals(1, Prefs.getSnoozeCount(ctx(), 1, today));
         assertEquals(1, Prefs.getSnoozeCount(ctx(), 1, future));
     }

@@ -95,9 +95,12 @@ public class LegacyBackupTest {
         assertFalse(plan.containsKey(LocalDate.of(2026, 10, 14)));
     }
 
-    /** 有班次表时，旧备份里的加班日要落到第一个班次 id，而不是「任意加班」哨兵值。 */
+    /**
+     * 旧备份没有班次表：v1.23.38 A1 起明确清空本机班次，不沿用目标机的残留。
+     * 于是旧加班日只能落到「任意加班」哨兵值——文件里本来就没有「那天是哪个班」。
+     */
     @Test
-    public void oldBackup_overtimeUsesFirstShiftWhenScheduleHasShifts() {
+    public void oldBackup_withoutShiftKeys_clearsShiftsAndOvertimeFallsBackToAny() {
         Prefs.setWeekMode(ctx(), WeekSchedule.Mode.CYCLE);
         Prefs.setCycleLen(ctx(), 7);
         Prefs.setCycleMask(ctx(), 0b1111111L);
@@ -109,7 +112,9 @@ public class LegacyBackupTest {
         ConfigBackup.Result r = ConfigBackup.importJson(ctx(), OLD_JSON);
         assertTrue(r.message, r.ok);
 
-        assertEquals("有班次表时加班要落到第一个班次 id",
-                Integer.valueOf(3), Prefs.getDayPlan(ctx()).get(LocalDate.of(2026, 10, 17)));
+        assertTrue("旧备份没有班次表，本机班次必须清空", Prefs.getShifts(ctx()).isEmpty());
+        assertEquals("班次清空后，旧加班日只能记为「任意加班」",
+                Integer.valueOf(WeekSchedule.DAY_OVERTIME_ANY),
+                Prefs.getDayPlan(ctx()).get(LocalDate.of(2026, 10, 17)));
     }
 }

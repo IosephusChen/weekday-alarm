@@ -42,23 +42,64 @@ die()  { printf '✗ %s\n' "$*" >&2; exit 1; }
 [[ -f gradlew ]] || die "请在仓库根目录运行：bash tools/setup-env.sh"
 
 # ---- 1. Java ---------------------------------------------------------------
-# Gradle 8.7 只认 17–21；沙箱里固定有 zulu 20，其次看环境变量，最后看 PATH。
-if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
-    :
-elif [[ -x /root/.sdkman/candidates/java/20.fx-zulu/bin/java ]]; then
-    JAVA_HOME=/root/.sdkman/candidates/java/20.fx-zulu
-elif command -v java >/dev/null 2>&1; then
-    JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")
-else
-    die "找不到 java，且 /root/.sdkman/candidates/java/20.fx-zulu 不存在——先装 JDK 17–21"
-fi
-export JAVA_HOME
+# Gradle 8.7 只认 17–21。2026-11-12 补：Trae 沙箱预装 JDK 25、没有 zulu 20
+# （WorkBuddy 才有），原逻辑在这里直接 die。改成先找现成的 17–21——JAVA_HOME →
+# zulu 20 → mise 预装的版本——一个都没有才用 mise 装 Temurin 21。
+# 版本判定要 `env -u JAVA_TOOL_OPTIONS`：下面注入的代理参数会把 `java -version`
+# 的输出行弄脏，导致版本号被读成一句英文（2026-11-12 实测踩过）。
+java_ver() {
+    env -u JAVA_TOOL_OPTIONS "$1/bin/java" -version 2>&1 | head -1 \
+        | sed -E 's/.*"([0-9]+)[."].*/\1/'
+}
+java_ok() {
+    local dir="$1" v
+    [[ -n "$dir" && -x "$dir/bin/java" ]] || return 1
+    v=$(java_ver "$dir")
+    [[ "$v" =~ ^[0-9]+$ ]] && (( v >= 17 && v <= 21 ))
+}
+find_java() {
+    local d
+    for d in "$@"; do
+        d="${d%/}"
+        if java_ok "$d"; then printf '%s\n' "$d"; return 0; fi
+    done
+    return 1
+}
 
-JVER=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1 | sed -E 's/.*"([0-9]+)[."].*/\1/')
-if [[ ! "$JVER" =~ ^[0-9]+$ ]] || (( JVER < 17 || JVER > 21 )); then
-    die "JDK 版本是 $JVER，Gradle 8.7 只支持 17–21"
+JAVA_FOUND=$(find_java \
+    "${JAVA_HOME:-}" \
+    /root/.sdkman/candidates/java/20.fx-zulu \
+    /root/.local/share/mise/installs/java/*/ ) || true
+
+if [[ -z "$JAVA_FOUND" ]] && command -v mise >/dev/null 2>&1; then
+    info "没找到 17–21 的 JDK，用 mise 装 Temurin 21（约 208 MB）"
+    mise install java@temurin-21 >/dev/null 2>&1 || true
+    JAVA_FOUND=$(find_java /root/.local/share/mise/installs/java/temurin-21*/) || true
 fi
+[[ -n "$JAVA_FOUND" ]] || die "找不到 JDK 17–21，也没有 mise 可以装——手动装一个再跑"
+
+JAVA_HOME="$JAVA_FOUND"
+export JAVA_HOME
+JVER=$(java_ver "$JAVA_HOME")
 ok "Java $JVER（$JAVA_HOME）"
+
+# ---- 1.4 代理 --------------------------------------------------------------
+# Trae 沙箱直连外网不通，只有 HTTP(S)_PROXY 这条出口通；而 `sdkmanager` 不读
+# 环境变量，Robolectric 拉 android-all 也不读。这里读一次，分别显式传给两边：
+# sdkmanager 用 --proxy 参数，Gradle 与测试 fork 用 JAVA_TOOL_OPTIONS 注入系统属性。
+# 没有代理时整段静默跳过，不影响直连环境。
+PROXY_URL="${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}}"
+PROXY_HOST=""
+PROXY_PORT=""
+if [[ -n "$PROXY_URL" ]]; then
+    hp="${PROXY_URL#*://}"
+    hp="${hp%%/*}"
+    PROXY_HOST="${hp%%:*}"
+    PROXY_PORT="${hp##*:}"
+    [[ "$PROXY_PORT" == "$hp" ]] && PROXY_PORT=8080
+    ok "检测到代理 $PROXY_HOST:$PROXY_PORT（SDK 下载与单测都走它）"
+    export JAVA_TOOL_OPTIONS="-Dhttp.proxyHost=$PROXY_HOST -Dhttp.proxyPort=$PROXY_PORT -Dhttps.proxyHost=$PROXY_HOST -Dhttps.proxyPort=$PROXY_PORT -Dhttp.nonProxyHosts=localhost|127.0.0.1${JAVA_TOOL_OPTIONS:+ $JAVA_TOOL_OPTIONS}"
+fi
 
 # ---- 1.5 Gradle 能否启动 ---------------------------------------------------
 # 沙箱可能预置一个坏掉的 ~/.gradle/init.gradle（2026-11-08 实测：`mavelCentral()`
@@ -128,6 +169,13 @@ else
     info "缺 SDK 组件，开始装到 $SDK（约 445 MB）"
     mkdir -p "$SDK"
 
+    # sdkmanager 不读 HTTP(S)_PROXY，必须显式给；不给的话在只有代理的沙箱里
+    # 会静默卡十几分钟（2026-11-12 实测，直连 dl.google.com 超时）。
+    SDKM_PROXY=()
+    if [[ -n "$PROXY_HOST" ]]; then
+        SDKM_PROXY=(--proxy=http --proxy_host="$PROXY_HOST" --proxy_port="$PROXY_PORT")
+    fi
+
     if [[ ! -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]]; then
         # 两个源都实测可达：google 4.4 MB/s，腾讯镜像 5 MB/s。
         zip=/tmp/cmdtools.zip
@@ -148,9 +196,9 @@ else
     fi
 
     # sdkmanager 的协议确认走 stdin，yes 被提前关掉会报 broken pipe，但协议已经写完。
-    ( yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" --licenses >/dev/null 2>&1 ) || true
+    ( yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} --licenses >/dev/null 2>&1 ) || true
     info "安装 platform-tools / platform-34 / build-tools 34.0.0"
-    "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" \
+    "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
         "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
     [[ -d "$SDK/platforms/android-34" && -d "$SDK/build-tools/34.0.0" ]] \
         || die "装完仍缺组件，手动看：$SDK/cmdline-tools/latest/bin/sdkmanager --list"

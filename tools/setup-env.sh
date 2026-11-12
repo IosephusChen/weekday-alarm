@@ -177,15 +177,19 @@ else
     fi
 
     if [[ ! -x "$SDK/cmdline-tools/latest/bin/sdkmanager" ]]; then
-        # 两个源都实测可达：google 4.4 MB/s，腾讯镜像 5 MB/s。
+        # 两个源都实测可达；但 2026-11-12 在代理沙箱里实测 dl.google.com 只有约
+        # 120KB/s（150MB 要 20 分钟），腾讯镜像 5MB/s。而且 google 那条是「能连、
+        # 只是慢」，不带速度阈值就会一直等它，永远轮不到第二条——所以顺序换成
+        # 腾讯优先，并加一条「30 秒内低于 512KB/s 就换源」的止损。
         zip=/tmp/cmdtools.zip
         for url in \
-            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip \
-            https://mirrors.cloud.tencent.com/AndroidSDK/commandlinetools-linux-11076708_latest.zip
+            https://mirrors.cloud.tencent.com/AndroidSDK/commandlinetools-linux-11076708_latest.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
         do
             info "下载 cmdline-tools：$url"
-            if curl -fSLsS --retry 2 --connect-timeout 15 -o "$zip" "$url"; then break; fi
-            info "这条不通，换下一条"
+            if curl -fSLsS --retry 1 --connect-timeout 15 \
+                    --speed-limit 524288 --speed-time 30 -o "$zip" "$url"; then break; fi
+            info "这条不通或太慢（30 秒内低于 512KB/s），换下一条"
         done
         [[ -s "$zip" ]] || die "cmdline-tools 两条源都没下来，检查网络"
         mkdir -p "$SDK/cmdline-tools"

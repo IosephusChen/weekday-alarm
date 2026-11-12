@@ -6,8 +6,8 @@
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
-- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。2026-11-12 另把开发流程四项（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`）落地并推送 `a445874`，只改工具、不占版本。当天「5 处测试缺口」也已补完：14 条新增测试全绿、五处反向验证都红，推送 `fd61e5b`（状态行 `a9b9f93`），只改 `app/src/test/`、不占版本、未跑全量。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
-- **下一步**：**只剩 v1.23.37 / 322 真机验收四条**（用户 2026-11-12 说「最后统一处理」，不催）——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
+- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。2026-11-12 另把开发流程四项（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`）落地并推送 `a445874`，只改工具、不占版本。当天「5 处测试缺口」也已补完：14 条新增测试全绿、五处反向验证都红，推送 `fd61e5b`（状态行 `a9b9f93`），只改 `app/src/test/`、不占版本、未跑全量。**2026-11-12 晚又收到封版前全量验收确认的 8 条缺陷（B1/A1/B2/B3/B4/C1/A2/D1），方案见下方「封版验收缺陷 · 8 条修复」节，状态待确认、未动代码。** main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
+- **下一步**：**先等用户对「8 条修复」回「可以 / 改吧」**（下方同名节；目标 323，本轮不出包）；批准后按 B1→A1→B2→B3→B4→C1→A2→D1 逐条先红后绿。之后仍是 v1.23.37 / 322 真机验收四条（用户 2026-11-12 说「最后统一处理」，不催）——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
 - **验收**：v1.23.37 **待真机验**四条——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。v1.23.35 **不必真机验**——只改帮助页文案，按发版清单「文案、配色、关于页、图标、更新日志」那行属「可不验」。v1.23.34 两处**已通过**（2026-11-12 11:32，用户「效果还可以」）：① 倒计时左侧完整；② 按钮文案。v1.23.33 四条**已通过**（2026-11-12 05:18）：① 4×3 标题行出现「闹钟已开启」；② chip 与月份完好；③ 130% / 145% 框架不变高；④ 标准字号零变化。证据分两半——用户四张真机截图（100/110/125/145）PIL 逐像素量出标题行 y 坐标四档相同、月份被切成四段宽度四档一致；跨版本则用 `git worktree` 拉 `b34ba87`(v1.23.32) 与当前树跑同一份 Robolectric 渲染（fontScale=1.0、xxhdpi、NATIVE 图形、固定日期 2026-11-12、250dp 宽）后逐像素比：**4×4 两版 PNG 逐字节相同（MD5 `698cf6b0…`，0/562500 像素差异）**，4×3 差异 9542 像素且全在 `x 444–725 / y 28–78` 的标题行内——月份墨迹 x 26–257 两版一致、chip 字形块宽 58px 未变只左移 186px 让位、字号 39/30/30px 与行高 59px 全部相同、格子与表头一个像素没动。**基线图已存 NAS `verify/widget-baseline/`**（`v1.23.32_4x3_font100.png` / `v1.23.32_4x4_font100.png` / `4x3_title_row_old_vs_new.png`，取回 md5 已校验），下次要比不必再建 worktree。**边界**：Robolectric 用的是它自带字体而非手机系统字体，所以它证明的是「代码层面两版渲染等价」——而两版在手机上用的是同一字体，差异只可能来自代码，这条已经排除。v1.23.25 两件**已通过**（2026-11-10 11:13）：① 清数据重装 → 进引导页 → 直接按返回键回首页 → 退出 App → 再打开，引导页**不再**弹；② 建完第一条闹钟那张卡，第一行是「**权限与自启动** / 通知、悬浮窗等几项」，点进去落在第 3 页五项清单。v1.23.24 及更早（补课卡 → 权限页 → 测试页 → 回来才弹系统框、v1.23.22 的 2027 节假日、v1.23.21 的轮班保存与双休默认）用户**未逐条回报，不再追问**——旧包都在 NAS `apk/` 与 Release 里，要复核直接装回去。
 - **欠账（暂时没有）**：2027 那笔已由 v1.23.22 还清。**这类欠账以后不用靠人记**：v1.23.23 起 `tools/check_holiday_horizon.py` 会在 12 月起把 CI、`release.sh`、`handoff.sh` 一起变红，红的时候直接列「怎么办」四处。2028 年安排预计 2027-11 公布，届时照那四处做；`SettingsLayoutTest` 与 `HolidayFreshnessTest` 的年份已改成读常量，只会红「注释 + 测试基准年」。
@@ -101,6 +101,99 @@
 - ② 依赖「用同一套 requestCode 造出明天那条」；`ScheduleManager.SEG_SNOOZE` 改名或改值时，反射取值的辅助方法会直接失败，提醒同步，不会静默跳过。
 - ③ 依赖写死的 2026-02 / 2026-08 / 2027-02 真实公历，与系统时间无关。
 - ④ 触发时刻用同一个 `now` 推出「明天 00:00」；恰好在零点那一瞬可能红，概率极低，红了能看出是边界而不是功能坏了。
+
+## 封版验收缺陷 · 8 条修复（2026-11-12，待确认）
+
+> 状态：**待确认**
+> 目标版本：323
+> 批准：待用户回「可以 / 改吧」；确认前不写第一行代码
+> 落地：未开始
+
+### 核实结论（落笔前已 grep，8 条全部成立）
+
+上一轮给的代码位置与行为都对得上。两处需要扩面，已并入方案：
+
+- **B1 不止一处**：`rescheduleAll` 从今天起算，`nextRing`、`nextRegisteredAlarm`、`countCandidates` 也各自从今天起算；只改排程，首页「下次响铃 / 已排 N 次」仍会跳过跨天实例，统计与登记再次漂移。
+- **B2 不止一处**：`PreNoticeReceiver.cancelThis` 记的键是响铃日，`rescheduleAll`、`nextRing`、`countCandidates` 却按逻辑日 `d` 查；三处要一起改成响铃日，否则取消后仍会「下次响铃」显示它、统计也算它。
+
+没有发现「结论不成立」的条目。
+
+### 统一日期口径（B1 / B2 / D1 共用）
+
+- **逻辑日 d**：决定这天有没有班、是否请假/加班，`appliesTo(d)` 与 `timeOn(d)` 继续用它。
+- **响铃日**：`when.toLocalDate()`。实例身份已经按它走（requestCode / URI / EXTRA_DATE / `scheduled_dates`），这次把 `skip_once` 键与循环起点也对齐到它。
+- 候选循环起点前移一天，同时把上界补一天（`i <= horizon`），保证窗口末端不缩；`when.isAfter(now)` 负责滤掉过去实例。
+- `pruneSkipOnce` 保留今天与昨天；`pruneSnoozeCounts` 同口径。
+
+### B1 跨天实例在次日零点后的重排中消失
+
+- 位置：[ScheduleManager.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java#L742-L762)（重排候选）、[:1033-1055](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java#L1033-L1055)（`nextRing`）、[:970-991](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java#L970-L991)（`nextRegisteredAlarm`）、[:893-904](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java#L893-L904)（`countCandidates`）。
+- 改法：四处起点改 `today.minusDays(1)`（`nextRing` 用 `from.toLocalDate().minusDays(1)`），循环上界 `i <= horizon` / `i <= days`；其余不动。
+- 影响：每天多算 1 个逻辑日；`MAX_REGISTERED_ALARMS` 截断与排序不变，`scheduled_dates` 早已按响铃日存，不用改键。请假/加班仍按逻辑日判断（夜班那天请假，次日早晨那次也不响，符合语义）。
+- 新测试：`CrossDayShiftRescheduleTest`——班次 20:00、偏移 +720；D 日重排后断言 D+1 08:00 已登记；再以 D+1 00:30 重排，断言仍在。
+
+### A1 备份丢班次定义与 N 天轮值
+
+- 位置：[ConfigBackup.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ConfigBackup.java#L99-L106)（导出）、[:246-299](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ConfigBackup.java#L246-L299)（导入）。
+- 改法：导出补 `shift_defs`（`Shift.toJson`）与 `shift_cycle`（逗号串，格式与 `Prefs.setShiftCycle` 一致）；导入时两键**存在就写、缺失就 `remove`**，不沿用目标机残留。目标机原本有班次而备份没有时，`Result.message` 追加一句「备份不含班次表，本机班次已清空」。`FORMAT_VERSION` 不动（旧 App 忽略未知键，新 App 读旧备份走清空+提示）。
+- 影响：只动备份文件字段与导入分支；正常本机使用不经过这里。
+- 新测试：`BackupShiftRoundTripTest`——造 shift + shift_cycle + 跟班次闹钟 → 导出 → 清 Prefs → 导入 → `getShifts` 非空、`getShiftCycle` 相等、`timeOn` 为班次时刻；另测「旧备份缺两键 → 目标机班次被清空且 message 有提示」。
+
+### B2 「这次不响」对跨天实例失效
+
+- 位置：[PreNoticeReceiver.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/PreNoticeReceiver.java#L372-L378)（写入）、[ScheduleManager.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java#L742-L762)（检查）、[Prefs.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/Prefs.java#L704-L720)（清理）。
+- 改法：`rescheduleAll` / `nextRing` / `countCandidates` 的跳过判断改成 `when.toLocalDate()`（先算 `when` 再判断）；`pruneSkipOnce` 只删「早于昨天」。
+- 影响：同日实例键不变；跨天实例从此按响铃日对齐。升级前按逻辑日留下的旧标记最多两天后自然过期，不会长期残留。
+- 新测试：`SkipOnceCrossDayTest`——班次 00:00、提前 60 分钟（响在前一天 23:00）；22:30 对响铃日 `addSkipOnce`，`rescheduleAll` 后断言 23:00 无实例、次日实例仍在。
+
+### B3 强停后重开 App 不重排
+
+- 位置：[MainActivity.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/MainActivity.java#L265-L318)（`onResume` 只在版本变化时重排，末尾只续订睡前提醒）、[App.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/App.java#L77-L106)（同样只续订睡前提醒）。
+- 改法：`ScheduleManager` 新增包级可见 `ensureRegistered(Context)`——`nextRegisteredAlarm()` 非空直接返回 false；没有任何启用闹钟也返回 false；否则 `rescheduleAll` 并返回 true。`MainActivity.onResume` 在 `refreshAll()` 之后丢到后台线程跑一次。**不加到 `App.onCreate`**：冷启动首次 `onResume` 必然经过，两处都加会对同一进程跑两遍。
+- 影响：正常状态只多 1 次 `PendingIntent` 探测（第一个候选即命中）；只有「系统里一个都没登记」时才做全量重排，不碰正常前台刷新。
+- 新测试：`ColdStartRescheduleTest`——排一条每日闹钟 → `cancelAll` 模拟强停 → 调 `ensureRegistered` 返回 true 且明天实例已登记；另一个 Robolectric 用例启动 `MainActivity`，轮询 2 秒等后台线程落盘（超时即红）。
+
+### B4 切回双休/单休后残留逐日时刻仍生效
+
+- 位置：[WeekSchedule.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/WeekSchedule.java#L492-L504)（`cycleTimeOf` 没有 mode 门）、[Alarm.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/Alarm.java#L221-L230)（WORKDAY 读它）、[ScheduleDraft.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleDraft.java#L189-L215)（切非轮班只清 `shift_cycle`，**有意保留** `cycle_times`）。
+- 改法：`cycleTimeOf` 在 `rule == null` 之后直接 `if (rule.mode != Mode.CYCLE) return -1;`，与 `shiftOn` 的 v1.8.1 门槛同口径；`Prefs` / 草稿一行不改，数据留着，切回自定义即恢复。
+- 影响：双休/单休/大小周若残留 `cycle_times`，从此不再被读；`timeFromRule` 不动（它是「跟班表」标记的判定，本次症状里没有它）。
+- 新测试：`WeekModeCycleTimesTest`——双休 + 残留 7 天 mask + `cycleTimes{360,…}` + WORKDAY 07:30，断言周一 `timeOn == 450`（修复前 360）。
+
+### C1 复制闹钟丢字段
+
+- 位置：[MainActivity.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/MainActivity.java#L626-L637)。
+- 改法：`copyOf` 补 `silent`、`shiftIds`（克隆数组）、`offsetMin`；`cycleLen > 0` 时再补 `cycleLen / cycleMask / cycleStart / cycleHoliday`。`onceDate` 的顺延逻辑不变。
+- 影响：只影响「复制」入口；新建 / 编辑路径不动。
+- 新测试：`CopyAlarmFieldsTest`——`{silent=true, shiftIds={1}, offsetMin=-30}` 的副本三者保留；ROSTER「上 2 休 2」副本 `appliesTo(第 2 天)` 为 true。
+
+### A2 空闹钟数组被当「缺字段」
+
+- 位置：[ConfigBackup.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/ConfigBackup.java#L246-L252)。
+- 改法：`alarms` 字段存在且长度为 0 → 记为**空列表**并写入（清空目标机）；字段缺失 → 不动；字段非空但解析全坏 → 维持旧行为（不写，避免一份坏文件把闹钟清光）。
+- 影响：只动导入分支；导出本来就是 `[]`。
+- 新测试：`BackupEmptyAlarmsTest`——目标机放 1 条 → 导入 `{"prefs":{"alarms":[]}}` → 断言 0 条。
+
+### D1 跨零点小睡计数被重排清掉
+
+- 位置：[Prefs.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/Prefs.java#L1402-L1413)（只留今天及以后）、[AlarmActivity.java](file:///workspace/weekday-alarm/app/src/main/java/io/github/iosephuschen/weekdayalarm/AlarmActivity.java#L281-L284)（停止用 `date` 清计数，小睡用 `countDate`）。
+- 改法：`pruneSnoozeCounts` 保留「今天与昨天」（`date < today-1` 才删）；`stopAlarm` 改用 `countDate`，与 `snoozeAlarm` 同一键。
+- 影响：多留一天计数键，体量可忽略；跨零点那轮小睡的次数上限恢复正确。
+- 新测试：`SnoozeCountPruneTest`——`incrementSnoozeCount(昨天)` ×3 → `rescheduleAll` → 断言 `getSnoozeCount(昨天) == 3`。
+
+### 实施顺序与提交
+
+- 顺序：B1 → A1 → B2 → B3 → B4 → C1 → A2 → D1；一条缺陷一个提交，不合并、不批量升版本。
+- 每条先写测试、在旧代码上跑红，再改到绿；提交信息里写「把哪一行改回去、红了几条」。
+- 版本号只在最后的 release 提交里从 322 改到 323（`1.23.38`），本轮修复提交不碰 `build.gradle`。
+- 每改完一条更新交接条「做到哪 / 下一步」，最后统一跑 8 个定向测试类；全量留给 release.sh。
+
+### 不做什么
+
+- 不改 UI 布局 / 间距 / 配色 / 文案；不顺手重构；不清理 `cycle_times`、`shift_cycle` 等用户数据。
+- 不改 `.github/workflows/`；不升 versionCode、不出包、不打 tag、不送 NAS。
+- 不跑全量测试；不修这 8 条以外的缺陷（发现同类问题只记录进本文件）。
+- B3 不在 `App.onCreate` 里加重排；B4 不改 `timeFromRule`；A2 不让「非空但全坏」的备份清空闹钟。
 
 ## M-1 · 响铃通知按钮防代发（2026-11-12，已实施 ①）
 

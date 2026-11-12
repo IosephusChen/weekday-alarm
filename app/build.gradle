@@ -1,5 +1,5 @@
 plugins {
-    id 'com.android.application'
+    alias(libs.plugins.android.application)
 }
 
 android {
@@ -102,15 +102,16 @@ androidComponents {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'com.google.android.material:material:1.12.0'
+    // 版本全部在 gradle/libs.versions.toml，这里只引用别名。
+    implementation libs.appcompat
+    implementation libs.material
 
     // 单元测试（JVM）：org.json 用独立实现，因为 Android 内置的 org.json 在 JVM 测试里是抛异常的 stub
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.json:json:20240303'
+    testImplementation libs.junit
+    testImplementation libs.json
     // Robolectric：在 JVM 上跑真实 Android framework，用于复现界面点击路径的崩溃
-    testImplementation 'org.robolectric:robolectric:4.14.1'
-    testImplementation 'androidx.test:core:1.6.1'
+    testImplementation libs.robolectric
+    testImplementation libs.androidx.test.core
 }
 
 // v1.47.7：文档也算单测的输入。

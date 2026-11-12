@@ -1,0 +1,23 @@
+# 依赖与插件版本的唯一声明处（2026-11-12）。
+# 以前 AGP 写在根 build.gradle、依赖写在 app/build.gradle，改版本要翻两个文件。
+# 这里只做搬家，版本数值与迁移前逐个相同，没有升级。
+
+[versions]
+agp = "8.2.2"
+appcompat = "1.7.0"
+material = "1.12.0"
+junit = "4.13.2"
+json = "20240303"
+robolectric = "4.14.1"
+androidxTestCore = "1.6.1"
+
+[libraries]
+appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+junit = { module = "junit:junit", version.ref = "junit" }
+json = { module = "org.json:json", version.ref = "json" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

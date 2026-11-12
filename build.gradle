@@ -1,3 +1,4 @@
 plugins {
-    id 'com.android.application' version '8.2.2' apply false
+    // 版本在 gradle/libs.versions.toml 的 [versions] agp，改一处即可。
+    alias(libs.plugins.android.application) apply false
 }

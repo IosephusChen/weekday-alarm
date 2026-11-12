@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.UUID;
 
 /** 前台服务：播放闹钟铃声 + 震动 + 发送可全屏的闹钟通知。 */
 public class AlarmService extends Service {
@@ -44,6 +45,13 @@ public class AlarmService extends Service {
     public static final String ACTION_STOP = "io.github.iosephuschen.weekdayalarm.STOP";
     public static final String ACTION_SNOOZE = "io.github.iosephuschen.weekdayalarm.SNOOZE";
     public static final String ACTION_TEST = "io.github.iosephuschen.weekdayalarm.TEST";
+    /**
+     * 响铃通知按钮的一次性令牌（M-1，2026-11-12）。
+     *
+     * <p>持有「通知使用权」的应用能读到通知里的 PendingIntent 并 {@code send()}——
+     * 服务端只按 action 分发，就会被静默停铃 / 静默续睡。每次响铃重新生成，动作必须带回来比对。
+     */
+    public static final String EXTRA_RING_TOKEN = "ring_token";
 
     /** 通知 id：StopReceiver 取消通知时要用到，故对外可见。 */
     public static final int NOTIF_ID = 1001;
@@ -61,6 +69,18 @@ public class AlarmService extends Service {
 
     public static boolean isRinging() {
         return ringing;
+    }
+
+    /**
+     * 当前这一轮响铃的一次性令牌（M-1）。
+     *
+     * <p>进程内另外两个停止入口（横幅、首页那行）从这里取同一个值，随 Intent 带回去；
+     * 服务端在 {@link #onStartCommand} 里比对，对不上就当伪造丢弃。
+     */
+    private static volatile String ringToken;
+
+    static String ringToken() {
+        return ringToken;
     }
 
     /** 通知不可用时，响铃的最长时长（分钟）：没有停止入口，必须自己停（v0.58.0）。 */
@@ -158,10 +178,17 @@ public class AlarmService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent != null ? intent.getAction() : null;
         if (ACTION_STOP.equals(action)) {
+            if (!isCurrentRingAction(intent)) {
+                // 兜底通知（服务没起来）上的「停止」不带令牌；本来就没有铃声可停，
+                // 照旧收尾即可，别留一个空服务在后台。
+                if (!ringing) stopSelf();
+                return START_NOT_STICKY;
+            }
             stopSelf();
             return START_NOT_STICKY;
         }
         if (ACTION_SNOOZE.equals(action)) {
+            if (!isCurrentRingAction(intent)) return START_NOT_STICKY;
             int alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0);
             String label = intent.getStringExtra(EXTRA_LABEL);
             // v0.17.1 修复：通知栏的小睡按钮此前不看剩余次数，界面禁用后
@@ -339,6 +366,13 @@ public class AlarmService extends Service {
         // 旧版取消时用 ringDate（今天）算 requestCode，打不中，残留一条无用广播。
         autoStopDate = when.toLocalDate();
         ScheduleManager.setAutoStop(this, when, currentAlarmId);
+    }
+
+    /** 动作是不是「这一轮响铃」自己发出的（M-1）：令牌必须是当前值，旧轮次的一律拒绝。 */
+    private static boolean isCurrentRingAction(Intent intent) {
+        if (intent == null) return false;
+        String current = ringToken;
+        return current != null && current.equals(intent.getStringExtra(EXTRA_RING_TOKEN));
     }
 
     /**
@@ -748,7 +782,7 @@ public class AlarmService extends Service {
      * 点小睡小睡的都是第一个闹钟。回归测试见 {@code BugfixRegressionTest}。
      */
     static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr) {
-        return snoozePi(ctx, alarmId, label, dateStr, null);
+        return snoozePi(ctx, alarmId, label, dateStr, null, ringToken);
     }
 
     /**
@@ -757,10 +791,17 @@ public class AlarmService extends Service {
      */
     static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr,
                                   String originDateStr) {
+        return snoozePi(ctx, alarmId, label, dateStr, originDateStr, ringToken);
+    }
+
+    /** @param token 这一轮响铃的令牌（M-1），服务端比对不过就不小睡。 */
+    static PendingIntent snoozePi(Context ctx, int alarmId, String label, String dateStr,
+                                  String originDateStr, String token) {
         Intent i = new Intent(ctx, AlarmService.class).setAction(ACTION_SNOOZE)
                 .putExtra(EXTRA_ALARM_ID, alarmId)
                 .putExtra(EXTRA_LABEL, label)
-                .putExtra(EXTRA_DATE, dateStr);
+                .putExtra(EXTRA_DATE, dateStr)
+                .putExtra(EXTRA_RING_TOKEN, token);
         if (originDateStr != null) {
             i.putExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN, originDateStr);
         }
@@ -769,6 +810,9 @@ public class AlarmService extends Service {
     }
 
     private Notification buildNotification(String dateStr, String label, boolean test, boolean popup) {
+        // M-1：这一轮响铃的一次性令牌，通知上两个按钮都带着它；下一轮重新生成
+        String token = UUID.randomUUID().toString().replace("-", "");
+        ringToken = token;
         Intent full = new Intent(this, AlarmActivity.class);
         full.putExtra(AlarmActivity.EXTRA_DATE, dateStr);
         full.putExtra(AlarmActivity.EXTRA_TEST, test);
@@ -781,8 +825,11 @@ public class AlarmService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         PendingIntent stopPi = PendingIntent.getService(this, 1,
-                new Intent(this, AlarmService.class).setAction(ACTION_STOP),
-                PendingIntent.FLAG_IMMUTABLE);
+                new Intent(this, AlarmService.class).setAction(ACTION_STOP)
+                        .putExtra(EXTRA_RING_TOKEN, token),
+                // M-1：必须 UPDATE_CURRENT，否则 PendingIntent 匹配不看 extras，
+                // 令牌会冻在第一次响铃，「一次性」直接失效（与小睡按钮 v0.73.3 同一个坑）
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         // v0.23.0：补上 EXTRA_DATE。之前漏传，点通知栏小睡时日期回退成「今天」，
         // 跨零点（23:58 响、00:02 点小睡）会把次数记到新的一天，原日期的计数不生效
         // v0.73.3：补 FLAG_UPDATE_CURRENT。PendingIntent 的匹配只看 requestCode +
@@ -793,7 +840,8 @@ public class AlarmService extends Service {
         // 抽成静态方法供守门测试直接拿（BugfixRegressionTest）。
         PendingIntent snoozePi = snoozePi(this, currentAlarmId, label,
                 ringDate != null ? ringDate.toString() : null,
-                countDate != null ? countDate.toString() : null);
+                countDate != null ? countDate.toString() : null,
+                token);
 
         String title = test ? "测试：闹钟响铃" : label + "时间到了";
         // v0.54.0：卡片回到单行，正文只剩图标与药丸之间那一小条，写长了一句就被省略号吃掉
@@ -905,6 +953,7 @@ public class AlarmService extends Service {
     @Override
     public void onDestroy() {
         ringing = false;
+        ringToken = null;
         stopRinging();
         NotificationManagerCompat.from(this).cancel(NOTIF_ID);
         super.onDestroy();

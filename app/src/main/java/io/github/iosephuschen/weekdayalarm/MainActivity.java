@@ -137,7 +137,9 @@ public class MainActivity extends AppCompatActivity {
         rowRinging = findViewById(R.id.row_ringing);
         findViewById(R.id.btn_stop_ringing).setOnClickListener(v -> {
             startService(new Intent(this, AlarmService.class)
-                    .setAction(AlarmService.ACTION_STOP));
+                    .setAction(AlarmService.ACTION_STOP)
+                    // M-1：首页这行也是进程内入口，带上这一轮响铃的令牌
+                    .putExtra(AlarmService.EXTRA_RING_TOKEN, AlarmService.ringToken()));
             // 服务销毁是异步的，这里立刻收起，避免用户以为没点上又按一次
             rowRinging.setVisibility(View.GONE);
         });

@@ -248,12 +248,18 @@ public class NotifCardTest {
     public void snooze_leavesNoticeWithAbsoluteTime() {
         enableDailyAlarm();
         Prefs.setSnoozeMinutes(ctx(), 5);
+        // M-1：服务端拒绝没有令牌的 ACTION_SNOOZE。先真的响一轮，取同一轮令牌，
+        // 等价于点通知栏那个「5 分钟后再响」。
+        startRinging();
+        String token = AlarmService.ringToken();
+        assertNotNull("响铃之后必须有一轮令牌", token);
         Robolectric.buildService(AlarmService.class,
                 new Intent(ctx(), AlarmService.class)
                         .setAction(AlarmService.ACTION_SNOOZE)
                         .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
                         .putExtra(AlarmService.EXTRA_LABEL, "起床")
-                        .putExtra(AlarmService.EXTRA_DATE, LocalDate.now().toString()))
+                        .putExtra(AlarmService.EXTRA_DATE, LocalDate.now().toString())
+                        .putExtra(AlarmService.EXTRA_RING_TOKEN, token))
                 .startCommand(0, 0);
 
         Notification n = shadowOf(nm()).getNotification(SnoozeNotice.id(1));

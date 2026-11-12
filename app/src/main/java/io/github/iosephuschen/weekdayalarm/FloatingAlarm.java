@@ -209,7 +209,9 @@ final class FloatingAlarm {
                 hide();
                 try {
                     ctx.startService(new Intent(ctx, AlarmService.class)
-                            .setAction(AlarmService.ACTION_STOP));
+                            .setAction(AlarmService.ACTION_STOP)
+                            // M-1：横幅是进程内入口，带上这一轮响铃的令牌；服务端只认它
+                            .putExtra(AlarmService.EXTRA_RING_TOKEN, AlarmService.ringToken()));
                 } catch (Exception ignore) {
                 }
             });
@@ -223,7 +225,9 @@ final class FloatingAlarm {
                                 .setAction(AlarmService.ACTION_SNOOZE)
                                 .putExtra(AlarmService.EXTRA_ALARM_ID, alarmId)
                                 .putExtra(AlarmService.EXTRA_LABEL, label)
-                                .putExtra(AlarmService.EXTRA_DATE, dateStr));
+                                .putExtra(AlarmService.EXTRA_DATE, dateStr)
+                                // M-1：同停止，进程内小睡也要带这一轮响铃的令牌
+                                .putExtra(AlarmService.EXTRA_RING_TOKEN, AlarmService.ringToken()));
                     } catch (Exception ignore) {
                     }
                 });

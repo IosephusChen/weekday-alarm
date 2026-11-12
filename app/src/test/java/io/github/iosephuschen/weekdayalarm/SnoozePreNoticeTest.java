@@ -361,17 +361,39 @@ public class SnoozePreNoticeTest {
         Prefs.incrementSnoozeCount(ctx(), 1, today);   // 已用尽
         assertTrue("先确认已用尽", !ScheduleManager.canSnooze(ctx(), 1, today));
 
-        Robolectric.buildService(AlarmService.class,
-                new Intent(ctx(), AlarmService.class)
-                        .setAction(AlarmService.ACTION_SNOOZE)
-                        .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
-                        .putExtra(AlarmService.EXTRA_LABEL, "起床")
-                        .putExtra(AlarmService.EXTRA_DATE, today.toString()))
-                .startCommand(0, 0);
+        sendSnoozeFromRing(1, "起床", today);
 
         assertFalse("用尽后不应再注册小睡闹钟",
                 ScheduleManager.isSnoozeRegistered(ctx(), 1, today));
         assertEquals("计数不应增加", 1, Prefs.getSnoozeCount(ctx(), 1, today));
+    }
+
+    /**
+     * 从「正在响铃」这一轮里拿真实令牌，再发小睡。
+     *
+     * <p>M-1 之后服务端会拒绝没有令牌的 ACTION_SNOOZE（防通知代发），
+     * 测试不能再手搓一条裸 Intent 冒充用户点击；这里先响铃、再取同一轮令牌，
+     * 走的就是通知栏按钮那条真实路径。
+     */
+    private void sendSnoozeFromRing(int alarmId, String label, LocalDate day) {
+        Robolectric.buildService(AlarmService.class,
+                new Intent(ctx(), AlarmService.class)
+                        .putExtra(AlarmService.EXTRA_ALARM_ID, alarmId)
+                        .putExtra(AlarmService.EXTRA_LABEL, label)
+                        .putExtra(AlarmService.EXTRA_DATE, day.toString())
+                        .putExtra(AlarmService.EXTRA_POPUP, false))
+                .startCommand(0, 0);
+        String token = AlarmService.ringToken();
+        assertNotNull("响铃之后必须有一轮令牌", token);
+
+        Robolectric.buildService(AlarmService.class,
+                new Intent(ctx(), AlarmService.class)
+                        .setAction(AlarmService.ACTION_SNOOZE)
+                        .putExtra(AlarmService.EXTRA_ALARM_ID, alarmId)
+                        .putExtra(AlarmService.EXTRA_LABEL, label)
+                        .putExtra(AlarmService.EXTRA_DATE, day.toString())
+                        .putExtra(AlarmService.EXTRA_RING_TOKEN, token))
+                .startCommand(0, 0);
     }
 
     @Test
@@ -380,13 +402,7 @@ public class SnoozePreNoticeTest {
         Prefs.setSnoozeTimes(ctx(), 1);
         LocalDate day = snoozeDay();   // 跨午夜时会是明天，不能写死今天
 
-        Robolectric.buildService(AlarmService.class,
-                new Intent(ctx(), AlarmService.class)
-                        .setAction(AlarmService.ACTION_SNOOZE)
-                        .putExtra(AlarmService.EXTRA_ALARM_ID, 1)
-                        .putExtra(AlarmService.EXTRA_LABEL, "起床")
-                        .putExtra(AlarmService.EXTRA_DATE, day.toString()))
-                .startCommand(0, 0);
+        sendSnoozeFromRing(1, "起床", day);
 
         assertTrue("次数充足时应注册小睡闹钟",
                 ScheduleManager.isSnoozeRegistered(ctx(), 1, day));

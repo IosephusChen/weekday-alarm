@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(321, "1.23.36", "2026/11/12", "三处安全加固",
+                    "节假日数据加了条数上限，异常数据整份不用",
+                    "不再把班表交给云备份，换手机要重排一次",
+                    "崩溃日志改存应用内部，别的应用读不到"),
             new Entry(320, "1.23.35", "2026/11/12", "帮助页三处说错的话改好了",
                     "翻月那颗按钮写「今」，不再叫「回本月」",
                     "三个桌面组件的名字照列表里的真名写",

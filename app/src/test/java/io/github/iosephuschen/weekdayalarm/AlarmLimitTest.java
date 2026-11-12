@@ -177,18 +177,22 @@ public class AlarmLimitTest {
 
         // v1.8.2：升级重排是后台线程（v0.73.3 挪的，几百次跨进程 IPC）。
         // 以前这里直接读，等于赌后台线程已经在断言前跑完——大部分时候能过，
-        // 机器一忙就红。等它落地再断言，最多 3 秒
+        // 机器一忙就红。等它落地再断言，最多 3 秒。
+        // 2026-11-12：原来只等「集合非空」，但旧记录一开始就在集合里，循环一次都不进；
+        // 冷启动时断言会先到（全量首轮红过一次）。改成等「旧记录已清掉且已有新记录」。
         long deadline = System.currentTimeMillis() + 3000;
-        while (Prefs.getScheduledDates(ctx()).isEmpty() && System.currentTimeMillis() < deadline) {
+        Set<String> recs = Prefs.getScheduledDates(ctx());
+        while ((recs.contains("2026-10-21") || recs.isEmpty())
+                && System.currentTimeMillis() < deadline) {
             try {
                 Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
             }
+            recs = Prefs.getScheduledDates(ctx());
         }
 
-        Set<String> recs = Prefs.getScheduledDates(ctx());
         assertFalse("旧格式记录应已被清掉", recs.contains("2026-10-21"));
         assertTrue("重排后应有新记录", !recs.isEmpty());
         assertTrue("重排数不超 ROM 硬限", recs.size() <= ScheduleManager.MAX_REGISTERED_ALARMS);

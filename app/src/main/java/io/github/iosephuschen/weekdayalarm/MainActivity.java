@@ -317,6 +317,13 @@ public class MainActivity extends AppCompatActivity {
         // 代价极小，却能自愈「被系统清理 / 强制停止后再打开」的情况。
         BedtimeReminder.reschedule(this);
 
+        // v1.23.38 B3：强行停止会清掉所有 AlarmManager 实例，而重开 App 收不到
+        // BOOT_COMPLETED / MY_PACKAGE_REPLACED。这里补一次廉价自检：有启用闹钟却
+        // 一个都没登记时才全量重排；正常状态只多一次 PendingIntent 查询，放后台线程。
+        final Context ensureCtx = getApplicationContext();
+        new Thread(() -> ScheduleManager.ensureRegistered(ensureCtx),
+                "ensure-registered").start();
+
         // v1.23.24：从补课卡上「自启动」进引导页，回来还没开通知，这时候才补一个系统框
         // ——用户记的那个顺序：先引导，引导完了仍没开，再问。
         //

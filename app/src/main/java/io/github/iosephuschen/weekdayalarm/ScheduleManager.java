@@ -973,6 +973,18 @@ public final class ScheduleManager {
         return nextRegisteredAlarm(ctx, Prefs.getAlarms(ctx));
     }
 
+    /**
+     * v1.23.38 B3：冷启动自愈。强行停止会清掉系统里所有 AlarmManager 实例，
+     * 重开 App 又收不到 BOOT_COMPLETED / MY_PACKAGE_REPLACED。这里做一次廉价探测：
+     * 一个都没登记、但确实有启用闹钟时，才补排一次（正常状态只多一次 PendingIntent 查询）。
+     */
+    static boolean ensureRegistered(Context ctx) {
+        List<Alarm> alarms = Prefs.getAlarms(ctx);
+        if (alarms.isEmpty()) return false;
+        if (nextRegisteredAlarm(ctx, alarms) != null) return false;
+        return rescheduleAll(ctx) > 0;
+    }
+
     /** 同上，复用调用方已读好的列表（v0.43.0）。 */
     public static NextAlarm nextRegisteredAlarm(Context ctx, List<Alarm> alarms) {
         LocalDateTime now = LocalDateTime.now();

@@ -89,9 +89,15 @@ public class DocsConsistencyTest {
         return out;
     }
 
-    /** 从 更新日志.md 抽同样的列表。 */
+    /**
+     * 从 更新日志.md 抽同样的列表。
+     *
+     * <p>2026-11-13 起 v1.22.2 及更早的条目整段归档到 `历史-版本记录.md` 末尾，
+     * 所以两份按顺序拼起来才是完整的「新到旧」列表——只读前一份会少 292 条。
+     */
     private static List<String> mdEntries() throws Exception {
-        String md = read(new File(docs(), "更新日志.md"));
+        String md = read(new File(docs(), "更新日志.md"))
+                + read(new File(docs(), "历史-版本记录.md"));
         Matcher m = Pattern.compile("(?m)^### v([\\d.]+)（versionCode (\\d+)）").matcher(md);
         List<String> out = new ArrayList<>();
         while (m.find()) out.add(m.group(1) + "@" + m.group(2));

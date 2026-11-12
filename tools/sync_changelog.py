@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""检查 `docs/更新日志.md` 的版本行与 `Changelog.java` 是否对得上。
+"""检查 `docs/更新日志.md`（含归档到 `历史-版本记录.md` 的旧条目）的版本行与 `Changelog.java` 是否对得上。
 
 ## 比什么、不比什么
 
@@ -33,6 +33,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 JAVA = ROOT / 'app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java'
 MD = ROOT / 'docs/更新日志.md'
+# 2026-11-13 起 v1.22.2 及更早的条目归档在历史文件末尾，两份按顺序拼起来才是完整列表
+MD_FILES = [MD, ROOT / 'docs/历史-版本记录.md']
 
 ENTRY = re.compile(r'new Entry\((\d+),\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]*)"')
 # 第 1 组版本、第 2 组 code、第 3 组「— 标题」剩下的部分（原样保留）
@@ -51,15 +53,15 @@ def read_entries():
 def main():
     write = '--write' in sys.argv
     entries = read_entries()
-    text = MD.read_text(encoding='utf-8')
-    heads = list(HEAD.finditer(text))
+    chunks = [(p, p.read_text(encoding='utf-8')) for p in MD_FILES]
+    heads = [(p, m) for p, text in chunks for m in HEAD.finditer(text)]
 
     if len(heads) != len(entries):
-        sys.exit(f'条目数不一致：Changelog {len(entries)} 条，更新日志.md {len(heads)} 条')
+        sys.exit(f'条目数不一致：Changelog {len(entries)} 条，两份日志合计 {len(heads)} 条')
 
     diffs = []   # 版本号 / code 写错的
     untitled = []  # 破折号后是空的（早期简版可能这样）
-    for i, (m, (code, ver, _date, _title)) in enumerate(zip(heads, entries)):
+    for i, ((_p, m), (code, ver, _date, _title)) in enumerate(zip(heads, entries)):
         if m.group(1) != ver or int(m.group(2)) != code:
             fixed = f'### v{ver}（versionCode {code}）{m.group(3)}'
             diffs.append((i, m.group(0).strip(), fixed))
@@ -88,16 +90,21 @@ def main():
         print('\n只有缺标题的问题，这个得人写，脚本不改')
         sys.exit(1)
 
+    # 逐份文件重写：每份只替换自己那些标题行，跨文件的位置不变
     out = []
-    pos = 0
-    for m, (code, ver, _d, _t) in zip(heads, entries):
-        out.append(text[pos:m.start()])
-        # 只重写「### vX（versionCode N）」这段前缀，破折号后面原样留着
-        out.append(f'### v{ver}（versionCode {code}）{m.group(3)}')
-        pos = m.end()
-    out.append(text[pos:])
-    MD.write_text(''.join(out), encoding='utf-8')
-    print(f'\n已写入 {MD.relative_to(ROOT)}（改了 {len(diffs)} 处，标题文字未动）')
+    for p, text in chunks:
+        pos = 0
+        for (hp, m), (code, ver, _d, _t) in zip(heads, entries):
+            if hp != p:
+                continue
+            out.append((p, text[pos:m.start()]))
+            out.append((p, f'### v{ver}（versionCode {code}）{m.group(3)}'))
+            pos = m.end()
+        out.append((p, text[pos:]))
+
+    for p, _text in chunks:
+        p.write_text(''.join(seg for fp, seg in out if fp == p), encoding='utf-8')
+    print(f'\n已写入 {len(diffs)} 处（标题文字未动）')
 
 
 if __name__ == '__main__':

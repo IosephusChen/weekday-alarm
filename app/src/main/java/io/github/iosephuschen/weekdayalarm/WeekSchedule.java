@@ -491,6 +491,10 @@ public final class WeekSchedule {
      */
     public static int cycleTimeOf(LocalDate d, Rule rule) {
         if (rule == null) return -1;
+        // v1.23.38 B4：逐日时刻/班次表只属于「自定义轮班」。切回双休、单休、大小周后，
+        // 草稿有意保留 cycle_times（切回来能恢复），但这里必须拦住，否则 WORKDAY
+        // 闹钟会按旧时刻响，编辑页却显示自己的 hh:mm。与 shiftOn 的 mode 门同口径。
+        if (rule.mode != Mode.CYCLE) return -1;
         // v1.8.0：有班次表就按班次算，逐日时刻（cycleTimes）退回备用
         if (rule.shiftCycle != null) {
             Shift s = shiftOn(d, rule);

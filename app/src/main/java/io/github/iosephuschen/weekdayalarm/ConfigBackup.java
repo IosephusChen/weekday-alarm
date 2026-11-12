@@ -98,6 +98,11 @@ public final class ConfigBackup {
             p.put(Prefs.KEY_CYCLE_HOLIDAY, Prefs.isCycleHoliday(ctx));
             int[] cycleTimes = Prefs.getCycleTimes(ctx);
             if (cycleTimes != null) p.put(Prefs.KEY_CYCLE_TIMES, joinTimes(cycleTimes));
+            // v1.23.38 A1：班次定义与「每天哪个班」也必须在备份里。少了它们，
+            // 换机恢复后班次表为空、跟班次的闹钟退回自己的 hh:mm，按错误时刻响。
+            p.put(Prefs.KEY_SHIFT_DEFS, Shift.toJson(Prefs.getShifts(ctx)));
+            int[] shiftCycle = Prefs.getShiftCycle(ctx);
+            if (shiftCycle != null) p.put(Prefs.KEY_SHIFT_CYCLE, joinTimes(shiftCycle));
             p.put(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx));
             p.put(Prefs.KEY_HORIZON, Prefs.getHorizonDays(ctx));
             p.put(Prefs.KEY_ALARMS, new JSONArray(Alarm.toJson(Prefs.getAlarms(ctx))));
@@ -287,6 +292,21 @@ public final class ConfigBackup {
                 p.optBoolean(Prefs.KEY_CYCLE_HOLIDAY, Prefs.isCycleHoliday(ctx)));
         String cycleTimesStr = p.optString(Prefs.KEY_CYCLE_TIMES, "");
         if (!cycleTimesStr.isEmpty()) ed.putString(Prefs.KEY_CYCLE_TIMES, cycleTimesStr);
+        // v1.23.38 A1：班次定义与轮值随备份走。旧备份没有这两个键时明确清空——
+        // 留着目标机的残留会让「跟班次」的闹钟按别人的班次响；备份里是空数组也照写，
+        // 因为那表示「导出时就没有班次」，不该把目标机的旧班次带进来。
+        boolean backupHasShifts = p.has(Prefs.KEY_SHIFT_DEFS);
+        if (backupHasShifts) {
+            ed.putString(Prefs.KEY_SHIFT_DEFS, p.optString(Prefs.KEY_SHIFT_DEFS, "[]"));
+        } else {
+            ed.remove(Prefs.KEY_SHIFT_DEFS);
+        }
+        if (p.has(Prefs.KEY_SHIFT_CYCLE)) {
+            ed.putString(Prefs.KEY_SHIFT_CYCLE, p.optString(Prefs.KEY_SHIFT_CYCLE, ""));
+        } else {
+            ed.remove(Prefs.KEY_SHIFT_CYCLE);
+        }
+        boolean clearedShifts = !backupHasShifts && !Prefs.getShifts(ctx).isEmpty();
         // 一周开始日只有 0 / 1，越界按周一起始（与 Prefs.getWeekStart 同口径）
         ed.putInt(Prefs.KEY_WEEK_START,
                 p.optInt(Prefs.KEY_WEEK_START, Prefs.getWeekStart(ctx)) == Prefs.WEEK_START_SUNDAY
@@ -349,6 +369,7 @@ public final class ConfigBackup {
         String msg = "已导入 " + count + " 个闹钟"
                 + (vacations.isEmpty() && overtimes.isEmpty() ? ""
                 : "、" + vacations.size() + " 天请假、" + overtimes.size() + " 天加班")
+                + (clearedShifts ? "；备份不含班次表，本机班次已清空" : "")
                 + "，其余设置也已恢复";
         return new Result(true, msg, count, vacations.size(), overtimes.size());
     }

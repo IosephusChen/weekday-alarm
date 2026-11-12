@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     /** 假期倒计时（v0.76.0）：「距元旦还有 23 天」；看不到那么远时隐藏。 */
     private TextView tvHolidayCountdown;
     private TextView tvWeekChip;
-    /** 今日卡里的「今天 / 明天不上班」两个按钮（v0.44.0 起，v0.48.1 起并排）。 */
+    /** 今日卡里的「今天请假 / 明天加班」两颗按钮（v0.44.0 起，v0.48.1 起并排）。 */
     private TextView btnDayOff, btnDayOffTomorrow;
     /** 首页内嵌的排班日历（v0.48.1）：渲染与单日标记都在它里面。 */
     private CalendarPanel calendarPanel;
@@ -222,8 +222,8 @@ public class MainActivity extends AppCompatActivity {
     // v0.48.1：标记统计与单日标记都搬到 CalendarPanel；这里只留「今天 / 明天」两个快按钮。
 
     /**
-     * 界面外的状态变更（通知栏「明天请假」、桌面小组件的「今天 / 明天不上班」）改完 Prefs 后
-     * 会发一条包内广播，这里接住并当场刷新（v0.56.6）。
+     * 界面外的状态变更（通知栏「明天请假」按钮）改完 Prefs 后会发一条包内广播，
+     * 这里接住并当场刷新（v0.56.6）。
      *
      * <p>不这么做的话，用户正开着 App 点通知按钮，界面要等「退到桌面再进来」才更新——
      * 因为刷新只发生在 onResume。
@@ -843,12 +843,13 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 今日卡两个按钮的文案（v0.44.0，v0.48.1 泛化到「今天 / 明天」）。
      *
-     * <p>那天是上班日 / 补班日 → 未标记写「不上班」，标记后写「已请假」；
-     * 是休息日 / 法定假 → 未标记写「要加班」，标记后写「已加班」。
+     * <p>那天是上班日 / 补班日 → 未标记写「今天请假」，标记后写「今天撤销请假」；
+     * 是休息日 / 法定假 → 未标记写「今天加班」，标记后写「今天撤销加班」。
      * 两种情形都是「那天和排班不一样」，用同一个按钮比藏起来更好找。
      *
-     * <p>v0.49.0 去掉尾巴上的 ✓，改说「已请假 / 已加班」，实现委托给
-     * {@link DayOffAction#buttonText}——与桌面小组件共用同一句话。
+     * <p>v0.49.0 去掉尾巴上的 ✓，改说状态；v1.23.34 补上主语与动作（「今天撤销请假」），
+     * 实现委托给 {@link DayOffAction#buttonText}——通知栏那颗「明天请假」也调同一份，
+     * 两处不会各说各的。
      */
     private void updateDayOffButton() {
         setDayOffButton(btnDayOff, DayOffAction.TODAY);
@@ -897,7 +898,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 「今天 / 明天不上班 / 要加班」按钮的文案。
+     * 「今天请假 / 明天加班」按钮的文案。
      *
      * <p>抽成纯函数是为了两种日子都能被直接测到——真机上「今天」是星期几由不得测试决定，
      * 写成方法内部的分支就只能测到跑测试那天的那一半。
@@ -907,11 +908,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 一键把今天 / 明天标成「不上班 / 要加班」，再点一次撤销；改完立刻重排。
+     * 一键把今天 / 明天标成请假或加班，再点一次撤销；改完立刻重排。
      *
      * <p>v0.92.0 去掉了这里的一颗 Toast。原来点完会飘一句「今天已标记请假，闹钟不会响」，
      * 可同一瞬间卡片上已经有四处变了：大标题「今天上班 → 今天请假」、副标题
-     * 「个人请假 · 闹钟全部跳过」、按钮从半透明白底换成实白底紫字「今天已请假」、
+     * 「个人请假 · 闹钟全部跳过」、按钮从半透明白底换成实白底紫字（现在是「今天撤销请假」）、
      * 倒计时跳到下一天。Toast 说的是副标题那句的缩写，还正好压在「排班日历」
      * 标题上——用户 2026-10-30 截图问「这个有必要吗」，答：没有。
      */

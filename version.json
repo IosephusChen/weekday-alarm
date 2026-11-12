@@ -1,12 +1,13 @@
 {
-  "versionCode": 318,
-  "versionName": "1.23.33",
-  "published": "2026-11-11",
-  "title": "4×3 也写闹钟状态了",
+  "versionCode": 319,
+  "versionName": "1.23.34",
+  "published": "2026-11-12",
+  "title": "倒计时不挤了，按钮说清在撤销什么",
   "notes": [
-    "本月班表 4×3 的标题行也写「闹钟已开启」，与 4×4 一致",
-    "周次太长放不下时优先保住月份，不硬挤"
+    "四天以上的日子，倒计时左边不再被省略号吃掉几个字",
+    "今日卡按钮改写成「今天请假」「明天加班」，标记后是「撤销今天请假」",
+    "今天和明天都标了假，两颗按钮不再一模一样"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.33/weekday-alarm-1.23.33.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.33"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.34/weekday-alarm-1.23.34.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.34"
 }

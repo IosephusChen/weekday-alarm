@@ -5,7 +5,7 @@ import android.content.Context;
 import java.time.LocalDate;
 
 /**
- * 「不上班 / 要加班」的唯一实现（v0.48.1）。
+ * 「请假 / 加班」的唯一实现（v0.48.1）。
  *
  * <p>同一个动作原来散在三处：首页今日卡的 {@code toggleTodayOff}、小组件广播里的
  * {@code BedtimeReceiver.toggleDay}、日历单日标记的两个对话框。三份代码各写一遍
@@ -110,7 +110,7 @@ final class DayOffAction {
      *
      * <p>v1.11.0：上班日只认「请假」这一种例外，休息日只认「加班」。工作日上如果
      * 先记了「这天上了夜班」，再点按钮不该把它悄悄删掉——那是另一个动作的结果，
-     * 按钮说的是「不上班」，就只处理请假。
+     * 按钮说的是「请假」，就只处理请假。
      */
     static boolean toggle(Context ctx, LocalDate day) {
         WeekSchedule.Rule rule = Prefs.getRule(ctx);

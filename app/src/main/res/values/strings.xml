@@ -135,7 +135,7 @@
     <string name="help_s2_b6">不想被打扰又要闹钟：开启飞行模式与勿扰，闹钟仍会响，整夜耗电极少</string>
 
     <string name="help_s3_title">临时请假 / 加班</string>
-    <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点击即标记请假或加班</string>
+    <string name="help_s3_b1">今日卡底部「今天」「明天」两颗按钮：上班日写「请假」、休息日写「加班」，点一下就能标</string>
     <string name="help_s3_b2">点完按钮变成「撤销今天请假」，再点一次就取消</string>
     <string name="help_s3_b3">别的日子：在首页日历里点那一天，选「请假」或「加班」——按 N 天一轮排的班，上班日那项叫「调班」，点完接着选上哪个班</string>
     <string name="help_s3_b4">标记有误时点该日取消。不提供批量清除，避免误删全部</string>
@@ -143,7 +143,7 @@
     <string name="help_s4_title">桌面小组件</string>
     <string name="help_s4_b1">三个组件：今天状态（下次闹钟 + 本周班表）、本月班表 · 完整、本月班表 · 极简</string>
     <string name="help_s4_b2">添加路径：长按桌面空白处 →「小部件」→ 选择「打工人闹钟」</string>
-    <string name="help_s4_b3">本月班表底部也能点「今天 / 明天不上班」，不用先打开 App</string>
+    <string name="help_s4_b3">本月班表底部一行字：本月几天班、几天休、下次闹钟什么时候，不用先打开 App</string>
 
     <string name="help_s5_title">设置与备份</string>
     <string name="help_s5_b1">换手机：「导出配置」存成文件，新机「导入配置」，闹钟和排班一起搬过去</string>

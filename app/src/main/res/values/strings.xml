@@ -136,7 +136,7 @@
 
     <string name="help_s3_title">临时请假 / 加班</string>
     <string name="help_s3_b1">今日卡底部有「今天」「明天」两个按钮，点击即标记请假或加班</string>
-    <string name="help_s3_b2">点完按钮变成「已请假 / 已加班」，再点一次撤销</string>
+    <string name="help_s3_b2">点完按钮变成「撤销今天请假」，再点一次就取消</string>
     <string name="help_s3_b3">别的日子：在首页日历里点那一天，选「请假」或「加班」——按 N 天一轮排的班，上班日那项叫「调班」，点完接着选上哪个班</string>
     <string name="help_s3_b4">标记有误时点该日取消。不提供批量清除，避免误删全部</string>
 

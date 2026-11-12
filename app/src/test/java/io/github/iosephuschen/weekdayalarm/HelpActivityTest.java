@@ -133,7 +133,7 @@ public class HelpActivityTest {
         HelpActivity a = launch();
         String all = allText(a);
         assertTrue("应说明今天 / 明天两个按钮", all.contains("今天") && all.contains("明天"));
-        assertTrue("应说明标记后变「已请假」", all.contains("已请假"));
+        assertTrue("应说明标记后变「撤销今天请假」", all.contains("撤销今天请假"));
         assertTrue("应说明日历就在首页", all.contains("日历就在首页"));
         assertTrue("应说明「回本月」", all.contains("回本月"));
         // v0.83.0：小组件在 v0.80.1 改叫「下次闹钟」，这里跟着对上，别留旧词

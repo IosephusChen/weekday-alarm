@@ -83,8 +83,8 @@ public class CustomWeekOvertimeTest {
         assertTrue("数据层认这条加班", Prefs.isOvertime(ctx(), SUNDAY));
         assertTrue("排程集合要含这天，否则闹钟不响",
                 Prefs.getOvertimeDates(ctx()).contains(SUNDAY));
-        assertTrue("按钮要说「已加班」", DayOffAction.isMarked(ctx(), SUNDAY));
-        assertEquals("按钮文案", "今天已加班",
+        assertTrue("按钮要说「撤销加班」", DayOffAction.isMarked(ctx(), SUNDAY));
+        assertEquals("按钮文案", "今天撤销加班",
                 DayOffAction.buttonText(DayOffAction.TODAY, sundayType, true));
         assertEquals("副标题与大字", "今天加班",
                 TodayCard.statusText(false, true, DayOffAction.isWorkDay(sundayType), null));
@@ -102,7 +102,7 @@ public class CustomWeekOvertimeTest {
                 Prefs.getDayShift(ctx(), MONDAY));
         assertTrue(Prefs.isOvertime(ctx(), MONDAY));
         assertTrue(DayOffAction.isMarked(ctx(), MONDAY));
-        assertEquals("明天已加班",
+        assertEquals("明天撤销加班",
                 DayOffAction.buttonText(DayOffAction.TOMORROW, mondayType, true));
         assertFalse("今天不该被顺手标上", Prefs.isOvertime(ctx(), SUNDAY));
     }

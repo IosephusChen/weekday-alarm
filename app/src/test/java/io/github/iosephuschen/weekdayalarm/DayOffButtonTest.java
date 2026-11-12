@@ -24,7 +24,7 @@ import org.robolectric.annotation.Config;
 import java.time.LocalDate;
 
 /**
- * 今日卡的「今天 / 明天不上班」（v0.44.0 起，v0.48.1 起并排两个）。
+ * 今日卡的「今天请假 / 明天加班」两颗按钮（v0.44.0 起，v0.48.1 起并排两个）。
  *
  * <p>加这两个按钮的理由很实际：标一天假原本要「滚到日历 → 找到那天 → 点 → 确认」四步，
  * 而「今天临时有事」「明早要请假」恰恰是最急的两种。现在今日卡里点一下就完事，再点一下撤销。
@@ -55,19 +55,19 @@ public class DayOffButtonTest {
 
     @Test
     public void text_onWorkDay_offersDayOff() {
-        assertEquals("今天不上班",
+        assertEquals("今天请假",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.WORK, false));
-        assertEquals("标记后改说「已请假」",
-                "今天已请假",
+        assertEquals("标记后改说「撤销请假」",
+                "今天撤销请假",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.WORK, true));
     }
 
     @Test
     public void text_tomorrow_usesTomorrowPrefix() {
-        assertEquals("明天不上班",
+        assertEquals("明天请假",
                 MainActivity.dayOffButtonText(DayOffAction.TOMORROW,
                         WeekSchedule.DayType.WORK, false));
-        assertEquals("明天已加班",
+        assertEquals("明天撤销加班",
                 MainActivity.dayOffButtonText(DayOffAction.TOMORROW,
                         WeekSchedule.DayType.REST, true));
     }
@@ -75,25 +75,37 @@ public class DayOffButtonTest {
     @Test
     public void text_onMakeupWorkDay_alsoOffersDayOff() {
         // 调休补班日也是上班日：用户那天照样想请假，按钮不该变成「今天要加班」
-        assertEquals("今天不上班",
+        assertEquals("今天请假",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY,
                         WeekSchedule.DayType.MAKEUP_WORK, false));
     }
 
     @Test
     public void text_onRestDay_offersOvertime() {
-        assertEquals("今天要加班",
+        assertEquals("今天加班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.REST, false));
-        assertEquals("今天已加班",
+        assertEquals("今天撤销加班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY, WeekSchedule.DayType.REST, true));
     }
 
     @Test
     public void text_onLegalHoliday_offersOvertime() {
         // 法定假按休息处理：那天想上班才是特例
-        assertEquals("今天要加班",
+        assertEquals("今天加班",
                 MainActivity.dayOffButtonText(DayOffAction.TODAY,
                         WeekSchedule.DayType.HOLIDAY, false));
+    }
+
+    /**
+     * 六个字放不下时的退路（v1.23.34）：主语留着，把「请假 / 加班」交给大字。
+     *
+     * <p>只在 320dp + 145% 这种贴边组合下才会用到，但用到时必须还是「撤销今天」这个形状，
+     * 不能退回没有主语的「撤销」——那正是这次要修的毛病。
+     */
+    @Test
+    public void compactText_keepsSubject() {
+        assertEquals("撤销今天", DayOffAction.compactButtonText(DayOffAction.TODAY));
+        assertEquals("撤销明天", DayOffAction.compactButtonText(DayOffAction.TOMORROW));
     }
 
     @Test
@@ -126,7 +138,7 @@ public class DayOffButtonTest {
         resetPrefs();
         MainActivity a = launch();
         TextView btn = a.findViewById(R.id.btn_day_off);
-        assertNotNull("今日卡里应有「今天不上班」按钮", btn);
+        assertNotNull("今日卡里应有「今天请假」按钮", btn);
 
         LocalDate today = LocalDate.now();
         boolean work = MainActivity.isWorkDayType(
@@ -135,20 +147,20 @@ public class DayOffButtonTest {
         btn.performClick();
         if (work) {
             assertTrue("上班日点一下应标成请假", Prefs.isVacation(ctx(), today));
-            assertTrue("标记后文案应说「已请假」", btn.getText().toString().contains("已请假"));
+            assertTrue("标记后文案应说「撤销请假」", btn.getText().toString().contains("撤销请假"));
         } else {
             assertTrue("休息日点一下应标成加班", Prefs.isOvertime(ctx(), today));
-            assertTrue("标记后文案应说「已加班」", btn.getText().toString().contains("已加班"));
+            assertTrue("标记后文案应说「撤销加班」", btn.getText().toString().contains("撤销加班"));
         }
         assertTrue("标记后按钮应处于 selected 态", btn.isSelected());
 
         btn.performClick();
         if (work) {
             assertFalse("再点一下应撤销请假", Prefs.isVacation(ctx(), today));
-            assertTrue("撤销后文案应回到「不上班」", btn.getText().toString().endsWith("不上班"));
+            assertTrue("撤销后文案应回到「今天请假」", btn.getText().toString().equals("今天请假"));
         } else {
             assertFalse("再点一下应撤销加班", Prefs.isOvertime(ctx(), today));
-            assertTrue("撤销后文案应回到「要加班」", btn.getText().toString().endsWith("要加班"));
+            assertTrue("撤销后文案应回到「今天加班」", btn.getText().toString().equals("今天加班"));
         }
         assertFalse("撤销后不该还是 selected 态", btn.isSelected());
     }
@@ -185,7 +197,7 @@ public class DayOffButtonTest {
         resetPrefs();
         MainActivity a = launch();
         TextView btn = a.findViewById(R.id.btn_day_off_tomorrow);
-        assertNotNull("今日卡里应有「明天不上班」按钮", btn);
+        assertNotNull("今日卡里应有「明天请假」按钮", btn);
 
         LocalDate today = LocalDate.now();
         LocalDate tomorrow = today.plusDays(1);
@@ -196,11 +208,11 @@ public class DayOffButtonTest {
         if (work) {
             assertTrue("上班日点一下应把明天标成请假", Prefs.isVacation(ctx(), tomorrow));
             assertFalse("今天不该被标", Prefs.isVacation(ctx(), today));
-            assertTrue("标记后文案应说「明天已请假」", btn.getText().toString().equals("明天已请假"));
+            assertTrue("标记后文案应说「明天撤销请假」", btn.getText().toString().equals("明天撤销请假"));
         } else {
             assertTrue("休息日点一下应把明天标成加班", Prefs.isOvertime(ctx(), tomorrow));
             assertFalse("今天不该被标", Prefs.isOvertime(ctx(), today));
-            assertTrue("标记后文案应说「明天已加班」", btn.getText().toString().equals("明天已加班"));
+            assertTrue("标记后文案应说「明天撤销加班」", btn.getText().toString().equals("明天撤销加班"));
         }
         assertTrue("文案要说是明天", btn.getText().toString().startsWith("明天"));
 

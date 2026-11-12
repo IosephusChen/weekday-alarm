@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -871,6 +872,23 @@ public class MainActivity extends AppCompatActivity {
         btn.setTextColor(ContextCompat.getColor(this, marked ? R.color.hero_text : R.color.white));
         // selected 只是语义标记（供无障碍与以后接 selector 用），真正生效的是上面两行
         btn.setSelected(marked);
+
+        // v1.23.34：320dp 小屏 + 145% 字体下「今天撤销请假」六个字贴边（实测只剩 4dp），
+        // 再宽一点的手机会把首尾两个字切掉一半。等布局量完再判一次，放不下就退成
+        // 「撤销今天」——它不是缩小字号，只在真的放不下时换短句。
+        if (marked) {
+            btn.post(() -> {
+                if (isFinishing() || isDestroyed() || btn.getLayout() == null) return;
+                int avail = btn.getWidth() - btn.getPaddingLeft() - btn.getPaddingRight();
+                String picked = pickFitting(
+                        Arrays.asList(text, DayOffAction.compactButtonText(offset)),
+                        btn.getPaint(), avail);
+                if (!picked.equals(btn.getText().toString())) {
+                    btn.setText(picked);
+                    btn.setContentDescription(picked);
+                }
+            });
+        }
     }
 
     /** 上班日与调休补班日都算「今天要上班」，休息日与法定节假日不算。 */

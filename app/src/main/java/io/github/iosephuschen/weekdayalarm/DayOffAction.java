@@ -50,25 +50,37 @@ final class DayOffAction {
     }
 
     /**
-     * 按钮文案：未标记说「要做什么」，标记后说「已经是什么」（v0.49.0）。
+     * 按钮文案：未标记说「要做什么」，标记后说「撤销什么」（v1.23.34）。
      *
-     * <p>原来是「今天不上班 ✓」——✓ 挂在动词短语尾巴上，读起来像「已经点过了」但仍是待办口吻。
-     * 改成「今天已请假」后，<b>文案本身就是一个状态陈述</b>，配上实白底，一眼能看出这天的标记生效了。
+     * <p>v0.49.0 起标记后写「今天已请假」。那句话只陈述状态，和大字「今天请假」只差一个
+     * 「已」字、上下隔 20dp，看着就是同一句话说两遍；而它这时唯一的功能是撤销，却没说。
+     * 更麻烦的是今天和明天并排：两天都标了假，两颗按钮都叫「已请假」，只能靠左右位置区分。
      *
-     * <p>这套文案原来只存在于小组件（{@code WeekWidgetRender.actionText}），首页自己写了一份
-     * 带 ✓ 的。同一个状态在两处说两种话，用户来回看会以为不是一件事——现在只有这里一份，
-     * 小组件那个静态方法也委托过来。
+     * <p>现在改成「今天撤销请假 / 明天撤销加班」，一次解决三件事：主语在，并排时不会
+     * 一字不差；动作在，撤销不用猜；术语也跟日历弹窗与帮助页统一了——那边一直写
+     * 「请假 / 加班」，只有这颗按钮写「不上班 / 要加班」，是全 App 的孤例。
      */
     static String actionText(String prefix, WeekSchedule.DayType type, boolean marked) {
         if (isWorkDay(type)) {
-            return marked ? prefix + "已请假" : prefix + "不上班";
+            return marked ? prefix + "撤销请假" : prefix + "请假";
         }
-        return marked ? prefix + "已加班" : prefix + "要加班";
+        return marked ? prefix + "撤销加班" : prefix + "加班";
     }
 
     /** 按 offset 取「今天 / 明天」前缀的按钮文案。 */
     static String buttonText(int dayOffset, WeekSchedule.DayType type, boolean marked) {
         return actionText(clampOffset(dayOffset) == TODAY ? "今天" : "明天", type, marked);
+    }
+
+    /**
+     * 六个字放不下时的退路（v1.23.34）。
+     *
+     * <p>「今天撤销请假」比原来的「今天已请假」长两个字。360dp 以上的机器在任何字号下都放得下，
+     * 只有 320dp 小屏配 145% 字体时才贴边（实测只剩 4dp）。那一档退成「撤销今天」——
+     * 大字这时正写着「今天请假」，被撤销的是什么，一眼就有答案。
+     */
+    static String compactButtonText(int dayOffset) {
+        return "撤销" + (clampOffset(dayOffset) == TODAY ? "今天" : "明天");
     }
 
     /**

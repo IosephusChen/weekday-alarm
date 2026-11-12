@@ -270,7 +270,7 @@
                     android:maxLines="1"
                     android:paddingTop="@dimen/space_10"
                     android:paddingBottom="@dimen/space_10"
-                    android:text="今天不上班"
+                    android:text="今天请假"
                     android:textColor="@color/white"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -288,7 +288,7 @@
                     android:maxLines="1"
                     android:paddingTop="@dimen/space_10"
                     android:paddingBottom="@dimen/space_10"
-                    android:text="明天不上班"
+                    android:text="明天请假"
                     android:textColor="@color/white"
                     android:textSize="13sp"
                     android:textStyle="bold" />

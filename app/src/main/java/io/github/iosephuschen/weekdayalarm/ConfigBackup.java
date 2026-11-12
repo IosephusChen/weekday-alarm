@@ -253,7 +253,10 @@ public final class ConfigBackup {
         JSONArray alarmArr = p.optJSONArray(Prefs.KEY_ALARMS);
         if (alarmArr != null) {
             List<Alarm> parsed = Alarm.fromJson(alarmArr.toString());
-            if (!parsed.isEmpty()) alarms = parsed;
+            // v1.23.38 A2：空数组 = 备份明确写着「一条都没有」，必须写进目标机；
+            // 只有「有内容但全解析坏了」才退回旧行为（不写），否则一份坏文件会把
+            // 用户的闹钟清光。
+            if (alarmArr.length() == 0 || !parsed.isEmpty()) alarms = parsed;
         }
         Set<String> vacations = parseDates(p.optJSONArray(Prefs.KEY_VACATION_DATES));
         Set<String> overtimes = parseDates(p.optJSONArray(Prefs.KEY_OVERTIME_DATES));

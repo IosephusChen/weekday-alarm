@@ -61,6 +61,13 @@
 - 不升依赖大版本（appcompat / material / robolectric 保持现值）
 - 不升 `versionCode`、不出包、不建 tag；这批改动都不进 APK
 
+**教训（2026-11-13 实记，本轮约 70 分钟里 34 分钟是本可避免的失误）**：
+
+1. **别在 JDK 25 下裸跑 `./gradlew`。** 这样跑出来的测试是一屏 `MavenArtifactFetcher` / `ConnectException` 失败，看着像代码坏了，实际是测试 JVM 没有代理、JDK 也不对（本轮白跑约 10 分钟）。要用 `setup-env.sh` 选中的 17–21：先 `export JAVA_HOME=…17`，或直接走 `tools/test.sh`。
+2. **轮询别用会自匹配的 `pgrep -f "某字符串"`。** 运行这条命令的 shell 自己的命令行里就含那串字符，于是永远命中、循环永不退出（本轮白等约 10 分钟）。改成 `grep -q` 日志、或按已知 PID 判断。
+3. **工具超时 ≠ 构建卡住。** 本轮 AGP 8.6 首次构建被工具超时杀掉，`GradleWrapperMain` 已经不在，只剩下孤儿 daemon，日志自然不再更新；我盯着日志等了 14 分钟才发现。判断「卡住」前先 `ps -eo pid,args | grep GradleWrapperMain`：客户端不在就重跑，daemon 是热的，重跑反而快。
+4. 另记一条环境事实：Robolectric 的 151MB `android-all` 在代理下会让它自己的下载器挂死，已由 `setup-env.sh` 预取（curl 25 秒）兜住，冷沙箱首次测试不再卡 20 分钟。
+
 ## 工具 · setup-env 下载换源优先腾讯（2026-11-12，已实施）
 
 > 状态：**已实施 · 不占版本**（只改 `tools/setup-env.sh`，不动 `versionCode`，不进 APK）

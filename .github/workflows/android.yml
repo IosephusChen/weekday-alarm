@@ -15,6 +15,18 @@
 
 name: Android CI
 
+# 收紧默认令牌（2026-11-13）：两个 job 只读代码、跑测试，不需要写权限。
+# 不写这一段时 GITHUB_TOKEN 拿仓库默认权限（可写），一次被投毒的依赖脚本就能改仓库。
+permissions:
+  contents: read
+
+# 同一分支只保留最新一次 run（2026-11-13）：连推两次时旧的那次仍在排队，
+# 白占 runner，还把「CI 绿」这个判据拖成十几分钟（2026-11-11 踩过：一个脚本
+# 收尾分三次推）。代价是被取消的提交不会留下独立的绿判定。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ main ]

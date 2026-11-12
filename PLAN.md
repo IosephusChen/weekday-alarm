@@ -6,14 +6,101 @@
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 21 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
-- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
-- **下一步**：v1.23.37 / 322 出包完成后等真机验收——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。通过后这一版收口，没有别的悬着的事。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
+- **做到哪**：**v1.23.37 / 322 已出包、已发布**（2026-11-12）：M-1 响铃通知一次性令牌，2,917,151 字节 / MD5 `2669a67cb545c34968b3fd32055568ec`，全量 **1281 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.37`，Release 带 `weekday-alarm-1.23.37.apk` 与 `mapping-1.23.37.txt`，NAS `apk/weekday-alarm-1.23.37.apk`，匿名下载 MD5 已核过一致。细节见本文件「M-1」节。上一版 **v1.23.36 / 321 已出包、已发布**（2026-11-12）：2,916,955 字节 / MD5 `1ecae5995c455db82f9940f4454a9843`，全量 **1277 条 / 0 失败 / 3 跳过**，lint 0 error；tag `v1.23.36` → `c44945a`，Release 带 `weekday-alarm-1.23.36.apk` 与 `mapping-1.23.36.txt`，NAS `apk/weekday-alarm-1.23.36.apk`，匿名下载 MD5 已核过一致。三笔安全加固见本文件「安全审计三笔加固」节（节假日条数上限 / 关掉 allowBackup / 崩溃日志改内部目录）。上一版 **v1.23.35 / 320 已出包、已发布**（2026-11-12）——`帮助页三处说错的话改好了`：只改 App 内帮助页三句，一行逻辑没动——① 翻月那颗按钮 v0.92.0 就缩成「今」，帮助页还在教「回本月」；② 三个桌面组件照 manifest 真名写（下一个闹钟 / 本月班表 · 完整 4×4 / · 极简 4×3），旧名字在列表里一个都找不到；③ 保活那条去掉 v0.58.2 已删的「电池优化白名单」，与安装段「不用管」对齐。2,916,831 字节 / MD5 `1a488c0f8201054428baf24b86012528`，全量 1273 条 / 0 失败 / 3 跳过，lint 0 error。上一版 **v1.23.34 / 319 已发布**（2026-11-12）：2,916,548 字节 / MD5 `d7162b11c878f78f324fe5f9d9649c1f`，倒计时四档取宽 + 按钮「今天请假 / 明天撤销请假」。再往前 v1.23.28 起逐版明细见 `docs/更新日志.md`。2026-11-12 另把开发流程四项（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`）落地并推送 `a445874`，只改工具、不占版本。当天又收到「5 处测试缺口」任务，方案见本文件顶部同名节，**待确认，未写测试代码**。main 干净、CI 绿；SHA 别背，`git log --oneline -3` 现看。
+- **下一步**：**先等用户对「5 处测试缺口」回「可以 / 改吧」**（顶部同名节；不占版本、只加测试、只跑定向用例）；批准后按 ①→⑤ 补 14 条测试。之后仍是 v1.23.37 / 322 真机验收四条（用户 2026-11-12 说「最后统一处理」，不催）——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。**清单 41 条：已做 24 / 部分 0 / 不成立 7 / 不改 10 / 待裁决 0**（D 组五条不计入）。**工具侧**：`check_refs.py` / `check_holiday_horizon.py` 都接在 `release.sh` 与 CI 里，改完文档先跑前者；文档里的 `文件:行号#锚点` 指不准会直接红。**出包闸门会拦三件事**（本轮连拦两次）：方案节状态必须先是 `状态：**已批准**`、`> 目标版本：` 那行**只准出现版本号一个数字**（写「用户 12:30」会被 `tr -dc 0-9` 拼成 3201230），出完包脚本自己改成「已出包 · 批准已作废」。
 - **分发链路已换（2026-11-09）**：包在本地出（`tools/fetch-keys.sh` 取密钥 → `tools/release.sh` → `tools/nas.sh put`），CI 只剩单测 + lint，`release:` 提交不再触发构建。改 `.github/workflows/` 下的文件需要 `Workflows` 权限，fine-grained 与 classic 默认都不带（2026-11-09 实测连拒三次）。**已解决**：fine-grained 那把勾上 Repository permissions → Workflows: Read and write 后，当天用它推 workflow 文件实测通过（`7382876`），**不再需要 classic**。2026-11-08 为应急建的 classic（`weekday-alarm-push`，7 天有效、11-16 到期）已由用户在 2026-11-09 删除；当天用 fine-grained 又在 `.github/workflows/` 下推了一个探针文件、同样通过（分支随即删除），确认残留的只剩 `/root/.github_token` 一把。
 - **验收**：v1.23.37 **待真机验**四条——① 点通知「停止」立即停；② 点「N 分钟后再响」正常小睡；③ 测试响铃能结束；④ 首页那行与悬浮横幅的停止 / 小睡仍有效。v1.23.35 **不必真机验**——只改帮助页文案，按发版清单「文案、配色、关于页、图标、更新日志」那行属「可不验」。v1.23.34 两处**已通过**（2026-11-12 11:32，用户「效果还可以」）：① 倒计时左侧完整；② 按钮文案。v1.23.33 四条**已通过**（2026-11-12 05:18）：① 4×3 标题行出现「闹钟已开启」；② chip 与月份完好；③ 130% / 145% 框架不变高；④ 标准字号零变化。证据分两半——用户四张真机截图（100/110/125/145）PIL 逐像素量出标题行 y 坐标四档相同、月份被切成四段宽度四档一致；跨版本则用 `git worktree` 拉 `b34ba87`(v1.23.32) 与当前树跑同一份 Robolectric 渲染（fontScale=1.0、xxhdpi、NATIVE 图形、固定日期 2026-11-12、250dp 宽）后逐像素比：**4×4 两版 PNG 逐字节相同（MD5 `698cf6b0…`，0/562500 像素差异）**，4×3 差异 9542 像素且全在 `x 444–725 / y 28–78` 的标题行内——月份墨迹 x 26–257 两版一致、chip 字形块宽 58px 未变只左移 186px 让位、字号 39/30/30px 与行高 59px 全部相同、格子与表头一个像素没动。**基线图已存 NAS `verify/widget-baseline/`**（`v1.23.32_4x3_font100.png` / `v1.23.32_4x4_font100.png` / `4x3_title_row_old_vs_new.png`，取回 md5 已校验），下次要比不必再建 worktree。**边界**：Robolectric 用的是它自带字体而非手机系统字体，所以它证明的是「代码层面两版渲染等价」——而两版在手机上用的是同一字体，差异只可能来自代码，这条已经排除。v1.23.25 两件**已通过**（2026-11-10 11:13）：① 清数据重装 → 进引导页 → 直接按返回键回首页 → 退出 App → 再打开，引导页**不再**弹；② 建完第一条闹钟那张卡，第一行是「**权限与自启动** / 通知、悬浮窗等几项」，点进去落在第 3 页五项清单。v1.23.24 及更早（补课卡 → 权限页 → 测试页 → 回来才弹系统框、v1.23.22 的 2027 节假日、v1.23.21 的轮班保存与双休默认）用户**未逐条回报，不再追问**——旧包都在 NAS `apk/` 与 Release 里，要复核直接装回去。
 - **欠账（暂时没有）**：2027 那笔已由 v1.23.22 还清。**这类欠账以后不用靠人记**：v1.23.23 起 `tools/check_holiday_horizon.py` 会在 12 月起把 CI、`release.sh`、`handoff.sh` 一起变红，红的时候直接列「怎么办」四处。2028 年安排预计 2027-11 公布，届时照那四处做；`SettingsLayoutTest` 与 `HolidayFreshnessTest` 的年份已改成读常量，只会红「注释 + 测试基准年」。
 - **清单**：41 条正文在 `docs/待裁决清单.md`，**状态列只在那份文件改**。已做 24 条、部分已做 0 条、复核不成立 7 条、判定不改 10 条；剩 0 条待裁决，第二次清空。这行数字由 `tools/check_version.py` 校验，和清单对不上直接红。
 - **工具**：2026-11-12 补了 `tools/setup-env.sh` 的沙箱自愈（JDK 25 时自动选 17–21、`sdkmanager` 与 Robolectric 自动走代理），只改脚本、不进包，详见下方「工具 · 沙箱环境自愈」一节。另有「开发流程优化」四项 **已落地**（`setup-env.sh` 自检与 token 自愈 / `check_refs.py --fix` / `tools/test.sh` / `tools/ship.sh`），只改工具、不进包，见下方同名节。
 - **别碰**：密钥安全（用户已明确不重视，见 AGENTS.md「密钥只有一把」，别主动提）。**美丑不许凭代码猜**——看不到屏幕就等截图，改出来的东西用户没要求过就是白改（v1.13.3 有过一次）。**「还没保存」弹窗跳帧**是用户明确放弃的（见本方案「已撤回」），别再主动重提。**引导收尾提示的跨页那一半**——v1.23.29 起由 `Hint.next` + 设置页 `showPending` 解决了（提示条会跟着 `finish()` 一起没，所以必须交给目标页说），别再重提「用系统 Toast 兜一下」。**文案里别再出现「通知没开就不会响」，也别再写「闹钟照响」这种没前提的结论**——v1.23.15 修了前半句，v1.23.16 又修了后半句。一句只说一项开关管什么（自启动＝响不响，其余＝怎么响 / 准不准 / 怎么关）。**别再给新装用户预置闹钟**——v1.23.17 起「稍后设置」就是真的没设，任何「为了开箱不空」的兜底都算回退（v0.45.0 删过一次，这次连预置也删了）。**别再为「查权限」另建页面**——v1.23.18 起第 3 页就是权限页，复制一份清单出来，以后加权限要改两处。**那页上「系统读不到」的两行不许改成假勾**：自启动没有 API 可读，写成已开启就是骗人。**别再提「引导页加一页日历」**——2026-11-09 已按 A 方案落地（首页一次性提示）；`AGENTS.md` 第六节两条判据（默认值准不准 / 错了代价大不大）日历都不满足，加页等于把引导页改成功能导览。**引导页的「看过」标记不能再退回「只有点按钮才写」**——v1.23.25 起返回键也写 `onboard_done`（用户实测：「都回到首页了，再打开又弹一遍」）；漏掉的设置由补课卡和设置页「新手引导 · 重看」兜。**补课卡那行的判据不许换回 `onboard_done`**——它区分不了「关掉了引导」和「看过了权限清单」，v1.23.25 就是因为这个，真正点「稍后设置」的人反而看不到那行。**别再让「保存第一条闹钟」直接弹系统通知框**——v1.23.23 那样做过一版，被 v1.23.24 替掉：按「这一项决定什么」排，自启动（响不响）在通知（响了从哪儿关）之前，只在用户走完权限页、回来仍未开时才问（2026-11-10 用户原话）。
+
+## 测试缺口 · 5 处补测（2026-11-12，待确认）
+
+> 状态：**待确认**
+> 目标版本：不占版本（只加测试，不进 APK）
+> 批准：待用户回「可以 / 改吧」；确认前不写第一行测试代码
+> 落地：未开始
+
+只新增 / 修改 `app/src/test/` 下的测试文件；产品代码、现有测试断言、版本号一律不动；不跑全量，只跑下面列出的五个类。
+
+### ① 旧备份恢复丢掉请假 / 加班
+
+现状：`ConfigBackupTest` 只测新格式往返与坏输入。旧备份没有 `day_plan` 键，走 `ConfigBackup.java:302-313#optJSONObject(Prefs.KEY_DAY_PLAN)` 的 `else` 分支清零新表与迁移标记，再由 `Prefs.java:878-904#ensureDayPlanMigrated` 按两个旧集合重迁——这条分支零覆盖。
+
+新建 `LegacyBackupTest`（3 条）：
+
+1. `oldBackup_restoresLeaveAndOvertimeIntoDayPlan`：先造「双休无班次 + 新表有值」——`Prefs.setWeekMode(ctx, DOUBLE_REST)`、`Prefs.setDayPlan` 放 2026-10-10 请假、`day_plan_migrated=true`；再导入只带 `vacation_dates:["2026-10-12"]` / `overtime_dates:["2026-10-17"]` 的旧 JSON → 断言 `getDayPlan()` 里 2026-10-12→`DAY_LEAVE`、2026-10-17→`DAY_OVERTIME_ANY`，且 2026-10-10 已不在（证明旧表被清掉而不是叠加）。
+2. `newBackup_dayPlanWinsOverLegacySets`：同一份 JSON 同时带 `day_plan:{"2026-10-12":1}` 与两个旧集合 → 逐项等于 `day_plan`，旧集合不覆盖。
+3. `oldBackup_overtimeUsesFirstShiftWhenScheduleHasShifts`：`WeekMode.CYCLE` + `setShifts([Shift(3,"白班",…)])` + `setShiftCycle` 非空 → 同一条旧备份导入后 2026-10-17→`3`，不是 `-2`。
+
+不做什么：不改 `ConfigBackupTest` 现有用例；不测导出与文件选择器；不碰产品代码。
+
+### ② 「取消稍后提醒」广播
+
+现状：`SnoozeReceiver.java:21-35#ACTION_CANCEL` 整条路径零覆盖；按钮由 `SnoozeNotice.java:64-71#ACTION_CANCEL` 构建。
+
+新建 `SnoozeReceiverTest`（3 条；三条都把系统时钟固定在 2026-11-12 10:00、默认时区 Asia/Shanghai，`@After` 还原，避免跨零点和「今天」漂移）：
+
+1. `cancel_clearsRegistrationAndNotice`：`Prefs.setSnoozeMinutes(5)` → `ScheduleManager.snooze(ctx,7,"起床")` + `SnoozeNotice.post(...)` → 发 `ACTION_CANCEL`（alarm_id=7、`EXTRA_DATE`=同一个 now 推出的目标日）→ `isSnoozeRegistered(7,target)==false`、`SnoozeNotice.id(7)` 的通知为 null。
+2. `cancel_onlyTargetDay`：固定 23:57、间隔 1 分钟排一条（落 11-12）；再固定 23:59、间隔 5 分钟排一条（落 11-13）→ 先按 11-12 取消 → 11-13 仍登记（前提：两条都已登记，先断言）。
+3. `cancel_badDate_fallsBackToToday`：`EXTRA_DATE` 缺失一次、非法一次 → 都取消今天那条，不抛异常；明天那条不动。
+
+不做什么：不改 `SnoozeNotice` / `ScheduleManager`；不测 Toast 文案；不为「取消不存在的日期」额外造分支。
+
+### ③ 日期网格
+
+现状：`PickDateDialog.java:92-145#buildGrid` 唯一调用点是 `ScheduleSheet.java:180-184#PickDateDialog`，行数 / 空槽 / 点击回调都没有测试。
+
+新建 `PickDateDialogTest`（3 条；全部传固定 month 与 today，不读系统时间）：
+
+1. `feb2026_sundayFirst_hasFiveRows`：`LocalDate.of(2026,2,1)`（周日）→ 5 行；首行 7 格，前 6 格无子 View，第 7 格文本「1」。
+2. `rowCount_followsMonthShape`：`2026-08`（1 号周六）→ 6 行且末行含「31」；`2027-02`（1 号周一）→ 4 行（钉住别把行数写死成 5）。
+3. `clickDay_firesCallbackWithDate`：2027-02 的「15」格 `performClick()` → 回调收到 `LocalDate.of(2027,2,15)`。
+
+不做什么：不弹真实对话框、不测翻月按钮、不改布局 / 代码；公历固定写死在这三年，与系统日期无关。
+
+### ④ 午夜刷新的「排」与「撤」
+
+现状：`BedtimeNotificationTest` 只测 `refreshIfShown` 文案；`BedtimeReminder.java:252-280#scheduleMidnightRefresh` 与 `cancelMidnightRefresh` 没有测试，触发点在 `BedtimeReceiver.java:124-125#scheduleMidnightRefresh`。
+
+新建 `BedtimeMidnightTest`（3 条）：
+
+1. `bedtime_schedulesMidnightRefresh`：CYCLE 七天全上班（`setCycleMask(0b1111111)`）+ 07:30 闹钟 + `ShadowAlarmManager.setCanScheduleExactAlarms(true)` → 触发 `ACTION_BEDTIME` → 存在指向 `BedtimeReceiver` / `ACTION_MIDNIGHT`、触发时刻为「明天 00:00」（同一个 now 推出、`ZoneId.systemDefault()`）的广播。
+2. `cancelNotice_cancelsMidnightRefresh`：同上后再 `BedtimeReminder.cancelNotice(ctx)` → 该广播已被取消。
+3. `restTomorrow_postsNothingAndSchedulesNoMidnight`：`setCycleMask(0)`（明天休息，`computeModel().notify==false`）→ 触发 `ACTION_BEDTIME` → 没有 `BedtimeReminder.NOTIF_ID` 通知，也没有 `ACTION_MIDNIGHT` 广播。
+
+不做什么：不改 `BedtimeReceiver` / `BedtimeReminder`；不测通知文案、05:00 过期、跨天刷新。
+
+### ⑤ id 段约定
+
+现状：注释写了「稍后提醒 4000+、提前提醒 2000–2999」（`SnoozeNotice.java:33#NOTIF_ID_BASE`），重排对账在 `ScheduleManager.java:794-818#dropPreNoticesExcept` 与 `ScheduleManager.java:838-852#dropPreNoticesExcept`，但没有任何测试钉住两个区间不重叠。
+
+新建 `NotificationIdRangeTest`（2 条）：
+
+1. `rescheduleAll_keepsSnoozeDropsStalePreNotice`：提前量 30 分钟、启用一条「now+3h」的闹钟（未进窗口）→ `rescheduleAll` 先让它登记，再发 `PreNoticeReceiver.post`（id 2000+8）与 `SnoozeNotice.post`（id 4000+7）各一条 → 再 `rescheduleAll` → 4007 仍在、2008 被撤。
+2. `idRanges_doNotOverlap`：`SnoozeNotice.NOTIF_ID_BASE(4000) >= PreNoticeReceiver.NOTIF_ID_BASE(2000)+1000`；`AlarmService.java:57#NOTIF_ID` 的 1001 不在 `[2000,3000)`。
+
+不做什么：不改常量、不改对账逻辑；不测通知长什么样。
+
+### 怎么跑
+
+```bash
+./gradlew testDebugUnitTest --tests '*LegacyBackupTest' --tests '*SnoozeReceiverTest' \
+  --tests '*PickDateDialogTest' --tests '*BedtimeMidnightTest' --tests '*NotificationIdRangeTest'
+```
+
+预期 14 条全绿；随后跑 `python3 tools/check_refs.py` 与 `python3 tools/check_version.py`。补覆盖类不强行造红；若某条在旧代码上本就能红（钉的是真缺陷），在提交说明里写清「改哪一行会红、红几条」。
+
+### 不做什么（总）
+
+不改产品代码；不改现有测试的期望值；不升 `versionCode` / `versionName`；不出包；不跑全量（全量留给 `release.sh`）；不新增依赖；不动 `AGENTS.md`。
+
+### 风险
+
+- ② 依赖 `SystemClock.setCurrentTimeMillis` + 默认时区。每条用例先断言「两次小睡分别登记在今天 / 明天」，时钟没生效会直接失败，不会静默跳过；`@After` 还原时区。
+- ③ 依赖写死的 2026-02 / 2026-08 / 2027-02 真实公历，与系统时间无关。
+- ④ 触发时刻用同一个 `now` 推出「明天 00:00」；恰好在零点那一瞬可能红，概率极低，红了能看出是边界而不是功能坏了。
 
 ## M-1 · 响铃通知按钮防代发（2026-11-12，已实施 ①）
 

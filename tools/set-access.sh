@@ -15,6 +15,9 @@
 #   NAS_USER=U NAS_PASS=P          bash tools/set-access.sh
 #   bash tools/set-access.sh                     # 只探活，不动文件
 #
+# 可加 --base=<完整 URL> 一并把 NAS 地址写进 /root/.nas_url（2026-11-13：地址不再写死在
+# tools/nas.sh 里，仓库公开，不该挂出门牌）。单给 --base 就只落地址 + 探活。
+#
 # 拿到 NAS 凭据等于拿到全部：签名材料走 tools/fetch-keys.sh（NAS keys/），
 # 发布产物走 tools/nas.sh（NAS apk/）。GitHub PAT 若也备份在 NAS 上，
 # tools/nas.sh get keys/github-token.txt /root/.github_token 一条就够。
@@ -23,6 +26,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 CRED_FILE="${NAS_CREDENTIALS:-/root/.nas_credentials}"
 BAK="$CRED_FILE.bak"
+BASE_FILE="${NAS_URL_FILE:-/root/.nas_url}"
+BASE_BAK="$BASE_FILE.bak"
 
 ok()   { printf '✓ %s\n' "$*"; }
 info() { printf '  %s\n' "$*"; }
@@ -30,13 +35,15 @@ die()  { printf '✗ %s\n' "$*" >&2; exit 1; }
 
 NEW_USER=""
 NEW_PASS=""
+NEW_BASE=""
 
 for arg in "$@"; do
     case "$arg" in
         --user=*) NEW_USER="${arg#*=}" ;;
         --pass=*) NEW_PASS="${arg#*=}" ;;
+        --base=*) NEW_BASE="${arg#*=}" ;;
         -h|--help)
-            sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '3,23p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *) die "未知参数：$arg（用 -h 看用法）" ;;
@@ -71,6 +78,32 @@ if [ -z "$CRED" ] && [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; then
     CRED="$NAS_USER:$NAS_PASS"
 fi
 
+# ---- NAS 地址（可选，2026-11-13）------------------------------------------
+# tools/nas.sh 按 NAS_BASE → /root/.nas_url 取地址；这次给的地址写进后者，
+# 并在本次探活里用环境变量压住（写失败也能靠回滚还原）。
+had_old_base=0
+restore_base() {
+    if [ "$had_old_base" -eq 1 ]; then
+        mv -f "$BASE_BAK" "$BASE_FILE"
+    elif [ -n "$NEW_BASE" ]; then
+        rm -f "$BASE_FILE"
+    fi
+}
+if [ -n "$NEW_BASE" ]; then
+    case "$NEW_BASE" in
+        http://*|https://*) : ;;
+        *) die "NAS 地址要以 http:// 或 https:// 开头，收到的是「${NEW_BASE:0:20}…」" ;;
+    esac
+    if [ -f "$BASE_FILE" ]; then
+        cp -p "$BASE_FILE" "$BASE_BAK"
+        had_old_base=1
+    fi
+    ( umask 077; printf '%s' "$NEW_BASE" > "$BASE_FILE" )
+    chmod 600 "$BASE_FILE"
+    export NAS_BASE="$NEW_BASE"
+    ok "地址已写入 $BASE_FILE"
+fi
+
 # ---- 探活 ------------------------------------------------------------------
 # nas.sh 的 BASE 只维护一处，这里不重复写 URL。退出码靠 HTTP 码判，不靠 curl 的。
 probe() {
@@ -103,10 +136,15 @@ if [ -z "$CRED" ]; then
     info "不写入，只探活（$CRED_FILE 是现有的）"
     code=$(probe)
     if verdict "$code"; then
+        rm -f "$BASE_BAK"
         ok "NAS 连通（HTTP $code）"
         exit 0
     fi
+    restore_base
     printf '✗ 没通过探活：' >&2; explain "$code" >&2
+    if [ -n "$NEW_BASE" ]; then
+        printf '  地址没换（已回滚到原来那份）\n' >&2
+    fi
     exit 1
 fi
 
@@ -139,7 +177,7 @@ chmod 600 "$CRED_FILE"
 
 code=$(probe)
 if verdict "$code"; then
-    rm -f "$BAK"
+    rm -f "$BAK" "$BASE_BAK"
     ok "凭据已写入 $CRED_FILE"
     info "user=$user  密码 ${#pass} 位（不打印）"
     ok "NAS 连通（HTTP $code）"
@@ -147,6 +185,7 @@ if verdict "$code"; then
 fi
 
 # 回滚：留半份坏凭据比没有更危险，后面的 fetch-keys / nas put 会以「看起来成功」的方式失败
+restore_base
 if [ "$had_old" -eq 1 ]; then
     mv -f "$BAK" "$CRED_FILE"
     printf '✗ 新凭据没通过探活：' >&2; explain "$code" >&2

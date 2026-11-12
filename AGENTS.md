@@ -9,7 +9,8 @@
 | git 凭据助手：`git push`、`gh` 开箱可用 | `export GH_TOKEN=<任意 PAT>`，`tools/*.py` 只读环境变量，不认平台 |
 
 送包曾经是第二处（靠百度网盘连接器）。2026-11-09 换成 NAS WebDAV 之后不绑了：`tools/nas.sh`
-只用 curl，凭据读 `/root/.nas_credentials`，换哪个 Agent 都一样跑。
+只用 curl，凭据读 `/root/.nas_credentials`、地址读 `/root/.nas_url`（2026-11-13 起不再写死在
+仓库里），换哪个 Agent 都一样跑。
 
 除这一处，代码、测试、lint、CI 守门、Release、`version.json` 全部与平台无关：
 换哪家 Agent，`docs/恢复说明.md` 第六节那段话粘过去就能续上。
@@ -104,6 +105,8 @@
   `fetch-keys.sh`（NAS `keys/`），发布产物走 `nas.sh`（NAS `apk/`），不必再单独要 `.jks`。
   做法：`bash tools/set-access.sh --user=U --pass=P`（或 `echo 'U:P' | bash tools/set-access.sh`）。
   它写 600、立刻 PROPFIND 探一次、**不通就回滚到上一份**——不留半份坏凭据。无参数时只探活。
+  **地址也是同一个脚本落盘**：`--base=<完整 URL>` 写进 `/root/.nas_url`（2026-11-13 起
+  `tools/nas.sh` 不再内置默认地址，因为仓库是公开的；缺了它脚本直接报错，不回退）。
   只剩一项仍要手给：GitHub PAT。NAS 上若已有 `keys/github-token.txt`，
   `tools/nas.sh get keys/github-token.txt /root/.github_token` 取回后 `chmod 600`。
   `tools/load-access.sh` 留着，但只接旧输入（四行 KEY=VALUE），按 `KEY=` 切、不按行切。
@@ -443,6 +446,8 @@ CI 一路绿，三条回归照样进了 290，因为那三处没有一条用例�
 2. **取凭据**：向用户要一次 NAS 账号，`bash tools/set-access.sh --user=U --pass=P`。
    它落盘 + 探活 + 不通回滚；GitHub PAT 若已备份在 NAS `keys/github-token.txt`，
    用 `tools/nas.sh get` 取回。**必须排在第 1 步之后**——脚本在仓库里。
+   地址不在仓库里了（2026-11-13），同一行加 `--base=<完整 URL>`；只在环境变量里有
+   `NAS_BASE` 时，第 1 步的 `setup-env.sh` 会自动落盘。
 3. `bash tools/handoff.sh`：一条命令看全——HEAD、与远端差多少、版本号、凭据与签名密钥
    在不在、清单进度（实时扫 `docs/待裁决清单.md`，与 CI 同一份实现）、`PLAN.md` 交接条原文、
    上次测试结果（读 `test-results/*.xml` 现算）、工作区干不干净。

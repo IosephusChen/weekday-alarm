@@ -31,9 +31,20 @@
 set -euo pipefail
 
 # 中文目录在 URL 里必须编码，且要按字节编码，不能靠 curl 的 --data-urlencode。
-# 这一串是 /<SHARE>/weekday-alarm 的百分号编码，改目录名时整串换掉。
-DEFAULT_BASE='https://<NAS_HOST>:<PORT>/dav/<SHARE>/weekday-alarm'
-BASE="${NAS_BASE:-$DEFAULT_BASE}"
+# 2026-11-13 起 BASE 不再写死在仓库里（仓库公开，等于把 NAS 的域名与端口挂在门牌上）。
+# 从哪来（顺序固定，与上面取凭据一致）：
+#   1. 环境变量 NAS_BASE
+#   2. /root/.nas_url（600，单行完整 URL，含 /weekday-alarm 这一段）
+# 目录改名时整串换掉，别只换中文那截——百分号编码是按字节算的。
+BASE="${NAS_BASE:-}"
+if [ -z "$BASE" ] && [ -f /root/.nas_url ]; then
+    BASE=$(tr -d '\r\n' < /root/.nas_url)
+fi
+if [ -z "$BASE" ]; then
+    echo "没有 NAS 地址：写 /root/.nas_url（单行完整 URL，chmod 600）或导出 NAS_BASE" >&2
+    echo "取法与百分号编码见 docs/恢复说明.md 第七节" >&2
+    exit 1
+fi
 
 CRED_FILE="${NAS_CREDENTIALS:-/root/.nas_credentials}"
 if [ -f "$CRED_FILE" ]; then

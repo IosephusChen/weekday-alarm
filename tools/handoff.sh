@@ -39,8 +39,11 @@ row "版本" "v$name / $code"
 # 2026-11-09：凭据是比密钥更早的一道门。新会话没凭据时 push 不了、NAS 也连不上，
 # 而 handoff 原来只报密钥——读到「密钥不在」会顺手去 fetch-keys，可 fetch-keys
 # 自己也要 NAS 凭据，于是卡在一个说不清的错上。两个都报，缺哪个指哪条路。
-if [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; }; then
+if { [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; }; } \
+    && { [ -f /root/.nas_url ] || [ -n "${NAS_BASE:-}" ]; }; then
     NAS_OK=1; nas_desc="NAS 有"
+elif [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PASS:-}" ]; }; then
+    NAS_OK=0; nas_desc="NAS 缺地址"
 else
     NAS_OK=0; nas_desc="NAS 缺"
 fi
@@ -52,7 +55,7 @@ fi
 if [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
-    row "凭据" "$nas_desc / $gh_desc ← 向用户要 NAS 账号 → tools/set-access.sh"
+    row "凭据" "$nas_desc / $gh_desc ← 向用户要 NAS 账号与地址 → tools/set-access.sh"
 fi
 
 # 2026-11-09：密钥不再指望「上次那个沙箱」，统一从 NAS 取。这里只报状态不自动拉——
@@ -178,7 +181,7 @@ row "上次测试" "$res_msg"
 # 把排序写进脚本：阻塞项（凭据 / 落后 / 密钥 / 测试基线）排在前面，脏工作区放最后当提醒。
 STEPS=()
 if [ "$NAS_OK" -eq 0 ] || [ "$GH_OK" -eq 0 ]; then
-    STEPS+=("取凭据：向用户要 NAS 账号 → bash tools/set-access.sh")
+    STEPS+=("取凭据：向用户要 NAS 账号与地址 → bash tools/set-access.sh --user=U --pass=P --base=<URL>")
 fi
 if [ "$remote_known" -eq 1 ] && [ "$behind" -gt 0 ]; then
     STEPS+=("落后远端 $behind 个提交 —— git pull --rebase，再动版本号")

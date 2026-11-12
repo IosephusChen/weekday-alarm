@@ -244,6 +244,17 @@ else
     CRED_STATE="缺 · bash tools/set-access.sh --user=U --pass=P"
 fi
 
+# 2026-11-13：NAS 地址不再写死在 tools/nas.sh 里（仓库公开，不该挂出门牌）。
+# 缺了它，上面凭据在位也取不到东西，所以在这里一并落盘 / 单独提示。
+if [[ -n "${NAS_BASE:-}" && ! -f /root/.nas_url ]]; then
+    ( umask 077; printf '%s' "$NAS_BASE" > /root/.nas_url ) && chmod 600 /root/.nas_url \
+        && ok "NAS 地址已落盘（来自 NAS_BASE）"
+elif [[ -f /root/.nas_url ]]; then
+    ok "NAS 地址沿用现有的（/root/.nas_url）"
+else
+    info "缺 NAS 地址——bash tools/set-access.sh --base=<完整 URL>（或导出 NAS_BASE）"
+fi
+
 # ---- 5.5 GitHub PAT 自愈 ---------------------------------------------------
 # 2026-11-12：token 以前只写在交接条里，沙箱一清空就卡在 push 401。凭据在位时
 # 顺手从 NAS 取回；取不到只报告，不算环境失败——单测不需要 token。不打印内容。

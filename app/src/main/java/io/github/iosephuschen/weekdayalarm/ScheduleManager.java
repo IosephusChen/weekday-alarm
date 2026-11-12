@@ -750,9 +750,6 @@ public final class ScheduleManager {
                 // （如 20:00 + 720 = 次日 08:00）；只从今天起算，次日零点后的
                 // 重排会先 cancelAll 再算不出它，那一次就不响。上界 +1 天保证末端不缩。
                 LocalDate d = today.minusDays(1).plusDays(i);
-                // v0.87.5：「这次不响」跳过的实例不许复活。重排只认列表开关，
-                // 没有这笔标记，点完到下一次响铃之间就白点了（真机实测）
-                if (skipOnce.contains(a.id + ":" + d)) continue;
                 // 个人请假：当天不响——但一次性闹钟豁免，它是「这天要叫我」，
                 // 不是「按作息排的班」（见 Alarm.ignoresVacation）
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
@@ -764,6 +761,10 @@ public final class ScheduleManager {
                 if (minutes == Alarm.NO_TIME) continue;
                 LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
                 if (!when.isAfter(now)) continue;   // 今天已过点就跳过
+                // v1.23.38 B2：「这次不响」按**响铃日**记账（通知里的 EXTRA_DATE 就是它）。
+                // 跨天实例（如 00:00 班次提前 60 分钟，D 23:00 响）的逻辑日是 D+1，
+                // 按 d 查会漏掉标记，点完又登记回来。
+                if (skipOnce.contains(a.id + ":" + when.toLocalDate())) continue;
                 candidates.add(new Instance(a, when));
             }
         }
@@ -906,12 +907,15 @@ public final class ScheduleManager {
             for (int i = 0; i <= horizon; i++) {
                 // v1.23.38 B1：与重排同一口径——起点前移一天，跨天实例才数得到。
                 LocalDate d = today.minusDays(1).plusDays(i);
-                if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (!a.ignoresVacation() && vacations.contains(d)) continue;
                 if (!a.appliesTo(d, rule, overtimes.contains(d))) continue;
                 int minutes = a.timeOn(d, rule, overtimes.contains(d));
                 if (minutes == Alarm.NO_TIME) continue;
-                if (d.atStartOfDay().plusMinutes(minutes).isAfter(now)) n++;
+                LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
+                if (!when.isAfter(now)) continue;
+                // v1.23.38 B2：与重排同口径，跳过标记认响铃日。
+                if (skipOnce.contains(a.id + ":" + when.toLocalDate())) continue;
+                n++;
             }
         }
         return n;
@@ -1054,13 +1058,14 @@ public final class ScheduleManager {
             boolean overtime = overtimes.contains(d);
             for (Alarm a : alarms) {
                 if (!a.enabled) continue;
-                if (skipOnce.contains(a.id + ":" + d)) continue;
                 if (vacation && !a.ignoresVacation()) continue;
                 if (!a.appliesTo(d, rule, overtime)) continue;
                 int minutes = a.timeOn(d, rule, overtimes.contains(d));
                 if (minutes == Alarm.NO_TIME) continue;
                 LocalDateTime when = d.atStartOfDay().plusMinutes(minutes);
                 if (!when.isAfter(from)) continue;
+                // v1.23.38 B2：「这次不响」认响铃日，跨天实例才跳得掉。
+                if (skipOnce.contains(a.id + ":" + when.toLocalDate())) continue;
                 if (best == null || when.isBefore(best.when)) {
                     best = new NextAlarm(when, a.label, a.id);
                 }

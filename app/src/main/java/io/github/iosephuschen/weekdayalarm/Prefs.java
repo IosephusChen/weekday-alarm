@@ -709,7 +709,9 @@ public final class Prefs {
             int i = e.lastIndexOf(':');
             if (i <= 0) continue;
             try {
-                if (LocalDate.parse(e.substring(i + 1)).isBefore(today)) continue;
+                // v1.23.38 B2：跨天实例的响铃日是「昨天」（00:00 班次提前到 23:00），
+                // 零点后重排时不能把它当过期清掉，否则标记没了、实例又复活。
+                if (LocalDate.parse(e.substring(i + 1)).isBefore(today.minusDays(1))) continue;
             } catch (Exception ignore) {
                 continue;
             }

@@ -294,6 +294,37 @@ if [[ $RUN_TEST -eq 0 ]]; then
     exit 0
 fi
 
+# ---- 6. Robolectric android-all 预取 ----------------------------------------
+# 2026-11-13：全新沙箱第一次跑测试会卡死在这里——Robolectric 自己的
+# MavenArtifactFetcher 在代理下「连上但不传数据」，实测 20 分钟 0 进度
+# （测试进程 447ms CPU、线程停在 fetchArtifact），而同一个 151MB 文件用 curl
+# 25 秒下完。所以跑测试前先取，已存在就跳过。取不到只警告，不挡后续。
+prefetch_android_all() {
+    local ver="$1"
+    local dir="$HOME/.m2/repository/org/robolectric/android-all-instrumented/$ver"
+    local jar="$dir/android-all-instrumented-$ver.jar"
+    local url="https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/$ver/android-all-instrumented-$ver.jar"
+    if [[ -s "$jar" ]]; then
+        ok "Robolectric $ver 已缓存"
+        return 0
+    fi
+    mkdir -p "$dir"
+    if curl -fsSL --max-time 300 -o "$jar.part" "$url" \
+            && curl -fsSL --max-time 60 -o "$dir/sha1.tmp" "$url.sha1" \
+            && [[ "$(sha1sum "$jar.part" | cut -d' ' -f1)" == "$(tr -d ' \n' < "$dir/sha1.tmp")" ]]; then
+        mv "$jar.part" "$jar"
+        cp "$dir/sha1.tmp" "$jar.sha1"
+        rm -f "$dir/sha1.tmp"
+        ok "预取 Robolectric $ver（$(du -h "$jar" | cut -f1)）"
+    else
+        rm -f "$jar.part" "$dir/sha1.tmp"
+        warn "Robolectric $ver 预取失败，测试时会自己再试（代理下可能很慢）"
+    fi
+}
+# 与 app/build.gradle 的 compileSdk 34 / robolectric 4.14.1 对应。测试若新增其它
+# SDK 档位（@Config(sdk=...)），这里要一起加。
+prefetch_android_all "14-robolectric-10818077-i7"
+
 info "跑 testDebugUnitTest（首次要拉依赖，慢在这一步）"
 # 2026-11-09：这段提示是补的。今天全量测试崩了一次，第一反应是「再跑一次看看」，
 # 第二反应才想起 docs/项目状态.md 里早记过——Zulu 20 的 C2 编译器会在

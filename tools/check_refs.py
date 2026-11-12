@@ -10,12 +10,15 @@
   天天红一片，然后没人再看它——检查一旦没人看，等于不存在。
 - **无锚点的引用只 WARN 不 FAIL**。历史引用不可能一次补齐，硬挡会让 CI 长期红。
 - **不做模糊匹配**。锚点必须原文包含；否则「行号偏一行」这种正是抓不住的那类漂移。
-- **不自动改写文档**。漂移时只报「锚点现在唯一匹配在第 N 行」，改还是人改：自动改在
-  锚点多处命中时会改错，而文档说错话比没话更糟。
+- **不自动改写文档（默认）**。漂移时只报「锚点现在唯一匹配在第 N 行」，改还是人改。
+  2026-11-12 起加 `--fix`：**只有锚点在目标文件里唯一命中时**才改行号，多处命中和
+  找不到仍报红——原设计担心的正是这两种，自动改会改错，而文档说错话比没话更糟。
+- **只改当前方案节与清单两块被扫区域**。历史版本节的行号是当时快照，不动。
 
 用法：
     python3 tools/check_refs.py            # 校验，FAIL 时 exit 1
     python3 tools/check_refs.py --quiet    # 只报问题
+    python3 tools/check_refs.py --fix      # 锚点唯一命中时自动改行号，其余照旧报红
 """
 
 import os
@@ -109,54 +112,83 @@ def region_list(lines):
     return start, end
 
 
-def check_doc(doc, region_fn, label, quiet):
-    lines = read_lines(doc)
+def check_doc(doc, region_fn, label, quiet, fix=False):
+    path = os.path.join(ROOT, doc)
+    with open(path, encoding="utf-8") as f:
+        raw = f.read()
+    lines = raw.splitlines()
     r = region_fn(lines)
     if r is None:
         print("  FAIL  %s 里找不到小节起点" % doc)
         return 1
     s, e = r
-    body = "\n".join(lines[s:e])
 
-    total = anchored = 0
-    fails, warns = [], []
-    for m in REF_RE.finditer(body):
-        name, a, b, anchor = m.group(1), int(m.group(2)), m.group(3), m.group(4)
-        total += 1
-        rel, err = resolve(name)
-        if err:
-            fails.append("%s:%d  %s（%s）" % (name, a, name, err))
-            continue
-        target = read_lines(rel)
-        hi = int(b) if b else a
-        if a < 1 or hi > len(target):
-            fails.append("%s:%s 行号越界（该文件共 %d 行）" % (name, m.group(2), len(target)))
-            continue
-        if b and a > hi:
-            fails.append("%s:%s 区间写倒了" % (name, m.group(2)))
-            continue
-        if not anchor:
-            warns.append("%s%s（无锚点，建议补 `#片段`）"
-                         % (name, ":" + m.group(2)))
-            continue
-        anchored += 1
-        now = "\n".join(target[a - 1:hi])
-        if _squash(anchor) in _squash(now):
-            continue
-        # 漂移：给出锚点现在的唯一位置，只建议、不改
-        cand = anchor_lines(target, anchor)
-        if len(cand) == 1:
-            hint = "锚点现在在 %d 行" % cand[0]
-        elif cand:
-            hint = "锚点在文件里有 %d 处，无法定位" % len(cand)
-        else:
-            hint = "全文件都找不到这个锚点，可能被改名/删掉了"
-        fails.append("%s:%d-%d#%s\n        区间现值：「%s」\n        %s"
-                     % (name, a, hi, anchor, now.strip()[:80].replace("\n", " "), hint))
+    total = anchored = fixed = 0
+    fails, warns, fix_log = [], [], []
+    # 逐行扫而不是拼成一整段：--fix 要知道改的是文档的哪一行。
+    # 同一行多处引用时从右往左改，左边匹配的偏移不会被打乱。
+    for i in range(s, e):
+        line = lines[i]
+        for m in reversed(list(REF_RE.finditer(line))):
+            name, a, b, anchor = m.group(1), int(m.group(2)), m.group(3), m.group(4)
+            total += 1
+            rel, err = resolve(name)
+            if err:
+                fails.append("%s:%d  %s（%s）" % (name, a, name, err))
+                continue
+            target = read_lines(rel)
+            hi = int(b) if b else a
+            if a < 1 or hi > len(target):
+                fails.append("%s:%s 行号越界（该文件共 %d 行）" % (name, m.group(2), len(target)))
+                continue
+            if b and a > hi:
+                fails.append("%s:%s 区间写倒了" % (name, m.group(2)))
+                continue
+            if not anchor:
+                warns.append("%s%s（无锚点，建议补 `#片段`）"
+                             % (name, ":" + m.group(2)))
+                continue
+            anchored += 1
+            now = "\n".join(target[a - 1:hi])
+            if _squash(anchor) in _squash(now):
+                continue
+            # 漂移：给出锚点现在的唯一位置，只建议、不改
+            cand = anchor_lines(target, anchor)
+            if len(cand) == 1:
+                hint = "锚点现在在 %d 行" % cand[0]
+            elif cand:
+                hint = "锚点在文件里有 %d 处，无法定位" % len(cand)
+            else:
+                hint = "全文件都找不到这个锚点，可能被改名/删掉了"
+            if fix and len(cand) == 1:
+                shift = cand[0] - a
+                nb = hi + shift if b else None
+                if cand[0] >= 1 and (nb is None or 1 <= nb <= len(target)):
+                    new_ref = "%s:%d%s%s" % (
+                        name, cand[0],
+                        ("-%d" % nb) if nb else "",
+                        ("#" + anchor) if anchor else "")
+                    lines[i] = line[:m.start()] + new_ref + line[m.end():]
+                    line = lines[i]
+                    fixed += 1
+                    fix_log.append("%s:%s → %d" % (name, m.group(2), cand[0]))
+                    continue
+                hint += "（平移后越界，没有改）"
+            fails.append("%s:%d-%d#%s\n        区间现值：「%s」\n        %s"
+                         % (name, a, hi, anchor, now.strip()[:80].replace("\n", " "), hint))
+
+    if fix and fixed:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + ("\n" if raw.endswith("\n") else ""))
+        for entry in fix_log:
+            print("  FIX   " + entry)
+        print("  已改写 %d 处（仅锚点唯一命中的引用）" % fixed)
 
     if not quiet:
         print("  %s（第 %d–%d 行）" % (label, s + 1, e))
         print("    引用 %d 处，带锚点 %d 处" % (total, anchored))
+        if fix:
+            print("    自动改写 %d 处" % fixed)
     for w in warns:
         print("  WARN  " + w)
     for f in fails:
@@ -166,10 +198,11 @@ def check_doc(doc, region_fn, label, quiet):
 
 def main():
     quiet = "--quiet" in sys.argv
+    fix = "--fix" in sys.argv
     print("-- 文档引用校验（tools/check_refs.py）--")
     bad = 0
-    bad += check_doc("PLAN.md", region_plan, "PLAN.md 当前方案节", quiet)
-    bad += check_doc("docs/待裁决清单.md", region_list, "清单复核记录与拍板待选", quiet)
+    bad += check_doc("PLAN.md", region_plan, "PLAN.md 当前方案节", quiet, fix)
+    bad += check_doc("docs/待裁决清单.md", region_list, "清单复核记录与拍板待选", quiet, fix)
     if bad:
         print("\n有 %d 处引用指不准。按 AGENTS 第三节：行号与锚点当场 grep 确证再写。" % bad)
         return 1

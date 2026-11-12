@@ -205,23 +205,77 @@ else
     ok "Android SDK 齐了（$SDK）"
 fi
 
-# ---- 5. 凭据（只在有环境变量时做）-----------------------------------------
+# ---- 5. 凭据 ---------------------------------------------------------------
 # 2026-11-11：NAS_USER / NAS_PASS 由 ~/.codebuddy/settings.json 的 env 字段注入时，
 # 这里自动落盘 + 探活，新会话连「要一次账号」都省了。没配就安静跳过，不算错。
 # </dev/null 是必须的：set-access.sh 在非 tty 下会先读 stdin，不给它一个空的就卡住。
+# 2026-11-12：没有环境变量但文件已在时不再提示「去要账号」；两者都没有才明确指路，
+# 且不 exit 1——单测不需要凭据，不能因为没配就整轮跑不完。
 if [[ -n "${NAS_USER:-}" && -n "${NAS_PASS:-}" ]]; then
     if bash tools/set-access.sh </dev/null >/dev/null 2>&1; then
         ok "NAS 凭据已自动落盘并探活"
     else
         info "NAS 凭据自动落盘没成功——手动跑 bash tools/set-access.sh 看原因"
     fi
+elif [[ -r /root/.nas_credentials ]]; then
+    ok "NAS 凭据沿用现有的（/root/.nas_credentials）"
 else
-    info "没有 NAS_USER/NAS_PASS 环境变量，跳过凭据（要用就 bash tools/set-access.sh）"
+    info "缺 NAS 凭据——向用户要一次账号后跑：bash tools/set-access.sh --user=U --pass=P"
+    info "（不影响单测；只影响取签名密钥、取 GitHub token、送包）"
+fi
+
+if [[ -r /root/.nas_credentials ]]; then
+    CRED_STATE="在位（/root/.nas_credentials）"
+else
+    CRED_STATE="缺 · bash tools/set-access.sh --user=U --pass=P"
+fi
+
+# ---- 5.5 GitHub PAT 自愈 ---------------------------------------------------
+# 2026-11-12：token 以前只写在交接条里，沙箱一清空就卡在 push 401。凭据在位时
+# 顺手从 NAS 取回；取不到只报告，不算环境失败——单测不需要 token。不打印内容。
+TOKEN_STATE="缺 · 没有 NAS 凭据"
+if [[ -s /root/.github_token ]]; then
+    chmod 600 /root/.github_token 2>/dev/null || true
+    TOKEN_STATE="在位（/root/.github_token，600）"
+    ok "GitHub token 已在位"
+elif [[ -r /root/.nas_credentials ]]; then
+    if bash tools/nas.sh get keys/github-token.txt /root/.github_token >/dev/null 2>&1 \
+        && [[ -s /root/.github_token ]]; then
+        chmod 600 /root/.github_token
+        TOKEN_STATE="已从 NAS 恢复（/root/.github_token，600）"
+        ok "GitHub token 已从 NAS 恢复"
+    else
+        rm -f /root/.github_token
+        TOKEN_STATE="缺 · NAS 上没有 keys/github-token.txt 或取不到"
+        info "GitHub token 没取到——推代码前手工：bash tools/nas.sh get keys/github-token.txt /root/.github_token"
+    fi
+else
+    info "GitHub token 没取到——先落 NAS 凭据，再 bash tools/nas.sh get keys/github-token.txt /root/.github_token"
 fi
 
 # ---- 6. 自检 ---------------------------------------------------------------
+# 签名密钥只影响出包，缺了不算环境失败；给一条明确的下一步就行。
+KEY_STATE="缺 · 出包前跑 bash tools/fetch-keys.sh"
+KEY_PROP=$(sed -n 's/^storeFile=//p' keystore.properties 2>/dev/null | head -1 || true)
+if [[ -n "$KEY_PROP" && -f "$KEY_PROP" ]]; then
+    KEY_STATE="在位（$KEY_PROP）"
+elif [[ -f ../weekdayalarm-release.jks ]]; then
+    KEY_STATE="在位（../weekdayalarm-release.jks）"
+fi
+
+self_check() {
+    echo
+    echo "-- 环境自检 --"
+    info "JDK          Java $JVER（$JAVA_HOME）"
+    info "Android SDK  $SDK"
+    info "NAS 凭据     $CRED_STATE"
+    info "GitHub token $TOKEN_STATE"
+    info "签名密钥     $KEY_STATE"
+}
+
 if [[ $RUN_TEST -eq 0 ]]; then
     ok "环境就绪（--no-test，没跑测试）"
+    self_check
     info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"
     exit 0
 fi
@@ -247,4 +301,5 @@ if ! ./gradlew testDebugUnitTest --console=plain; then
     exit 1
 fi
 ok "环境就绪，单测通过"
+self_check
 info "下一步：bash tools/handoff.sh —— 看全当前状态（含「下一步」该做什么）"

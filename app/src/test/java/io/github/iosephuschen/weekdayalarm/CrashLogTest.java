@@ -59,6 +59,19 @@ public class CrashLogTest {
         assertEquals("最新一份就是「晚」那份", all.get(0).getName(), CrashLog.latestName(ctx()));
     }
 
+    /**
+     * v1.23.36：日志目录必须落在内部存储。
+     *
+     * <p>外部私有目录（`Android/data/<包名>/files`）在 Android 8/9 上只要拿到
+     * `READ_EXTERNAL_STORAGE` 就能被别的应用读到；内部目录任何第三方都进不来。
+     */
+    @Test
+    public void dir_落在内部存储() {
+        assertEquals("崩溃日志目录必须是内部 files",
+                ctx().getFilesDir().getAbsolutePath(),
+                CrashLog.dir(ctx()).getAbsolutePath());
+    }
+
     @Test
     public void latestName_没有日志时返回null() {
         assertNull("空目录必须返回 null，不能是空串——主页用 null 判断「从没崩过」",

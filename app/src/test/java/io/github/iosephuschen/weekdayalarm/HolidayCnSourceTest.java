@@ -209,4 +209,48 @@ public class HolidayCnSourceTest {
         assertTrue(HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
         assertFalse("混进来的 2026 日期应被丢弃", HolidayData.isHoliday(LocalDate.of(2026, 6, 1)));
     }
+
+    /**
+     * 单年条数上限（v1.23.36）：远端把整年标成放假，等于让闹钟整年不响。
+     *
+     * <p>年份校验挡不住这一手——60 个日期都在 2028 年里。holiday-cn 真实年份最多
+     * 34 个放假日 + 6 个补班日，所以按量级设硬上限，超了整份丢弃、原数据不动。
+     */
+    @Test
+    public void holidayCn_absurdCountsAreRejected() {
+        assertTrue(HolidayData.applyHolidayCnJson(cn("2028", "2028-01-01=1")));
+
+        LocalDate start = LocalDate.of(2028, 1, 2);
+        StringBuilder sb = new StringBuilder("{\"year\":2028,\"days\":[");
+        for (int i = 0; i < 60; i++) {
+            if (i > 0) sb.append(',');
+            sb.append("{\"date\":\"").append(start.plusDays(i)).append("\",\"isOffDay\":true}");
+        }
+        String absurd = sb.append("]}").toString();
+
+        assertFalse("60 个放假日远超真实年份，整份丢弃", HolidayData.applyHolidayCnJson(absurd));
+        assertFalse("被丢弃的数据不能算解析成功", HolidayData.lastApplyOk());
+        assertTrue("丢弃后原数据必须还在", HolidayData.isHoliday(LocalDate.of(2028, 1, 1)));
+        assertFalse("被丢弃的日期一天都不能生效", HolidayData.isHoliday(LocalDate.of(2028, 2, 15)));
+    }
+
+    /** 真实量级（34 放 + 6 补班）必须照常合入——上限不能收到误伤正常年份。 */
+    @Test
+    public void holidayCn_realisticYearIsStillAccepted() {
+        StringBuilder sb = new StringBuilder("{\"year\":2028,\"days\":[");
+        LocalDate off = LocalDate.of(2028, 3, 1);
+        for (int i = 0; i < 34; i++) {
+            if (i > 0) sb.append(',');
+            sb.append("{\"date\":\"").append(off.plusDays(i)).append("\",\"isOffDay\":true}");
+        }
+        LocalDate mk = LocalDate.of(2028, 5, 1);
+        for (int i = 0; i < 6; i++) {
+            sb.append(",{\"date\":\"").append(mk.plusDays(i)).append("\",\"isOffDay\":false}");
+        }
+        assertTrue("真实量级的数据必须能合入",
+                HolidayData.applyHolidayCnJson(sb.append("]}").toString()));
+        assertTrue(HolidayData.lastApplyOk());
+        assertTrue(HolidayData.isHoliday(LocalDate.of(2028, 3, 1)));
+        assertTrue(HolidayData.isMakeupWorkday(LocalDate.of(2028, 5, 1)));
+    }
 }

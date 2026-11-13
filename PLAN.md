@@ -97,6 +97,16 @@
 
 **验收**：改前 `cp README.md /tmp/README.bak`，改后逐行比对——去掉标题符号与空行后，旧版每一个非空行都必须仍在新版里，缺一行就算漏搬，不提交。**实测结果：旧版 179 个非空行，缺失 1 行，且是唯一有意改的「（见下）」→「（见上）」（小组件图已移到功能上方）；其余 178 行逐字保留。**
 
+**第七轮 · 参照优秀项目的其余优化点（2026-11-13，待确认）**：用户问「参考优秀的 Github 项目，看看还有哪些能优化的」。先报了已经达标的三块，省得重议：topics 15 个（含 `alarm-clock` / `shift-schedule` / `chinese-holidays`）、Issue 模板 3 个且 `config.yml` 已把「使用说明」「现有哪些功能」做成入口、Release 正文有改动清单 + 版本段。剩下三项可做：
+
+- **A（推荐）CI 状态徽章**：`![CI](https://github.com/IosephusChen/weekday-alarm/actions/workflows/android.yml/badge.svg?branch=main)`，1 行，放在状态条上方。**这条要推翻旧结论**：前几轮拒的是 shields.io（第三方域名，大陆常挂），而 GitHub 原生徽章与 README 同域——能打开 README 就一定能加载它。
+- **B（推荐）docs 导航 1 行**：README 现在只链「使用说明」和 `docs/` 目录，17 个文件里读者最想找的是「更新日志」。在「下载与安装」末尾加一行指向 `docs/更新日志.md`。
+- **C（可选）`social-preview.png` 移到 `docs/`**：它是根目录唯一的非构建资产（182 KB），GitHub 上的图存在 Settings 里，仓库这份只是源文件。`git mv` 一行，README 不引用它，无连带改动。
+
+**第七轮不做**：shields.io 徽章（旧结论不变）；`CONTRIBUTING.md` / `SECURITY.md` / `CODE_OF_CONDUCT.md`（个人项目，README 已写清 PR 三条前提与回应节奏）；拆 `README.en.md`；`docs/README.md` 索引页（17 个文件里一半是历史存档，索引会放大噪音）；改历史 Release 正文（已发的就那样）。
+
+**第七轮查不了的一项**：`Actions → General → Workflow permissions` 默认值。PAT 缺这一项的读权限，`GET /actions/permissions/workflow` 返回 403（2026-11-13 实测）。影响有限——`android.yml` 每个 job 已显式写 `permissions: contents: read`，设成 read-only 只是防将来新加的 workflow。要设由用户在网页点，我不改。
+
 ## GitHub 仓库设置 · 四项（2026-11-13，3 项落地 / 1 项不可用）
 
 > 状态：**已实施**（第 4 项平台不提供）

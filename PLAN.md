@@ -103,6 +103,8 @@
 - **B（推荐）docs 导航 1 行**：README 现在只链「使用说明」和 `docs/` 目录，17 个文件里读者最想找的是「更新日志」。在「下载与安装」末尾加一行指向 `docs/更新日志.md`。
 - **C（可选）`social-preview.png` 移到 `docs/`**：它是根目录唯一的非构建资产（182 KB），GitHub 上的图存在 Settings 里，仓库这份只是源文件。`git mv` 一行，README 不引用它，无连带改动。
 
+**第八轮 · 版本号命名规则核查（2026-11-13，已批准 · 已实施）**：用户问「目前的版本号命名规则有问题吗」，批准原话「按你推荐的来，可选的也做了」。逐 tag 核过 79 组（versionCode / versionName / Release 三者对应），结论：硬要求全过（228→323 单调递增、无重复、无回退），三个语义问题——① patch 位被当发布序号用（v1.23.0→v1.23.38 共 38 版，其中混着新功能）；② `v1.13.x`–`v1.19.x` 8 个 minor 从未发版，`versionCode` 275→287 直接空跳，中间 12 个号在全部提交里一次都没出现过（`git log -S` 逐个验过）；③ 野 tag `preview` + Pre-release「开发预览包（每版覆盖）」指向 `f2e7ec4`，打那种包的 `assemblePreview` 与入库调试密钥 2026-11-09 已删，点进去会下到用现在仓库无法复现的包。已做两件：`gh release delete preview --cleanup-tag` → 79 降为 **78 个 tag 与 78 个 Release**，本地 tag 同步删除；`docs/流程规范.md` 新增**第十九节「版本号怎么升」**（versionCode 手工 +1 不做公式派生 / 加功能升 minor、只修 bug 升 patch / tag 只允许 `vX.Y.Z`），并在第十六节把「遗留物」那段改成「已清」。**不做**：改 versionCode 公式（78 个已发包都在用 323 这套值，换公式零收益）、重排或重打历史 tag、补历史空号。**跨零点后的第一版**记得按新规则判：有用户可见的新功能就升 minor。
+
 **第七轮不做**：shields.io 徽章（旧结论不变）；`CONTRIBUTING.md` / `SECURITY.md` / `CODE_OF_CONDUCT.md`（个人项目，README 已写清 PR 三条前提与回应节奏）；拆 `README.en.md`；`docs/README.md` 索引页（17 个文件里一半是历史存档，索引会放大噪音）；改历史 Release 正文（已发的就那样）。
 
 **第七轮查不了的一项**：`Actions → General → Workflow permissions` 默认值。PAT 缺这一项的读权限，`GET /actions/permissions/workflow` 返回 403（2026-11-13 实测）。影响有限——`android.yml` 每个 job 已显式写 `permissions: contents: read`，设成 read-only 只是防将来新加的 workflow。要设由用户在网页点，我不改。

@@ -1,13 +1,13 @@
 {
-  "versionCode": 325,
-  "versionName": "1.25.0",
+  "versionCode": 326,
+  "versionName": "1.25.1",
   "published": "2026-11-13",
-  "title": "关机也响，交给系统时钟",
+  "title": "撤回关机入口那一格",
   "notes": [
-    "闹钟编辑页多一格：把同一条时刻写进系统时钟",
-    "设置页与使用说明写清：关机后本 App 不会响",
-    "能不能关机响看机型，文案不承诺结果"
+    "系统时钟那一格已移除，行为回到 1.24.0",
+    "设置页新增的关机说明一并撤掉",
+    "关机后仍然不会响——这是系统限制"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.25.0/weekday-alarm-1.25.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.25.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.25.1/weekday-alarm-1.25.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.25.1"
 }

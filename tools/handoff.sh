@@ -47,15 +47,20 @@ elif [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PA
 else
     NAS_OK=0; nas_desc="NAS 缺"
 fi
+# 2026-11-13：沙箱重置后 /root/.github_token 会没，但 gh 的登录态常在
+# （/root/.config/gh/hosts.yml），`gh auth token` 直接能用。以前只认 token 文件，
+# 于是报「GitHub 缺」并让用户去要账号——其实推得动。三种态分开报。
 if [ -f /root/.github_token ] || [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
     GH_OK=1; gh_desc="GitHub 有"
+elif command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
+    GH_OK=1; gh_desc="GitHub 走 gh 登录态（无 token 文件也够）"
 else
     GH_OK=0; gh_desc="GitHub 缺"
 fi
 if [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
-    row "凭据" "$nas_desc / $gh_desc ← 向用户要 NAS 账号与地址 → tools/set-access.sh"
+    row "凭据" "$nas_desc / $gh_desc ← 按下面「下一步」补"
 fi
 
 # 2026-11-09：密钥不再指望「上次那个沙箱」，统一从 NAS 取。这里只报状态不自动拉——
@@ -180,8 +185,11 @@ row "上次测试" "$res_msg"
 # 原来六行状态全对，但新会话读完还得自己排序——先取凭据还是先 fetch-keys？落后了要不要先 pull？
 # 把排序写进脚本：阻塞项（凭据 / 落后 / 密钥 / 测试基线）排在前面，脏工作区放最后当提醒。
 STEPS=()
-if [ "$NAS_OK" -eq 0 ] || [ "$GH_OK" -eq 0 ]; then
-    STEPS+=("取凭据：向用户要 NAS 账号与地址 → bash tools/set-access.sh --user=U --pass=P --base=<URL>")
+if [ "$NAS_OK" -eq 0 ]; then
+    STEPS+=("取 NAS 凭据：bash tools/set-access.sh --base=<…/weekday-alarm> --user=U --pass=P（base 要带 %20 等编码）")
+fi
+if [ "$GH_OK" -eq 0 ]; then
+    STEPS+=("取 GitHub token：bash tools/nas.sh get keys/github-token.txt /root/.github_token")
 fi
 if [ "$remote_known" -eq 1 ] && [ "$behind" -gt 0 ]; then
     STEPS+=("落后远端 $behind 个提交 —— git pull --rebase，再动版本号")

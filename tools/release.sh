@@ -36,7 +36,7 @@ if [ ! -f PLAN.md ]; then
     echo "  FAIL 仓库根没有 PLAN.md —— 先写方案，等用户点头再补状态"
     exit 1
 fi
-if ! grep -qF '状态：**已批准**' PLAN.md; then
+if ! grep -qE '^> 状态：.*已批准' PLAN.md; then
     echo "  FAIL PLAN.md 状态不是「已批准」"
     grep -m1 '^> 状态：' PLAN.md || echo "       （连状态行都没有）"
     echo "       方案没确认就不出包。"

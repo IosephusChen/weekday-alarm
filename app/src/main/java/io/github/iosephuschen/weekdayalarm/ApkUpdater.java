@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -212,20 +213,43 @@ public final class ApkUpdater {
     static Meta readMeta(Context c, File apk) {
         if (apk == null || !apk.exists()) return null;
         PackageInfo pi = c.getPackageManager().getPackageArchiveInfo(
-                apk.getAbsolutePath(), PackageManager.GET_SIGNATURES);
+                apk.getAbsolutePath(), signFlags());
         if (pi == null || pi.packageName == null) return null;
-        return new Meta(pi.packageName, pi.versionCode, hashes(pi.signatures));
+        return new Meta(pi.packageName, pi.versionCode, hashesOf(pi));
     }
 
     @SuppressWarnings("deprecation")
     static Meta selfMeta(Context c) {
         try {
             PackageInfo pi = c.getPackageManager()
-                    .getPackageInfo(c.getPackageName(), PackageManager.GET_SIGNATURES);
-            return new Meta(pi.packageName, pi.versionCode, hashes(pi.signatures));
+                    .getPackageInfo(c.getPackageName(), signFlags());
+            return new Meta(pi.packageName, pi.versionCode, hashesOf(pi));
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * v1.26.1 R1：本项目的包**只有 v2 + v3 签名，没有 v1**（minSdk 26，AGP 默认不签 v1，
+     * 实测 `apksigner verify` 输出 v1=false / v2=true）。{@code GET_SIGNATURES} 是 v1 口径，
+     * 在部分 ROM 上对这种包会返回空数组，于是校验一律判「签名不一致」——
+     * 站内更新整条链路不可用。API 28 起改读 {@code GET_SIGNING_CERTIFICATES}。
+     */
+    private static int signFlags() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? PackageManager.GET_SIGNING_CERTIFICATES
+                : PackageManager.GET_SIGNATURES;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static List<String> hashesOf(PackageInfo pi) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && pi.signingInfo != null) {
+            android.content.pm.SigningInfo si = pi.signingInfo;
+            return hashes(si.hasMultipleSigners()
+                    ? si.getApkContentsSigners()
+                    : si.getSigningCertificateHistory());
+        }
+        return hashes(pi.signatures);
     }
 
     /** @param expectedCode version.json 里写的那个，下载到的包不能低于它 */

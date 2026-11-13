@@ -24,7 +24,24 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
-## 当前方案 · 逆向 Qualcomm 关机闹钟（直接给 RTC 上闹钟）
+## 当前方案 · 修 v1.24.0 / v1.26.0 的 3 个 bug 与 2 个风险
+
+> 状态：**已批准**
+> 批准：2026-11-13 用户原话「查一下最近几次更新有没有 bug」＋「好的，按这个方案来」
+> 目标版本：327（patch 版）
+
+1. **P1 关掉最后一个闹钟不撤 RTC**：`cancelAllIncludingTransient` 补 `PowerOffAlarm.sync(ctx, null)`。
+   补测试：走这条路径后必须发出 `CANCEL_ALARM`（旧代码上会红）。
+2. **P2 记时刻写在发广播之后**：`PowerOffAlarm.sync` 两行调序，先落盘再发。
+3. **P3 取消下载仍弹「下载失败」**：`UpdateUi` 的 done 回调先判 `current.cancelled()`，是就直接返回。
+4. **R2 vendor 异常拖垮整轮排程**：`sync()` 整体包 try/catch，失败只当没开。
+5. **R1 签名口径**：`readMeta` / `selfMeta` 改走 `GET_SIGNING_CERTIFICATES`（API 28+），
+   API 26–27 回退 `GET_SIGNATURES`；**改完仍列真机验收项**，不写成「已修好」。
+6. 版本 327 / v1.26.1，`Changelog.java` 与 `docs/更新日志.md` 各一条。
+
+**不做什么**：不动下载/校验的判定顺序与文案；不改写已发布历史；不重开 A（系统时钟入口）与 B（定时开机）。
+
+## 上一版方案 · 逆向 Qualcomm 关机闹钟（已出包 v1.26.0 / 326）
 
 > 状态：**已出包 · 批准已作废**
 > 出包：2026-11-13 18:20（再出包须重写方案并重新确认）

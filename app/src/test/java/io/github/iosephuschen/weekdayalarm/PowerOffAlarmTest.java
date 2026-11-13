@@ -139,6 +139,28 @@ public class PowerOffAlarmTest {
         assertTrue(broadcasts().isEmpty());
     }
 
+    /**
+     * v1.26.1 P1：删光 / 关光闹钟走的是 {@code cancelAllIncludingTransient}，它不经
+     * {@code rescheduleAllLocked}。原来那条路径不撤 RTC——界面显示「没有闹钟」，
+     * 关机后到点照样被 vendor 叫醒。
+     */
+    @Test
+    public void clearingAllAlarms_cancelsVendorAlarm() {
+        installVendor();
+        shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+        assertEquals(1, broadcasts().size());
+
+        ScheduleManager.cancelAllIncludingTransient(app);
+
+        List<Intent> sent = broadcasts();
+        assertEquals("关光闹钟后必须撤掉 RTC 里那条", 2, sent.size());
+        assertEquals(PowerOffAlarm.ACTION_CANCEL, sent.get(1).getAction());
+        assertEquals(1_700_000_000_000L,
+                sent.get(1).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
+        assertEquals(0L, Prefs.getPowerOffArmed(app));
+    }
+
     /** 只保留两条 vendor 广播，别把测试环境里别的广播算进来。 */
     private List<Intent> broadcasts() {
         List<Intent> all = shadowOf(app).getBroadcastIntents();

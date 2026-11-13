@@ -598,6 +598,9 @@ public final class ScheduleManager {
      */
     public static void cancelAllIncludingTransient(Context ctx) {
         cancelAll(ctx);
+        // v1.26.1 P1：这条路径是「没有任何启用的闹钟」时走的，它不经 rescheduleAllLocked，
+        // 原来就不撤 RTC——用户删光闹钟后关机，照样会被 vendor 叫醒。
+        PowerOffAlarm.sync(ctx, null);
         LocalDate today = LocalDate.now();
         for (Alarm a : Prefs.getAlarms(ctx)) {
             // 小睡可能落在今天或明天（跨零点按的「稍后提醒」）

@@ -64,19 +64,28 @@ final class PowerOffAlarm {
      * 用户重新授权后还要靠它撤销上一次）。
      */
     static void sync(Context c, Long next) {
-        if (!supported(c) || !granted(c)) return;
-        long armed = Prefs.getPowerOffArmed(c);
-        if (next == null) {
-            // vendor 的 CANCEL 只在 time 与它自己存的时刻相等时生效，所以必须用记下来的那个
-            if (armed > 0) {
-                c.sendBroadcast(build(ACTION_CANCEL, armed));
-                Prefs.setPowerOffArmed(c, 0L);
+        // v1.26.1 R2：这条链路是 vendor 的，权限竞态、ROM 拒收都可能抛异常。
+        // 它在 rescheduleAllLocked 里排在 cancelAll 之后、setAlarm 之前，
+        // 一旦抛出去就会把整轮排程打断——一条闹钟都不排，界面还不报错。
+        try {
+            if (!supported(c) || !granted(c)) return;
+            long armed = Prefs.getPowerOffArmed(c);
+            if (next == null) {
+                // vendor 的 CANCEL 只在 time 与它自己存的时刻相等时生效，所以必须用记下来的那个
+                if (armed > 0) {
+                    Prefs.setPowerOffArmed(c, 0L);
+                    c.sendBroadcast(build(ACTION_CANCEL, armed));
+                }
+                return;
             }
-            return;
+            long millis = next;
+            if (millis == armed) return;
+            // v1.26.1 P2：先落盘再发。反过来的话，进程在这两步之间被杀就会留下
+            // 「RTC 里挂着、本地没记」的状态——那个时刻之后永远撤不掉。
+            Prefs.setPowerOffArmed(c, millis);
+            c.sendBroadcast(build(ACTION_SET, millis));
+        } catch (Throwable ignored) {
+            // 关机闹钟是附加能力：它失败不该影响主排程
         }
-        long millis = next;
-        if (millis == armed) return;
-        c.sendBroadcast(build(ACTION_SET, millis));
-        Prefs.setPowerOffArmed(c, millis);
     }
 }

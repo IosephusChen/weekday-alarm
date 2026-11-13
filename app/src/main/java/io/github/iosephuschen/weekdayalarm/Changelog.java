@@ -57,6 +57,11 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(327, "1.26.1", "2026/11/13", "三处小修，两处兜底",
+                    "关光闹钟后，关机闹钟那条也一起撤掉",
+                    "点「取消」下载不再弹出「下载失败」",
+                    "签名改读 v2/v3，站内更新不再误判成签名不符",
+                    "关机闹钟出错只当它没开，不影响其它闹钟"),
             new Entry(326, "1.26.0", "2026/11/13", "关机也能响",
                     "设置页「响铃」多了一行「关机闹钟」，点一下授权就开",
                     "关机后到点由系统把手机叫醒，靠的是机内的 RTC",

@@ -135,6 +135,9 @@ public final class UpdateUi {
                 },
                 (error, apk, failure) -> {
                     if (dialog.isShowing()) dialog.dismiss();
+                    // v1.26.1 P3：取消是用户自己按的，不是失败。原来这里会把
+                    // 「已取消」当下载错误弹一个带「重试」的框，等于反问他一遍。
+                    if (current.cancelled()) return;
                     if (act.isFinishing() || act.isDestroyed()) return;
                     if (error != null) {
                         showDownloadFailed(act, info, error);

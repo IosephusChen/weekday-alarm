@@ -26,6 +26,38 @@ CODE=$(grep -m1 'versionCode' app/build.gradle | tr -dc '0-9')
 NAME=$(grep -m1 'versionName' app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
 echo "== 版本 v$NAME / $CODE =="
 
+# -- JDK 闸门（2026-11-13）--
+# Gradle 8.9 只支持 17~22。沙箱预装 JDK 25 时，测试进程会在 500 多条处
+# OutOfMemoryError，按 XML 汇总出来是「511 条失败」——看着像代码炸了，其实是环境。
+# 2026-11-13 连踩两次，每次白等十几分钟。
+# 不依赖调用方有没有 export：每个 Shell 调用都是新进程，export 活不过一次工具调用。
+# 这里自己找一遍，找到就换过去，找不到才退。
+java_major() {
+    env -u JAVA_TOOL_OPTIONS "$1/bin/java" -version 2>&1 | head -1 \
+        | sed -E 's/.*"([0-9]+)[."].*/\1/'
+}
+if [[ "$(java_major "${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")}")" =~ ^[0-9]+$ ]]; then
+    CUR=$(java_major "${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")}")
+else
+    CUR=0
+fi
+if (( CUR < 17 || CUR > 22 )); then
+    echo "-- JDK 闸门 --"
+    echo "  当前 JDK $CUR，Gradle 8.9 只支持 17~22，找一个能用的"
+    for d in /root/.local/share/mise/installs/java/*/ /root/.sdkman/candidates/java/*/; do
+        v=$(java_major "${d%/}" 2>/dev/null || true)
+        if [[ "$v" =~ ^[0-9]+$ ]] && (( v >= 17 && v <= 22 )); then
+            export JAVA_HOME="${d%/}"
+            echo "  已切换到 JDK $v（$JAVA_HOME）"
+            break
+        fi
+    done
+    if (( $(java_major "${JAVA_HOME:-/nonexistent}" 2>/dev/null || echo 0) < 17 )); then
+        echo "  FAIL 没有 17~22 的 JDK，先跑 bash tools/setup-env.sh"
+        exit 1
+    fi
+fi
+
 # -- 方案闸门（2026-11-05）--
 # 用户反复要求「先出方案、确认之后再动代码」，但写进 AGENTS.md 的规则在长会话里会被
 # 上下文压缩冲掉——那次用户说「在旧版基础上微调」，我顺手多改了顶栏措辞和进度条样式，

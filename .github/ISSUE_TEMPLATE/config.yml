@@ -6,3 +6,6 @@ contact_links:
   - name: 现在有哪些功能
     url: https://github.com/IosephusChen/weekday-alarm#%E5%8A%9F%E8%83%BD
     about: 提建议之前先确认一下有没有
+  - name: 每一版改了什么
+    url: https://github.com/IosephusChen/weekday-alarm/blob/main/docs/%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97.md
+    about: 报问题之前先看一眼，可能这一版已经修了

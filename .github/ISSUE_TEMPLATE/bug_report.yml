@@ -9,7 +9,7 @@ body:
         大概两分钟就能填完：机型、版本照抄一下，现象和频率是点选，中间两块各写一句话。
 
         我只有一台小米手机，拿不到你的设备，能不能定位基本取决于你写的信息。如果 App 崩过，
-        请顺手从 **设置 → 更多设置 → 关于 → 导出崩溃日志** 把文件拖进来。
+        请顺手从 **设置 → 更多 → 关于 → 导出崩溃日志** 把文件拖进来。
 
   - type: input
     id: device
@@ -24,8 +24,22 @@ body:
     id: version
     attributes:
       label: 应用版本
-      description: 设置 → 更多设置 → 关于，最下面一行
-      placeholder: v0.89.0 (209)
+      description: 设置 → 更多 → 关于，最下面一行
+      placeholder: v1.23.38 (323)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: 包是从哪来的
+      description: 不是 GitHub Releases 的包可能被改过，或与正式版同包名却少了功能，先排除这一层
+      options:
+        - GitHub Releases 下载
+        - 别人发给我的包
+        - 自己编译的
+        - 第三方站点或应用商店
+        - 记不清了
     validations:
       required: true
 
@@ -42,6 +56,7 @@ body:
         - 排班算错（该上班没响，或休息日响了）
         - 稍后再响 / 这次不响 不对
         - 数据丢失或恢复失败
+        - 小组件显示不对
         - 界面显示错误
         - 其它
     validations:

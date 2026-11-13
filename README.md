@@ -31,7 +31,7 @@
 - **日历标记**：农历节日、二十四节气、基督教节日可开关；请假 / 加班手动标，标了当天不响
 - **提醒链路**：睡前提醒（明天要不要早起）→ 响铃前提前提醒 → 响铃 → 稍后提醒，环环可配
 - **响铃**：铃声（全局默认 + 每条闹钟可单独指定）、音量（直接就是系统「闹钟」那一档）、渐响；解锁使用时是小悬浮窗，锁屏 / 息屏直接全屏
-- **桌面小组件**：4×2 下一个闹钟、本月班表 4×4 / 4×3 极简（见下）
+- **桌面小组件**：4×2 / 4×4 / 4×3（见下）
 - **备份**：闹钟（含各自的铃声）、排班、请假加班标记，导出一个文件，换机一键恢复
 - 深色模式、无账号、无广告、无统计
 
@@ -59,6 +59,7 @@
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
+第一次用？[使用说明](docs/打工人闹钟-使用说明.md) 里有安装、逐步设置与常见问题。
 
 ### 安装时可能看到这个弹窗
 
@@ -230,7 +231,7 @@ This app computes actual workdays from three inputs:
 …and only rings on days you actually work. Bedtime reminder → pre-alarm notice → alarm →
 snooze, each configurable. Three home-screen widgets (next alarm, full month, compact month).
 
-**Facts**: single-module Java, no third-party runtime dependencies, no account, no ads,
+**Facts**: single-module Java, no third-party SDKs beyond AndroidX, no account, no ads,
 no analytics, all data stays on device, MIT licensed. Android 8.0+ (API 26).
 The only network calls are holiday data and one static version file for the update check.
 
@@ -249,4 +250,4 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) —— 可自由使用、修改、分发，保留版权声明即可。

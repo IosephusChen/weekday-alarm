@@ -73,6 +73,45 @@ public class PowerOffAlarmTest {
                 0L, Prefs.getPowerOffArmed(app));
     }
 
+    /**
+     * v1.27.1 P1：从 v1.26.x 升级上来的人，键不存在但权限已授。
+     *
+     * <p>那一版没有 `power_off_enabled`，用户「授权了」就等于开着。升级后按默认 false 读，
+     * 第一次重排就会把人家已经交给 RTC 的那条撤掉——用户什么都没做，关机闹钟静默失效。
+     */
+    @Test
+    public void upgradeFrom126_keepsArmedWhenPermissionGranted() {
+        installVendor();
+        shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
+        clearAllPrefs();
+
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+
+        List<Intent> sent = broadcasts();
+        assertEquals("升级不该撤掉旧版已经开着的关机闹钟", 1, sent.size());
+        assertEquals(PowerOffAlarm.ACTION_SET, sent.get(0).getAction());
+        assertTrue("迁移要写回，不然每次重排都重算一遍", Prefs.hasPowerOffEnabled(app));
+        assertTrue(Prefs.powerOffEnabled(app));
+    }
+
+    /** 新装、没授权、也没有这个键：仍然是关的，别顺手给人打开。 */
+    @Test
+    public void freshInstallWithoutPermission_staysOff() {
+        installVendor();
+        clearAllPrefs();
+
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+
+        assertTrue(broadcasts().isEmpty());
+        assertFalse("没授权就不该迁移成开", Prefs.powerOffEnabled(app));
+    }
+
+    /** 清空所有偏好，模拟「旧版本升级上来时还没有这个键」。 */
+    private void clearAllPrefs() {
+        app.getSharedPreferences("weekday_alarm", android.content.Context.MODE_PRIVATE)
+                .edit().clear().commit();
+    }
+
     /** 装一颗假的 vendor 应用，模拟「这台机器支持」。 */
     private void installVendor() {
         PackageInfo info = new PackageInfo();

@@ -25,7 +25,25 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
-## 当前方案 · 换机迁移数据 + 关机闹钟开关
+## 当前方案 · 修 v1.27.0 关机闹钟开关的两个 bug
+
+> 状态：**已批准**
+> 批准：2026-11-13 用户原话「查一下 BUG」＋「好的，执行吧」
+> 目标版本：329
+
+1. **P1 升级把已开的人关掉**：`power_off_enabled` 是 v1.27.0 才有的键，旧版用户读不到，
+   默认 `false` → 升级后第一次重排就 `cancelArmed`，把人家已经交给 RTC 的那条撤了，
+   而且没有任何提示。修法：`PowerOffAlarm.enabled()` 发现**键不存在**时按 `granted()`
+   迁移并写回——「没这个键」和「用户主动关掉」不是一回事。
+2. **P2 撤权后开关显示关、偏好是开**：`refreshPowerOffValue` 算出关，但 `Prefs` 里还是
+   `true`；之后任何一次重新授权都会把它自己打开。修法：发现 `enabled && !granted` 时
+   写回 `false`，于是重新授权后走的是 `cancelArmed`（真撤），而不是又 SET 一条。
+3. 测试：旧用户升级后仍为开、新装未授权为关、撤权后偏好被写回、重新授权后发的是 CANCEL。
+   P1 的两条先在旧代码上跑红。
+
+**不做什么**：不改 `cancelArmed` 的「先发再清」；不动 v1.26.1 的三条修复；新装用户仍默认关。
+
+## 上一版方案 · 换机迁移数据 + 关机闹钟开关（已出包 v1.27.0 / 328）
 
 > 状态：**已出包 · 批准已作废**
 > 出包：2026-11-13 19:34（再出包须重写方案并重新确认）

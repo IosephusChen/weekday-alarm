@@ -73,7 +73,7 @@ final class PowerOffAlarm {
             // v1.27.0：总开关关掉时不只是「不再发 SET」，还要把已经交出去的那条撤回来。
             // 否则用户关了开关，关机后照样到点被叫醒——而且那时他没有任何入口能取消。
             // 没授权时撤不掉（vendor 会拒收），那就留着记录，等重新授权后再撤。
-            if (!Prefs.powerOffEnabled(c)) {
+            if (!enabled(c)) {
                 if (granted(c)) cancelArmed(c, armed);
                 return;
             }
@@ -92,6 +92,22 @@ final class PowerOffAlarm {
         } catch (Throwable ignored) {
             // 关机闹钟是附加能力：它失败不该影响主排程
         }
+    }
+
+    /**
+     * 总开关的当前值（v1.27.1）。
+     *
+     * <p>为什么不直接读 {@link Prefs#powerOffEnabled}：那个键是 v1.27.0 才有的。v1.26.x
+     * 的用户升级上来时键不存在、默认读到 {@code false}，于是升级后第一次重排就会把人家
+     * 已经交给 RTC 的那条撤掉——用户什么都没做，关机闹钟就静默失效了。
+     * 「没有这个键」等于「那一版里他已经授权并开着」，所以按 {@code granted()} 迁移一次。
+     * 用户主动关掉的情况键是存在的（值为 false），不会走到这条分支上来。
+     */
+    static boolean enabled(Context c) {
+        if (Prefs.hasPowerOffEnabled(c)) return Prefs.powerOffEnabled(c);
+        boolean on = granted(c);
+        Prefs.setPowerOffEnabled(c, on);
+        return on;
     }
 
     /** 撤掉已交给 vendor 的那一条，并把记录清零。没交过就什么都不做。 */

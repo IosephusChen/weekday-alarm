@@ -171,6 +171,24 @@ public class SettingsPowerOffTest {
         return got;
     }
 
+    /**
+     * v1.27.1 P2：权限在系统设置里被关掉时，偏好必须跟着写回 false。
+     *
+     * <p>不写回的话：界面显示「关」、偏好是「开」，之后任何一次重新授权都会把它自己
+     * 打开。写回之后重新授权走的是 cancelArmed——那条才真的撤得掉。
+     */
+    @Test
+    public void revokedPermission_writesPrefBackToOff() {
+        installVendor();
+        Prefs.setPowerOffEnabled(app, true);
+
+        SettingsActivity a = open();
+
+        assertFalse("显示是关的，偏好就不能留着开",
+                Prefs.powerOffEnabled(app));
+        assertFalse(((SwitchCompat) a.findViewById(R.id.switch_power_off)).isChecked());
+    }
+
     /** 只挑发给 vendor 的广播——系统里还有别的。 */
     private List<Intent> vendorBroadcasts() {
         List<Intent> mine = new ArrayList<>();

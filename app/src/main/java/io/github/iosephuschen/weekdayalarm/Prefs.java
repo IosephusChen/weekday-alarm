@@ -1473,6 +1473,11 @@ public final class Prefs {
         return sp(c).getBoolean(KEY_POWER_OFF_ENABLED, false);
     }
 
+    /** 键是否写过（v1.27.1）。区分「用户主动关掉」与「v1.26.x 升级上来还没有这个键」。 */
+    public static boolean hasPowerOffEnabled(Context c) {
+        return sp(c).contains(KEY_POWER_OFF_ENABLED);
+    }
+
     public static void setPowerOffEnabled(Context c, boolean on) {
         sp(c).edit().putBoolean(KEY_POWER_OFF_ENABLED, on).apply();
     }

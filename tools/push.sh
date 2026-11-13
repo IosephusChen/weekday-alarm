@@ -76,6 +76,14 @@ fi
 
 # 前置探测：只读一个分支，比 push 轻。探不通说明出口这会儿是坏的，
 # 再 push 三次也是白等——直接让人隔一会儿重跑。
+# 2026-11-14：探测之前先扫隐私。仓库是 public，凭据/邮箱一旦 push 就等于公开；
+# 当天之前的 NAS 口令、个人邮箱、NAS 账号都是这么漏出去的。命中就不推。
+echo
+if ! python3 tools/check_privacy.py; then
+    echo "隐私扫描未通过，已停止推送（远端未做任何改动）。" >&2
+    exit 4
+fi
+
 if ! timeout "$PROBE_LIMIT" git -c http.version=HTTP/1.1 \
         ls-remote --heads "$URL" "$BRANCH" >/dev/null 2>&1; then
     echo "出口暂时不通：${PROBE_LIMIT} 秒内没连上 github.com。" >&2

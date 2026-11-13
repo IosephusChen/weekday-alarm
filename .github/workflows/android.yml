@@ -55,6 +55,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # 2026-11-14：推送前隐私扫描。CI 里没有 /root 下的凭据文件，
+      # 运行时那两类自动跳过；通用规则与新提交元数据照扫。
+      - name: Check privacy patterns
+        run: python3 tools/check_privacy.py
+
       - name: Check version and docs consistency
         run: python3 tools/check_version.py
 

@@ -68,14 +68,19 @@ final class PowerOffAlarm {
         // 它在 rescheduleAllLocked 里排在 cancelAll 之后、setAlarm 之前，
         // 一旦抛出去就会把整轮排程打断——一条闹钟都不排，界面还不报错。
         try {
-            if (!supported(c) || !granted(c)) return;
+            if (!supported(c)) return;
             long armed = Prefs.getPowerOffArmed(c);
+            // v1.27.0：总开关关掉时不只是「不再发 SET」，还要把已经交出去的那条撤回来。
+            // 否则用户关了开关，关机后照样到点被叫醒——而且那时他没有任何入口能取消。
+            // 没授权时撤不掉（vendor 会拒收），那就留着记录，等重新授权后再撤。
+            if (!Prefs.powerOffEnabled(c)) {
+                if (granted(c)) cancelArmed(c, armed);
+                return;
+            }
+            if (!granted(c)) return;
             if (next == null) {
                 // vendor 的 CANCEL 只在 time 与它自己存的时刻相等时生效，所以必须用记下来的那个
-                if (armed > 0) {
-                    Prefs.setPowerOffArmed(c, 0L);
-                    c.sendBroadcast(build(ACTION_CANCEL, armed));
-                }
+                cancelArmed(c, armed);
                 return;
             }
             long millis = next;
@@ -87,5 +92,14 @@ final class PowerOffAlarm {
         } catch (Throwable ignored) {
             // 关机闹钟是附加能力：它失败不该影响主排程
         }
+    }
+
+    /** 撤掉已交给 vendor 的那一条，并把记录清零。没交过就什么都不做。 */
+    static void cancelArmed(Context c, long armed) {
+        if (armed <= 0) return;
+        // 撤是幂等的（同一个时刻再撤一次也无害），所以先发再清：
+        // 反过来的话，广播失败会把唯一的撤销凭据弄丢，RTC 里那条就永远撤不掉了。
+        c.sendBroadcast(build(ACTION_CANCEL, armed));
+        Prefs.setPowerOffArmed(c, 0L);
     }
 }

@@ -39,6 +39,38 @@ public class PowerOffAlarmTest {
     public void setUp() {
         app = ApplicationProvider.getApplicationContext();
         Prefs.setPowerOffArmed(app, 0L);
+        // v1.27.0 起关机闹钟默认关，要显式打开才下发；下面大多数用例测的是「开着」的行为。
+        Prefs.setPowerOffEnabled(app, true);
+    }
+
+    @Test
+    public void sync_doesNothingWhenSwitchOff() {
+        installVendor();
+        shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
+        Prefs.setPowerOffEnabled(app, false);
+
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+
+        assertTrue("开关关着就不该把时刻交给 vendor", broadcasts().isEmpty());
+        assertEquals(0L, Prefs.getPowerOffArmed(app));
+    }
+
+    @Test
+    public void sync_cancelsArmedWhenSwitchTurnedOff() {
+        installVendor();
+        shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+
+        Prefs.setPowerOffEnabled(app, false);
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+
+        List<Intent> sent = broadcasts();
+        assertEquals(2, sent.size());
+        assertEquals(PowerOffAlarm.ACTION_CANCEL, sent.get(1).getAction());
+        assertEquals(1_700_000_000_000L,
+                sent.get(1).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
+        assertEquals("撤完要把记录清零，否则下次无法用同一时刻再撤",
+                0L, Prefs.getPowerOffArmed(app));
     }
 
     /** 装一颗假的 vendor 应用，模拟「这台机器支持」。 */

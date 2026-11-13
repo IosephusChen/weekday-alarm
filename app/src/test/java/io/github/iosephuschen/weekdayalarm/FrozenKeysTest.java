@@ -115,6 +115,9 @@ public class FrozenKeysTest {
         // v1.26.0：交给 vendor 关机闹钟的那个时刻。冻结的理由不是「永久保留」，
         // 而是它一旦改名，升级后第一件事就是撤不掉上一次的 RTC 闹钟（CANCEL 要带同一个时刻）。
         PREFS_KEYS.put("KEY_POWER_OFF_ARMED", "power_off_armed");
+        // v1.27.0：关机闹钟总开关。同样是「一改名就出事」——旧名字读不到会当默认 false，
+        // 用户开机后发现关机闹钟自己关了，而界面上开关也是关的，看不出是升级弄丢的。
+        PREFS_KEYS.put("KEY_POWER_OFF_ENABLED", "power_off_enabled");
         PREFS_KEYS.put("KEY_CRASH_SEEN", "crash_seen");
         PREFS_KEYS.put("KEY_BEDTIME_MINUTES", "bedtime_minutes");
         PREFS_KEYS.put("KEY_BEDTIME_WORKDAY_ONLY", "bedtime_workday_only");

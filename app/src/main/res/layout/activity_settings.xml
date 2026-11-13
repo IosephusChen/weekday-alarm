@@ -218,6 +218,9 @@
                  右边写「这款机型不支持」，行本身也点不动。 -->
             <View style="@style/SettingsDivider" />
 
+            <!-- v1.27.0：关机闹钟改成带开关的一行。原来只有「已开启 / 未开启」两态，
+                 开了之后没有关的入口——用户只能去系统设置撤权限，而撤了权限连
+                 「把已交给 RTC 的那条撤回来」都做不到。 -->
             <LinearLayout
                 android:id="@+id/row_power_off"
                 android:layout_width="match_parent"
@@ -244,6 +247,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_power_off_unsupported" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_power_off"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- v1.24.1：把「关机不会响」写在响铃这张卡的末尾，不另起一节。

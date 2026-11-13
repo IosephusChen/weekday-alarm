@@ -271,41 +271,56 @@ public class SettingsActivity extends AppCompatActivity {
     private static final int REQ_POWER_OFF = 0x51;
 
     /**
-     * 关机闹钟那一行的取值（v1.26.0）。
+     * 关机闹钟那一行的三态（v1.27.0）。
      *
-     * <p>三种态：机型没有那颗 vendor 应用 → 「这款机型不支持」，行不可点；
-     * 有但没授权 → 「未开启」，点它申请；已授权 → 「已开启」。
+     * <p>不支持：只显示「这款机型不支持」，行不可点、开关不出现。
+     * 支持：右边一个开关，{@code 已开启 / 已关闭} 只表达开关状态。
+     * 没授权时开关不亮——点整行会去申请，授权成功才置为开启。
      */
     private void refreshPowerOffValue() {
         if (tvPowerOff == null) return;
         android.view.View row = findViewById(R.id.row_power_off);
         boolean supported = PowerOffAlarm.supported(this);
         if (row != null) row.setClickable(supported);
+
+        SwitchCompat sw = findViewById(R.id.switch_power_off);
+        if (sw != null) {
+            sw.setChecked(supported && Prefs.powerOffEnabled(this) && PowerOffAlarm.granted(this));
+            sw.setVisibility(supported ? View.VISIBLE : View.GONE);
+        }
+        tvPowerOff.setVisibility(supported ? View.GONE : View.VISIBLE);
         if (!supported) {
             tvPowerOff.setText(R.string.settings_power_off_unsupported);
-            return;
         }
-        tvPowerOff.setText(PowerOffAlarm.granted(this)
-                ? R.string.settings_power_off_on : R.string.settings_power_off_off);
     }
 
-    /** 点那行：没授权就申请，已授权就重新把时刻交给 RTC（等于立即生效一次）。 */
+    /**
+     * 点那行：没授权就申请；已授权就在开 / 关之间切（v1.27.0）。
+     *
+     * <p>关掉时 {@code applySettingsNow()} 会重排一遍，{@code PowerOffAlarm.sync} 在
+     * 未开启分支里把已经交给 vendor 的那条 CANCEL 掉——不是只停止下发。
+     */
     private void enablePowerOffAlarm() {
         if (!PowerOffAlarm.supported(this)) return;
-        if (PowerOffAlarm.granted(this)) {
-            applySettingsNow();
+        if (!PowerOffAlarm.granted(this)) {
+            requestPermissions(new String[]{PowerOffAlarm.PERMISSION}, REQ_POWER_OFF);
             return;
         }
-        requestPermissions(new String[]{PowerOffAlarm.PERMISSION}, REQ_POWER_OFF);
+        Prefs.setPowerOffEnabled(this, !Prefs.powerOffEnabled(this));
+        applySettingsNow();
+        refreshPowerOffValue();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode != REQ_POWER_OFF) return;
-        // 授权成功要立刻把「下一次响铃」交给 RTC；拒绝就只刷新文字，不反复弹。
-        if (PowerOffAlarm.granted(this)) applySettingsNow();
-        else refreshPowerOffValue();
+        // 授权成功：置为开启并把「下一次响铃」交给 RTC；拒绝就只刷新，不反复弹。
+        if (PowerOffAlarm.granted(this)) {
+            Prefs.setPowerOffEnabled(this, true);
+            applySettingsNow();
+        }
+        refreshPowerOffValue();
     }
 
     private void refreshAll() {

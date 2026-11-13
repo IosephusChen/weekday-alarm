@@ -1459,6 +1459,24 @@ public final class Prefs {
         sp(c).edit().putLong(KEY_POWER_OFF_ARMED, millis).apply();
     }
 
+    /**
+     * 关机闹钟的总开关（v1.27.0）。
+     *
+     * <p>为什么需要单独一个键：v1.26.0 只能申请权限、开了关不掉——用户想关只能去系统设置
+     * 撤权限，而撤了权限连「撤掉已交出去的那条」都做不到。有了这个键，关掉时先 CANCEL
+     * 再清 {@link #KEY_POWER_OFF_ARMED}，RTC 里那条才真的没了。
+     */
+    public static final String KEY_POWER_OFF_ENABLED = "power_off_enabled";
+
+    /** 默认关：要在设置页主动打开，并且必须已授权才生效。 */
+    public static boolean powerOffEnabled(Context c) {
+        return sp(c).getBoolean(KEY_POWER_OFF_ENABLED, false);
+    }
+
+    public static void setPowerOffEnabled(Context c, boolean on) {
+        sp(c).edit().putBoolean(KEY_POWER_OFF_ENABLED, on).apply();
+    }
+
     // ================= 检查更新（v0.89.0）=================
 
     /** 上次检查的时刻（毫秒），0 = 从未检查过。 */

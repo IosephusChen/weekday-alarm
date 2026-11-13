@@ -58,18 +58,19 @@ public class WordingTest {
     }
 
     /**
-     * v1.23.36 安全加固：`allowBackup` 必须关着。
+     * v1.27.0 反转：`allowBackup` 必须开着。
      *
-     * <p>开着的话，班表、请假/加班标记、闹钟标签会随云备份与设备迁移整体带走。这些数据
-     * 本就不需要跨设备迁移——重排一次班表，比让作息规律留在备份里便宜。
+     * <p>v1.23.36 曾把它关掉，理由是「别让作息留在云备份里」。2026-11-13 用户决定
+     * 「全部允许」——换手机时闹钟、班表、请假/加班要能跟着搬家，而不是只能靠导出配置。
+     * 这条断言因此从钉 `false` 改成钉 `true`，并保留那条防止写回 false 的反向断言。
      */
     @Test
-    public void manifest_allowBackupOff() {
+    public void manifest_allowBackupOn() {
         String manifest = read("app/src/main/AndroidManifest.xml");
-        assertTrue("allowBackup 必须显式写成 false",
-                manifest.contains("android:allowBackup=\"false\""));
-        assertFalse("不能残留 android:allowBackup=\"true\"",
+        assertTrue("allowBackup 必须显式写成 true，否则换机不迁移",
                 manifest.contains("android:allowBackup=\"true\""));
+        assertFalse("不能再写回 android:allowBackup=\"false\"",
+                manifest.contains("android:allowBackup=\"false\""));
     }
 
     /**

@@ -12,9 +12,15 @@
 # 最坏耗时从 6m53s 降到约 2m30s。探测走 git 自己的 HTTP 栈而不是 curl：
 # 当天实测 curl 200 / 0.8s 而 git 136 秒超时，curl 会给出假阳性。
 #
+# 2026-11-13 修一个「假成功」：以前推的是本地的 `main` 这个 ref，而沙箱里的
+# 工作分支常是 `trae/agent-xxx`——提交都落在当前分支，`main` 停在旧提交，
+# 于是脚本打印「push 成功」而远端一条没变（当天连犯两次，还先建了 Release 与
+# tag，指向一个不在 main 上的提交）。现在推的是 `HEAD:refs/heads/<branch>`，
+# 并在推送成功后自动跑 tools/post-push.sh 核对远端 SHA，对不上就 exit 1。
+#
 # 用法：
-#   tools/push.sh              # 推 main
-#   tools/push.sh some-branch  # 推别的分支
+#   tools/push.sh              # 把当前 HEAD 推到远端 main
+#   tools/push.sh some-branch  # 推到别的分支（同样推 HEAD）
 #   PUSH_TRIES=5 tools/push.sh # 改重试次数（默认 3）
 #   PUSH_CONNECT_TIMEOUT=60 tools/push.sh # 改单次上限（默认 45 秒）
 #
@@ -52,6 +58,22 @@ fi
 
 URL="https://${GITHUB_TOKEN}@github.com/${REPO}.git"
 
+# 推之前先把本地那个分支对齐到 HEAD，否则「推的是哪个提交」会跟人的直觉对不上。
+# 只做快进式的对齐（本地分支是 HEAD 的祖先 = 只是落后），分叉时一律停下：
+# 那种情况说明另一头有本机没有的提交，该先 pull --rebase，不该由脚本替你决定。
+if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+    if [ "$(git rev-parse "refs/heads/${BRANCH}")" != "$(git rev-parse HEAD)" ]; then
+        if git merge-base --is-ancestor "refs/heads/${BRANCH}" HEAD; then
+            echo "本地 ${BRANCH} 落后于 HEAD（$(git rev-parse --short "refs/heads/${BRANCH}") → $(git rev-parse --short HEAD)），已对齐"
+            git branch -f "$BRANCH" HEAD
+        else
+            echo "本地 ${BRANCH} 与 HEAD 分叉：${BRANCH} 上有 HEAD 里没有的提交。" >&2
+            echo "先 git pull --rebase（或合并）把它接上，别直接推——否则那些提交会被推丢。" >&2
+            exit 3
+        fi
+    fi
+fi
+
 # 前置探测：只读一个分支，比 push 轻。探不通说明出口这会儿是坏的，
 # 再 push 三次也是白等——直接让人隔一会儿重跑。
 if ! timeout "$PROBE_LIMIT" git -c http.version=HTTP/1.1 \
@@ -72,13 +94,17 @@ for i in $(seq 1 "$TRIES"); do
     # 只写 `timeout 45` 会一直等下去（2026-11-08 实测：脚本挂住，一行输出后没了）。
     timeout -k 5 "$LIMIT" git -c http.version=HTTP/1.1 \
             -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
-            push "$URL" "$BRANCH" >"$out" 2>&1
+            push "$URL" "HEAD:refs/heads/${BRANCH}" >"$out" 2>&1
     rc=$?
     spent=$(( $(date +%s) - start ))
     if [ "$rc" -eq 0 ]; then
         echo "push 成功（第 ${i} 次，${spent}s）"
         rm -f "$out"
-        exit 0
+        # git 说推成功只代表它认为发出去了。再核对一次远端的 SHA——
+        # 2026-11-13 就是因为少了这一步，「推了旧 ref 但打印成功」连过两次。
+        echo
+        bash "$(dirname "$0")/post-push.sh" "$BRANCH"
+        exit $?
     fi
     if [ "$rc" -eq 124 ]; then
         echo "  超时：${LIMIT}s 内没推完，已截断（旧版会干等 136s）"

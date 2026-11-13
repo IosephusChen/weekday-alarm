@@ -345,7 +345,6 @@
 
         <TextView style="@style/SettingsChevron" />
     </LinearLayout>
-
 </LinearLayout>
 
 </ScrollView>

@@ -157,7 +157,6 @@ final class AlarmEditor {
 
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
-
         // v1.3.0：选中态直接记模式本身。原来是「下标 → MODE_VALUES 反查」，
         // 卡片从 6 张变 3 张之后下标不再等于界面位置，反查只会更绕
         final Alarm.Mode[] sel = {target != null ? target.mode : Alarm.Mode.WORKDAY};

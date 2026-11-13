@@ -57,10 +57,6 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
-            new Entry(325, "1.25.0", "2026/11/13", "关机也响，交给系统时钟",
-                    "闹钟编辑页多一格：把同一条时刻写进系统时钟",
-                    "设置页与使用说明写清：关机后本 App 不会响",
-                    "能不能关机响看机型，文案不承诺结果"),
             new Entry(324, "1.24.0", "2026/11/13", "首页点一下就能更新",
                     "首页提示新版本时直接就地更新，不再跳到关于页",
                     "在应用内下载并拉起安装器，不再跳浏览器",

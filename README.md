@@ -4,6 +4,8 @@
 
 **按你的班表算上班日，只在上班日响。**
 
+![CI](https://github.com/IosephusChen/weekday-alarm/actions/workflows/android.yml/badge.svg?branch=main)
+
 `Android 8.0+` · `MIT` · 约 2.8 MB · 全部数据留在本机
 
 双休、单休（周日休 / 周六休）、大小周都支持。上二休二、上四休二、每周固定休周三这类轮班也行：按 N 天一轮，自己标哪天上班，最长 62 天。
@@ -62,6 +64,7 @@
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
 支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
 第一次用？[使用说明](docs/打工人闹钟-使用说明.md) 里有安装、逐步设置与常见问题。
+每版改了什么、为什么改，见 [更新日志](docs/更新日志.md)。
 
 ### 安装时可能看到这个弹窗
 

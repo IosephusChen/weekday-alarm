@@ -2,6 +2,7 @@
 
 ## 交接条（换会话先读这几行，其余不用）
 
+- **当前在飞**：优化会话交接流程（状态 `待确认`）——只改 `tools/handoff.sh` 与两份文档，不升版、不出包；方案见下方「优化会话交接流程」节。
 - **开工**：每个会话都是全新沙箱（没有仓库、没有 SDK、没有 git 身份、**没有凭据**）。三步，**顺序别换**：
   ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 18.2 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**但沙箱重置后 `gh` 的登录态还在**（`/root/.config/gh/hosts.yml`，2026-11-13 实测）：`gh auth token` 直接可用，推送不必先取 NAS——NAS 只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（2026-11-13 实测：只写到 WebDAV 根时 `nas.sh ls keys/` 返回 404）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。
@@ -24,6 +25,49 @@
 - **历史已重写（2026-11-13，脱敏）**：全部 651 个提交的 SHA **都变了**——邮箱统一成 noreply（原 9 条真 Gmail、6 条 QQ）、`tools/preview-debug.keystore` 从历史移除、NAS 域名 / 端口 / 共享目录名替换成 `<NAS_HOST>:<PORT>` / `<SHARE>`。文档里出现的旧 SHA（`7382876`、`9698d03`、`f203df3` 等）**已不指向任何对象**，查改动请按版本号或 `git log --grep`。远端只剩 `main` 一条分支 + **78 个 tag**（7 条零差异旧分支已删；`preview` 那个非版本 tag 2026-11-13 也删了）；重写前的完整备份在 NAS `keys/wd-before-rewrite-20261113.bundle`。GitHub 侧旧对象短期仍可能被已知 SHA 取到。
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261113.bundle` 9,005,154 字节 / MD5 `75319430793b6a209f46d4ed186b4f94`（84 tag + 725 提交 + 460 文件，v1.27.1 封版后刷新），已从 NAS 取回核对 MD5 并 `git clone --branch main` 验过 HEAD/tag/文件数。两个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。
+
+## 当前方案 · 优化会话交接流程（待确认）
+
+> 状态：**待确认**
+> 目标版本：329（不升版；只改工具与文档，不出包）
+> 提出：2026-11-14
+
+### 背景（2026-11-14 实测）
+
+平台重置沙箱时**只清 `/root` 与 `/opt`，保留 `/workspace`**：本轮进来时仓库、`local.properties`、git 身份都在，SDK / Gradle 缓存 / NAS 凭据 / GitHub token 全没了。`bash tools/setup-env.sh --no-test` 补回 SDK 用了 **17 秒**；沿用原提示词会先 `git clone` 到一个已存在的目录，直接报错。
+
+三处实测数字：
+
+- `bash tools/handoff.sh`：**2.7 秒 / 39 行 / 18,063 字节**，其中 PLAN 交接条占 9,119 字（约一半）。
+- 仓库里有 **14 个** `feat: update workspace` 提交（平台快照）；`handoff` 只打印分支名，不提示切换。
+- `docs/项目状态.md` 三处线上版本过期：第 29 行写 v1.24.1、第 288 / 297 行写 v1.23.38；`gh api releases/latest` 实测是 **v1.27.1**。
+
+### 1. 提示词改成可重复执行的交接单（docs/新会话提示词.md）
+
+- 第一步先判目录：`/workspace/weekday-alarm` 已存在就 `git checkout main && git pull --rebase`，不存在才 clone。
+- 删掉写死的「现状：v1.27.1 / 1342 条 / 0 失败」这类会漂的数字，改成「以 `handoff.sh` 输出为准」。
+- 耗时写清：补环境约 20 秒（实测 17 秒），首次单测 6–10 分钟，都在 `setup-env.sh` 里。
+- 删掉「沙箱重置后 gh 登录态还在」这句断言（本轮实测 `gh auth status` 未登录），改成 token 优先从 NAS 取。
+
+### 2. handoff.sh 加快照分支护栏
+
+- 触发条件：当前分支不是 `main`，或 HEAD 提交标题是 `feat: update workspace`。
+- 输出：首行红字 + 「下一步」第一条 `git checkout main`（排在凭据之前）。
+- 在 main 且干净时输出不变（本轮就是这个状态）。
+
+### 3. 线上版本改成动态核对 + 修文档
+
+- `docs/项目状态.md` 三处过期版本改成 v1.27.1 / 329。
+- `handoff.sh` 新增「线上」一行：有 token 时查 `releases/latest`，与 `build.gradle` 版本不一致就标红；查不到写「未知（无凭据）」，不挡其余输出。
+- 代价：多一次 API 调用（实测 1 秒内）。
+
+### 4. 凭据恢复不新增脚本
+
+本轮恢复只用到两条命令：`set-access.sh`（你提供参数）+ `nas.sh get keys/github-token.txt`；`fetch-keys.sh` 只在出包时需要。维持现状。
+
+**不做什么**：不改 App 代码 / 资源 / 文案，不升 `versionCode`，不动 README 与截图，不动 release / push / CI 流程，不催验机项，不清理历史里的 `feat: update workspace`。
+
+**待你拍板**：`docs/新会话提示词.md` 第 22 行现在明文写着 NAS 账号与口令，而仓库是公开的；`AGENTS.md` 的硬规则是「凭据不入库」，2026-11-13 的历史重写也专门脱敏过 NAS 地址。建议换成占位符（`--base="<NAS_BASE>" --user=<USER> --pass='<PASS>'`），真实值每次由你粘进会话、不落仓库。如果你想保持明文方便一键复制，这一处就不动。
 
 ## 当前方案 · 修 v1.27.0 关机闹钟开关的两个 bug
 

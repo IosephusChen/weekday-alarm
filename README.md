@@ -10,6 +10,8 @@
 「开始前 1 小时 30 分」一条同时管白班和夜班，白班那天 06:30、夜班那天 18:30。
 法定节假日与调休补班自动算进去，不管哪种排班，都不用再手动改闹钟。
 
+**[下载最新版 APK](https://github.com/IosephusChen/weekday-alarm/releases/latest)**
+
 <p align="center">
   <img src="docs/screenshots/1-home.jpg" width="235" alt="首页：今天上不上班、下次闹钟、本月班表">
   <img src="docs/screenshots/2-settings.jpg" width="235" alt="设置页：响铃 / 周休与节假日 / 提醒 / 更多">
@@ -174,7 +176,7 @@ DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎
 # lint
 ./gradlew lint
 
-# 出包（release 已开 R8 + 资源压缩，约 2.6MB）
+# 出包（release 已开 R8 + 资源压缩）
 ./gradlew assembleRelease
 ```
 
@@ -242,7 +244,7 @@ translate cleanly into English, and a half-translated UI reads worse than an hon
 
 ```bash
 ./gradlew assembleRelease      # JDK 17, Android SDK 34
-./gradlew testDebugUnitTest    # ~850 unit tests
+./gradlew testDebugUnitTest    # ~1300 unit tests
 ```
 
 ## License

@@ -21,9 +21,9 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
-## README 优化（2026-11-13，待确认）
+## README 优化（2026-11-13，已批准 · 已实施）
 
-> 状态：**待确认**
+> 状态：**已批准**（2026-11-13「好的，按这个方案来」）
 > 目标版本：不占版本（只改 `README.md`，不动代码、不动 versionCode）
 
 用户 2026-11-13 说「GitHub 上的 Readme 需要优化一下」。先量后改，下列数字都是当场核的。

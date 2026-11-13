@@ -97,7 +97,7 @@
 
 **验收**：改前 `cp README.md /tmp/README.bak`，改后逐行比对——去掉标题符号与空行后，旧版每一个非空行都必须仍在新版里，缺一行就算漏搬，不提交。**实测结果：旧版 179 个非空行，缺失 1 行，且是唯一有意改的「（见下）」→「（见上）」（小组件图已移到功能上方）；其余 178 行逐字保留。**
 
-**第七轮 · 参照优秀项目的其余优化点（2026-11-13，已批准 · 已实施）**：用户问「参考优秀的 Github 项目，看看还有哪些能优化的」，批准原话「好的，执行吧」。先报了已经达标的三块，省得重议：topics 15 个（含 `alarm-clock` / `shift-schedule` / `chinese-holidays`）、Issue 模板 3 个且 `config.yml` 已把「使用说明」「现有哪些功能」做成入口、Release 正文有改动清单 + 版本段。三项已做：徽章（GitHub 原生地址实测 200）、更新日志入口（`docs/更新日志.md` 存在）、`social-preview.png` 移入 `docs/`（README 未引用，无连带改动）。
+**第七轮 · 参照优秀项目的其余优化点（2026-11-13，已批准 · 已实施）**：用户问「参考优秀的 Github 项目，看看还有哪些能优化的」，批准原话「好的，执行吧」。先报了已经达标的三块，省得重议：topics 15 个（含 `alarm-clock` / `shift-schedule` / `chinese-holidays`）、Issue 模板 3 个且 `config.yml` 已把「使用说明」「现有哪些功能」做成入口、Release 正文有改动清单 + 版本段。三项已做：徽章（GitHub 原生地址实测 200）、更新日志入口（`docs/更新日志.md` 存在）、`social-preview.png` 移入 `docs/`（README 未引用，无连带改动）。**唯一查不了的那项已查清**（2026-11-13）：`default_workflow_permissions=read`、`can_approve_pull_request_reviews=false`，已是最安全组合，**不用动**；之前 403 是因为沙箱里 `gh auth token` 与 `/root/.github_token` 存的两把都是 App 安装令牌（`ghu_`），没有 Administration 读权——已把 NAS 那把 fine-grained PAT 覆盖写入 `/root/.github_token`（600），之后查仓库设置不必先 `nas.sh get`，`gh` 的登录态保持原样不动。
 
 - **A（推荐）CI 状态徽章**：`![CI](https://github.com/IosephusChen/weekday-alarm/actions/workflows/android.yml/badge.svg?branch=main)`，1 行，放在状态条上方。**这条要推翻旧结论**：前几轮拒的是 shields.io（第三方域名，大陆常挂），而 GitHub 原生徽章与 README 同域——能打开 README 就一定能加载它。
 - **B（推荐）docs 导航 1 行**：README 现在只链「使用说明」和 `docs/` 目录，17 个文件里读者最想找的是「更新日志」。在「下载与安装」末尾加一行指向 `docs/更新日志.md`。

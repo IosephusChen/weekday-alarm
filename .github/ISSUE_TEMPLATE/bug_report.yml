@@ -1,6 +1,6 @@
 name: 闹钟没响 / 响错 / 关不掉
 description: 该响没响、不该响响了、响了停不下来、排班算错、数据异常
-title: "[Bug] "
+title: "[问题] "
 labels: ["bug"]
 body:
   - type: markdown

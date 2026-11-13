@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(325, "1.24.1", "2026/11/13", "关机后为什么不会响",
+                    "设置页「响铃」末尾补了一条说明",
+                    "关机后本 App 不会响，这是系统限制",
+                    "能在关机状态响的只有系统自带时钟，且看机型"),
             new Entry(324, "1.24.0", "2026/11/13", "首页点一下就能更新",
                     "首页提示新版本时直接就地更新，不再跳到关于页",
                     "在应用内下载并拉起安装器，不再跳浏览器",

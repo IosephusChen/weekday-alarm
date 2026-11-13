@@ -1,0 +1,66 @@
+== 版本 v1.24.1 / 325 ==
+-- 方案闸门 --
+  ok   方案已批准（目标版本 325 与 build.gradle 一致）
+-- 版本一致性与文档一致性 --
+== 版本 v1.24.1 / 325 ==
+-- 一处源头 + 六处引用 --
+  ok   versionCode 源头 —— app/build.gradle
+  ok   Changelog 首条 —— app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java
+  ok   更新日志首条标题 —— docs/更新日志.md
+  ok   使用说明版本头 —— docs/打工人闹钟-使用说明.md
+  ok   使用说明安装包名 —— docs/打工人闹钟-使用说明.md
+  ok   使用说明 versionCode —— docs/打工人闹钟-使用说明.md
+  ok   项目状态表 —— docs/项目状态.md
+  ok   README 版本号 —— README.md
+  ok   使用说明无旧安装包名
+-- version.json（检查更新数据源）--
+  ok   version.json 与 build.gradle 同版（325 / 1.24.1）
+  ok   version.json 下载链接指向本版
+-- 交接条与清单 --
+  ok   清单解析到 41 条
+  ok   交接条与清单一致（41 条：已做 24 / 部分已做 0 / 不成立 7 / 不改 10 / 待裁决 0）
+  ok   交接条「下一步」点名 0 条，与清单待裁决逐一对应
+-- 项目状态首行 --
+  ok   项目状态首行与 build.gradle 同版（v1.24.1 / 325）
+
+== 全部通过 ==
+-- 文档引用（行号 / 锚点）--
+-- 文档引用校验（tools/check_refs.py）--
+  PLAN.md 当前方案节（第 27–67 行）
+    引用 0 处，带锚点 0 处
+  清单复核记录与拍板待选（第 34–62 行）
+    引用 0 处，带锚点 0 处
+== 通过 ==
+-- 内置节假日数据 --
+  ok   内置到 2027 年，够覆盖 2027 年
+-- version.json --
+  version.json → v1.24.1 / 325，3 条更新说明
+-- 全量测试 --
+  1321 条，失败 0，跳过 3
+-- lint --
+0 errors, 649 warnings
+-- 写者自检（多端协作）--
+  HEAD 相对 origin/main：领先 0，落后 0（本地缓存值，准不准取决于上次 fetch）
+-- 出包 --
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+== 出包完成 ==
+  //打工人闹钟-v1.24.1.apk
+  2623210 字节  MD5 7f2cc1f64c07a69a647749d229fa3abc
+-- 回填项目状态文档的包信息 --
+  ! 没找到安装包那一行，手工填：v1.24.1 / 2,623,210 字节 / MD5 `7f2cc1f64c07a69a647749d229fa3abc`
+
+  ok   PLAN.md 批准已作废，下次出包要重写方案
+
+本地产出到此为止，远端一步都没走。接着做：
+  1. git add -A && git commit
+  2. tools/push.sh                                          # 推 main（带重试）
+  3. git tag -a v1.24.1 -m "<标题 + 要点>" && tools/push_via_api.py --tag v1.24.1
+  4. tools/publish_release.py --mapping --dry-run           # 先看一眼
+     去掉 --dry-run 真发（幂等，重跑不会重复建）——传的就是上面这个包
+  5. 验：releases/latest 是 v1.24.1、资产 MD5 对得上、raw 与 jsDelivr 的 version.json 是新版
+  6. tools/nas.sh put "//打工人闹钟-v1.24.1.apk" apk/weekday-alarm-1.24.1.apk    # 送手机
+
+  （CI 只在 push 时跑单测 + lint，不出包；lintVitalRelease 由本脚本的 assembleRelease 兜）
+  （灾备包不动，只在正式发布前刷）

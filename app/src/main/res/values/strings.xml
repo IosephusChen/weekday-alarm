@@ -16,6 +16,10 @@
     <string name="alarm_time_rest">休</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
+    <!-- v1.24.1：关机后第三方 App 不会响——进程没了就没有代码在跑。
+         只说事实，不指向任何入口：「能在关机状态响的只有系统自带时钟」本身就是答案，
+         而能不能响取决于机型，文案不承诺结果。 -->
+    <string name="settings_shutdown_tip">关机后本 App 不会响：应用进程关了就没有代码在跑。能在关机状态响的只有系统自带时钟，且看机型。</string>
     <string name="settings_volume_label">闹钟音量</string>
     <string name="settings_volume_default">—</string>
     <!-- 滑块左端的量程下限（v1.1.0）。

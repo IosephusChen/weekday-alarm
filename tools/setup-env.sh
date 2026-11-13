@@ -42,7 +42,8 @@ die()  { printf '✗ %s\n' "$*" >&2; exit 1; }
 [[ -f gradlew ]] || die "请在仓库根目录运行：bash tools/setup-env.sh"
 
 # ---- 1. Java ---------------------------------------------------------------
-# Gradle 8.7 只认 17–21。2026-11-12 补：Trae 沙箱预装 JDK 25、没有 zulu 20
+# Gradle 8.14.3 支持 17–24；这里仍按 17–21 选（SDK 36 的 Robolectric 测试要 21，当前测试钉 34）。
+# 2026-11-12 补：Trae 沙箱预装 JDK 25、没有 zulu 20
 # （WorkBuddy 才有），原逻辑在这里直接 die。改成先找现成的 17–21——JAVA_HOME →
 # zulu 20 → mise 预装的版本——一个都没有才用 mise 装 Temurin 21。
 # 版本判定要 `env -u JAVA_TOOL_OPTIONS`：下面注入的代理参数会把 `java -version`
@@ -160,11 +161,11 @@ fi
 
 # ---- 4. Android SDK 组件 ---------------------------------------------------
 need_install=0
-[[ -d "$SDK/platforms/android-34" ]]   || need_install=1
-[[ -d "$SDK/build-tools/34.0.0" ]]     || need_install=1
+[[ -d "$SDK/platforms/android-36" ]]   || need_install=1
+[[ -d "$SDK/build-tools/36.0.0" ]]     || need_install=1
 
 if [[ $need_install -eq 0 ]]; then
-    ok "Android SDK 齐了（$SDK：platforms/android-34、build-tools/34.0.0）"
+    ok "Android SDK 齐了（$SDK：platforms/android-36、build-tools/36.0.0）"
 else
     info "缺 SDK 组件，开始装到 $SDK（约 445 MB）"
     mkdir -p "$SDK"
@@ -206,15 +207,15 @@ else
     # 之后，同一批组件实测 9.5 秒装完（310MB）。这是它的测试钩子、不是公开参数，
     # 万一某版不认，下面还有一次官方源兜底，不会把环境装死。
     SDK_MIRROR="https://mirrors.cloud.tencent.com/AndroidSDK/"
-    info "安装 platform-tools / platform-34 / build-tools 34.0.0（优先腾讯镜像）"
+    info "安装 platform-tools / platform-36 / build-tools 36.0.0（优先腾讯镜像）"
     if ! env "SDK_TEST_BASE_URL=$SDK_MIRROR" "$SDK/cmdline-tools/latest/bin/sdkmanager" \
             --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
-            "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null; then
+            "platform-tools" "platforms;android-36" "build-tools;36.0.0" >/dev/null; then
         info "镜像源没装成，回退官方源再试一次"
         "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" ${SDKM_PROXY[@]+"${SDKM_PROXY[@]}"} \
-            "platform-tools" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+            "platform-tools" "platforms;android-36" "build-tools;36.0.0" >/dev/null
     fi
-    [[ -d "$SDK/platforms/android-34" && -d "$SDK/build-tools/34.0.0" ]] \
+    [[ -d "$SDK/platforms/android-36" && -d "$SDK/build-tools/36.0.0" ]] \
         || die "装完仍缺组件，手动看：$SDK/cmdline-tools/latest/bin/sdkmanager --list"
     ok "Android SDK 齐了（$SDK）"
 fi
@@ -332,7 +333,7 @@ prefetch_android_all() {
         warn "Robolectric $ver 预取失败，测试时会自己再试（代理下可能很慢）"
     fi
 }
-# 与 app/build.gradle 的 compileSdk 34 / robolectric 4.14.1 对应。测试若新增其它
+# 与 app/build.gradle 的 compileSdk 36 / robolectric 4.18 对应。测试若新增其它
 # SDK 档位（@Config(sdk=...)），这里要一起加。
 prefetch_android_all "14-robolectric-10818077-i7"
 

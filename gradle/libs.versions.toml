@@ -1,15 +1,19 @@
-# 依赖与插件版本的唯一声明处（2026-11-12）。
+# 依赖与插件版本的唯一声明处（2026-11-12；2026-11-14 工具链升级）。
 # 以前 AGP 写在根 build.gradle、依赖写在 app/build.gradle，改版本要翻两个文件。
-# 这里只做搬家，版本数值与迁移前逐个相同，没有升级。
 
 [versions]
-agp = "8.6.1"
-appcompat = "1.7.0"
-material = "1.12.0"
+# AGP 固定在 8.11.2：8.12+ 会把 unit test 的 android_merged_manifest 指到
+# processDebugUnitTestManifest（只含测试依赖，缺 App 自己的 receiver），
+# Robolectric 的 sendBroadcast 找不到 BootReceiver，BootReceiverTest 5 条全红。
+# 8.11.2 是最后一个仍指向 App 合并清单的版本；升 AGP 前先跑这组测试。
+agp = "8.11.2"
+appcompat = "1.8.0"
+material = "1.14.0"
 junit = "4.13.2"
-json = "20240303"
-robolectric = "4.14.1"
-androidxTestCore = "1.6.1"
+json = "20260814"
+# 4.18 支持 SDK 36，但跑 @Config(sdk=36) 需要 JDK 21；当前测试仍钉 SDK 34 + JDK 17。
+robolectric = "4.18"
+androidxTestCore = "1.7.0"
 
 [libraries]
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }

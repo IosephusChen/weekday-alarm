@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace 'io.github.iosephuschen.weekdayalarm'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "io.github.iosephuschen.weekdayalarm"

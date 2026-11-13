@@ -27,7 +27,7 @@ NAME=$(grep -m1 'versionName' app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
 echo "== 版本 v$NAME / $CODE =="
 
 # -- JDK 闸门（2026-11-13）--
-# Gradle 8.9 只支持 17~22。沙箱预装 JDK 25 时，测试进程会在 500 多条处
+# Gradle 8.14.3 支持 17~24；闸门仍保守只切到 17~22。沙箱预装 JDK 25 时，测试进程会在 500 多条处
 # OutOfMemoryError，按 XML 汇总出来是「511 条失败」——看着像代码炸了，其实是环境。
 # 2026-11-13 连踩两次，每次白等十几分钟。
 # 不依赖调用方有没有 export：每个 Shell 调用都是新进程，export 活不过一次工具调用。
@@ -43,7 +43,7 @@ else
 fi
 if (( CUR < 17 || CUR > 22 )); then
     echo "-- JDK 闸门 --"
-    echo "  当前 JDK $CUR，Gradle 8.9 只支持 17~22，找一个能用的"
+    echo "  当前 JDK $CUR，Gradle 8.14.3 支持 17~24（闸门取 17~22），找一个能用的"
     for d in /root/.local/share/mise/installs/java/*/ /root/.sdkman/candidates/java/*/; do
         v=$(java_major "${d%/}" 2>/dev/null || true)
         if [[ "$v" =~ ^[0-9]+$ ]] && (( v >= 17 && v <= 22 )); then

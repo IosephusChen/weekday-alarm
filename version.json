@@ -1,14 +1,13 @@
 {
-  "versionCode": 323,
-  "versionName": "1.23.38",
-  "published": "2026-11-12",
-  "title": "排班、备份与跨天响铃的八处问题",
+  "versionCode": 324,
+  "versionName": "1.24.0",
+  "published": "2026-11-13",
+  "title": "首页点一下就能更新",
   "notes": [
-    "跨零点的夜班闹钟不再被次日一早的重排抹掉",
-    "「这次不响」按实际响铃日生效，跨天也不会错位",
-    "备份带上完整班次表，换机恢复后班表不再错乱",
-    "跨零点的小睡次数不再归零，不能无限续睡"
+    "首页提示新版本时直接就地更新，不再跳到关于页",
+    "在应用内下载并拉起安装器，不再跳浏览器",
+    "装前核对包名、版本号与签名，不对劲的文件直接删掉"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.38/weekday-alarm-1.23.38.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.23.38"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.0/weekday-alarm-1.24.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.24.0"
 }

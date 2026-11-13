@@ -24,7 +24,41 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
-## 当前方案 · 修 v1.24.0 / v1.26.0 的 3 个 bug 与 2 个风险
+## 当前方案 · 换机迁移数据 + 关机闹钟开关
+
+> 状态：**待确认**
+> 目标版本：328（minor 版，v1.27.0）
+
+### 1. 换手机时闹钟数据能迁移
+
+现状 `allowBackup="false"`（v1.23.36 安全加固），云备份与换机搬家**都不迁移**，换机只能靠「导出配置」。
+
+用户 2026-11-13 决定：**全部允许**（原话「全部允许，报表又不是什么秘密，不怕泄露」）。
+所以不建 `data_extraction_rules.xml` / `backup_rules.xml`，只把 `AndroidManifest.xml` 的
+`allowBackup` 改回 `true`，按系统默认整包备份（sharedpref、files、database；cache 与 no_backup 本来就不进）。
+
+测试：`WordingTest#manifest_allowBackupOff` 现在钉着 `false`，改成钉 `true`，并删掉「不能残留 true」那条断言。
+
+### 2. 关机闹钟可以手动开关
+
+现状那一行只能「申请权限」，开了之后没有关的入口，只能去系统设置撤权限。
+
+改法：
+- Prefs 新增 `KEY_POWER_OFF_ENABLED`（默认 false），登记进 `FrozenKeysTest` 的冻结表。
+- `PowerOffAlarm.sync` 开头加判断：未开启则撤掉已交出去的那条（CANCEL + 清 `power_off_armed`）并返回。
+- 状态文字改成 已开启 / 已关闭 / 这款机型不支持（「未开启」有歧义：是没授权还是关了）。
+- 未授权时点它仍走申请；授权成功后自动置为开启。
+- 控件形态（用户已选）：`row_power_off` 右侧加 `SwitchCompat`，抄 `activity_more_settings.xml`
+  里「铃声渐响」那一行（`clickable=false`，点整行切换）。约 8 行 xml + 3 行 Java。
+
+### 3. 版本与文档
+
+v1.27.0 / 328，`Changelog.java`、`docs/更新日志.md`、README 功能列表（关机闹钟 + 换机迁移各一句）。
+
+**不做什么**：不改自定义导出/导入格式；不动 `BootReceiver`；不给「关机闹钟」做「仅工作日」之类附加规则；
+不在迁移里带 `power_off_armed`（新机没有那条 RTC，带了也只会在下次 sync 时被覆盖）。
+
+## 上一版方案 · 修 v1.24.0 / v1.26.0 的 3 个 bug 与 2 个风险（已出包 v1.26.1 / 327）
 
 > 状态：**已出包 · 批准已作废**
 > 出包：2026-11-13 18:50（再出包须重写方案并重新确认）

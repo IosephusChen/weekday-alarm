@@ -1,13 +1,13 @@
 {
-  "versionCode": 328,
-  "versionName": "1.27.0",
+  "versionCode": 329,
+  "versionName": "1.27.1",
   "published": "2026-11-13",
-  "title": "关机闹钟能关，换机能带走数据",
+  "title": "关机闹钟开关两处修正",
   "notes": [
-    "关机闹钟旁边多了开关，关掉就把 RTC 那条撤了",
-    "换手机时闹钟与班表跟着系统备份搬过去",
-    "关机闹钟默认关，要在设置页打开才生效"
+    "升级后原来开着的关机闹钟不会被悄悄关掉",
+    "在系统里撤了权限，开关与设置一致",
+    "重新授权时会先撤掉旧的那条，不再重复下发"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.0/weekday-alarm-1.27.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.27.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.1/weekday-alarm-1.27.1.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.27.1"
 }

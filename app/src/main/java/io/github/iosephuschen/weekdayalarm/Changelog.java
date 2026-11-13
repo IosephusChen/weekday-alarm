@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(329, "1.27.1", "2026/11/13", "关机闹钟开关两处修正",
+                    "升级后原来开着的关机闹钟不会被悄悄关掉",
+                    "在系统里撤了权限，开关与设置一致",
+                    "重新授权时会先撤掉旧的那条，不再重复下发"),
             new Entry(328, "1.27.0", "2026/11/13", "关机闹钟能关，换机能带走数据",
                     "关机闹钟旁边多了开关，关掉就把 RTC 那条撤了",
                     "换手机时闹钟与班表跟着系统备份搬过去",

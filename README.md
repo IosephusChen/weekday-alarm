@@ -58,12 +58,13 @@
 - **备份**：闹钟（含各自的铃声）、排班、请假加班标记，导出一个文件，换机一键恢复
 - **站内更新**：首页提示新版本，点一下就在应用内下载安装，不用跳浏览器（v1.24.0）
 - **关机闹钟**：设置页一个开关，开着时关机到点也能由系统把手机叫醒（v1.26.0，看机型）
-- **换机迁移**：闹钟、班表、请假加班随系统换机 / 云备份一起走，也可以导出配置文件手动搬（v1.27.0）
+- **换机迁移**：闹钟、班表、请假加班随系统换机 / 云备份一起走，也可以导出配置文件手动搬（v1.27.0 起）
 - 深色模式、无账号、无广告、无统计
 
 ## 下载与安装
 
-**v1.27.0（2026-11-13）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.0/weekday-alarm-1.27.0.apk)
+**v1.27.1（2026-11-13）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.1/weekday-alarm-1.27.1.apk)
+· [上一版 v1.27.0](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.0/weekday-alarm-1.27.0.apk)
 · [上一版 v1.26.1](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.26.1/weekday-alarm-1.26.1.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 

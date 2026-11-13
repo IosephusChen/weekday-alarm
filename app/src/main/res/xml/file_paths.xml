@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 只把 cache/updates/ 这一层交给 FileProvider（v1.24.0）。
+     安装器读的 APK 必须放在这个目录里，别的文件一概不暴露。 -->
+<paths>
+    <cache-path
+        name="updates"
+        path="updates/" />
+</paths>

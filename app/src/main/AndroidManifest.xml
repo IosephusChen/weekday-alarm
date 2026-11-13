@@ -20,6 +20,10 @@
          SCHEDULE_EXACT_ALARM 覆盖 Android 12~13，Android 14 起默认需用户在设置中手动开启 -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- 站内更新（v1.24.0）：Android 8.0 起，应用要拉起系统安装器就得先声明这一条，
+         否则 ACTION_VIEW(apk) 直接被拒绝。声明不等于能装——用户仍要在系统设置里
+         单独允许本应用「安装未知应用」，那一步由 UpdateUi 引导，本应用不会静默安装。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".App"
@@ -195,6 +199,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/month_minimal_widget_info" />
         </receiver>
+
+        <!-- v1.24.0：站内更新下载好的 APK 要交给系统安装器，Android 7.0 起不许直接
+             传 file:// 过去，必须走 FileProvider 授权的 content://。暴露范围只有
+             cache/updates/ 那一层（见 res/xml/file_paths.xml）。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- v0.87.1：exported 改 false。系统广播（开机 / 时区 / 改时间 / 覆盖安装）由系统发出，
              不受 exported 限制；原来设 true 等于任何 App 都能显式启动它、反复触发全量重排。 -->

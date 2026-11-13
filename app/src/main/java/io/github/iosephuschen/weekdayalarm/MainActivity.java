@@ -146,10 +146,10 @@ public class MainActivity extends AppCompatActivity {
         btnDayOff.setOnClickListener(v -> toggleDayOff(DayOffAction.TODAY));
         btnDayOffTomorrow.setOnClickListener(v -> toggleDayOff(DayOffAction.TOMORROW));
 
-        // v1.0.0：查到新版本时的入口。整条点进「关于」——那里有检查更新、Release 链接
-        // 和版本说明，是唯一能继续往下的地方，不需要另开一个弹窗。
+        // v1.0.0：查到新版本时的入口。v1.24.0 起不再跳「关于」——往下要做的就是
+        // 下载并安装，跳过去只是为了看一眼版本号，多一屏。对话框在 UpdateUi 里，两处共用。
         rowUpdate = findViewById(R.id.row_update);
-        rowUpdate.setOnClickListener(v -> startActivity(new Intent(this, AboutActivity.class)));
+        rowUpdate.setOnClickListener(v -> UpdateUi.openFromHome(this));
         findViewById(R.id.btn_update_close).setOnClickListener(v -> {
             // 记下被关掉的那一版：同版本不再出现，下一个版本照常提示。
             Prefs.setUpdateDismissed(this, Prefs.knownUpdateCode(this));

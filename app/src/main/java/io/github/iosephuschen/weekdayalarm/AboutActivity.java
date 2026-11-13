@@ -185,9 +185,8 @@ public class AboutActivity extends AppCompatActivity {
     /**
      * 发现新版本。
      *
-     * <p>两个按钮随「有没有可信直链」变形：有直链时「下载」是主按钮，「发布页」是兜底——
-     * 直链 404（Release 被删、asset 改名）时用户还有个地方可去；没有直链时反过来，
-     * 「去发布页」当主按钮，「稍后」退场。按钮永远是两个，不多不少。
+     * <p>v1.24.0 起对话框本体搬去 {@link UpdateUi}：首页那行也要弹同一个框，
+     * 两份拷贝迟早一处改了另一处没改。
      */
     private void showUpdateDialog() {
         UpdateChecker.Info info = UpdateChecker.lastInfo();
@@ -196,27 +195,7 @@ public class AboutActivity extends AppCompatActivity {
             refreshUpdateLabel();
             return;
         }
-
-        StringBuilder body = new StringBuilder();
-        if (!info.published.isEmpty()) {
-            body.append(info.published).append(" 发布\n");
-        }
-        body.append(getString(R.string.about_update_current, versionNameOnly()));
-        if (!info.notes.isEmpty()) {
-            body.append("\n\n").append(info.notes);
-        }
-        body.append("\n\n").append(getString(R.string.about_update_tail));
-
-        String title = getString(R.string.about_update_title, info.versionName);
-        if (info.hasDirectApk()) {
-            DialogKit.showMessage(this, title, body.toString(),
-                    getString(R.string.about_update_download), (d, w) -> openUrl(info.apkUrl),
-                    getString(R.string.about_update_page), (d, w) -> openUrl(info.pageUrl));
-        } else {
-            DialogKit.showMessage(this, title, body.toString(),
-                    getString(R.string.about_update_page), (d, w) -> openUrl(info.pageUrl),
-                    getString(R.string.about_update_later), null);
-        }
+        UpdateUi.show(this, info);
     }
 
     /**
@@ -233,16 +212,6 @@ public class AboutActivity extends AppCompatActivity {
                 getString(R.string.about_update_failed_body, reason),
                 getString(R.string.about_update_retry), (d, w) -> checkUpdate(),
                 getString(R.string.about_update_ok), null);
-    }
-
-    /** 打开网页；没有浏览器时把地址本身给出去，别静默失败。 */
-    private void openUrl(String url) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (Exception e) {
-            Toast.makeText(this, getString(R.string.about_update_no_browser, url),
-                    Toast.LENGTH_LONG).show();
-        }
     }
 
     private String versionNameOnly() {

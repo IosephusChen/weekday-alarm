@@ -212,9 +212,20 @@
 
                 <TextView style="@style/SettingsChevron" />
             </LinearLayout>
+
+            <!-- v1.25.0：把「关机不会响」写在响铃这张卡的末尾，不另起一节。
+                 理由：用户想到关机响铃时正在看响铃设置，提示放在别处等于没有。 -->
+            <TextView
+                style="@style/SettingsSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/space_16"
+                android:paddingTop="4dp"
+                android:paddingEnd="@dimen/space_16"
+                android:paddingBottom="12dp"
+                android:text="@string/settings_shutdown_tip" />
         </LinearLayout>
 
-        <!-- ===== 排班与节假日 ===== -->
         <TextView
             style="@style/SectionTitle"
             android:layout_width="wrap_content"

@@ -345,6 +345,48 @@
 
         <TextView style="@style/SettingsChevron" />
     </LinearLayout>
+
+    <!-- v1.25.0：关机后本 App 不会响（第三方进程不存在），能响的只有 ROM 内置时钟。
+         这一格把同一条时刻写进系统时钟，能不能在关机状态响由机型决定。 -->
+    <LinearLayout
+        android:id="@+id/row_system_clock"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_field_outline"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="11dp"
+        android:paddingTop="11dp"
+        android:paddingEnd="11dp"
+        android:paddingBottom="11dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/system_clock_row"
+                android:textColor="@color/ink"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                style="@style/SettingsSummary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/system_clock_row_sub" />
+        </LinearLayout>
+
+        <TextView style="@style/SettingsChevron" />
+    </LinearLayout>
 </LinearLayout>
 
 </ScrollView>

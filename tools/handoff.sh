@@ -22,10 +22,24 @@ row() { printf '  %-10s %s\n' "$1" "$2"; }
 
 echo "== 交接快照 $(date '+%Y-%m-%d %H:%M') =="
 
-row "提交" "$(git log --oneline -1)"
-
 branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
 dirty=$(git status --porcelain | wc -l | tr -d ' ')
+head_subject=$(git log -1 --format=%s 2>/dev/null || echo "")
+
+# 2026-11-14：平台会把工作区切到它自己的快照分支 trae/agent-*，或把 HEAD 停在
+# "feat: update workspace" 这个快照提交上。之前只打印分支名，新会话看不出该切走。
+snapshot=""
+if [ "$branch" != "main" ]; then
+    snapshot="当前分支是 $branch（不是 main）"
+fi
+if [ "$head_subject" = "feat: update workspace" ]; then
+    snapshot="${snapshot:+$snapshot；}HEAD 是平台快照提交 feat: update workspace"
+fi
+if [ -n "$snapshot" ]; then
+    echo "!! $snapshot —— 立刻 git checkout main，别在这个提交上干活"
+fi
+
+row "提交" "$(git log --oneline -1)"
 if [ "$dirty" -eq 0 ]; then
     row "分支" "$branch（工作区干净）"
 else
@@ -47,9 +61,8 @@ elif [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PA
 else
     NAS_OK=0; nas_desc="NAS 缺"
 fi
-# 2026-11-13：沙箱重置后 /root/.github_token 会没，但 gh 的登录态常在
-# （/root/.config/gh/hosts.yml），`gh auth token` 直接能用。以前只认 token 文件，
-# 于是报「GitHub 缺」并让用户去要账号——其实推得动。三种态分开报。
+# 2026-11-13：沙箱重置后 /root/.github_token 会没，但 gh 的登录态当时还在。
+# 2026-11-14 又实测登录态也不一定保留——两种都算「有」，都不在才报缺。
 if [ -f /root/.github_token ] || [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
     GH_OK=1; gh_desc="GitHub 有"
 elif command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
@@ -61,6 +74,30 @@ if [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
     row "凭据" "$nas_desc / $gh_desc ← 按下面「下一步」补"
+fi
+
+# 2026-11-14：线上版本不再靠手写文档。有 token 或 gh 登录态时查一次 releases/latest，
+# 与 build.gradle 不一致就点名；查不到只报未知，不挡其余输出（文档曾连续两版没跟上）。
+release_tag=""
+if [ "$GH_OK" -eq 1 ] && command -v gh >/dev/null 2>&1; then
+    tok="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+    if [ -z "$tok" ] && [ -f /root/.github_token ]; then
+        tok=$(cat /root/.github_token 2>/dev/null || true)
+    fi
+    release_tag=$(GH_TOKEN="$tok" timeout 8 gh api repos/IosephusChen/weekday-alarm/releases/latest \
+        --jq .tag_name 2>/dev/null || true)
+fi
+# gh 在 401 / 网络异常时可能把错误 JSON 打到 stdout，只认 vX.Y.Z 这种真 tag。
+case "$release_tag" in
+    v[0-9]*.[0-9]*.[0-9]*) ;;
+    *) release_tag="" ;;
+esac
+if [ -z "$release_tag" ]; then
+    row "线上" "未知（无 token 或网络不通）"
+elif [ "$release_tag" = "v$name" ]; then
+    row "线上" "$release_tag（与本地一致）"
+else
+    row "线上" "$release_tag ← 与本地 v$name 不一致（Release 没建或没更新）"
 fi
 
 # 2026-11-09：密钥不再指望「上次那个沙箱」，统一从 NAS 取。这里只报状态不自动拉——
@@ -185,6 +222,9 @@ row "上次测试" "$res_msg"
 # 原来六行状态全对，但新会话读完还得自己排序——先取凭据还是先 fetch-keys？落后了要不要先 pull？
 # 把排序写进脚本：阻塞项（凭据 / 落后 / 密钥 / 测试基线）排在前面，脏工作区放最后当提醒。
 STEPS=()
+if [ -n "$snapshot" ]; then
+    STEPS+=("确认分支：git checkout main —— $snapshot")
+fi
 if [ "$NAS_OK" -eq 0 ]; then
     STEPS+=("取 NAS 凭据：bash tools/set-access.sh --base=<…/weekday-alarm> --user=U --pass=P（base 要带 %20 等编码）")
 fi

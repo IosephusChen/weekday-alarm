@@ -2,10 +2,10 @@
 
 ## 交接条（换会话先读这几行，其余不用）
 
-- **当前在飞**：优化会话交接流程（状态 `待确认`）——只改 `tools/handoff.sh` 与两份文档，不升版、不出包；方案见下方「优化会话交接流程」节。
-- **开工**：每个会话都是全新沙箱（没有仓库、没有 SDK、没有 git 身份、**没有凭据**）。三步，**顺序别换**：
-  ① `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git` → `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 18.2 秒装完 SDK）。直连 github.com 会卡死，别试。
-  ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**但沙箱重置后 `gh` 的登录态还在**（`/root/.config/gh/hosts.yml`，2026-11-13 实测）：`gh auth token` 直接可用，推送不必先取 NAS——NAS 只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（2026-11-13 实测：只写到 WebDAV 根时 `nas.sh ls keys/` 返回 404）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。
+- **刚做完**：优化会话交接流程（2026-11-14，只改 `tools/handoff.sh` 与两份文档，不升版、不出包）——handoff 会拦快照分支、动态核对 `releases/latest`；提示词改成可重复执行。方案见下方同名节。
+- **开工**：沙箱重置可能保留 `/workspace`（2026-11-14 实测：仓库、`local.properties`、git 身份都在），只清 `/root` 与 `/opt`。clone 前先判目录，已存在就 `checkout main + pull --rebase`。三步，**顺序别换**：
+  ① 先判 `/workspace/weekday-alarm/.git`：在就 `git checkout main && git pull --rebase`，不在才 `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git`；然后 `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 18.2 秒装完 SDK）。直连 github.com 会卡死，别试。
+  ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**沙箱重置后 `gh` 登录态不一定还在**（2026-11-14 实测 `gh auth status` 未登录）：token 优先 `tools/nas.sh get keys/github-token.txt`，`gh auth token` 为空时别反复重试；NAS 也只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（2026-11-13 实测：只写到 WebDAV 根时 `nas.sh ls keys/` 返回 404）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
 - **做到哪**：**v1.27.1 / 329 已出包、已发布**（2026-11-13，Release #444290426）：修 v1.27.0 关机闹钟开关两处——P1 升级迁移（`PowerOffAlarm.enabled()` 键不存在且已授权时按旧语义迁移成开，不再静默 `cancelArmed`）、P2 撤权后写回偏好（重新授权走 CANCEL 而不是又 SET），2,626,766 字节 / MD5 `5f0335d3ff89235273b33c93d6f007e2`，全量 **1342 条 / 0 失败 / 3 跳过**，lint 0 error。上一版 **v1.27.0 / 328 已出包、已发布**（2026-11-13）：换机迁移（`allowBackup` 改回 true）＋关机闹钟开关（`power_off_enabled`，默认关），2,626,689 字节 / MD5 `0a8e789d25e1da967ad1252f3d897e89`。**2026-11-13 沙箱两次重置**（容器 20:26 重启 + 平台 21:32 把 HEAD 切到 `trae/agent-YjQQ4g` 旧快照）已查明，未丢代码：`9bc57d1` 在 main 上；NAS 地址与凭据当时丢失，用户已重新提供（`/root/.nas_url`、`/root/.nas_credentials`），keystore 由 `tools/fetch-keys.sh` 取回并核过 sha256。
 - **B 组三件（2026-11-13，只改测试 / 文档 / 工具，不占版本）**：① `SettingsPowerOffTest` 5 条补上「关机闹钟那一行」的界面覆盖——开关三态、点行落盘、关掉时当场发 CANCEL；反向验证：把未开启分支里的 `cancelArmed` 删掉 → `turningOff_cancelsArmedVendorAlarm` 红，还原后 5 条全绿。② `docs/验机清单.md` 新建（v1.27.0 / v1.24.0 / v1.23.38 / v1.23.37 四组，每项都写「看到什么算过」）。③ `tools/release.sh` 加 JDK 闸门：当前 JDK 不在 17~22 时自动切到现成的 17，找不到才 exit 1——2026-11-13 在 JDK 25 上跑出「511 条失败」，全是环境。
@@ -26,11 +26,12 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261113.bundle` 9,005,154 字节 / MD5 `75319430793b6a209f46d4ed186b4f94`（84 tag + 725 提交 + 460 文件，v1.27.1 封版后刷新），已从 NAS 取回核对 MD5 并 `git clone --branch main` 验过 HEAD/tag/文件数。两个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。
 
-## 当前方案 · 优化会话交接流程（待确认）
+## 当前方案 · 优化会话交接流程（已执行 · 不占版本）
 
-> 状态：**待确认**
+> 状态：**已执行 · 不占版本**（批准随执行归档，release.sh 的闸门不再认这一节）
 > 目标版本：329（不升版；只改工具与文档，不出包）
-> 提出：2026-11-14
+> 批准：2026-11-14 用户选择「四项全做（推荐）」＋「换占位符（推荐）」
+> 完成：2026-11-14
 
 ### 背景（2026-11-14 实测）
 

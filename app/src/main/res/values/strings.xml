@@ -16,12 +16,6 @@
     <string name="alarm_time_rest">休</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
-    <!-- v1.25.0：关机后第三方 App 不会响，能响的只有 ROM 内置时钟。
-         两处措辞都不承诺结果——能不能关机响取决于机型。 -->
-    <string name="system_clock_row">在系统时钟里也设一个</string>
-    <string name="system_clock_row_sub">关机后只有系统时钟能响，看机型支持</string>
-    <string name="system_clock_missing">这台设备没有可用的系统时钟</string>
-    <string name="settings_shutdown_tip">关机后本 App 不会响：应用进程关了就没有代码在跑。要关机也响，用系统时钟那一条——能在关机状态响的只有系统自带时钟，且看机型。</string>
     <string name="settings_volume_label">闹钟音量</string>
     <string name="settings_volume_default">—</string>
     <!-- 滑块左端的量程下限（v1.1.0）。
@@ -136,9 +130,7 @@
     <!-- v1.10.1：关机这条问得多，而且容易被当成 Bug（设了闹钟没响）。
          两句分开写：前一句是事实边界，后一句是给人一条能走的路。
          不写「重启后不补响」——那是更冷门的分支，写进来只会让这一条变长。 -->
-    <!-- v1.25.0：后半句从「仅厂商自带时钟可用」改成一条能走的路——闹钟编辑页
-         多了「在系统时钟里也设一个」那一格，说明里得说清它连着哪儿。 -->
-    <string name="help_s2_b5">手机彻底关机时本 App 不会响：应用进程没了，没有任何代码在跑。要关机也响，在闹钟编辑页点「在系统时钟里也设一个」，交给厂商自带时钟，能不能响看机型</string>
+    <string name="help_s2_b5">手机彻底关机时不会响。第三方应用无法实现，仅厂商自带时钟的「关机闹钟」可用</string>
     <string name="help_s2_b6">不想被打扰又要闹钟：开启飞行模式与勿扰，闹钟仍会响，整夜耗电极少</string>
 
     <string name="help_s3_title">临时请假 / 加班</string>

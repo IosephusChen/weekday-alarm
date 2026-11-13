@@ -158,13 +158,6 @@ final class AlarmEditor {
         final int[] hour = {target != null ? target.hour : 7};
         final int[] minute = {target != null ? target.minute : 30};
 
-        // v1.25.0：关机后本 App 不会响——第三方进程不存在，能响的只有 ROM 内置时钟。
-        // 这一格把同一条时刻交给系统时钟（AlarmClock.ACTION_SET_ALARM），
-        // 能不能在关机状态响取决于机型，所以文案不承诺结果。
-        View rowSysClock = view.findViewById(R.id.row_system_clock);
-        rowSysClock.setOnClickListener(v -> SystemClockAlarm.add(activity, hour[0], minute[0],
-                etLabel.getText().toString()));
-
         // v1.3.0：选中态直接记模式本身。原来是「下标 → MODE_VALUES 反查」，
         // 卡片从 6 张变 3 张之后下标不再等于界面位置，反查只会更绕
         final Alarm.Mode[] sel = {target != null ? target.mode : Alarm.Mode.WORKDAY};

@@ -25,7 +25,26 @@
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
 
-## 当前方案 · 关机也响（系统时钟入口 + 事实说明）
+## 当前方案 · 撤回 A（系统时钟入口）
+
+> 状态：**待确认**
+> 目标版本：326
+
+2026-11-13 用户原话：「我看错了，A 不要做」。A 已随 v1.25.0 发出去，所以这是**回滚 + 再发一版**。
+
+1. 删 `SystemClockAlarm.java`、`SystemClockAlarmTest.java`（各 1 个文件）。
+2. `dialog_alarm.xml` 删掉 `row_system_clock` 整块；`AlarmEditor.java` 删掉那 5 行接线；
+   `strings.xml` 删 `system_clock_row` / `system_clock_row_sub` / `system_clock_missing`。
+3. App 内使用说明第 2 节第 5 条改回不提入口的写法——原句现在指着「闹钟编辑页那一格」，
+   A 撤掉后这句就是假的，必须一起退。
+4. **C 保留**：设置页「响铃」卡末尾那条关机说明、`settings_shutdown_tip` 不动
+   （它只说事实，不指向任何入口）。
+5. 版本 v1.25.1 / 326（撤功能，按 patch 走），更新日志与 `Changelog.java` 各一条。
+
+**不做什么**：不改写历史、不删 v1.25.0 的 tag 与 Release（装过的人不必卸）；
+不动 `BootReceiver` 与响铃链路；不动 C 的说明条；不重开 B（开机补响）。
+
+## 上一版方案 · 关机也响（v1.25.0 / 325，已出包，A 部分将撤回）
 
 > 状态：**已出包 · 批准已作废**
 > 出包：2026-11-13 16:31（再出包须重写方案并重新确认）

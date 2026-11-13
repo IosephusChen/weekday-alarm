@@ -20,6 +20,20 @@
 - **历史已重写（2026-11-13，脱敏）**：全部 651 个提交的 SHA **都变了**——邮箱统一成 noreply（原 9 条真 Gmail、6 条 QQ）、`tools/preview-debug.keystore` 从历史移除、NAS 域名 / 端口 / 共享目录名替换成 `<NAS_HOST>:<PORT>` / `<SHARE>`。文档里出现的旧 SHA（`7382876`、`9698d03`、`f203df3` 等）**已不指向任何对象**，查改动请按版本号或 `git log --grep`。远端只剩 `main` 一条分支 + 79 个 tag（7 条零差异旧分支已删）；重写前的完整备份在 NAS `keys/wd-before-rewrite-20261113.bundle`。GitHub 侧旧对象短期仍可能被已知 SHA 取到。
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 
+## GitHub 仓库设置 · 四项（2026-11-13，3 项落地 / 1 项不可用）
+
+> 状态：**已实施**（第 4 项平台不提供）
+> 目标版本：不占版本（只改仓库设置，不产生提交进包）
+
+- ✅ 删除残留分支 `trae/agent-YjQQ4g`（与 main 同指，无独有提交）
+- ✅ `delete_branch_on_merge=true`——以后合并 PR 自动删分支，不再留残枝
+- ✅ `has_projects=false`——Projects 标签页从未使用
+- ❌ **`secret_scanning_non_provider_patterns` / `secret_scanning_validity_checks` 开不了**：
+  `PATCH /repos` 返回 200 但两项仍是 `disabled`，不报错。原因是它们属于 **GitHub Secret Protection（付费）**，
+  公开仓库免费只送「provider 模式扫描 + push protection」（这两项都已开）。**别再去点**，2026-11-13 实测。
+
+**不建议做**（理由记下来省得重议）：main 分支保护（单人直推流程会把自己卡在 PR 上）；Dependabot security updates（App 零运行时依赖，只会有构建期噪音）；Discussions（0 star，空标签页）。
+
 ## 硬编码文案收口（2026-11-13，**已核销 · 结论是不做**）
 
 > 状态：**已核销 · 结论：不做**（核完发现绝大部分不是真文案，用户 2026-11-13 按建议同意结掉）

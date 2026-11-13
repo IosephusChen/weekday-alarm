@@ -22,6 +22,13 @@ import java.util.Set;
 public final class Prefs {
 
     static final String NAME = "weekday_alarm";   // 包内可见：测试要直接读盘上原值，见 PrefsTest 的迁移用例
+    /**
+     * 设备状态单独一个文件（2026-11-14）：备份规则排除它。
+     *
+     * <p>关机闹钟的 RTC 时刻只对当前这台设备有意义；跟着云备份/换机恢复走，
+     * 新机就会拿到一条「本地有记录、RTC 里不存在」的时刻。
+     */
+    static final String DEVICE_NAME = "weekday_alarm_device";
     public static final String KEY_WEEK_BIG = "week_big";        // 本周是否大周
     public static final String KEY_ANCHOR = "anchor";            // 基准周六（大周周六）yyyy-MM-dd
     public static final String KEY_WEEK_MODE = "week_mode";      // 周休制度序号（v0.27.0，见 WeekSchedule.Mode）
@@ -148,6 +155,10 @@ public final class Prefs {
 
     private static SharedPreferences sp(Context c) {
         return c.getApplicationContext().getSharedPreferences(NAME, Context.MODE_PRIVATE);
+    }
+
+    private static SharedPreferences deviceSp(Context c) {
+        return c.getApplicationContext().getSharedPreferences(DEVICE_NAME, Context.MODE_PRIVATE);
     }
 
     public static boolean isWeekBig(Context c) {
@@ -1450,21 +1461,33 @@ public final class Prefs {
 
     // ================= 关机闹钟（v1.26.0）=================
 
-    /** 已经交给 vendor 关机闹钟的时刻（毫秒），0 = 当前没有交给它。 */
+    /** 已经交给 vendor 关机闹钟的时刻（毫秒），0 = 当前没有交给它。存在设备文件里，不进备份。 */
     public static long getPowerOffArmed(Context c) {
-        return sp(c).getLong(KEY_POWER_OFF_ARMED, 0L);
+        SharedPreferences device = deviceSp(c);
+        if (device.contains(KEY_POWER_OFF_ARMED)) {
+            return device.getLong(KEY_POWER_OFF_ARMED, 0L);
+        }
+        // v1.26.0~v1.27.1 存在主文件里：迁移一次并删掉，主文件是会进备份的那份。
+        SharedPreferences main = sp(c);
+        if (!main.contains(KEY_POWER_OFF_ARMED)) return 0L;
+        long millis = main.getLong(KEY_POWER_OFF_ARMED, 0L);
+        // 只有设备文件落盘成功才删主文件里的副本；写失败就留着，下次再迁。
+        if (device.edit().putLong(KEY_POWER_OFF_ARMED, millis).commit()) {
+            main.edit().remove(KEY_POWER_OFF_ARMED).apply();
+        }
+        return millis;
     }
 
     public static void setPowerOffArmed(Context c, long millis) {
-        sp(c).edit().putLong(KEY_POWER_OFF_ARMED, millis).apply();
+        deviceSp(c).edit().putLong(KEY_POWER_OFF_ARMED, millis).apply();
     }
 
     /**
      * 关机闹钟的总开关（v1.27.0）。
      *
      * <p>为什么需要单独一个键：v1.26.0 只能申请权限、开了关不掉——用户想关只能去系统设置
-     * 撤权限，而撤了权限连「撤掉已交出去的那条」都做不到。有了这个键，关掉时先 CANCEL
-     * 再清 {@link #KEY_POWER_OFF_ARMED}，RTC 里那条才真的没了。
+     * 撤权限，而撤了权限连「撤掉已交出去的那条」都做不到。有了这个键，关掉时先 CANCEL；
+     * 时刻保留在设备文件里，后续每次重排再撤一次（广播是 fire-and-forget，可能丢）。
      */
     public static final String KEY_POWER_OFF_ENABLED = "power_off_enabled";
 

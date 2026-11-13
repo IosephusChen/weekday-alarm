@@ -69,8 +69,8 @@ public class PowerOffAlarmTest {
         assertEquals(PowerOffAlarm.ACTION_CANCEL, sent.get(1).getAction());
         assertEquals(1_700_000_000_000L,
                 sent.get(1).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
-        assertEquals("撤完要把记录清零，否则下次无法用同一时刻再撤",
-                0L, Prefs.getPowerOffArmed(app));
+        assertEquals("撤完不立刻清零：CANCEL 也可能丢，下一次重排再撤一次",
+                1_700_000_000_000L, Prefs.getPowerOffArmed(app));
     }
 
     /**
@@ -109,6 +109,8 @@ public class PowerOffAlarmTest {
     /** 清空所有偏好，模拟「旧版本升级上来时还没有这个键」。 */
     private void clearAllPrefs() {
         app.getSharedPreferences("weekday_alarm", android.content.Context.MODE_PRIVATE)
+                .edit().clear().commit();
+        app.getSharedPreferences("weekday_alarm_device", android.content.Context.MODE_PRIVATE)
                 .edit().clear().commit();
     }
 
@@ -173,14 +175,15 @@ public class PowerOffAlarmTest {
     }
 
     @Test
-    public void sync_sameTimeTwice_sendsOnce() {
+    public void sync_sameTimeTwice_sendsTwice() {
         installVendor();
         shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
 
         PowerOffAlarm.sync(app, 1_700_000_000_000L);
         PowerOffAlarm.sync(app, 1_700_000_000_000L);
 
-        assertEquals(1, broadcasts().size());
+        assertEquals("每次重排都重发 SET：广播丢了或换机恢复时，下一次重排要能自愈",
+                2, broadcasts().size());
     }
 
     @Test
@@ -197,7 +200,47 @@ public class PowerOffAlarmTest {
         assertEquals(PowerOffAlarm.ACTION_CANCEL, cancel.getAction());
         // vendor 只在 time 与它自己存的时刻相等时才真撤，所以这里必须是刚才那个时刻
         assertEquals(1_700_000_000_000L, cancel.getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
-        assertEquals(0L, Prefs.getPowerOffArmed(app));
+        assertEquals("保留时刻，下一次重排还会再撤一次",
+                1_700_000_000_000L, Prefs.getPowerOffArmed(app));
+    }
+
+    /** CANCEL 是 fire-and-forget：下一次 sync(null) 必须再撤一次，别把凭据提前丢掉。 */
+    @Test
+    public void cancelRetriesOnNextSync() {
+        installVendor();
+        shadowOf(app).grantPermissions(PowerOffAlarm.PERMISSION);
+
+        PowerOffAlarm.sync(app, 1_700_000_000_000L);
+        PowerOffAlarm.sync(app, null);
+        PowerOffAlarm.sync(app, null);
+
+        List<Intent> sent = broadcasts();
+        assertEquals(3, sent.size());
+        assertEquals(PowerOffAlarm.ACTION_CANCEL, sent.get(2).getAction());
+        assertEquals(1_700_000_000_000L,
+                sent.get(2).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
+    }
+
+    /**
+     * 2026-11-14：power_off_armed 是设备状态，不能随云备份/换机搬家走。
+     *
+     * <p>v1.27.0 打开 allowBackup 后，它会被一起恢复；新机没有那条 RTC，
+     * sync 看到时刻相同就不再 SET，开关显示开着、关机却不响。
+     */
+    @Test
+    public void armedMigratesOutOfBackedUpPrefs() {
+        android.content.SharedPreferences main =
+                app.getSharedPreferences("weekday_alarm", android.content.Context.MODE_PRIVATE);
+        android.content.SharedPreferences device =
+                app.getSharedPreferences("weekday_alarm_device", android.content.Context.MODE_PRIVATE);
+        device.edit().remove(Prefs.KEY_POWER_OFF_ARMED).commit();
+        main.edit().putLong(Prefs.KEY_POWER_OFF_ARMED, 123L).commit();
+
+        assertEquals(123L, Prefs.getPowerOffArmed(app));
+        assertFalse("主文件会进备份，迁移后必须删掉",
+                main.contains(Prefs.KEY_POWER_OFF_ARMED));
+        assertEquals("设备文件不进备份",
+                123L, device.getLong(Prefs.KEY_POWER_OFF_ARMED, 0L));
     }
 
     @Test
@@ -229,7 +272,8 @@ public class PowerOffAlarmTest {
         assertEquals(PowerOffAlarm.ACTION_CANCEL, sent.get(1).getAction());
         assertEquals(1_700_000_000_000L,
                 sent.get(1).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
-        assertEquals(0L, Prefs.getPowerOffArmed(app));
+        assertEquals("保留时刻，下一次重排还会再撤一次",
+                1_700_000_000_000L, Prefs.getPowerOffArmed(app));
     }
 
     /** 只保留两条 vendor 广播，别把测试环境里别的广播算进来。 */

@@ -151,6 +151,8 @@ public class FrozenKeysTest {
     @Test
     public void sharedPrefsFileNameIsFrozen() throws Exception {
         assertEquals("weekday_alarm", readString(Prefs.class, "NAME"));
+        // 备份规则按文件名排除；改名等于把设备状态又放回云备份里。
+        assertEquals("weekday_alarm_device", readString(Prefs.class, "DEVICE_NAME"));
     }
 
     /** Prefs 的每个 key：值必须与冻结表一致。 */

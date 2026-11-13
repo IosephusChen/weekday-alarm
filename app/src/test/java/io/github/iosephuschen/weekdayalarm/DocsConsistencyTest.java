@@ -214,6 +214,26 @@ public class DocsConsistencyTest {
     }
 
     /**
+     * 关机闹钟的 RTC 时刻是设备状态，不能随云备份/换机走（2026-11-14）。
+     *
+     * <p>它原来和班表存在同一个 SharedPreferences 里；v1.27.0 打开 allowBackup 后，
+     * 换机恢复会带来一条「本地有记录、新机 RTC 里不存在」的时刻。把它挪进独立文件，
+     * 再用两份备份规则排除。规则文件删了/路径写错，这条会红。
+     */
+    @Test
+    public void powerOffArmedIsExcludedFromBackup() throws Exception {
+        String manifest = read(new File(root(), "app/src/main/AndroidManifest.xml"));
+        assertTrue("manifest 没接 backup_rules",
+                manifest.contains("android:fullBackupContent=\"@xml/backup_rules\""));
+        assertTrue("manifest 没接 data_extraction_rules",
+                manifest.contains("android:dataExtractionRules=\"@xml/data_extraction_rules\""));
+        String rules = read(new File(root(), "app/src/main/res/xml/backup_rules.xml"))
+                + read(new File(root(), "app/src/main/res/xml/data_extraction_rules.xml"));
+        assertTrue("备份规则没排除设备文件 weekday_alarm_device.xml",
+                rules.contains("weekday_alarm_device.xml"));
+    }
+
+    /**
      * 交接快照脚本必须真的在，而且交接条里要有入口。
      *
      * <p>与上一条同一个理由：交接条让人跑一条命令，那条命令就得存在且能跑。

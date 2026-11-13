@@ -84,9 +84,9 @@ final class PowerOffAlarm {
                 return;
             }
             long millis = next;
-            if (millis == armed) return;
-            // v1.26.1 P2：先落盘再发。反过来的话，进程在这两步之间被杀就会留下
-            // 「RTC 里挂着、本地没记」的状态——那个时刻之后永远撤不掉。
+            // 2026-11-14：不再用 millis == armed 短路。广播是 fire-and-forget，上一次 SET
+            // 可能被 vendor 拒收或丢失；换机恢复也可能带来一条「本地有记录、新机 RTC 里
+            // 不存在」的时刻。每次重排都重发一次 SET（幂等），下一次重排就是自愈机会。
             Prefs.setPowerOffArmed(c, millis);
             c.sendBroadcast(build(ACTION_SET, millis));
         } catch (Throwable ignored) {
@@ -110,12 +110,11 @@ final class PowerOffAlarm {
         return on;
     }
 
-    /** 撤掉已交给 vendor 的那一条，并把记录清零。没交过就什么都不做。 */
+    /** 撤掉已交给 vendor 的那一条。没交过就什么都不做。 */
     static void cancelArmed(Context c, long armed) {
         if (armed <= 0) return;
-        // 撤是幂等的（同一个时刻再撤一次也无害），所以先发再清：
-        // 反过来的话，广播失败会把唯一的撤销凭据弄丢，RTC 里那条就永远撤不掉了。
+        // 2026-11-14：发完不立刻清零。CANCEL 也是 fire-and-forget，丢了就再无凭据；
+        // 保留时刻，后续每次重排都会再发一次 CANCEL（幂等），直到新的 SET 覆盖它。
         c.sendBroadcast(build(ACTION_CANCEL, armed));
-        Prefs.setPowerOffArmed(c, 0L);
     }
 }

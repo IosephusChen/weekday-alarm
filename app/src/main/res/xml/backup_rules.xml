@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  2026-11-14：关机闹钟的 RTC 时刻是设备状态（weekday_alarm_device.xml），
+  不能随云备份 / 换机恢复走。主文件 weekday_alarm.xml 仍照常备份，
+  班表、闹钟、请假标记不受影响。
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="weekday_alarm_device.xml" />
+</full-backup-content>

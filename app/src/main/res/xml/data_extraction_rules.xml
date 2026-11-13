@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  2026-11-14：Android 12+ 的云备份与换机搬家规则。
+  排除理由同 backup_rules.xml：RTC 时刻只对当前设备有意义。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="weekday_alarm_device.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="weekday_alarm_device.xml" />
+    </device-transfer>
+</data-extraction-rules>

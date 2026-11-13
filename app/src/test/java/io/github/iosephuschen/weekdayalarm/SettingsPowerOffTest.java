@@ -127,6 +127,7 @@ public class SettingsPowerOffTest {
      *
      * <p>这是 v1.27.0 的核心承诺：开关不只是「以后不再下发」，而是「现在就把那条撤了」。
      * 只改 Pref 不发 CANCEL 的话，用户点了关闭、界面也确实关了，但关机的那个早上照样响。
+     * 2026-11-14 起 CANCEL 后保留时刻，下一次重排还会再撤一次（广播可能丢）。
      */
     @Test
     public void turningOff_cancelsArmedVendorAlarm() {
@@ -146,7 +147,8 @@ public class SettingsPowerOffTest {
         assertEquals(PowerOffAlarm.ACTION_CANCEL, after.get(after.size() - 1).getAction());
         assertEquals(1_700_000_000_000L,
                 after.get(after.size() - 1).getLongExtra(PowerOffAlarm.EXTRA_TIME, -1L));
-        assertEquals(0L, Prefs.getPowerOffArmed(app));
+        assertEquals("CANCEL 后保留时刻，下一次重排再撤一次",
+                1_700_000_000_000L, Prefs.getPowerOffArmed(app));
     }
 
     /**

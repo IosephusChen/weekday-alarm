@@ -28,6 +28,9 @@
 #   tools/nas.sh ping                      # 只回 HTTP 码（207 通 / 401 凭据错 / 000 网络不通）
 #
 # 远端路径相对 weekday-alarm/，例如 apk/weekday-alarm-1.23.13.apk、keys/xxx.jks。
+# **子目录不会自动创建**：往新目录传东西之前要先 MKCOL 一次（curl -X MKCOL --url "$BASE/env/"），
+# 否则 PUT 直接 403/409。现有目录：apk/（正式包）、keys/（密钥与 token）、
+# verify/（验收图与基线）、env/（离线工具副本）。别往根目录散放文件。
 #
 # 关于 MOVE：Lucky 的 WAF 会拦 WebDAV 的 Destination 头（实测 403），所以「覆盖」
 # 只能 PUT + DELETE，别想着原子改名。
@@ -112,13 +115,23 @@ put)
     [ -f "$2" ] || { echo "本地文件不存在: $2" >&2; exit 1; }
     remote="$(encode_path "$3")"
     size=$(stat -c%s "$2")
-    curl -sS -f -u "$CRED" -T "$2" --url "$BASE/$remote" \
-        -o /dev/null -w "已上传 $3（$size 字节，%{time_total}s，%{speed_upload} B/s）\n"
+    # 只有 curl 真的成功才报「已上传」。以前写成 `curl -f ... -w '已上传 …'`，
+    # 403/404 时 -w 照样打印，看起来像成功（2026-11-13 传 env/ 时被这句骗过一次）。
+    out=$(curl -sS -f -u "$CRED" -T "$2" --url "$BASE/$remote" -o /dev/null \
+        -w '%{http_code} %{time_total} %{speed_upload}' 2>&1) || {
+        echo "上传失败 $3：$out" >&2
+        echo "常见原因：远端子目录不存在（WebDAV 不自动建目录，先 MKCOL，见文件头注释）" >&2
+        exit 1; }
+    code=${out%% *}; rest=${out#* }; secs=${rest%% *}; speed=${rest#* }
+    echo "已上传 $3（$size 字节，${secs}s，${speed} B/s，HTTP $code）"
     ;;
 rm)
     [ $# -eq 2 ] || { echo "用法: tools/nas.sh rm <远端路径>" >&2; exit 2; }
     remote="$(encode_path "$2")"
-    curl -sS -f -u "$CRED" -X DELETE --url "$BASE/$remote" -o /dev/null -w '已删除 %{http_code}\n'
+    # 与 put 同理：失败时不能打印成「已删除」。以前会输出「已删除 404」。
+    out=$(curl -sS -f -u "$CRED" -X DELETE --url "$BASE/$remote" -o /dev/null -w '%{http_code}' 2>&1) || {
+        echo "删除失败 $2：$out（404 = 远端没有这个文件）" >&2; exit 1; }
+    echo "已删除 $2（HTTP $out）"
     ;;
 *)
     echo "未知命令: $cmd（可用 ls / get / put / rm）" >&2

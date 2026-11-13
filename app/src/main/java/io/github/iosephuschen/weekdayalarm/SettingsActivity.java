@@ -37,6 +37,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     private TextView tvRingtone;
     private TextView tvHorizon, tvHolidayData, tvVolume, tvWeekStart;
+    /** 关机闹钟的状态值（v1.26.0）：已开启 / 未开启 / 这款机型不支持。 */
+    private TextView tvPowerOff;
     /** 「提醒」组（响铃时长 / 按键 / 稍后 / 前提醒 / 睡前）v0.80.3 起单独成类。 */
     private SettingsReminderSection reminders;
     /** 周休制度三行（v0.56.2 从首页「排班」卡搬来）。 */
@@ -115,6 +117,7 @@ public class SettingsActivity extends AppCompatActivity {
         tvWeekMode = findViewById(R.id.tv_week_mode);
         tvHolidayData = findViewById(R.id.tv_holiday_data);
         tvVolume = findViewById(R.id.tv_volume);
+        tvPowerOff = findViewById(R.id.tv_power_off);
         swFadeIn = findViewById(R.id.switch_fade_in);
         swVibrate = findViewById(R.id.switch_vibrate);
         // 配色（v1.1.0）：和首页闹钟行、睡前提醒那三个开关同一套，见 SwitchKit
@@ -131,6 +134,9 @@ public class SettingsActivity extends AppCompatActivity {
         // v0.22.1：整行可点（标题左、值右），点哪一段都打开同一个对话框
         bind(R.id.row_week_start, v -> showWeekStartDialog());
         bind(R.id.row_horizon, v -> showHorizonDialog());
+        // v1.26.0：关机闹钟。这台机器没有那颗 vendor 应用时这一行点不动，
+        // 右边写「这款机型不支持」——不弹框，因为没有任何可给的东西。
+        bind(R.id.row_power_off, v -> enablePowerOffAlarm());
         bind(R.id.row_holiday_data, v -> checkHolidayUpdate());
         bind(R.id.row_volume, v -> showVolumeDialog());
         bind(R.id.row_ringtone, v -> openRingtonePicker());
@@ -262,6 +268,46 @@ public class SettingsActivity extends AppCompatActivity {
         SystemRingtonePicker.handleResult(this, requestCode, resultCode, data);
     }
 
+    private static final int REQ_POWER_OFF = 0x51;
+
+    /**
+     * 关机闹钟那一行的取值（v1.26.0）。
+     *
+     * <p>三种态：机型没有那颗 vendor 应用 → 「这款机型不支持」，行不可点；
+     * 有但没授权 → 「未开启」，点它申请；已授权 → 「已开启」。
+     */
+    private void refreshPowerOffValue() {
+        if (tvPowerOff == null) return;
+        android.view.View row = findViewById(R.id.row_power_off);
+        boolean supported = PowerOffAlarm.supported(this);
+        if (row != null) row.setClickable(supported);
+        if (!supported) {
+            tvPowerOff.setText(R.string.settings_power_off_unsupported);
+            return;
+        }
+        tvPowerOff.setText(PowerOffAlarm.granted(this)
+                ? R.string.settings_power_off_on : R.string.settings_power_off_off);
+    }
+
+    /** 点那行：没授权就申请，已授权就重新把时刻交给 RTC（等于立即生效一次）。 */
+    private void enablePowerOffAlarm() {
+        if (!PowerOffAlarm.supported(this)) return;
+        if (PowerOffAlarm.granted(this)) {
+            applySettingsNow();
+            return;
+        }
+        requestPermissions(new String[]{PowerOffAlarm.PERMISSION}, REQ_POWER_OFF);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode != REQ_POWER_OFF) return;
+        // 授权成功要立刻把「下一次响铃」交给 RTC；拒绝就只刷新文字，不反复弹。
+        if (PowerOffAlarm.granted(this)) applySettingsNow();
+        else refreshPowerOffValue();
+    }
+
     private void refreshAll() {
         // v0.60.0：主页与二级页共用这份刷新，控件不在当前布局里就跳过
         if (tvHorizon != null) updateHorizonText();
@@ -271,6 +317,7 @@ public class SettingsActivity extends AppCompatActivity {
         if (tvVolume != null) updateVolumeText();
         if (reminders != null) reminders.refresh();
         if (tvRingtone != null) updateRingtoneText();
+        refreshPowerOffValue();
         updateRunStatusText();
         swAttaching = true;
         if (swFadeIn != null) swFadeIn.setChecked(Prefs.isFadeIn(this));

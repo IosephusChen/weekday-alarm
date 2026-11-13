@@ -16,10 +16,17 @@
     <string name="alarm_time_rest">休</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
+    <!-- v1.26.0：关机闹钟。手机上那颗 vendor 应用（com.qualcomm.qti.poweroffalarm）
+         收到授权后会把时刻写进 RTC，关机也能把手机叫醒；没有它的机型（多为 MTK）
+         这一行只写「这款机型不支持」。 -->
+    <string name="settings_power_off_title">关机闹钟</string>
+    <string name="settings_power_off_on">已开启</string>
+    <string name="settings_power_off_off">未开启</string>
+    <string name="settings_power_off_unsupported">这款机型不支持</string>
     <!-- v1.24.1：关机后第三方 App 不会响——进程没了就没有代码在跑。
-         只说事实，不指向任何入口：「能在关机状态响的只有系统自带时钟」本身就是答案，
-         而能不能响取决于机型，文案不承诺结果。 -->
-    <string name="settings_shutdown_tip">关机后本 App 不会响：应用进程关了就没有代码在跑。能在关机状态响的只有系统自带时钟，且看机型。</string>
+         v1.26.0：上面那一行能开之后，这句改成说清「开了会怎样、没开会怎样」，
+         仍然不承诺结果：那颗 vendor 应用自己也要看机型与 ROM 有没有裁掉。 -->
+    <string name="settings_shutdown_tip">关机闹钟交给系统：开了之后，关机状态下到点由系统把手机叫醒。没开或机型不支持时，关机期间不会响；不想被打扰又怕漏响，可以开飞行模式与勿扰，闹钟照响。</string>
     <string name="settings_volume_label">闹钟音量</string>
     <string name="settings_volume_default">—</string>
     <!-- 滑块左端的量程下限（v1.1.0）。

@@ -1,13 +1,13 @@
 {
-  "versionCode": 325,
-  "versionName": "1.24.1",
+  "versionCode": 326,
+  "versionName": "1.26.0",
   "published": "2026-11-13",
-  "title": "关机后为什么不会响",
+  "title": "关机也能响",
   "notes": [
-    "设置页「响铃」末尾补了一条说明",
-    "关机后本 App 不会响，这是系统限制",
-    "能在关机状态响的只有系统自带时钟，且看机型"
+    "设置页「响铃」多了一行「关机闹钟」，点一下授权就开",
+    "关机后到点由系统把手机叫醒，靠的是机内的 RTC",
+    "只有带 Qualcomm 关机闹钟组件的机型支持"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.1/weekday-alarm-1.24.1.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.24.1"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.26.0/weekday-alarm-1.26.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.26.0"
 }

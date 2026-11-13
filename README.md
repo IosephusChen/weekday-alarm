@@ -57,12 +57,13 @@
 - **桌面小组件**：4×2 / 4×4 / 4×3（见上）
 - **备份**：闹钟（含各自的铃声）、排班、请假加班标记，导出一个文件，换机一键恢复
 - **站内更新**：首页提示新版本，点一下就在应用内下载安装，不用跳浏览器（v1.24.0）
+- **关机闹钟**：设置页授权一次，关机状态下到点也能由系统把手机叫醒（v1.26.0，看机型）
 - 深色模式、无账号、无广告、无统计
 
 ## 下载与安装
 
-**v1.24.1（2026-11-13）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.1/weekday-alarm-1.24.1.apk)
-· [上一版 v1.24.0](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.0/weekday-alarm-1.24.0.apk)
+**v1.26.0（2026-11-13）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.26.0/weekday-alarm-1.26.0.apk)
+· [上一版 v1.24.1](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.1/weekday-alarm-1.24.1.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
@@ -82,7 +83,7 @@
 App 备案库，查不到就弹这个提示——系统提示原文里就写着「可能为境外应用、**单机应用**或未履行备案手续」。
 原生 Android 不会弹。本项目单人维护、不收费、不上架，没有做备案；装完照常用。
 
-## 权限说明（13 条）
+## 权限说明（14 条）
 
 | 权限 | 用途 |
 | --- | --- |
@@ -99,6 +100,7 @@ App 备案库，查不到就弹这个提示——系统提示原文里就写着�
 | `SCHEDULE_EXACT_ALARM` | 精确闹钟（Android 12–13） |
 | `USE_EXACT_ALARM` | 精确闹钟（Android 13+，闹钟类应用安装时授予） |
 | `REQUEST_INSTALL_PACKAGES` | 站内更新时拉起系统安装器（v1.24.0）。只用来装本应用自己的新版本，装前核对包名、版本号与签名；每次安装都要你亲手点确认，不会静默安装 |
+| `org.codeaurora.permission.POWER_OFF_ALARM` | 关机闹钟（v1.26.0）。把「下一次响铃」交给系统的关机闹钟组件，由它写进 RTC，关机后也能把手机叫醒。只在带这个组件的机型上出现，其余机型系统会忽略它 |
 
 ## 隐私与免责
 

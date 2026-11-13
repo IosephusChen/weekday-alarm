@@ -112,6 +112,9 @@ public class FrozenKeysTest {
         PREFS_KEYS.put("KEY_UPDATE_KNOWN_CODE", "update_known_code");
         PREFS_KEYS.put("KEY_UPDATE_KNOWN_NAME", "update_known_name");
         PREFS_KEYS.put("KEY_UPDATE_DISMISSED_CODE", "update_dismissed_code");
+        // v1.26.0：交给 vendor 关机闹钟的那个时刻。冻结的理由不是「永久保留」，
+        // 而是它一旦改名，升级后第一件事就是撤不掉上一次的 RTC 闹钟（CANCEL 要带同一个时刻）。
+        PREFS_KEYS.put("KEY_POWER_OFF_ARMED", "power_off_armed");
         PREFS_KEYS.put("KEY_CRASH_SEEN", "crash_seen");
         PREFS_KEYS.put("KEY_BEDTIME_MINUTES", "bedtime_minutes");
         PREFS_KEYS.put("KEY_BEDTIME_WORKDAY_ONLY", "bedtime_workday_only");

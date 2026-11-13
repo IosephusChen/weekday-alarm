@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(326, "1.26.0", "2026/11/13", "关机也能响",
+                    "设置页「响铃」多了一行「关机闹钟」，点一下授权就开",
+                    "关机后到点由系统把手机叫醒，靠的是机内的 RTC",
+                    "只有带 Qualcomm 关机闹钟组件的机型支持，没有这颗组件的写「这款机型不支持」"),
             new Entry(325, "1.24.1", "2026/11/13", "关机后为什么不会响",
                     "设置页「响铃」末尾补了一条说明",
                     "关机后本 App 不会响，这是系统限制",

@@ -108,6 +108,14 @@ public final class Prefs {
     public static final String KEY_UPDATE_DISMISSED_CODE = "update_dismissed_code";
 
     /**
+     * 已经交给 vendor 关机闹钟（RTC）的那个时刻（v1.26.0）。
+     *
+     * <p>必须记下来：vendor 的 CANCEL 广播只在 {@code time} 与它自己存的时刻**相等**时才生效，
+     * 不记就撤不掉——闹钟删了，RTC 里那条还会在夜里把手机叫起来。
+     */
+    public static final String KEY_POWER_OFF_ARMED = "power_off_armed";
+
+    /**
      * 已经确认过的最后一份崩溃日志文件名（v1.0.1）。
      *
      * <p>为什么按文件名记而不是记布尔：崩溃文件是带秒级时间戳的，新崩溃的名字一定更大。
@@ -1438,6 +1446,17 @@ public final class Prefs {
                 .putInt(KEY_LOCK_PROBE_RESULT, result)
                 .putLong(KEY_LOCK_PROBE_AT, at)
                 .apply();
+    }
+
+    // ================= 关机闹钟（v1.26.0）=================
+
+    /** 已经交给 vendor 关机闹钟的时刻（毫秒），0 = 当前没有交给它。 */
+    public static long getPowerOffArmed(Context c) {
+        return sp(c).getLong(KEY_POWER_OFF_ARMED, 0L);
+    }
+
+    public static void setPowerOffArmed(Context c, long millis) {
+        sp(c).edit().putLong(KEY_POWER_OFF_ARMED, millis).apply();
     }
 
     // ================= 检查更新（v0.89.0）=================

@@ -728,7 +728,11 @@ public final class ScheduleManager {
         // v0.44.0：排程前先结算——过期的「仅一次」若还挂着 enabled=true，
         // 排程表里虽然排不到它，但列表与统计口径会一直当它有效
         List<Alarm> alarms = Prefs.getAlarmsSettled(ctx);
-        if (alarms.isEmpty()) return 0;
+        if (alarms.isEmpty()) {
+            // v1.26.0：闹钟删光了，RTC 里那条也得撤，不然它照样在夜里把手机叫起来
+            PowerOffAlarm.sync(ctx, null);
+            return 0;
+        }
 
         int horizon = Prefs.getHorizonDays(ctx);
         WeekSchedule.Rule rule = Prefs.getRule(ctx);
@@ -769,6 +773,11 @@ public final class ScheduleManager {
             }
         }
         candidates.sort((x, y) -> x.when.compareTo(y.when));
+
+        // v1.26.0：关机闹钟只认一个时刻，取最近的那一条。手机开着时它什么都不做；
+        // 关机后由 vendor 应用靠 RTC 把手机叫醒并响铃。没有候选就撤掉。
+        PowerOffAlarm.sync(ctx, candidates.isEmpty() ? null
+                : candidates.get(0).when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
 
         Set<String> scheduled = new HashSet<>();
         // 每个响铃实例占 1 个系统闹钟；开启提前通知时再多占 1 个，故主闹钟上限减半，

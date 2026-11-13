@@ -129,8 +129,11 @@ public class DocsConsistencyTest {
         String doc = read(new File(docs(), "打工人闹钟-使用说明.md"));
         assertTrue("使用说明头部版本没跟上 build.gradle（v" + gradleVersionName() + "）",
                 doc.contains("当前版本：**v" + gradleVersionName() + "**"));
+        // v1.26.0：实际发布资产的文件名是 weekday-alarm-X.Y.Z.apk（2026-11-13 实测：
+        // 中文名的资产在 gh release upload 时会被截成 "-X.Y.Z.apk"，链接直接 404）。
+        // 这条断言原来钉的是「打工人闹钟-vX.Y.Z.apk」，已按真实文件名改。
         assertTrue("使用说明里的安装包名没跟上",
-                doc.contains("打工人闹钟-v" + gradleVersionName() + ".apk"));
+                doc.contains("weekday-alarm-" + gradleVersionName() + ".apk"));
         assertTrue("使用说明里的 versionCode 没跟上",
                 doc.contains("versionCode " + gradleVersionCode() + "）"));
     }

@@ -24,7 +24,30 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
-## 当前方案 · 回到 v1.24.0，C 单独做
+## 当前方案 · 逆向 Qualcomm 关机闹钟（直接给 RTC 上闹钟）
+
+> 状态：**已批准**
+> 批准：2026-11-13 用户原话「逆向澎湃闹钟」＋「按这个方案来」
+> 目标版本：326（minor 版，v1.26.0）
+
+原理（已核实源码，不是猜的）：`com.qualcomm.qti.poweroffalarm` 是 `sharedUserId=android.uid.system`
+的 vendor 应用，Receiver 监听 `org.codeaurora.poweroffalarm.action.SET_ALARM` / `CANCEL_ALARM`，
+extra `time` = epoch 毫秒，收到写 `/sys/class/rtc/rtc0/wakealarm`，关机后由 RTC 上电。
+该 Receiver 的保护权限 `org.codeaurora.permission.POWER_OFF_ALARM` 是 **dangerous**（非 signature），
+第三方声明 + 运行时申请即可；F-Droid 的 BlackyHawky/Clock 与小米框架 `SecurityManagerCompat`
+走的是同一条路。
+
+1. 新类 `PowerOffAlarm.java`：探测 vendor 包 → 权限状态查询/申请 → `set(timeMillis)` / `cancel()`。
+2. manifest 加 `<uses-permission android:name="org.codeaurora.permission.POWER_OFF_ALARM"/>`。
+3. 排程入口接一次：每次重排后把「下一次响铃」交给 RTC（先 cancel 旧值）。无该包则整条链路静默关掉。
+4. 更多设置加一行「关机闹钟」：支持 / 不支持（看机型），支持但未授权时点它申请。
+5. 测试：Intent 的 action / package / extra 单位；无该包时不发广播。
+6. 版本 326 / v1.26.0，`Changelog.java` 与 `docs/更新日志.md` 各一条。
+
+**不做什么**：不动 `setAlarmClock` 排程与响铃链路；不做定时开机 + 开机补响（MTK 那条路，300 行且依赖 ROM）；
+不 root、不写 sysfs；不重做已撤回的 `AlarmClock.ACTION_SET_ALARM` 入口。
+
+## 上一版方案 · 回到 v1.24.0，C 单独做
 
 > 状态：**已出包 · 批准已作废**
 > 出包：2026-11-13 17:22（再出包须重写方案并重新确认）

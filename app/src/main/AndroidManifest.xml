@@ -24,6 +24,11 @@
          否则 ACTION_VIEW(apk) 直接被拒绝。声明不等于能装——用户仍要在系统设置里
          单独允许本应用「安装未知应用」，那一步由 UpdateUi 引导，本应用不会静默安装。 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 关机闹钟（v1.26.0）：把「下一次响铃」交给 Qualcomm 的 vendor 应用
+         com.qualcomm.qti.poweroffalarm，由它在关机后靠 RTC 把手机叫醒。
+         这条权限由那颗应用自己定义、protectionLevel 是 dangerous（不是 signature），
+         所以可以像普通权限一样在运行时申请。机型上没有那颗应用时，系统会直接忽略这一行。 -->
+    <uses-permission android:name="org.codeaurora.permission.POWER_OFF_ALARM" />
 
     <application
         android:name=".App"

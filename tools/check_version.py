@@ -148,7 +148,7 @@ need("app/src/main/java/io/github/iosephuschen/weekdayalarm/Changelog.java",
      'new Entry(%d, "%s"' % (CODE, NAME), "Changelog 首条")
 need("docs/更新日志.md", "### v%s（versionCode %d）" % (NAME, CODE), "更新日志首条标题")
 need("docs/打工人闹钟-使用说明.md", "当前版本：**v%s**" % NAME, "使用说明版本头")
-need("docs/打工人闹钟-使用说明.md", "打工人闹钟-v%s.apk" % NAME, "使用说明安装包名")
+need("docs/打工人闹钟-使用说明.md", "weekday-alarm-%s.apk" % NAME, "使用说明安装包名")
 need("docs/打工人闹钟-使用说明.md", "versionCode %d）" % CODE, "使用说明 versionCode")
 need("docs/项目状态.md", "**v%s / versionCode %d**" % (NAME, CODE), "项目状态表")
 need("README.md", "**v%s" % NAME, "README 版本号")
@@ -156,7 +156,7 @@ need("README.md", "**v%s" % NAME, "README 版本号")
 # 反向：旧安装包名不能留在使用说明里。v1.0.10 就是头部三行改了、正文还写着旧包名，
 # 检查全绿，用户在安装步骤里看到的是上一版的文件名。
 usage = read("docs/打工人闹钟-使用说明.md")
-stale = sorted(set(re.findall(r"打工人闹钟-v[\d.]+\.apk", usage)) - {"打工人闹钟-v%s.apk" % NAME})
+stale = sorted(set(re.findall(r"(?:打工人闹钟-v|weekday-alarm-)[\d.]+\.apk", usage)) - {"weekday-alarm-%s.apk" % NAME})
 if stale:
     fail("使用说明里还留着旧安装包名", "、".join(stale))
 else:

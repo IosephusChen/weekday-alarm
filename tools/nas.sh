@@ -19,6 +19,9 @@
 #
 # 用法：
 #   tools/nas.sh ls  [远端路径]            # 默认列 apk/
+#                                         # 注意：`ls` 与 `ls ""` 都落到 apk/（空串按「没给」处理），
+#                                         # 想列根目录写 `ls /`。2026-11-13 就因为这点把 apk/ 的
+#                                         # 25 个包当成了根目录下的重复文件，白删一轮（DELETE 全 404）。
 #   tools/nas.sh get <远端路径> <本地文件>
 #   tools/nas.sh put <本地文件> <远端路径>
 #   tools/nas.sh rm  <远端路径>

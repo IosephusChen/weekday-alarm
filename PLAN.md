@@ -24,10 +24,24 @@
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，约 8.7 MB（79 tag + 672 提交 + 446 文件；那份 bundle 里还带着已删的 `preview` tag，下一份会是 78），**只保留最新一份**，封版或动历史前刷新。做它的时候有两个坑都会静默产生坏包，两个都实测过：① **shallow clone 打包会缺对象**（`git rev-parse --is-shallow-repository` 为 true 时先 `git fetch --unshallow`，当时打出 8.7 MB 的包，克隆时报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`。验收方式只有一条：从 NAS 取回、`git clone --branch main` 一个干净目录，核对 HEAD、tag 数与文件数。
 
 
-## 当前方案（空的就写「没有在飞方案」）
+## 当前方案 · 应用内更新（首页直达 + 站内下载安装）
 
-**没有在飞方案。** 已完成轮次见 [`docs/方案存档.md`](docs/方案存档.md)；要出包先在本节写方案，
-填 `> 状态：` 与 `> 目标版本：` 两行——`tools/release.sh` 第一件事就是校验它们，缺一个直接 exit 1。
+> 状态：**已出包 · 批准已作废**
+> 出包：2026-11-13 15:27（再出包须重写方案并重新确认）（2026-11-13 用户原话：「A」）
+> 目标版本：324
+
+1. 首页 `row_update` 点击不再进关于页，直接弹更新对话框（`UpdateUi`，与关于页共用）。
+2. 站内下载：`ApkUpdater` 下到 `cacheDir/updates/update.apk`，带进度与取消；
+   下载完校验 **包名 / versionCode / 签名证书指纹**，全过才拉起系统安装器（FileProvider）。
+3. manifest 加 `REQUEST_INSTALL_PACKAGES` + FileProvider；未开启「安装未知应用」时先说明再跳系统设置，
+   并保留「用浏览器下载」兜底。
+4. README 权限表补一行、标题 12 条 → 13 条（`WordingTest` 守门）。
+
+**不做什么**：不做静默安装 / 自动安装；不做断点续传与后台通知栏下载；不引第三方库（沿用 `HttpURLConnection`）；
+不动 `version.json` 字段与域名白名单。
+
+**纠正一条自己先说错的**：安装不会让闹钟丢——`BootReceiver` 已经收了 `MY_PACKAGE_REPLACED`（manifest 尾部），
+覆盖安装后系统会拉起它自动重排，不需要用户再打开 App。
 
 ## 越界表（执行中撞见、但不属于本轮的问题）
 

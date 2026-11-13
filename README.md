@@ -6,7 +6,7 @@
 
 ![CI](https://github.com/IosephusChen/weekday-alarm/actions/workflows/android.yml/badge.svg?branch=main)
 
-`Android 8.0+` · `MIT` · 约 2.8 MB · 全部数据留在本机
+`Android 8.0+` · `MIT` · 约 2.6 MB · 全部数据留在本机
 
 双休、单休（周日休 / 周六休）、大小周都支持。上二休二、上四休二、每周固定休周三这类轮班也行：按 N 天一轮，自己标哪天上班，最长 62 天。
 
@@ -56,16 +56,17 @@
 - **响铃时长**：默认 10 分钟后自动停，也可设 1 / 3 / 5 分钟，或选「不限」一直响到手动停
 - **桌面小组件**：4×2 / 4×4 / 4×3（见上）
 - **备份**：闹钟（含各自的铃声）、排班、请假加班标记，导出一个文件，换机一键恢复
+- **站内更新**：首页提示新版本，点一下就在应用内下载安装，不用跳浏览器（v1.24.0）
 - 深色模式、无账号、无广告、无统计
 
 ## 下载与安装
 
-**v1.23.38（2026-11-12）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.38/weekday-alarm-1.23.38.apk)
-· [上一版 v1.23.37](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.37/weekday-alarm-1.23.37.apk)
+**v1.24.0（2026-11-13）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.0/weekday-alarm-1.24.0.apk)
+· [上一版 v1.23.38](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.23.38/weekday-alarm-1.23.38.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
-支持 Android 8.0 及以上（API 26），安装包约 2.8 MB。
+支持 Android 8.0 及以上（API 26），安装包约 2.6 MB。
 第一次用？[使用说明](docs/打工人闹钟-使用说明.md) 里有安装、逐步设置与常见问题。
 每版改了什么、为什么改，见 [更新日志](docs/更新日志.md)。
 
@@ -81,7 +82,7 @@
 App 备案库，查不到就弹这个提示——系统提示原文里就写着「可能为境外应用、**单机应用**或未履行备案手续」。
 原生 Android 不会弹。本项目单人维护、不收费、不上架，没有做备案；装完照常用。
 
-## 权限说明（12 条）
+## 权限说明（13 条）
 
 | 权限 | 用途 |
 | --- | --- |
@@ -97,6 +98,7 @@ App 备案库，查不到就弹这个提示——系统提示原文里就写着�
 | `SYSTEM_ALERT_WINDOW` | 解锁使用时弹出响铃小悬浮窗；MIUI 还需「后台弹出界面」权限配合 |
 | `SCHEDULE_EXACT_ALARM` | 精确闹钟（Android 12–13） |
 | `USE_EXACT_ALARM` | 精确闹钟（Android 13+，闹钟类应用安装时授予） |
+| `REQUEST_INSTALL_PACKAGES` | 站内更新时拉起系统安装器（v1.24.0）。只用来装本应用自己的新版本，装前核对包名、版本号与签名；每次安装都要你亲手点确认，不会静默安装 |
 
 ## 隐私与免责
 

@@ -4,11 +4,11 @@
 
 **按你的班表算上班日，只在上班日响。**
 
-双休、单休（周日休 / 周六休）、大小周，以及上二休二、上四休二、每周固定休周三
-这类轮班都支持——按 N 天一轮自己标哪天上班，最长 62 天。
-轮班还能定义**班次**（白班 08:00–20:00、夜班 20:00–次日 08:00），闹钟挂在班次上：
-「开始前 1 小时 30 分」一条同时管白班和夜班，白班那天 06:30、夜班那天 18:30。
-法定节假日与调休补班自动算进去，不管哪种排班，都不用再手动改闹钟。
+双休、单休（周日休 / 周六休）、大小周都支持。上二休二、上四休二、每周固定休周三这类轮班也行：按 N 天一轮，自己标哪天上班，最长 62 天。
+
+轮班可以定义**班次**：白班 08:00–20:00，夜班 20:00–次日 08:00。闹钟挂在班次上，设「开始前 1 小时 30 分」，白班那天 06:30 响，夜班那天 18:30 响。
+
+法定节假日和调休补班会自动算进去，不用再手动改。
 
 **[下载最新版 APK](https://github.com/IosephusChen/weekday-alarm/releases/latest)**
 
@@ -46,7 +46,7 @@
 
 <p align="center"><sub>4×2 今天 / 下次闹钟 · 4×4 本月班表 · 4×3 极简</sub></p>
 
-- **4×2**：今天上不上班、下次几点响、本周七天班休一眼看全
+- **4×2**：今天上不上班、下次几点响、本周七天是班还是休，都在上面
 - **4×4 / 4×3**：整月班休格子，农历节日、二十四节气、调休补班都按日历页同一套规则标；4×3 去掉底部统计行，更省桌面高度
 - 每格的标签和日历页优先级完全一致（班 / 休 / 假 / 补 / 节气 / 节日），不会同一个格子出现两种说法
 - 添加路径：长按桌面空白处 → 小部件 → 全部应用 → 最底下的「安卓小部件」→ 打工人闹钟
@@ -67,13 +67,13 @@
   <img src="docs/screenshots/install-icp-warning.jpg" width="240" alt="系统提示未查询到 ICP 备案信息">
 </p>
 
-**点「继续安装」即可**，功能不受任何影响。
+**点「继续安装」就行**，功能不受影响。
 
 2023 年起，国产系统（小米 / 华为 / OPPO / vivo）在安装**非应用商店来源**的 APK 时会去查
 App 备案库，查不到就弹这个提示——系统提示原文里就写着「可能为境外应用、**单机应用**或未履行备案手续」。
 原生 Android 不会弹。本项目单人维护、不收费、不上架，没有做备案；装完照常用。
 
-## 权限说明（全部 12 条，逐条对得上用途）
+## 权限说明（12 条）
 
 | 权限 | 用途 |
 | --- | --- |
@@ -92,7 +92,7 @@ App 备案库，查不到就弹这个提示——系统提示原文里就写着�
 
 ## 免责声明
 
-**本应用通过系统闹钟接口触发提醒，实际能否响铃还取决于系统的后台管理策略、厂商省电设置与权限状态。**
+**闹钟靠系统接口触发，能不能响还看系统的后台限制、厂商省电设置和权限状态。**
 重要场合（考试、航班、面试、就医）请另设一个备用闹钟。
 
 ## 隐私
@@ -107,8 +107,8 @@ App 备案库，查不到就弹这个提示——系统提示原文里就写着�
 两者都只带一个版本号作 UA 标识，不携带设备信息、位置或使用记录。检查更新 7 天一次，
 失败就隔天再试，查到新版也不弹窗。
 
-所有数据（闹钟、班表、请假加班记录、设置）只存在本机，不上传、不同步云端。
-卸载或清除数据即永久丢失，换机前请先用「导出配置」存一份。
+闹钟、班表、请假加班记录和设置都只存在这台手机上，不上传也不同步。
+卸载或清数据就没了，换机前先用「导出配置」存一份。
 
 ## 为什么做这个
 
@@ -148,9 +148,8 @@ DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎
 
 ## 项目状态
 
-**定位**：解决自己需求的工具，顺手开源给有同样问题的人。功能以「够用、不出错」为准，
-不做国际化（大小周、调休是中文职场的概念），不上应用商店（一个人维护，付不起备案和
-每次过审的注意力）。
+**定位**：解决自己需求的工具，顺手开源给有同样问题的人。不做国际化（大小周、调休是
+中文职场的概念），不上应用商店（一个人维护，付不起备案和每次过审的注意力）。
 
 **关于 PR**：issue 欢迎，PR 也欢迎，但有三个前提——说清你在什么设备上验过、带上测试、
 一次只改一件事。重构、引入依赖、大范围格式化、加账号或云同步，这几类不用提。
@@ -163,8 +162,8 @@ DeepSeek-V4.0 Pro，后来都停用了。写在这里是因为它会改变你怎
 提 bug 请走模板，写清手机型号、系统版本，以及这条闹钟是怎么设的。我只有一台小米手机，
 拿不到你的设备，信息不全的话我判断不了。
 
-开发节奏与版本记录见 [`docs/`](docs/)——那是给下一个接手的人（包括未来的自己）看的开发日志，
-不是使用文档；使用说明在 `docs/打工人闹钟-使用说明.md`。
+开发日志和版本记录在 [`docs/`](docs/)，写给下一个接手的人，也包括未来的自己。
+使用说明见 [`docs/打工人闹钟-使用说明.md`](docs/打工人闹钟-使用说明.md)。
 
 ## 自己构建
 
@@ -212,7 +211,7 @@ Parcelable CREATOR），见 `proguard-rules.pro`。
 
 想自己签：在仓库根建一份 `keystore.properties`，写 `storeFile` / `storePassword` /
 `keyAlias` / `keyPassword` 四项即可，不用改 `build.gradle`。
-**仓库不包含任何密钥文件，也不需要包含。**
+**仓库里没有任何密钥文件。**
 
 ## English
 
@@ -237,9 +236,8 @@ no analytics, all data stays on device, MIT licensed. Android 8.0+ (API 26).
 The only network calls are holiday data and one static version file for the update check.
 
 Built with AI assistance — [WorkBuddy](https://www.workbuddy.cn) driving DeepSeek-V4.1 Flash,
-with a few other models tried early on and since dropped. The author doesn't read Java; the
-test suite is how every change gets checked. That's why the commit log explains *why* rather
-than just *what*.
+with a few other models tried early on and since dropped. The author doesn't read Java, so the
+test suite is how every change gets checked.
 
 **Interface is Chinese only** — deliberately. The concepts it models (大小周, 调休补班) don't
 translate cleanly into English, and a half-translated UI reads worse than an honest one.

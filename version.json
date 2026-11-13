@@ -1,13 +1,13 @@
 {
-  "versionCode": 324,
-  "versionName": "1.24.0",
+  "versionCode": 325,
+  "versionName": "1.25.0",
   "published": "2026-11-13",
-  "title": "首页点一下就能更新",
+  "title": "关机也响，交给系统时钟",
   "notes": [
-    "首页提示新版本时直接就地更新，不再跳到关于页",
-    "在应用内下载并拉起安装器，不再跳浏览器",
-    "装前核对包名、版本号与签名，不对劲的文件直接删掉"
+    "闹钟编辑页多一格：把同一条时刻写进系统时钟",
+    "设置页与使用说明写清：关机后本 App 不会响",
+    "能不能关机响看机型，文案不承诺结果"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.24.0/weekday-alarm-1.24.0.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.24.0"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.25.0/weekday-alarm-1.25.0.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.25.0"
 }

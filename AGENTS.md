@@ -202,6 +202,12 @@
   班表页 `tv_hint`、引导页 `tv_ring_summary` / `tv_biweekly_hint` / `tv_rotation_sub`
   都在 Java 里有第二份，运行时被覆写。只改 xml 会测试全绿、界面照旧（v1.12.0 踩过一次，
   截图渲染出来才发现）。改完渲染一张图核对，比读代码可靠。
+- **layout 里的字面量大多是样张，不要当成待收口的硬编码。** 2026-11-13 查过一遍：lint
+  `HardcodedText` 报的 236 条里约 200 条是设计期预览用（组件 `m_num_*` / `widget_*` 由
+  `MonthWidgetRender`、`NextAlarmWidget`、`WeekWidgetRender` 的 `setTextViewText` 覆盖；
+  引导页那批所在控件连 id 都没有，`GuideActivity` 用 32 处 `setText` 生成）。剩下的是装饰符号
+  和本来只有一份的静态标签。**收到 `strings.xml` 是零收益**——它们的唯一读者是 Android Studio
+  预览，删掉预览就空白。真要改文案，改的是 Java 里 `setText` 的那份。
 - **报方案时，每个选项都要带同一维度的实测数字。** 只有 A 有代价、B 写「改动中等」，
   用户就是拿着一份缺一半的价目表在选，而他会选那个没报价的。代价十分钟内能量出来的，
   先量再问（v1.13.3 的 B 方案：先写完代码才发现三屏各空掉近三分之一屏，整套撤掉；

@@ -21,14 +21,18 @@
          这一行只写「这款机型不支持」。 -->
     <string name="settings_power_off_title">关机闹钟</string>
     <!-- v1.27.0：改成带开关的行。文字只表示开关状态，不再区分「有没有授权」——
-         没授权时点一下就是申请，开关在授权成功后才变成开。 -->
+         没授权时点一下就是申请，开关在授权成功后才变成开。
+         2026-11-14：支持但没授权时在开关左边写「未授权」——HyperOS 3 上开关打不开，
+         只给一个关着的开关，分不清是没授权还是坏了。 -->
     <string name="settings_power_off_on">已开启</string>
     <string name="settings_power_off_off">已关闭</string>
     <string name="settings_power_off_unsupported">这款机型不支持</string>
+    <string name="settings_power_off_ungranted">未授权</string>
     <!-- v1.24.1：关机后第三方 App 不会响——进程没了就没有代码在跑。
          v1.26.0：上面那一行能开之后，这句改成说清「开了会怎样、没开会怎样」，
-         仍然不承诺结果：那颗 vendor 应用自己也要看机型与 ROM 有没有裁掉。 -->
-    <string name="settings_shutdown_tip">关机闹钟交给系统：开了之后，关机状态下到点由系统把手机叫醒。没开或机型不支持时，关机期间不会响；不想被打扰又怕漏响，可以开飞行模式与勿扰，闹钟照响。</string>
+         仍然不承诺结果：那颗 vendor 应用自己也要看机型与 ROM 有没有裁掉。
+         2026-11-14：把「没授权」也列进去，和上面新加的「未授权」对上。 -->
+    <string name="settings_shutdown_tip">关机闹钟交给系统：开了之后，关机状态下到点由系统把手机叫醒。没开、没授权或机型不支持时，关机期间不会响；不想被打扰又怕漏响，可以开飞行模式与勿扰，闹钟照响。</string>
     <string name="settings_volume_label">闹钟音量</string>
     <string name="settings_volume_default">—</string>
     <!-- 滑块左端的量程下限（v1.1.0）。
@@ -141,9 +145,10 @@
     <string name="help_s2_b3">铃声、音量这些改完即时生效；「我的班表」需点「保存」才写入</string>
     <string name="help_s2_b4">锁屏响铃只亮屏、解锁才看到界面 → 系统里「锁屏显示」没开</string>
     <!-- v1.10.1：关机这条问得多，而且容易被当成 Bug（设了闹钟没响）。
-         两句分开写：前一句是事实边界，后一句是给人一条能走的路。
+         2026-11-14：v1.26.0 起支持的机型能打开关机闹钟，旧说法（第三方无法实现）
+         已与界面对不上，改成说清「支持 / 不支持 / 没授权」三种情况。
          不写「重启后不补响」——那是更冷门的分支，写进来只会让这一条变长。 -->
-    <string name="help_s2_b5">手机彻底关机时不会响。第三方应用无法实现，仅厂商自带时钟的「关机闹钟」可用</string>
+    <string name="help_s2_b5">手机彻底关机后，普通闹钟不会响。支持的机型可在设置 → 响铃里打开「关机闹钟」，由系统在关机状态下把手机叫醒；不支持的机型不会响；点了开关却没有出现授权提示，说明这台机型或系统版本没有开放这个权限</string>
     <string name="help_s2_b6">不想被打扰又要闹钟：开启飞行模式与勿扰，闹钟仍会响，整夜耗电极少</string>
 
     <string name="help_s3_title">临时请假 / 加班</string>

@@ -106,6 +106,26 @@ public class SettingsPowerOffTest {
         SettingsActivity a = open();
 
         assertTrue(((SwitchCompat) a.findViewById(R.id.switch_power_off)).isChecked());
+        assertEquals("授权之后不该再显示「未授权」",
+                View.GONE, a.findViewById(R.id.tv_power_off).getVisibility());
+    }
+
+    /**
+     * 支持但没授权时，行里要写出「未授权」（2026-11-14）。
+     *
+     * <p>HyperOS 3 上开关怎么点都是关的：只看一个关着的开关，分不清是权限没拿到
+     * 还是功能坏了。写出「未授权」之后，用户至少知道该去授权，而不是以为开关失灵。
+     */
+    @Test
+    public void supportedWithoutPermission_showsUngranted() {
+        installVendor();
+
+        SettingsActivity a = open();
+
+        TextView tv = a.findViewById(R.id.tv_power_off);
+        assertEquals(View.VISIBLE, tv.getVisibility());
+        assertEquals(app.getString(R.string.settings_power_off_ungranted), tv.getText().toString());
+        assertFalse(((SwitchCompat) a.findViewById(R.id.switch_power_off)).isChecked());
     }
 
     /** 点一下整行：关 → 开，并且落盘。 */

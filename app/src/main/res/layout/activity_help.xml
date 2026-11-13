@@ -223,7 +223,8 @@
                     android:text="@string/help_s2_b4" />
             </LinearLayout>
 
-            <!-- v1.10.1：关机。两条一对——先说做不到，再给一条能走的路。 -->
+            <!-- v1.10.1：关机。两条一对——先说关机后普通闹钟不响，再给一条能走的路。
+                 2026-11-14：支持的机型可打开「关机闹钟」，文案已按三种情况改写。 -->
             <LinearLayout style="@style/HelpItemRow">
                 <TextView style="@style/HelpDot" />
                 <TextView

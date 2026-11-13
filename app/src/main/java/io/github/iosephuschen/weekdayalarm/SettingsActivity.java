@@ -284,8 +284,9 @@ public class SettingsActivity extends AppCompatActivity {
         if (row != null) row.setClickable(supported);
 
         SwitchCompat sw = findViewById(R.id.switch_power_off);
+        boolean granted = PowerOffAlarm.granted(this);
         boolean on = PowerOffAlarm.enabled(this);
-        if (on && !PowerOffAlarm.granted(this)) {
+        if (on && !granted) {
             // v1.27.1 P2：权限是在系统设置里被关掉的，偏好还留着 true。不写回的话，
             // 界面显示「关」、偏好是「开」，之后任何一次重新授权都会把它自己打开。
             // 写回 false 之后，重新授权走的是 cancelArmed——那条才真的撤得掉。
@@ -296,9 +297,16 @@ public class SettingsActivity extends AppCompatActivity {
             sw.setChecked(supported && on);
             sw.setVisibility(supported ? View.VISIBLE : View.GONE);
         }
-        tvPowerOff.setVisibility(supported ? View.GONE : View.VISIBLE);
+        // 2026-11-14：支持但没授权时把「未授权」写出来。HyperOS 3 上开关怎么点都是关的，
+        // 只给一个关着的开关，用户分不清是权限没拿到还是功能坏了。
         if (!supported) {
+            tvPowerOff.setVisibility(View.VISIBLE);
             tvPowerOff.setText(R.string.settings_power_off_unsupported);
+        } else if (!granted) {
+            tvPowerOff.setVisibility(View.VISIBLE);
+            tvPowerOff.setText(R.string.settings_power_off_ungranted);
+        } else {
+            tvPowerOff.setVisibility(View.GONE);
         }
     }
 

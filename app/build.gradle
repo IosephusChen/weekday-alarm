@@ -10,8 +10,8 @@ android {
         applicationId "io.github.iosephuschen.weekdayalarm"
         minSdk 26
         targetSdk 34
-        versionCode 330
-        versionName "1.27.2"
+        versionCode 331
+        versionName "1.27.3"
         // 2026-11-14：只保留中文资源。App 自身文案只有中文，AndroidX / Material 带进来的
         // 几十种语言用不到；裁掉后 resources.arsc 从 1.08 MB 降到 0.65 MB（实测）。
         resourceConfigurations += ["zh"]

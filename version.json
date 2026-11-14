@@ -1,14 +1,13 @@
 {
-  "versionCode": 330,
-  "versionName": "1.27.2",
+  "versionCode": 331,
+  "versionName": "1.27.3",
   "published": "2026-11-14",
-  "title": "关机闹钟迁移与重发修正",
+  "title": "关机说明修正，包体更小",
   "notes": [
-    "关机闹钟的挂载时刻不再跟着备份换到新手机",
-    "换机恢复后按新手机重新挂一次，不沿用旧时刻",
-    "每次重排都重新下发，广播丢了下一次会补上",
-    "关掉开关后会持续尝试撤回，直到系统收下"
+    "关机闹钟没授权时，设置页会直接写「未授权」",
+    "帮助页与使用说明改成支持、不支持、没授权三种情况",
+    "安装包从 2.98 MB 降到约 2.4 MB"
   ],
-  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.2/weekday-alarm-1.27.2.apk",
-  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.27.2"
+  "apk": "https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.3/weekday-alarm-1.27.3.apk",
+  "page": "https://github.com/IosephusChen/weekday-alarm/releases/tag/v1.27.3"
 }

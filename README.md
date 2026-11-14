@@ -6,7 +6,7 @@
 
 ![CI](https://github.com/IosephusChen/weekday-alarm/actions/workflows/android.yml/badge.svg?branch=main)
 
-`Android 8.0+` · `MIT` · 约 3.0 MB · 全部数据留在本机
+`Android 8.0+` · `MIT` · 约 2.4 MB · 全部数据留在本机
 
 双休、单休（周日休 / 周六休）、大小周都支持。上二休二、上四休二、每周固定休周三这类轮班也行：按 N 天一轮，自己标哪天上班，最长 62 天。
 
@@ -63,13 +63,13 @@
 
 ## 下载与安装
 
-**v1.27.2（2026-11-14）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.2/weekday-alarm-1.27.2.apk)
+**v1.27.3（2026-11-14）**：[下载 APK](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.3/weekday-alarm-1.27.3.apk)
+· [上一版 v1.27.2](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.2/weekday-alarm-1.27.2.apk)
 · [上一版 v1.27.1](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.1/weekday-alarm-1.27.1.apk)
-· [上一版 v1.27.0](https://github.com/IosephusChen/weekday-alarm/releases/download/v1.27.0/weekday-alarm-1.27.0.apk)
 · [Releases 页](https://github.com/IosephusChen/weekday-alarm/releases)
 
 每个版本都建了 tag 与 Release，APK 与 `mapping.txt`（崩溃栈反混淆用）一起放，历史版本都在 Releases 里。
-支持 Android 8.0 及以上（API 26），安装包约 3.0 MB。
+支持 Android 8.0 及以上（API 26），安装包约 2.4 MB。
 第一次用？[使用说明](docs/打工人闹钟-使用说明.md) 里有安装、逐步设置与常见问题。
 每版改了什么、为什么改，见 [更新日志](docs/更新日志.md)。
 

@@ -30,6 +30,33 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261114.bundle` 9,443,103 字节 / MD5 `15b56186a6627ff5fe94b419bf1b05e5`（84 tag + 734 提交 + 460 文件，2026-11-14 第五次重写后刷新），已从 NAS 取回核对 MD5 并 `git clone --mirror` 验过打包时 main=`aecd1c2`、全历史（内容与元数据）无口令、无个人邮箱、无 `<NAS_USER>` 原账号。三个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`；③ 重写后 `--all` 还会把过期的 `refs/remotes/origin/main` 打进包，旧提交又回来——先把远端跟踪引用 `git update-ref` 到新 tip 再打包。
 
+## 当前方案 · 发 v1.27.3（已批准）
+
+> 状态：**已出包 · 批准已作废**
+> 出包：2026-11-14 10:05（再出包须重写方案并重新确认）
+> 目标版本：331（patch 版）
+> 批准：2026-11-14 用户原话「先出包，然后更新文案数据」
+
+### 本版内容（自 v1.27.2 以来的三笔，均已在 main）
+
+1. **关机闹钟文案**：帮助页与《使用说明》改成「支持 / 不支持 / 没授权」三种情况；设置页支持但未授权时显示「未授权」；响铃卡末尾说明补上「没授权」。
+2. **包体优化**：`resourceConfigurations += ["zh"]` + 三张小组件预览图转无损 WebP；AGP 8.11.2 下 release 包 2,980,489 → 2,440,252 字节。
+3. **AGP 8.13.2**：`sourceSets.test.manifest` 指回主清单，解除「AGP 8.12+ 导致 BootReceiverTest 5 条红」的约束；全量 1346 条。
+
+### 版本与文档
+
+v1.27.3 / 331：`Changelog.java`、`docs/更新日志.md`、`README.md`、`docs/打工人闹钟-使用说明.md`、`docs/项目状态.md`、`version.json`（脚本生成）。README 体积改成「约 2.4 MB」，出包后按实际字节数再核一遍。
+
+### 验收
+
+`tools/release.sh` 全量测试 + lint + `assembleRelease`；装包后看：设置页未授权时显示「未授权」、帮助页关机说明为新口径。
+
+### 不做什么
+
+- 不做 HyperOS 3 权限探测与界面引导，等 adb 输出。
+- 不动 UI 布局、主题与依赖，不改响铃链路与排程逻辑。
+- 不改 README 截图（仍等真机图）。
+
 ## 当前方案 · 解除 AGP 8.12+ 约束（已执行 · 不占版本）
 
 > 状态：**已执行 · 不占版本**（批准随执行归档，release.sh 的闸门不再认这一节）

@@ -57,6 +57,10 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(331, "1.27.3", "2026/11/14", "关机说明修正，包体更小",
+                    "关机闹钟没授权时，设置页会直接写「未授权」",
+                    "帮助页与使用说明改成支持、不支持、没授权三种情况",
+                    "安装包从 2.98 MB 降到约 2.4 MB"),
             new Entry(330, "1.27.2", "2026/11/14", "关机闹钟迁移与重发修正",
                     "关机闹钟的挂载时刻不再跟着备份换到新手机",
                     "换机恢复后按新手机重新挂一次，不沿用旧时刻",

@@ -79,6 +79,16 @@ android {
         }
     }
 
+    sourceSets {
+        // 2026-11-14：AGP 8.12+ 的 unit test 清单默认只合并测试依赖（processDebugUnitTestManifest
+        // 里没有 App 自己的 receiver），Robolectric 的 sendBroadcast 找不到 BootReceiver，
+        // BootReceiverTest 5 条全红。把测试清单的起点指回主清单，合并结果就同时含 App 与测试
+        // 依赖；8.13.2 实测 1346 条全绿，撤掉这三行则 5 条红。
+        test {
+            manifest.srcFile "src/main/AndroidManifest.xml"
+        }
+    }
+
     buildTypes {
         debug {
             if (hasReleaseSigning || hasLocalKeystore) signingConfig signingConfigs.release

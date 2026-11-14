@@ -2,11 +2,10 @@
 # 以前 AGP 写在根 build.gradle、依赖写在 app/build.gradle，改版本要翻两个文件。
 
 [versions]
-# AGP 固定在 8.11.2：8.12+ 会把 unit test 的 android_merged_manifest 指到
-# processDebugUnitTestManifest（只含测试依赖，缺 App 自己的 receiver），
-# Robolectric 的 sendBroadcast 找不到 BootReceiver，BootReceiverTest 5 条全红。
-# 8.11.2 是最后一个仍指向 App 合并清单的版本；升 AGP 前先跑这组测试。
-agp = "8.11.2"
+# 2026-11-14：AGP 8.13.2。8.12+ 的 unit test 清单默认不含 App 自己的 receiver，
+# 由 app/build.gradle 的 sourceSets.test.manifest 指回主清单解决；
+# 那条修复失效时 BootReceiverTest 5 条会变红，升级 AGP 前先跑它。
+agp = "8.13.2"
 appcompat = "1.8.0"
 material = "1.14.0"
 junit = "4.13.2"

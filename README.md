@@ -158,7 +158,7 @@ App 备案库，查不到就弹这个提示——系统提示原文里就写着�
 ## 自己构建
 
 环境：JDK 17（21 也行，Gradle 8.14.3 支持到 JDK 24）、Android SDK（`android-36` + build-tools `36.0.0`）。
-Gradle 8.14.3 由 wrapper 自动取，AGP 8.11.2 由 Gradle 从 Maven 拉，不用单独装。
+Gradle 8.14.3 由 wrapper 自动取，AGP 8.13.2 由 Gradle 从 Maven 拉，不用单独装。
 
 ```bash
 # 单元测试（一千三百多条，Robolectric + JUnit）

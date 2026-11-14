@@ -2,7 +2,7 @@
 
 ## 交接条（换会话先读这几行，其余不用）
 
-- **刚做完**：优化会话交接流程（2026-11-14，只改 `tools/handoff.sh` 与两份文档，不升版、不出包）——handoff 会拦快照分支、动态核对 `releases/latest`；提示词改成可重复执行。随后按用户要求做了第二到第五次历史重写：清 NAS 口令（`228cf8f` 起 6 个提交，tip `b4a8066`，tag 未动）→ 清个人邮箱元数据（65 个提交、7 个 tag，tip `e0f63b6`）→ 清文件内容里的邮箱（78 个提交、6 个 tag，tip `cda5c85`）→ 清 NAS 账号（229 个提交、30 个 tag，tip `96bd992`）；84 个 tag / Release 全保留，最终 `f878968`。旧 SHA 清单已整理成 `#4996458` 的补充材料（个人邮箱优先）。顺手清掉无引用的 `变更汇总-20261113.md` 与本地 `.release.log`（后者进 `.gitignore`）。新增 `tools/check_privacy.py`：`push.sh` 与 CI 先扫个人邮箱/凭据/私钥/NAS 地址，命中即停。2026-11-14 工具链升级：Gradle 8.9→8.14.3、AGP 8.6.1→8.11.2、compileSdk 34→36、Robolectric 4.14.1→4.18、appcompat 1.8.0 / material 1.14.0 / androidx.test 1.7.0 / org.json 20260814；targetSdk 仍 34。AGP 8.12+ 会把 unit test manifest 指到只含测试依赖的那份，`BootReceiverTest` 5 条全红，所以钉在 8.11.2。1342 条测试全绿、lint 0 error、`assembleRelease` 通过；本次关机闹钟修复后 1345 条全绿。2026-11-14 另修两处关机闹钟健壮性：`power_off_armed` 移到设备文件 `weekday_alarm_device.xml`（备份/搬家规则排除，升级时从主文件迁移一次）；每次重排都重发 SET，CANCEL 后保留时刻以便下次重试（`3ffcb6e`）。已按用户选择 B 发布 v1.27.2 / 330（Release #444796961），方案见下方同名节，不等 HyperOS 3。2026-11-14 关机闹钟相关文案：帮助页与《使用说明》改成「支持 / 不支持 / 没授权」三种情况，设置页支持但未授权时显示「未授权」，响铃卡末尾补「没授权」；不升版本、不出包，跟下一版一起走。同日包体优化：`resourceConfigurations += ["zh"]` + 三张小组件预览图转无损 WebP，release 包 2,980,489 → **2,440,252 字节（-18.1%）**；不升版本、不出包，README 体积文案等下一版发版时再改。
+- **刚做完**：优化会话交接流程（2026-11-14，只改 `tools/handoff.sh` 与两份文档，不升版、不出包）——handoff 会拦快照分支、动态核对 `releases/latest`；提示词改成可重复执行。随后按用户要求做了第二到第五次历史重写：清 NAS 口令（`228cf8f` 起 6 个提交，tip `b4a8066`，tag 未动）→ 清个人邮箱元数据（65 个提交、7 个 tag，tip `e0f63b6`）→ 清文件内容里的邮箱（78 个提交、6 个 tag，tip `cda5c85`）→ 清 NAS 账号（229 个提交、30 个 tag，tip `96bd992`）；84 个 tag / Release 全保留，最终 `f878968`。旧 SHA 清单已整理成 `#4996458` 的补充材料（个人邮箱优先）。顺手清掉无引用的 `变更汇总-20261113.md` 与本地 `.release.log`（后者进 `.gitignore`）。新增 `tools/check_privacy.py`：`push.sh` 与 CI 先扫个人邮箱/凭据/私钥/NAS 地址，命中即停。2026-11-14 工具链升级：Gradle 8.9→8.14.3、AGP 8.6.1→8.11.2、compileSdk 34→36、Robolectric 4.14.1→4.18、appcompat 1.8.0 / material 1.14.0 / androidx.test 1.7.0 / org.json 20260814；targetSdk 仍 34。AGP 8.12+ 会把 unit test manifest 指到只含测试依赖的那份，`BootReceiverTest` 5 条全红；当时因此钉在 8.11.2，2026-11-14 已用 `sourceSets.test.manifest` 指回主清单修复并升到 8.13.2（撤掉修复 5 条红，全量 1346 条全绿）。1342 条测试全绿、lint 0 error、`assembleRelease` 通过；本次关机闹钟修复后 1345 条全绿。2026-11-14 另修两处关机闹钟健壮性：`power_off_armed` 移到设备文件 `weekday_alarm_device.xml`（备份/搬家规则排除，升级时从主文件迁移一次）；每次重排都重发 SET，CANCEL 后保留时刻以便下次重试（`3ffcb6e`）。已按用户选择 B 发布 v1.27.2 / 330（Release #444796961），方案见下方同名节，不等 HyperOS 3。2026-11-14 关机闹钟相关文案：帮助页与《使用说明》改成「支持 / 不支持 / 没授权」三种情况，设置页支持但未授权时显示「未授权」，响铃卡末尾补「没授权」；不升版本、不出包，跟下一版一起走。同日包体优化：`resourceConfigurations += ["zh"]` + 三张小组件预览图转无损 WebP，release 包 2,980,489 → **2,440,252 字节（-18.1%）**；不升版本、不出包，README 体积文案等下一版发版时再改。
 - **开工**：沙箱重置可能保留 `/workspace`（2026-11-14 实测：仓库、`local.properties`、git 身份都在），只清 `/root` 与 `/opt`。clone 前先判目录，已存在就 `checkout main + pull --rebase`。三步，**顺序别换**：
   ① 先判 `/workspace/weekday-alarm/.git`：在就 `git checkout main && git pull --rebase`，不在才 `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git`；然后 `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 18.2 秒装完 SDK）。直连 github.com 会卡死，别试。
   ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**沙箱重置后 `gh` 登录态不一定还在**（2026-11-14 实测 `gh auth status` 未登录）：token 优先 `tools/nas.sh get keys/github-token.txt`，`gh auth token` 为空时别反复重试；NAS 也只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（2026-11-13 实测：只写到 WebDAV 根时 `nas.sh ls keys/` 返回 404）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。
@@ -29,6 +29,50 @@
 - **第五次重写（2026-11-14，清 NAS 账号）**：`<NAS_USER>`（原 NAS 专用账号）从历史中清除，覆盖 229 个提交、30 个 tag（v1.23.14–v1.27.1），新 tip `96bd992`；84 个 tag / 84 个 Release 全保留，tip 树仅本文件记录行变化。旧 tip `41c27af` 已不可达（GitHub 侧短期仍可能按 API 取到）。
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261114.bundle` 9,443,103 字节 / MD5 `15b56186a6627ff5fe94b419bf1b05e5`（84 tag + 734 提交 + 460 文件，2026-11-14 第五次重写后刷新），已从 NAS 取回核对 MD5 并 `git clone --mirror` 验过打包时 main=`aecd1c2`、全历史（内容与元数据）无口令、无个人邮箱、无 `<NAS_USER>` 原账号。三个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`；③ 重写后 `--all` 还会把过期的 `refs/remotes/origin/main` 打进包，旧提交又回来——先把远端跟踪引用 `git update-ref` 到新 tip 再打包。
+
+## 当前方案 · 解除 AGP 8.12+ 约束（已执行 · 不占版本）
+
+> 状态：**已执行 · 不占版本**（批准随执行归档，release.sh 的闸门不再认这一节）
+> 目标版本：330（不升版；跟下一版一起走，今天不再发版）
+> 批准：2026-11-14 用户原话「AGP 8.12+ 会让 BootReceiverTest 5 条全红，先解决该约束。」
+> 完成：2026-11-14（代码已在 main，未发版）
+
+### 根因
+
+AGP 8.12+ 生成的 `test_config.properties` 里 `android_merged_manifest` 指向
+`packaged_manifests/debugUnitTest/processDebugUnitTestManifest/AndroidManifest.xml`，
+这份清单**只合并测试依赖**（androidx.test 的几个 Activity、startup provider），
+没有 App 自己的 receiver。Robolectric 按它派发广播，`BootReceiver` 根本不存在，
+所以 `BootReceiverTest` 5 条全红；8.11.2 时这份路径指向 App 的合并清单，所以没暴露。
+
+### 改法
+
+`app/build.gradle` 的 `sourceSets.test.manifest.srcFile` 指回主清单：
+
+```groovy
+sourceSets {
+    test {
+        manifest.srcFile "src/main/AndroidManifest.xml"
+    }
+}
+```
+
+这样 `processDebugUnitTestManifest` 会以主清单为起点，再合并测试依赖——
+App 的 receiver 与 androidx.test 的组件同时在里面。测试本身一行没改，
+仍然走「真实广播派发」而不是直接 new Receiver。
+
+### 实测
+
+- AGP **8.13.2**：`BootReceiverTest` 6 条全绿；全量 **1346 条 / 0 失败 / 3 跳过**；lint 0 error。
+- 反向验证：撤掉这三行 → `BootReceiverTest` **5 条红**（其余 1 条无关广播仍绿）；还原 → 全绿。
+- `assembleRelease`：2,439,665 字节（AGP 8.11.2 时是 2,440,252，基本不变）。
+- AGP 8.12.3 也按同样改法验过，6 条全绿；最终取 8.13.2。
+
+### 不做什么
+
+- 不改测试写法（不改成动态注册 receiver、不为测试单独维护一份清单副本）。
+- 不动 Robolectric 版本（4.18 不动）、不动 compileSdk / targetSdk。
+- 不升版本、不出包（今天已发 v1.27.2）。
 
 ## 当前方案 · 包体优化：资源语言裁剪 + 预览图 WebP（已执行 · 不占版本）
 

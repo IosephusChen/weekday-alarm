@@ -345,4 +345,50 @@ public class DocsConsistencyTest {
         assertTrue("规矩要指到 effectiveOverride，否则新人不知道调哪个",
                 agents.contains("effectiveOverride"));
     }
+
+    /**
+     * Java 注释里写的文档路径引用，必须真有这个文件。
+     *
+     * <p>2026-11-15 整理文档时删掉了一份已落地的方案存档，两处 Java 注释还指着它；
+     * 更早还有三处指向早已搬走的文档节号（编号方案节、施工图 D 节）。
+     * 删文档的人不会想到翻 Java 注释，手工 grep 也容易漏——让漏改直接变红。
+     *
+     * <p>只查带目录前缀的文件名引用；「git show 取回全文」这类说明只写在 md 里，不受影响。
+     */
+    @Test
+    public void javaDocRefs_pointToExistingFiles() throws Exception {
+        List<File> java = new ArrayList<>();
+        for (String dir : new String[]{"app/src/main/java", "app/src/test/java"}) {
+            java.addAll(javaFiles(new File(root(), dir)));
+        }
+        assertTrue("一个 Java 文件都没扫到，路径判断可能出错（不能因此静默通过）", java.size() > 20);
+
+        Pattern ref = Pattern.compile("docs/([^\\s`'\"()<>,;{}]+\\.md)");
+        List<String> missing = new ArrayList<>();
+        int hits = 0;
+        for (File f : java) {
+            Matcher m = ref.matcher(read(f));
+            while (m.find()) {
+                hits++;
+                if (!new File(docs(), m.group(1)).isFile()) {
+                    missing.add("  " + f.getName() + " -> docs/" + m.group(1));
+                }
+            }
+        }
+        assertTrue("一个文档引用都没扫到，正则可能失效（不能因此静默通过）", hits > 0);
+        assertTrue("Java 注释指向了不存在的文档，删文档 / 搬章节时漏改了：\n"
+                        + String.join("\n", missing),
+                missing.isEmpty());
+    }
+
+    private static List<File> javaFiles(File dir) {
+        List<File> out = new ArrayList<>();
+        File[] fs = dir.listFiles();
+        if (fs == null) return out;
+        for (File f : fs) {
+            if (f.isDirectory()) out.addAll(javaFiles(f));
+            else if (f.getName().endsWith(".java")) out.add(f);
+        }
+        return out;
+    }
 }

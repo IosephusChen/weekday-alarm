@@ -421,7 +421,8 @@ final class AlarmEditor {
                         if (ownRule != null) created.applyOwnRule(ownRule);
                         // v1.19.0 ⑤：一级开关是唯一真值，applyOwnRule 带的可能是
                         // own[0] 的旧 holiday，统一覆盖。跟全局的闹钟也照实存值
-                        // （不参与它的响铃判定，是 PLAN.md 第六节记下的既有边界）。
+                        // （不参与它的响铃判定——单条闹钟的 cycleHoliday 只读写自己这条、
+                        //  不碰全局开关，是 v1.19.0 定下的既有边界）。
                         created.cycleHoliday = holiday[0];
                         alarms.add(created);
                     } else {

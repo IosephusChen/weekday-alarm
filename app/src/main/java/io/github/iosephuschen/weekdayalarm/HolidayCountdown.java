@@ -4,10 +4,11 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 /**
- * 假期倒计时（v0.76.0，方案见 {@code docs/方案-假期倒计时.md}）。
+ * 假期倒计时（v0.76.0）。判据：只做「距下一个法定假期还有 N 天」这一句、不做全节日罗列
+ * （罗列与日历已有的节日标记重复，用户 2026-10-25 拍板）；向前只扫 120 天，窗口内无假日数据
+ * 整行不显示、不猜数字；文案规则与逐条用例见 {@code HolidayCountdownTest}。
  *
  * <p>首页今天状态卡里多一行：普通日子显示「距元旦还有 23 天」，假期里显示假期进度。
- * 用户 2026-10-25 拍板<b>只做这一句、不做全节日罗列</b>——罗列与日历已有的节日标记重复。
  *
  * <p>与 {@link MonthWidgetRender} 同一路数：纯函数 + 不可变结果，不碰 Android framework，
  * 日历上是什么就显示什么，JVM 里可直接测。扫描逻辑只调 {@link HolidayData} 的查询方法，

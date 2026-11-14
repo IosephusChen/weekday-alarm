@@ -30,6 +30,46 @@
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261114.bundle` 9,443,103 字节 / MD5 `15b56186a6627ff5fe94b419bf1b05e5`（84 tag + 734 提交 + 460 文件，2026-11-14 第五次重写后刷新），已从 NAS 取回核对 MD5 并 `git clone --mirror` 验过打包时 main=`aecd1c2`、全历史（内容与元数据）无口令、无个人邮箱、无 `<NAS_USER>` 原账号。三个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`；③ 重写后 `--all` 还会把过期的 `refs/remotes/origin/main` 打进包，旧提交又回来——先把远端跟踪引用 `git update-ref` 到新 tip 再打包。
 
+## 当前方案 · 修 8 处 bug（已执行 · 不占版本）
+
+> 状态：**已执行 · 不占版本**（只改工具 / App 代码 / 测试 / Manifest，批准随执行归档，release.sh 的闸门不认这一节）
+> 目标版本：331（不升版；不出包）
+> 批准：2026-11-15 用户「全部修了」
+> 完成：2026-11-15（已在 main，未发版；App 侧改动跟下一版一起走）
+
+### 背景
+
+2026-11-15「找 bug」只读排查坐实 8 处：5 处交接工具（4 处随本次交接优化引入、1 处是 11-13 老账），3 处核心逻辑（均为 2026-10-20 首发以来的老账）。用户一句「全部修了」全部批准。**一处改动配一处守门测试、每处先红后绿**。
+
+### 改什么
+
+**工具 5 处**
+
+1. `handoff.sh` 的「下一步」自相矛盾：地址判坏时仍并列排「取签名密钥」，与同一份输出的「签名密钥」行冲突。给那条判断加上地址判坏的排除。
+2. `handoff.sh` 探测超时口径：外层 8 秒小于 `nas.sh` 内 curl 的 10 秒连接超时，NAS 挂起时探测被外层杀掉、拿到空串就不判坏。改成由 `nas.sh` 提供可配的短超时（ping-keys 专用），handoff 用它且外层留足余量。
+3. `set-access.sh` 单给 `--base` 且凭据文件不存在时，地址写盘后才 die、没有回滚，留下一个没探活过的地址（这是文档明推荐的入口）。改成 die 前先走回滚。
+4. `handoff.sh` 把 `keys/` 的 401 误标成「地址层级不对」：只认 404 判坏，401 单列为凭据不对，口径与 `set-access.sh` 一致。
+5. `set-access.sh` 把 `keys/` 的 000（网络抖动）一律算凭据失败并回滚，与 handoff 对 000 降级相反。统一成「000 = 查不到、不当失败」；404 仍判坏（深度校验的本意不变）。
+
+**核心 3 处**
+
+6. `ScheduleManager` 的 setPreNotice / setAutoStop 仍预判权限后直接退 setWindow，与主闹钟 v0.89.2「不预判、直接试」和 v0.91.9「补 setAndAllowWhileIdle」两次定案不一致。抽 `setBestEffort`（首层 setExactAndAllowWhileIdle，不预判）与 `setIdleOrWindow`（尾段两层）两个共用方法给两条辅助路径；主闹钟首层是 setAlarmClock、本就不同，三层保持原样不动，守门测试额外钉住它没被改坏。补源码钉子守门测试——沿用 `ScheduleExactAlarmTest` 的写法：Robolectric 分辨不了这几条分支，能守住这条线的只有代码形状。
+7. `HolidayData.isMakeupWorkday` 缺了 `isHoliday` 那句对称否定：远程把某天改判放假、内置仍记补班时两个方法同真，`dayType` 先判补班 → 该放假日的「仅上班日」闹钟照响。补上「远程 holidays 否定内置补班」，同步改注释与类文档的优先级描述，补 `HolidayDataTest` 本向用例（原有的反向用例保持绿）。
+8. `PowerOffAlarm.supported` 用 getPackageInfo 探 vendor 包，targetSdk 34 在 Android 11+ 的包可见性过滤下可能让它恒 false、整链静默关闭。在 `AndroidManifest.xml` 加 queries 声明那一个包名，补守门测试读 Manifest 断言声明在位。**真机核验仍留给用户白天连 adb**（dumpsys package queries 看 forceQueryable）；这里只做不需要真机就能成立的防御性修复，不动关机闹钟文案。
+
+### 反向验证（每处先红后绿）
+
+- 工具 1/2/4/5：根地址 + 本地挂起 server 两态跑脚本；把修复点单点改回旧写法 → 必须重现旧症状（下一步并列两条 / 8 秒被杀留空串 / 地址文件残留 / 401 判成层级 / 000 回滚凭据），还原 → 绿。「下一步」打印完整区块，不再用 head 截断。
+- 核心 6/7/8：先把守门测试加在**旧代码**上跑，必须红；再改实现，必须绿。
+- 全量 `testDebugUnitTest` + lint + `check_version` / `check_refs` / `check_privacy` 全绿；确认 release.sh 的状态行闸门不被本方案节误开。
+
+### 不做什么
+
+- 不升 versionCode（仍 331）、不动七处版本文档、不出包、不建 tag / Release、不取签名密钥。
+- 不改 UI / 文案观感、不动 `docs/待裁决清单.md`、不催验机项、不替用户判断 adb 结论。
+- 真实 NAS 地址 / 账号 / 密码一个字不进仓库；正确地址只在 `/root/.nas_url`。
+- 不让脚本自己猜正确目录去改地址。
+
 ## 当前方案 · 优化交接流程（已执行 · 不占版本）
 
 > 状态：**已执行 · 不占版本**（只改工具与文档，批准随执行归档，release.sh 的闸门不认这一节）

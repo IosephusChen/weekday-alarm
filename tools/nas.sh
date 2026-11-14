@@ -55,6 +55,13 @@ if [ -z "$BASE" ]; then
     exit 1
 fi
 
+# 探活超时（2026-11-15）：ping / ping-keys 默认仍是 10s 连接 + 20s 总时长。
+# tools/handoff.sh 在更短的外层 timeout 下跑，必须用这两个变量把 curl 的超时压到
+# 外层以内，否则 curl 还没返回就被外层杀掉、只拿到空串 —— 地址层级不对会被
+# 当成「没查到」放过。设短值是调用方的责任，默认不动。
+PING_CONNECT="${NAS_PING_CONNECT:-10}"
+PING_MAX="${NAS_PING_MAX:-20}"
+
 CRED_FILE="${NAS_CREDENTIALS:-/root/.nas_credentials}"
 if [ -f "$CRED_FILE" ]; then
     CRED=$(tr -d '\r\n' < "$CRED_FILE")
@@ -79,7 +86,7 @@ ping)
     # Depth: 0 只问「这个集合存不存在、我有没有权限」，不列内容，最便宜的一次往返。
     # 不加 -f：401/403 也要把码原样带出来，调用方靠码区分「密码错」和「网络不通」。
     code=$(curl -sS -o /dev/null -u "$CRED" -X PROPFIND -H 'Depth: 0' \
-        --url "$BASE/" --connect-timeout 10 --max-time 20 -w '%{http_code}' 2>/dev/null) || code=000
+        --url "$BASE/" --connect-timeout "$PING_CONNECT" --max-time "$PING_MAX" -w '%{http_code}' 2>/dev/null) || code=000
     echo "${code:-000}"
     ;;
 ping-keys)
@@ -88,7 +95,7 @@ ping-keys)
     # 单独探 BASE/keys/，让「207 但地址层级不对」在落盘当场就被判出来。
     # 与 ping 同样不加 -f、不加 -X 之外的新东西；404/401/000 都原样带出去。
     code=$(curl -sS -o /dev/null -u "$CRED" -X PROPFIND -H 'Depth: 0' \
-        --url "$BASE/keys/" --connect-timeout 10 --max-time 20 -w '%{http_code}' 2>/dev/null) || code=000
+        --url "$BASE/keys/" --connect-timeout "$PING_CONNECT" --max-time "$PING_MAX" -w '%{http_code}' 2>/dev/null) || code=000
     echo "${code:-000}"
     ;;
 ls)

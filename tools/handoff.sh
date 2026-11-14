@@ -64,13 +64,21 @@ fi
 
 # 2026-11-15：两个文件都在 ≠ 地址给对了。BASE 指到 WebDAV 根（…/dav）时 ping 回 207、
 # keys/ 却是 404，上面会误报「NAS 有」，下面又写「能推能取密钥」，把下一个会话骗去
-# fetch-keys 才失败。补一次只读探测：只有明确的 404/401 才判「层级不对」；
+# fetch-keys 才失败。补一次只读探测：404 = 层级不对、401 = 凭据不对，两者分开报；
 # 超时 / 000 / 取不到一律当作没查到，不改结论、不挡其余输出（交接快照是只读的）。
+#
+# 超时口径（2026-11-15 二修）：外层 timeout 必须留足余量，且要把 nas.sh 内 curl 的
+# 超时压到外层以内。原来外层 8s < curl 的 connect 10s，NAS 挂起时 curl 还没返回就被
+# 外层杀掉、只拿到空串，于是「层级不对」被当成「没查到」放过。现在内层 3s/6s、
+# 外层 12s，curl 会自己带回 000，不会留空串。
 NAS_ADDR_BAD=0
+NAS_CRED_BAD=0
 if [ "$NAS_OK" -eq 1 ]; then
-    keys_code=$(timeout 8 bash tools/nas.sh ping-keys 2>/dev/null || true)
+    keys_code=$(NAS_PING_CONNECT=3 NAS_PING_MAX=6 timeout 12 \
+        bash tools/nas.sh ping-keys 2>/dev/null || true)
     case "$keys_code" in
-        404|401) NAS_ADDR_BAD=1 ;;
+        404) NAS_ADDR_BAD=1 ;;
+        401) NAS_CRED_BAD=1 ;;
     esac
 fi
 
@@ -85,6 +93,8 @@ else
 fi
 if [ "$NAS_ADDR_BAD" -eq 1 ]; then
     row "凭据" "NAS 地址层级不对（keys/ 取不到）/ $gh_desc ← 按下面「下一步」修地址"
+elif [ "$NAS_CRED_BAD" -eq 1 ]; then
+    row "凭据" "NAS 凭据不对（keys/ 401）/ $gh_desc ← 按下面「下一步」重给账号密码"
 elif [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
@@ -121,6 +131,8 @@ if [ -f keystore.properties ] && [ -f ../weekdayalarm-release.jks ]; then
     row "签名密钥" "在位（$(stat -c%s ../weekdayalarm-release.jks 2>/dev/null || echo '?') 字节）——能本地出包"
 elif [ "$NAS_ADDR_BAD" -eq 1 ]; then
     row "签名密钥" "不在，且 NAS 地址层级不对 → 先按「下一步」修地址，再 fetch-keys.sh"
+elif [ "$NAS_CRED_BAD" -eq 1 ]; then
+    row "签名密钥" "不在，且 NAS 凭据不对 → 先按「下一步」重给账号密码，再 fetch-keys.sh"
 elif [ "$NAS_OK" -eq 1 ]; then
     row "签名密钥" "不在，但有 NAS 凭据 → tools/fetch-keys.sh"
 else
@@ -245,6 +257,9 @@ fi
 if [ "$NAS_ADDR_BAD" -eq 1 ]; then
     STEPS+=("修 NAS 地址：bash tools/set-access.sh --base=<…/<SHARE>/weekday-alarm>（要给到含 keys/ 的那一级；中文/空格按字节 %20 等编码）")
 fi
+if [ "$NAS_CRED_BAD" -eq 1 ]; then
+    STEPS+=("重给 NAS 凭据：bash tools/set-access.sh --user=U --pass=P（keys/ 回 401，账号或密码不对）")
+fi
 if [ "$NAS_OK" -eq 0 ]; then
     STEPS+=("取 NAS 凭据：bash tools/set-access.sh --base=<…/weekday-alarm> --user=U --pass=P（base 要带 %20 等编码）")
 fi
@@ -254,7 +269,11 @@ fi
 if [ "$remote_known" -eq 1 ] && [ "$behind" -gt 0 ]; then
     STEPS+=("落后远端 $behind 个提交 —— git pull --rebase，再动版本号")
 fi
-if [ "$NAS_OK" -eq 1 ] && { [ ! -f keystore.properties ] || [ ! -f ../weekdayalarm-release.jks ]; }; then
+# 2026-11-15：地址层级不对 / 凭据不对时，「取签名密钥」不能和「修地址」「重给凭据」
+# 并列排在下一步里 —— 同一份输出的「签名密钥」行刚说「先修好再 fetch-keys」，
+# 并列会自相矛盾，把下一个会话骗去 fetch-keys 才失败（这正是本次探测要防的事）。
+if [ "$NAS_OK" -eq 1 ] && [ "$NAS_ADDR_BAD" -eq 0 ] && [ "$NAS_CRED_BAD" -eq 0 ] \
+    && { [ ! -f keystore.properties ] || [ ! -f ../weekdayalarm-release.jks ]; }; then
     STEPS+=("取签名密钥：bash tools/fetch-keys.sh（要出包才需要）")
 fi
 if [ "$res_flag" = "NEED" ]; then

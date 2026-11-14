@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>优先级：补班 &gt; 放假 &gt; 大小周。远程层优先于内置层，但只对「它明确提到的日期」生效——
  * 远程没提到的日子仍按内置走，这样一份只含国庆的远程数据不会把春节弄丢。
+ * 远程明确标为放假 / 补班时，会否定内置层里同一天的相反标记（见 {@link #isHoliday} 与
+ * {@link #isMakeupWorkday} 的对称判断），避免两个方法同真。
  *
  * <p><b>为什么内置要 20 年</b>：v0.71.0 之前只内置当年（2026），次年 1 月就要靠远程续命，
  * 而远程挂在临时粘贴服务上。现在 21 年打包进 APK 约 4.9KB，断网也能算到 2027，
@@ -146,10 +148,23 @@ public final class HolidayData {
         return HOLIDAY_NAMES.get(d);
     }
 
-    /** 是否调休补班（远程 ∪ 内置，补班永远最高优先级）。 */
+    /**
+     * 是否调休补班（远程优先；远程显式标为放假的天以放假为准）。
+     *
+     * <p>与 {@link #isHoliday} 对称：远程说这天放假时，内置层里那笔补班必须被否定。
+     * 否则远程 holidays 与内置 MAKEUP_WORKDAYS 同时命中，两个查询方法都返回 true，
+     * 而 {@code WeekSchedule.dayType} 先判补班 —— 该放假的日子被算成上班日，
+     * 「仅上班日」的闹钟照响。官方调整了调休安排、远程数据比内置新时就会撞上。
+     *
+     * <p>补班优先级仍然最高，但只在同一层内比较：远程 makeups 先于远程 holidays，
+     * 远程整层先于内置层。
+     */
     public static boolean isMakeupWorkday(LocalDate d) {
         YearData y = REMOTE.get(d.getYear());
-        if (y != null && y.makeups.contains(d)) return true;
+        if (y != null) {
+            if (y.makeups.contains(d)) return true;    // 远程说补班 → 补班（同层内最高）
+            if (y.holidays.contains(d)) return false;  // 远程说放假 → 否定内置补班
+        }
         return MAKEUP_WORKDAYS.contains(d);
     }
 

@@ -315,11 +315,7 @@ public final class ScheduleManager {
                     autoStopShell(ctx, alarmId, when.toLocalDate()),
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-            if (canScheduleExactAlarms(ctx)) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
-            } else {
-                am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
-            }
+            setBestEffort(am, millis, pi);
         } catch (Exception ignore) {
         }
     }
@@ -386,6 +382,36 @@ public final class ScheduleManager {
             i.putExtra(AlarmReceiver.EXTRA_SNOOZE_ORIGIN, snoozeOrigin.toString());
         }
         return i;
+    }
+
+    /**
+     * 辅助闹钟（提前通知 / 自动停止）的「尽力精确」注册（2026-11-15）。
+     *
+     * <p>与主闹钟 v0.89.2 的定案同源：**不预先判断** {@code canScheduleExactAlarms()}，
+     * 直接试最准的那条，被系统拒了再逐级降。预判断只是「系统认为你该不该有」，
+     * 部分 ROM 对侧载包报 false 却仍放行，白丢精度的代价远大于一次被拒的调用。
+     *
+     * <p>三层与主闹钟的降级链一致（首层换成 setExactAndAllowWhileIdle——辅助闹钟
+     * 不能用 setAlarmClock，那会在状态栏提前 N 分钟挂上闹钟图标，反而打扰）：
+     * ① setExactAndAllowWhileIdle → ② setAndAllowWhileIdle（不需要精确权限，
+     * Doze 下会唤醒设备）→ ③ setWindow（最后兜底）。少了中间那层，夜里进 Doze
+     * 就会被推迟到维护窗口：提前通知会晚于主闹钟而失效，自动停止会响不停。
+     */
+    private static void setBestEffort(AlarmManager am, long millis, PendingIntent pi) {
+        try {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
+        } catch (Exception notAllowed) {
+            setIdleOrWindow(am, millis, pi);
+        }
+    }
+
+    /** 降级尾段：先试不需要精确权限的 allow-while-idle，真被拒了才退窗口闹钟。 */
+    private static void setIdleOrWindow(AlarmManager am, long millis, PendingIntent pi) {
+        try {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
+        } catch (Exception alsoDenied) {
+            am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
+        }
     }
 
     /** 为某个时刻设置系统级闹钟（setAlarmClock）。单个失败不抛出，避免拖垮整批重排。 */
@@ -513,11 +539,7 @@ public final class ScheduleManager {
                     preNoticeRequestCode(alarmId, ringDate), i,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             long millis = when.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-            if (canScheduleExactAlarms(ctx)) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi);
-            } else {
-                am.setWindow(AlarmManager.RTC_WAKEUP, millis, 60_000L, pi);
-            }
+            setBestEffort(am, millis, pi);
         } catch (Exception ignore) {
         }
     }

@@ -30,6 +30,17 @@
          所以可以像普通权限一样在运行时申请。机型上没有那颗应用时，系统会直接忽略这一行。 -->
     <uses-permission android:name="org.codeaurora.permission.POWER_OFF_ALARM" />
 
+    <!-- 关机闹钟（v1.26.0）：Android 11+ 的包可见性过滤。
+         PowerOffAlarm.supported() 用 getPackageInfo 探测 vendor 应用，targetSdk 34 下
+         未声明可见性的第三方包会被系统过滤掉，抛 NameNotFoundException → supported()
+         恒 false，整条关机闹钟链路静默关掉——偏偏就发生在装了 vendor 应用的机型上。
+         官方文档「自动可见」列表里没有「自定义权限定义方」这一条，vendor 是否落在设备的
+         forceQueryable 里因机型而异，所以显式声明这一个包名，让探测稳定成立。
+         机型上没装这颗应用时该声明无副作用，supported() 仍返回 false。 -->
+    <queries>
+        <package android:name="com.qualcomm.qti.poweroffalarm" />
+    </queries>
+
     <application
         android:name=".App"
         android:allowBackup="true"

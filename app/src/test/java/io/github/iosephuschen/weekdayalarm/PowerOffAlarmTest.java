@@ -18,6 +18,9 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 /**
@@ -145,6 +148,35 @@ public class PowerOffAlarmTest {
     public void supported_trueWhenVendorInstalled() {
         installVendor();
         assertTrue(PowerOffAlarm.supported(app));
+    }
+
+    /**
+     * 2026-11-15：Android 11+ 的包可见性过滤会让 {@code getPackageInfo} 看不到 vendor 包，
+     * {@code supported()} 恒 false 会把整条关机闹钟链路静默关掉——偏偏就发生在装了
+     * vendor 应用的机型上。Robolectric 的 PackageManager 不做这个过滤，测不出来，
+     * 所以只能钉住清单里的 queries 声明。真机上是否还在 forceQueryable 里，
+     * 仍要用户白天连 adb 跑 dumpsys package queries 确认。
+     */
+    @Test
+    public void manifest_declaresVendorPackageVisibility() throws Exception {
+        String manifest = manifestCode();
+        int q = manifest.indexOf("<queries");
+        assertTrue("targetSdk 34 下必须在清单里声明 vendor 包的可见性，"
+                + "否则 getPackageInfo 抛 NameNotFoundException、supported() 恒 false",
+                q > 0);
+        int end = manifest.indexOf("</queries>", q);
+        assertTrue("queries 块没有正常闭合，钉子需按新写法更新", end > q);
+        assertTrue("queries 块里要声明的是 com.qualcomm.qti.poweroffalarm",
+                manifest.substring(q, end).contains("com.qualcomm.qti.poweroffalarm"));
+    }
+
+    /** 读清单并去掉 XML 注释，免得说明文字把钉子绊倒。 */
+    private static String manifestCode() throws Exception {
+        File f = new File("app/src/main/AndroidManifest.xml");
+        if (!f.isFile()) f = new File("src/main/AndroidManifest.xml");
+        assertTrue("找不到 AndroidManifest.xml，钉子无法生效", f.isFile());
+        return new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8)
+                .replaceAll("(?s)<!--.*?-->", "");
     }
 
     @Test

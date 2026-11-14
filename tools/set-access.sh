@@ -123,6 +123,10 @@ probe_keys() {
 # 那已是下一个会话的事，写坏了比没写更危险（本文件头注释）。所以 207 之后再探
 # 一次 keys/，把「集合在、业务目录不在」合成 KEYS* 码，交回给 verdict / explain。
 # 非 207/200（401/403/404/000）原样返回，不额外请求，保持原有分类。
+#
+# 000 单独处理：BASE 这一层已经探通，只是第二次请求没回来（网络抖动），
+# 不代表地址层级错、更不代表凭据错。与 tools/handoff.sh 的降级口径一致，
+# 退回只判 BASE，别把 setup-env.sh 里正确的凭据自动落盘给回滚掉。
 effective_code() {
     local base_code="$1" keys_code
     case "$base_code" in
@@ -131,9 +135,9 @@ effective_code() {
     esac
     keys_code=$(probe_keys)
     case "$keys_code" in
-        207|200) printf '%s' "$base_code" ;;
-        404)     printf 'KEYS404' ;;
-        *)       printf 'KEYS%s' "$keys_code" ;;
+        207|200|000) printf '%s' "$base_code" ;;
+        404)         printf 'KEYS404' ;;
+        *)           printf 'KEYS%s' "$keys_code" ;;
     esac
 }
 
@@ -161,7 +165,12 @@ explain() {
 
 # ---- 只探活，不动文件 ------------------------------------------------------
 if [ -z "$CRED" ]; then
-    [ -f "$CRED_FILE" ] || die "没有新凭据，也没有 $CRED_FILE 可探——先给一个 user:pass"
+    # 2026-11-15：单给 --base 时地址已经写盘了，这里 die 之前必须回滚，
+    # 否则留下一个从没探活过的地址（PLAN 交接条与 setup-env.sh 都推荐这个入口）。
+    if [ ! -f "$CRED_FILE" ]; then
+        restore_base
+        die "没有新凭据，也没有 $CRED_FILE 可探——先给一个 user:pass（地址已回滚）"
+    fi
     info "不写入，只探活（$CRED_FILE 是现有的）"
     code=$(effective_code "$(probe)")
     if verdict "$code"; then

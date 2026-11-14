@@ -53,6 +53,66 @@ public class ScheduleExactAlarmTest {
     }
 
     /**
+     * 2026-11-15：提前通知 / 自动停止这两条辅助闹钟，必须跟主闹钟用同一套降级。
+     *
+     * <p>它们原来先判 {@code canScheduleExactAlarms()} 再二选一，主闹钟早在 v0.89.2
+     * 就废了预判断（部分 ROM 报 false 却仍放行，预判会白丢精度），v0.91.9 又在降级里
+     * 补了 {@code setAndAllowWhileIdle}（Doze 下 setWindow 会被推迟＝漏叫）。两条辅助路径
+     * 都没跟上：夜里提前通知可能晚于主闹钟，自动停止可能被推迟到响不停。
+     *
+     * <p>和上面那条一样用源码钉子：Robolectric 的 ShadowAlarmManager 分辨不了
+     * setExact / setWindow / allow-while-idle，行为测试守不住这条线。
+     */
+    @Test
+    public void auxiliaryAlarms_doNotPrecheckExactPermission() throws Exception {
+        String src = codeOf("src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java");
+        String[] aux = {
+                slice(src, "public static void setAutoStop(", "public static void cancelAutoStop("),
+                slice(src, "public static void setPreNotice(", "static Intent preNoticeIntent("),
+        };
+        for (String body : aux) {
+            assertFalse("辅助闹钟不该预判 canScheduleExactAlarms：预判断会白丢精度",
+                    body.contains("canScheduleExactAlarms"));
+            assertTrue("辅助闹钟要走共用的尽力精确注册方法",
+                    body.contains("setBestEffort("));
+        }
+    }
+
+    /** 共用的尽力精确注册必须三层齐全；主闹钟首层不同、保持原样，但要钉住它没被改坏。 */
+    @Test
+    public void sharedFallback_hasThreeLayers() throws Exception {
+        String src = codeOf("src/main/java/io/github/iosephuschen/weekdayalarm/ScheduleManager.java");
+        String best = slice(src, "private static void setBestEffort(",
+                "private static void setIdleOrWindow(");
+        String tail = slice(src, "private static void setIdleOrWindow(",
+                "public static void setAlarm(");
+        String main = slice(src, "private static void setAlarm(",
+                "public static boolean canScheduleExactAlarms");
+
+        assertTrue("第一层：直接试最准时的 setExactAndAllowWhileIdle",
+                best.contains("setExactAndAllowWhileIdle"));
+        assertTrue("被拒后落到共用尾段", best.contains("setIdleOrWindow("));
+        assertTrue("第二层：不需要精确权限、Doze 下能唤醒的 setAndAllowWhileIdle",
+                tail.contains("setAndAllowWhileIdle"));
+        assertTrue("第三层：最后才退 setWindow", tail.contains("setWindow"));
+        // 主闹钟首层是 setAlarmClock，本来就不走这两个共用方法；
+        // 但它自己那三层（v0.89.2 + v0.91.9）必须还在，别把修辅助路径时顺手改坏。
+        assertTrue("主闹钟仍要先试 setAlarmClock", main.contains("setAlarmClock"));
+        assertTrue("主闹钟的降级里仍要有 allow-while-idle 中间层",
+                main.contains("setAndAllowWhileIdle"));
+        assertTrue("主闹钟最后仍能退到 setWindow", main.contains("setWindow"));
+    }
+
+    /** 截出两个方法签名之间的源码（已去注释），不依赖大括号配对。 */
+    private static String slice(String src, String from, String to) {
+        int s = src.indexOf(from);
+        assertTrue("找不到方法 " + from + "，钉子已失效，需要按新写法更新", s > 0);
+        int e = src.indexOf(to, s + from.length());
+        assertTrue("找不到方法 " + to + "，钉子已失效", e > s);
+        return src.substring(s, e);
+    }
+
+    /**
      * 读取源码并去掉注释。
      *
      * <p>注释里必然会出现被否决的旧写法（那正是文件的写法），只检查真正的代码，

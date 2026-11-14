@@ -98,6 +98,33 @@ public class HolidayDataTest {
         assertFalse(HolidayData.isHoliday(LocalDate.of(2026, 1, 1)));   // 被补班覆盖
     }
 
+    /**
+     * 2026-11-15：远程把某天从「补班」改判成「放假」时，内置那笔补班必须被否定。
+     *
+     * <p>内置 2026-01-04 是元旦调休补班。官方后来调整了安排、远程数据把它列为放假，
+     * 而 {@code isMakeupWorkday} 原来只 UNION 内置补班，于是两个方法同时为真；
+     * {@code dayType} 先判补班，这一天被算成上班日，「仅上班日」的闹钟照响。
+     * 与 {@link #remote_makeupOverridesBuiltInHoliday} 是相反方向，那一向早有覆盖。
+     */
+    @Test
+    public void remote_holidayOverridesBuiltInMakeup() {
+        String json = "{"
+                + "\"version\":2026,"
+                + "\"published\":\"2026-06-01\","
+                + "\"holidays\":[[\"2026-01-04\",\"2026-01-04\"]],"
+                + "\"makeups\":[]"
+                + "}";
+        assertTrue(HolidayData.applyRemoteJson(json));
+        LocalDate d = LocalDate.of(2026, 1, 4);
+
+        assertTrue("远程列这一天为放假", HolidayData.isHoliday(d));
+        assertFalse("远程说放假，内置那笔补班必须被否定，否则 dayType 会先判补班",
+                HolidayData.isMakeupWorkday(d));
+        assertEquals("这一天要判成法定节假日，不是调休补班",
+                WeekSchedule.DayType.HOLIDAY,
+                WeekSchedule.dayType(d, LocalDate.of(2026, 1, 1), false));
+    }
+
     @Test
     public void remote_singleDayHolidayPair() {
         // holidays 区间对支持起止相同（单日放假）

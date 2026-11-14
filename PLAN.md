@@ -3,9 +3,9 @@
 ## 交接条（换会话先读这几行，其余不用）
 
 - **刚做完**：优化会话交接流程（2026-11-14，只改 `tools/handoff.sh` 与两份文档，不升版、不出包）——handoff 会拦快照分支、动态核对 `releases/latest`；提示词改成可重复执行。随后按用户要求做了第二到第五次历史重写：清 NAS 口令（`228cf8f` 起 6 个提交，tip `b4a8066`，tag 未动）→ 清个人邮箱元数据（65 个提交、7 个 tag，tip `e0f63b6`）→ 清文件内容里的邮箱（78 个提交、6 个 tag，tip `cda5c85`）→ 清 NAS 账号（229 个提交、30 个 tag，tip `96bd992`）；84 个 tag / Release 全保留，最终 `f878968`。旧 SHA 清单已整理成 `#4996458` 的补充材料（个人邮箱优先）。顺手清掉无引用的 `变更汇总-20261113.md` 与本地 `.release.log`（后者进 `.gitignore`）。新增 `tools/check_privacy.py`：`push.sh` 与 CI 先扫个人邮箱/凭据/私钥/NAS 地址，命中即停。2026-11-14 工具链升级：Gradle 8.9→8.14.3、AGP 8.6.1→8.11.2、compileSdk 34→36、Robolectric 4.14.1→4.18、appcompat 1.8.0 / material 1.14.0 / androidx.test 1.7.0 / org.json 20260814；targetSdk 仍 34。AGP 8.12+ 会把 unit test manifest 指到只含测试依赖的那份，`BootReceiverTest` 5 条全红；当时因此钉在 8.11.2，2026-11-14 已用 `sourceSets.test.manifest` 指回主清单修复并升到 8.13.2（撤掉修复 5 条红，全量 1346 条全绿）。1342 条测试全绿、lint 0 error、`assembleRelease` 通过；本次关机闹钟修复后 1345 条全绿。2026-11-14 另修两处关机闹钟健壮性：`power_off_armed` 移到设备文件 `weekday_alarm_device.xml`（备份/搬家规则排除，升级时从主文件迁移一次）；每次重排都重发 SET，CANCEL 后保留时刻以便下次重试（`3ffcb6e`）。已按用户选择 B 发布 v1.27.2 / 330（Release #444796961），方案见下方同名节，不等 HyperOS 3。2026-11-14 关机闹钟相关文案：帮助页与《使用说明》改成「支持 / 不支持 / 没授权」三种情况，设置页支持但未授权时显示「未授权」，响铃卡末尾补「没授权」；不升版本、不出包，跟下一版一起走。同日包体优化：`resourceConfigurations += ["zh"]` + 三张小组件预览图转无损 WebP，release 包 2,980,489 → **2,440,252 字节（-18.1%）**；不升版本、不出包，README 体积文案等下一版发版时再改。随后解除 AGP 8.12+ 约束（8.13.2 + `sourceSets.test.manifest`）。2026-11-14 已发 **v1.27.3 / 331**（Release #444942544）：以上三笔一起进包，2,439,717 字节 / MD5 `4c5a87dd1337f7bc327086306b120fea`，全量 1346 条 / 0 失败。2026-11-14 关机闹钟在 HyperOS 3 上无法开启的研究结论：Xiaomi 15 HyperOS 3.0.5.0 系统 dump 里 `com.qualcomm.qti.poweroffalarm` 仍在、`POWER_OFF_ALARM` 仍是 dangerous、receiver 也还在，但系统「更多权限」页不列这一项，普通用户没有授权入口；用户决定**等 adb 用 `pm grant` 验证底层是否还活着**，在此之前不改代码。
-- **开工**：沙箱重置可能保留 `/workspace`（2026-11-14 实测：仓库、`local.properties`、git 身份都在），只清 `/root` 与 `/opt`。clone 前先判目录，已存在就 `checkout main + pull --rebase`。三步，**顺序别换**：
+- **开工**：`/workspace` 保留与否**两种都出现过**（2026-11-14 实测保留、仓库 / `local.properties` / git 身份都在；2026-11-15 换回 WorkBuddy 时被一起清空、走 clone）；`/root` 与 `/opt` 每次都清。**别赌哪种**，clone 前先判 `/workspace/weekday-alarm/.git`：在就 `checkout main + pull --rebase`，不在才 clone。三步，**顺序别换**：
   ① 先判 `/workspace/weekday-alarm/.git`：在就 `git checkout main && git pull --rebase`，不在才 `git clone https://gh-proxy.com/https://github.com/IosephusChen/weekday-alarm.git`；然后 `cd weekday-alarm && bash tools/setup-env.sh`（补 JDK 检查、身份、local.properties、Android SDK，最后跑单测，只补缺的，实测 18.2 秒装完 SDK）。直连 github.com 会卡死，别试。
-  ② 凭据：**不用向用户要**（2026-11-11 起）——`~/.codebuddy/settings.json` 的 `env` 里已有 `NAS_USER` / `NAS_PASS`，① 的 `setup-env.sh` 第 5 段会自动落盘到 `/root/.nas_credentials`（600）并探活。**只有 shell 里 `NAS_USER` 为空时**（客户端没注入）才需要 `bash tools/set-access.sh --user=U --pass=P` 向用户要一次。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**沙箱重置后 `gh` 登录态不一定还在**（2026-11-14 实测 `gh auth status` 未登录）：token 优先 `tools/nas.sh get keys/github-token.txt`，`gh auth token` 为空时别反复重试；NAS 也只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（2026-11-13 实测：只写到 WebDAV 根时 `nas.sh ls keys/` 返回 404）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。
+  ② 凭据：**优先 env 自动注入，没注入就三样一起要**。`~/.codebuddy/settings.json` 的 `env` 有 `NAS_USER` / `NAS_PASS` 时，① 的 `setup-env.sh` 第 5 段会自动落盘 `/root/.nas_credentials`（600）并探活；**2026-11-15 换回 WorkBuddy 实测 env 为空、`NAS_BASE` 也没注入、`gh` 未登录**，这时向用户要齐账号 / 密码 / 地址三样、一次给全：`bash tools/set-access.sh --base=<…/weekday-alarm> --user=U --pass=P`。GitHub PAT 已备份在 NAS `keys/github-token.txt`，`tools/nas.sh get` 取回。**沙箱重置后 `gh` 登录态不一定还在**（2026-11-14 实测 `gh auth status` 未登录）：token 优先 `tools/nas.sh get keys/github-token.txt`，`gh auth token` 为空时别反复重试；NAS 也只在取签名密钥 / 传包时才需要。**地址也不在仓库里**（2026-11-13 脱敏）：`NAS_BASE` 在环境里就自动落盘到 `/root/.nas_url`，不在就 `bash tools/set-access.sh --base=<完整 URL>`——缺它 `nas.sh` 直接报错，不回退。**`NAS_BASE` 要写到 `…/<SHARE>/weekday-alarm` 这一级**（下面有 `keys/` 的那层）；共享目录名含中文 / 空格时必须 **URL 编码**（`%20` 与 UTF-8 百分号串），直接贴原文会探活失败。**2026-11-15 补**：只给 WebDAV 根时 `ping` 回 207 是**假成功**、`keys/` 才是 404，取 token / 取密钥要等到那一刻才露馅；`set-access.sh` 现加 `ping-keys` 深度校验，207 之后再探 `keys/`，不通就判「地址没给到 weekday-alarm 这一级」并回滚，`handoff.sh` 也会把地址标成「层级不对」。
   ③ `bash tools/handoff.sh`：HEAD、远端差、版本、凭据与签名密钥在不在、清单进度、本交接条、上次测试一次看全；末尾还会按「当前缺什么」排好序给你「下一步」。不用再翻三个文件。
 - **做到哪**：**v1.27.3 / 331 已出包、已发布**（2026-11-14，Release #444942544）：关机闹钟文案（设置页「未授权」、帮助页 / 使用说明三种情况）+ 包体优化（只保留中文资源、预览图无损 WebP）+ AGP 8.13.2，2,439,717 字节 / MD5 `4c5a87dd1337f7bc327086306b120fea`，全量 **1346 条 / 0 失败 / 3 跳过**，lint 0 error。上一版 **v1.27.2 / 330 已出包、已发布**（2026-11-14，Release #444796961）：把 `3ffcb6e` 的关机闹钟修复发出——挂载时刻移入设备文件并从备份 / 搬家规则排除、SET / CANCEL 每次重排重发，2,980,489 字节 / MD5 `2e17c0dd53d7485f56d4f005b6c6c2cb`。上一版 **v1.27.1 / 329 已出包、已发布**（2026-11-13，Release #444290426）：修 v1.27.0 关机闹钟开关两处——P1 升级迁移（`PowerOffAlarm.enabled()` 键不存在且已授权时按旧语义迁移成开，不再静默 `cancelArmed`）、P2 撤权后写回偏好（重新授权走 CANCEL 而不是又 SET），2,626,766 字节 / MD5 `5f0335d3ff89235273b33c93d6f007e2`。**2026-11-13 沙箱两次重置**（容器 20:26 重启 + 平台 21:32 把 HEAD 切到 `trae/agent-YjQQ4g` 旧快照）已查明，未丢代码：`9bc57d1` 在 main 上；NAS 地址与凭据当时丢失，用户已重新提供（`/root/.nas_url`、`/root/.nas_credentials`），keystore 由 `tools/fetch-keys.sh` 取回并核过 sha256。
 - **B 组三件（2026-11-13，只改测试 / 文档 / 工具，不占版本）**：① `SettingsPowerOffTest` 5 条补上「关机闹钟那一行」的界面覆盖——开关三态、点行落盘、关掉时当场发 CANCEL；反向验证：把未开启分支里的 `cancelArmed` 删掉 → `turningOff_cancelsArmedVendorAlarm` 红，还原后 5 条全绿。② `docs/验机清单.md` 新建（v1.27.0 / v1.24.0 / v1.23.38 / v1.23.37 四组，每项都写「看到什么算过」）。③ `tools/release.sh` 加 JDK 闸门：当前 JDK 不在 17~22 时自动切到现成的 17，找不到才 exit 1——2026-11-13 在 JDK 25 上跑出「511 条失败」，全是环境。
@@ -29,6 +29,37 @@
 - **第五次重写（2026-11-14，清 NAS 账号）**：`<NAS_USER>`（原 NAS 专用账号）从历史中清除，覆盖 229 个提交、30 个 tag（v1.23.14–v1.27.1），新 tip `96bd992`；84 个 tag / 84 个 Release 全保留，tip 树仅本文件记录行变化。旧 tip `41c27af` 已不可达（GitHub 侧短期仍可能按 API 取到）。
 - **本次教训**：rewrite / force push 之前先 `git rev-list --count HEAD` 与远端比对——这个沙箱的 clone 当时只有 15 个提交（真远端 651），按它重写会把 600 多个提交从 main 上抹掉；发现后用旧 tip 推回、再从完整 clone 重做。
 - **源码灾备 bundle（2026-11-13 起）**：NAS `env/wd-source-<日期>.bundle`，`git bundle create … --all`，**只保留最新一份**，封版或动历史前刷新。最新一份 `wd-source-20261114.bundle` 9,443,103 字节 / MD5 `15b56186a6627ff5fe94b419bf1b05e5`（84 tag + 734 提交 + 460 文件，2026-11-14 第五次重写后刷新），已从 NAS 取回核对 MD5 并 `git clone --mirror` 验过打包时 main=`aecd1c2`、全历史（内容与元数据）无口令、无个人邮箱、无 `<NAS_USER>` 原账号。三个坑都会静默产生坏包，都实测过：① **shallow clone 打包会缺对象**（这次 `git rev-parse --is-shallow-repository` 就是 true，先 `git fetch --unshallow` 才打出完整包，否则克隆报 `remote did not send all necessary objects`）；② 沙箱当前分支常是 `trae/agent-xxx`，**本地 `main` 可能停在旧提交**，`--all` 会把这个过期 main 一起打进去，克隆出来就是旧的——打包前先 `git branch -f main HEAD`；③ 重写后 `--all` 还会把过期的 `refs/remotes/origin/main` 打进包，旧提交又回来——先把远端跟踪引用 `git update-ref` 到新 tip 再打包。
+
+## 当前方案 · 优化交接流程（已执行 · 不占版本）
+
+> 状态：**已执行 · 不占版本**（只改工具与文档，批准随执行归档，release.sh 的闸门不认这一节）
+> 目标版本：331（不升版；不出包）
+> 批准：2026-11-15 用户选择「四项全做（推荐）」
+> 完成：2026-11-15（工具与文档已在 main，未发版）
+
+### 背景（2026-11-15 换回 WorkBuddy 实测）
+
+新沙箱交接踩到四处：① 提示词与交接条写「重置只清 `/root` 与 `/opt`、`/workspace` 里的仓库还在」，这次 `/workspace` 被一起清空、只能 clone；② 用户给的 NAS 地址是 WebDAV 根，`set-access.sh` 探活回 207 就判「连通」，但 `keys/` 在 `…/weekday-alarm` 一级，取 token 才露 404，靠三次 PROPFIND 才定位；③ `handoff.sh` 只看两个文件在不在，地址写错时仍显示「能推能取密钥」；④ 交接条写「凭据不用向用户要」，这次 `env` 为空、`NAS_BASE` 未注入、`gh` 未登录，账号 / 密码 / 地址三样全要重给。文档其实早就写了「要写到 weekday-alarm 这一级」，是工具用 207 把人骗停了。
+
+### 改什么（四项）
+
+1. `tools/nas.sh` 加 `ping-keys`：Depth: 0 探 `BASE/keys/`，只回 HTTP 码，与 `ping` 一样不带 `-f`，URL 仍只在 nas.sh 维护一处。
+2. `tools/set-access.sh` 加 `effective_code()`：207 / 200 之后再探 `keys/`，把「集合在、业务目录不在」合成 `KEYS404` 等码交回 `verdict` / `explain`；两处探活调用改走它，回滚逻辑原样复用。明确报「地址没给到 …/weekday-alarm 这一级」，不再笼统说「NAS 连通」。
+3. `tools/handoff.sh`：文件在位时轻量探一次 `keys/`（8 秒超时、失败降级不挡输出），404 / 401 才标「NAS 地址层级不对」；凭据行、签名密钥行、「下一步」三处口径同步，「下一步」改成「修地址」而不是「取凭据」。
+4. 三处过期措辞 + 一行现场记录：`docs/新会话提示词.md` 的 `/workspace` 断言与凭据步骤，`PLAN.md` 交接条「开工」与「② 凭据」两段；`docs/新会话提示词.md` 现场记录表追加 11-15 一行。`docs/项目状态.md` 第 70 行那条 11-14 记录属实（历史档案），不动。
+
+### 反向验证（先在旧行为上红，再改到绿）
+
+- `set-access.sh`：旧代码用 WebDAV 根地址跑 → `✓ NAS 连通（HTTP 207）`、退出码 0（假成功，红）。改后用同一地址 → 报 `KEYS404` 说明、回滚、退出码非 0（绿）；用正确地址 → 仍 207 且通过（无回归）。
+- `handoff.sh`：旧代码在根地址下 → `能推能取密钥`（红）。改后 → `NAS 地址层级不对` 且「下一步」是修地址（绿）；还原正确地址 → 回到 `能推能取密钥`。
+- `python3 tools/check_version.py` / `check_refs.py` / `check_privacy.py` 全绿；本方案节不写 `文件:行号` 引用、不写真实地址与凭据，用 `<NAS_BASE>` / `U` / `P` 占位。
+
+### 不做什么
+
+- 真实 NAS 地址 / 账号 / 密码一个字都不进仓库（check_privacy.py 会拦 push）；正确地址只留在 `/root/.nas_url`（600）。
+- 不动 App 代码、资源、文案、UI；不升 `versionCode`（仍 331）、不动七处版本文档、不出包、不建 tag / Release。
+- 不让脚本自己猜正确目录去改地址；只把层级判出来、报给人，由人确认。
+- 不催验机项、不动 `docs/待裁决清单.md`、不改「下一步」的真实待办优先级、不改 `docs/项目状态.md` 的 11-14 现场记录。
 
 ## 当前方案 · 发 v1.27.3（已批准）
 

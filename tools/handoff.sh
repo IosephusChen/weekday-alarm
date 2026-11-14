@@ -61,6 +61,19 @@ elif [ -f /root/.nas_credentials ] || { [ -n "${NAS_USER:-}" ] && [ -n "${NAS_PA
 else
     NAS_OK=0; nas_desc="NAS 缺"
 fi
+
+# 2026-11-15：两个文件都在 ≠ 地址给对了。BASE 指到 WebDAV 根（…/dav）时 ping 回 207、
+# keys/ 却是 404，上面会误报「NAS 有」，下面又写「能推能取密钥」，把下一个会话骗去
+# fetch-keys 才失败。补一次只读探测：只有明确的 404/401 才判「层级不对」；
+# 超时 / 000 / 取不到一律当作没查到，不改结论、不挡其余输出（交接快照是只读的）。
+NAS_ADDR_BAD=0
+if [ "$NAS_OK" -eq 1 ]; then
+    keys_code=$(timeout 8 bash tools/nas.sh ping-keys 2>/dev/null || true)
+    case "$keys_code" in
+        404|401) NAS_ADDR_BAD=1 ;;
+    esac
+fi
+
 # 2026-11-13：沙箱重置后 /root/.github_token 会没，但 gh 的登录态当时还在。
 # 2026-11-14 又实测登录态也不一定保留——两种都算「有」，都不在才报缺。
 if [ -f /root/.github_token ] || [ -n "${GITHUB_TOKEN:-}" ] || [ -n "${GH_TOKEN:-}" ]; then
@@ -70,7 +83,9 @@ elif command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
 else
     GH_OK=0; gh_desc="GitHub 缺"
 fi
-if [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
+if [ "$NAS_ADDR_BAD" -eq 1 ]; then
+    row "凭据" "NAS 地址层级不对（keys/ 取不到）/ $gh_desc ← 按下面「下一步」修地址"
+elif [ "$NAS_OK" -eq 1 ] && [ "$GH_OK" -eq 1 ]; then
     row "凭据" "$nas_desc / $gh_desc —— 能推能取密钥"
 else
     row "凭据" "$nas_desc / $gh_desc ← 按下面「下一步」补"
@@ -104,6 +119,8 @@ fi
 # 交接快照是只读的，拉密钥要联网、要凭据，那属于「动手」不属于「看」。
 if [ -f keystore.properties ] && [ -f ../weekdayalarm-release.jks ]; then
     row "签名密钥" "在位（$(stat -c%s ../weekdayalarm-release.jks 2>/dev/null || echo '?') 字节）——能本地出包"
+elif [ "$NAS_ADDR_BAD" -eq 1 ]; then
+    row "签名密钥" "不在，且 NAS 地址层级不对 → 先按「下一步」修地址，再 fetch-keys.sh"
 elif [ "$NAS_OK" -eq 1 ]; then
     row "签名密钥" "不在，但有 NAS 凭据 → tools/fetch-keys.sh"
 else
@@ -224,6 +241,9 @@ row "上次测试" "$res_msg"
 STEPS=()
 if [ -n "$snapshot" ]; then
     STEPS+=("确认分支：git checkout main —— $snapshot")
+fi
+if [ "$NAS_ADDR_BAD" -eq 1 ]; then
+    STEPS+=("修 NAS 地址：bash tools/set-access.sh --base=<…/<SHARE>/weekday-alarm>（要给到含 keys/ 的那一级；中文/空格按字节 %20 等编码）")
 fi
 if [ "$NAS_OK" -eq 0 ]; then
     STEPS+=("取 NAS 凭据：bash tools/set-access.sh --base=<…/weekday-alarm> --user=U --pass=P（base 要带 %20 等编码）")

@@ -26,6 +26,9 @@
 #   tools/nas.sh put <本地文件> <远端路径>
 #   tools/nas.sh rm  <远端路径>
 #   tools/nas.sh ping                      # 只回 HTTP 码（207 通 / 401 凭据错 / 000 网络不通）
+#   tools/nas.sh ping-keys                 # 同上，但探 BASE/keys/：判「地址有没有给到 weekday-alarm 这一级」
+#                                          # 2026-11-15：只给 WebDAV 根时 ping 回 207、这个回 404，
+#                                          # 取 token / 取密钥要等到那一刻才露馅，别被 207 骗停。
 #
 # 远端路径相对 weekday-alarm/，例如 apk/weekday-alarm-1.23.13.apk、keys/xxx.jks。
 # **子目录不会自动创建**：往新目录传东西之前要先 MKCOL 一次（curl -X MKCOL --url "$BASE/env/"），
@@ -77,6 +80,15 @@ ping)
     # 不加 -f：401/403 也要把码原样带出来，调用方靠码区分「密码错」和「网络不通」。
     code=$(curl -sS -o /dev/null -u "$CRED" -X PROPFIND -H 'Depth: 0' \
         --url "$BASE/" --connect-timeout 10 --max-time 20 -w '%{http_code}' 2>/dev/null) || code=000
+    echo "${code:-000}"
+    ;;
+ping-keys)
+    # 2026-11-15：ping 只问 BASE 这一层在不在，指到 WebDAV 根（…/dav）时照样回 207，
+    # 但 keys/ 在 …/weekday-alarm 那一级，取 token / 取密钥要等到 404 才露馅。
+    # 单独探 BASE/keys/，让「207 但地址层级不对」在落盘当场就被判出来。
+    # 与 ping 同样不加 -f、不加 -X 之外的新东西；404/401/000 都原样带出去。
+    code=$(curl -sS -o /dev/null -u "$CRED" -X PROPFIND -H 'Depth: 0' \
+        --url "$BASE/keys/" --connect-timeout 10 --max-time 20 -w '%{http_code}' 2>/dev/null) || code=000
     echo "${code:-000}"
     ;;
 ls)

@@ -112,21 +112,50 @@ probe() {
     printf '%s' "${code:-000}"
 }
 
+probe_keys() {
+    local code
+    code=$(bash tools/nas.sh ping-keys 2>/dev/null) || code=000
+    printf '%s' "${code:-000}"
+}
+
+# 2026-11-15：ping 只问 BASE 这一层在不在。指到 WebDAV 根（…/dav）时照样回 207，
+# 但 keys/ 在 …/weekday-alarm 那一级，取 token / 取密钥要等到 404 才露馅——
+# 那已是下一个会话的事，写坏了比没写更危险（本文件头注释）。所以 207 之后再探
+# 一次 keys/，把「集合在、业务目录不在」合成 KEYS* 码，交回给 verdict / explain。
+# 非 207/200（401/403/404/000）原样返回，不额外请求，保持原有分类。
+effective_code() {
+    local base_code="$1" keys_code
+    case "$base_code" in
+        207|200) ;;
+        *) printf '%s' "$base_code"; return 0 ;;
+    esac
+    keys_code=$(probe_keys)
+    case "$keys_code" in
+        207|200) printf '%s' "$base_code" ;;
+        404)     printf 'KEYS404' ;;
+        *)       printf 'KEYS%s' "$keys_code" ;;
+    esac
+}
+
 verdict() {
     case "$1" in
         207|200) return 0 ;;
         401)     return 1 ;;
-        *)       return 2 ;;
+        *)       return 2 ;;   # KEYS* 也落这里：当作没通过，由 explain 说清为什么
     esac
 }
 
 explain() {
     case "$1" in
-        401)  printf 'HTTP 401 —— 账号或密码不对\n' ;;
-        403)  printf 'HTTP 403 —— 认证过了但被拒，多半是 WAF 拦了 PROPFIND\n' ;;
-        404)  printf 'HTTP 404 —— 账号对但共享目录路径变了\n' ;;
-        000)  printf '连不上 —— 不是密码问题，是网络或域名不通（先重试一次）\n' ;;
-        *)    printf 'HTTP %s —— 意料之外的响应\n' "$1" ;;
+        401)      printf 'HTTP 401 —— 账号或密码不对\n' ;;
+        403)      printf 'HTTP 403 —— 认证过了但被拒，多半是 WAF 拦了 PROPFIND\n' ;;
+        404)      printf 'HTTP 404 —— 账号对但共享目录路径变了\n' ;;
+        000)      printf '连不上 —— 不是密码问题，是网络或域名不通（先重试一次）\n' ;;
+        KEYS404)  printf 'BASE 这一层通（HTTP 207），但 BASE/keys/ 是 404 —— 地址没给到 …/weekday-alarm 这一级\n' ;;
+        KEYS000)  printf 'BASE 这一层通（HTTP 207），但 BASE/keys/ 连不上（000）—— 网络或域名不通\n' ;;
+        KEYS401)  printf 'BASE 这一层通（HTTP 207），但 BASE/keys/ 是 401 —— 账号或密码不对\n' ;;
+        KEYS*)    printf 'BASE 这一层通（HTTP 207），但 BASE/keys/ 返回 HTTP %s —— 地址层级不对\n' "${1#KEYS}" ;;
+        *)        printf 'HTTP %s —— 意料之外的响应\n' "$1" ;;
     esac
 }
 
@@ -134,7 +163,7 @@ explain() {
 if [ -z "$CRED" ]; then
     [ -f "$CRED_FILE" ] || die "没有新凭据，也没有 $CRED_FILE 可探——先给一个 user:pass"
     info "不写入，只探活（$CRED_FILE 是现有的）"
-    code=$(probe)
+    code=$(effective_code "$(probe)")
     if verdict "$code"; then
         rm -f "$BASE_BAK"
         ok "NAS 连通（HTTP $code）"
@@ -175,7 +204,7 @@ fi
 ( umask 077; printf '%s' "$CRED" > "$CRED_FILE" )
 chmod 600 "$CRED_FILE"
 
-code=$(probe)
+code=$(effective_code "$(probe)")
 if verdict "$code"; then
     rm -f "$BAK" "$BASE_BAK"
     ok "凭据已写入 $CRED_FILE"

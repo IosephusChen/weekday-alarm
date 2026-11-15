@@ -418,6 +418,9 @@ Claude Code），没有任何工具会去找这些名字。建了就是第二份
 | 跑单测（与 CI 同一条） | `./gradlew testDebugUnitTest`（**条数别抄，现算看 `tools/handoff.sh`**） |
 | 推 main | `tools/push.sh`（抖得厉害时 `PUSH_TRIES=5 tools/push.sh`） |
 | 推完核对 | `tools/post-push.sh` |
+| **一条命令发版** | `bash tools/ship.sh -m "release: vX 说明"`（七步：出包→提交→推 main→tag→Release→NAS→核对；断在哪步用 `--from=N` 续） |
+
+**发版编排只认 `tools/ship.sh` 这一处**（2026-11-15 收敛）。上面表格里 `release.sh` / `push.sh` / `post-push.sh` 是单步工具，日常改完代码推一次、或只想看状态照用；但**完整发版别自己照六步清单拼**，那套清单曾和 ship.sh 的七步各写一遍、推 main 用哪条通道还不一致。ship.sh 第 3/4 步走 `tools/push_via_api.py` 的 API 通道（不访问 github.com，比 git push 稳），它**内置推送前隐私扫描**，与 `push.sh` 的闸门等价——两条通道都受 `check_privacy.py` 的「入口覆盖」自检约束，删掉任一处调用当场变红。
 
 **想看手感就直接出正式包，别用 debug 包**：debug 与正式版同包名（装它要先卸正式版，班表全丢），且 `App.java` 两处 `if (!BuildConfig.DEBUG)` 让它不拉节假日、不查更新——会把「debug 缺的那半截」误判成新代码的 bug。正式包本地 1~2 分钟就能出，同 `versionCode` 覆盖安装不丢数据，所以没有「预览包」这个中间态了：`preview` 变体 2026-11-09 已删除（`docs/流程规范.md` 第十六节），别再复活。
 

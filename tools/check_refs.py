@@ -27,13 +27,16 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 被扫范围（2026-11-09 改：不写死小节名）：
-# - PLAN：「交接条」之后、第一个 `## v1.x` 之前，即所有**未归档**的方案节。原先把起点写成
-#   `## A5 ·`，A5 一结案改名，脚本就会报「找不到小节起点」把发布挡死，报出的原因还和实情
-#   无关。改成按位置切，方案改名/合并/新增都不影响。
+# 被扫范围（2026-11-09 改：不写死小节名；2026-11-15 二修：终点也不写死版本号）：
+# - PLAN：「交接条」之后、到**越界表之前**，即所有**未归档**的方案节。
+#   原先把起点写成 `## A5 ·`，A5 一结案改名，脚本就会报「找不到小节起点」把发布挡死；
+#   改成按位置切。2026-11-15 归档后，方案节标题从 `## v1.x` 变成
+#   `## 当前方案 · 发 v1.x`，而终点仍认 `## v1.` → 一个都匹配不到、end 落到文件末尾，
+#   把 `## 越界表` 一起扫了（越界表里写个 `文件:行号` 就莫名变红）。终点改成按「越界表」
+#   切，方案节叫什么名字都不影响。
 # - 清单：第一个 `### ` 小节起、到下一个 `## ` 之前。同样不认小节名。
 PLAN_HEAD = "## 交接条"
-PLAN_TO_PREFIX = "## v1."
+PLAN_END_PREFIX = "## 越界表"
 LIST_FROM = "### "
 
 CODE_EXT = r"(?:java|kt|xml|py|sh|gradle|json|yml)"
@@ -90,14 +93,20 @@ def read_lines(rel):
 
 
 def region_plan(lines):
-    """交接条之后 → 第一个 `## v1.x` 之前。交接条本身不扫（多是状态描述，没有代码引用）。"""
+    """交接条之后 → 越界表（或归档前的历史 `## v1.x` 节）之前。交接条本身不扫。
+
+    2026-11-15 二修：归档后方案节标题从 `## v1.x` 变成 `## 当前方案 · 发 v1.x`，
+    而终点仍只认 `## v1.` → 一个都匹配不到、end 落到文件末尾，把 `## 越界表`
+    一起扫了。终点改成按「越界表」切，同时兼容归档前用历史版本节做分界，取更早者。
+    """
     start = 0
     for i, l in enumerate(lines):
         if l.startswith(PLAN_HEAD):
             nxt = next((j for j in range(i + 1, len(lines)) if lines[j].startswith("## ")), None)
             start = nxt if nxt is not None else len(lines)
             break
-    end = next((i for i, l in enumerate(lines) if i > start and l.startswith(PLAN_TO_PREFIX)),
+    end = next((i for i, l in enumerate(lines)
+                if i > start and (l.startswith(PLAN_END_PREFIX) or l.startswith("## v1."))),
                len(lines))
     return (start, end) if start < end else None
 
@@ -110,6 +119,31 @@ def region_list(lines):
     end = next((i for i, l in enumerate(lines) if i > start and l.startswith("## ")),
                len(lines))
     return start, end
+
+
+def check_plan_region_leak(lines):
+    """守门：扫描区绝不能含「越界表」节。
+
+    归档改名那次（2026-11-15）终点判据失配，end 落到文件末尾，越界表被一起扫：
+    越界表里的 `文件:行号` 会被当成当前方案的引用判红。这条自检让「撤掉修复」
+    立刻变红，不靠人记。返回 FAIL 条数。
+
+    定位越界表必须用字面量，不能用 PLAN_END_PREFIX：撤修复时改的就是那个常量，
+    拿被测逻辑当尺子量被测逻辑，撤掉修复后自检会跟着一起失效（2026-11-15 踩过）。
+    """
+    overflow = next((i for i, l in enumerate(lines) if l.startswith("## 越界表")), None)
+    if overflow is None:
+        return 0  # 没有越界表这一节，谈不上泄漏（归档前的旧形态）
+    region = region_plan(lines)
+    if region is None:
+        return 0  # 起点都找不到，check_doc 自己会报 FAIL
+    s, e = region
+    if e > overflow:
+        print("  FAIL  PLAN 扫描区（第 %d–%d 行）盖住了「越界表」（第 %d 行）——"
+              "越界表里的 `文件:行号` 会被误判；检查 region_plan 的终点判据。"
+              % (s + 1, e, overflow + 1))
+        return 1
+    return 0
 
 
 def check_doc(doc, region_fn, label, quiet, fix=False):
@@ -201,6 +235,10 @@ def main():
     fix = "--fix" in sys.argv
     print("-- 文档引用校验（tools/check_refs.py）--")
     bad = 0
+    # 先自检扫描区边界：越界表被一起扫时，下面 check_doc 的报错会指向无辜的历史行，
+    # 先看边界止损（2026-11-15 归档改名踩过）。
+    bad += check_plan_region_leak(open(os.path.join(ROOT, "PLAN.md"), encoding="utf-8")
+                                  .read().splitlines())
     bad += check_doc("PLAN.md", region_plan, "PLAN.md 当前方案节", quiet, fix)
     bad += check_doc("docs/待裁决清单.md", region_list, "清单复核记录与拍板待选", quiet, fix)
     if bad:

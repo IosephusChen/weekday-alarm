@@ -57,8 +57,19 @@ add_test() {  # app/src/test/java/.../FooTest.java → io.github...FooTest
     TESTS+=("${p//\//.}")
 }
 
+# 2026-11-15：纯文档判据与 CI 的 docs-only 判据对齐，共用同一条正则字面量。
+# 原来这里还把 version.json / .github/* / tools/* 当成「不用跑单测」，而 CI
+# （.github/workflows/android.yml 的 Detect docs-only change）判它们要跑全量——
+# 同一件事两份白名单，本地说不用跑、CI 却跑全量还变红。现在按 CI 那条收敛。
+# 两处正则仍各写一遍（抽成共享工具要动 CI、需 Workflows 权限，属另一档范围），
+# 所以任何一边改这条正则，都要同步另一边：^(docs/|[^/]+\.md$)
+DOCS_RE='^(docs/|[^/]+\.md$)'
 for f in "${FILES[@]}"; do
     p="${f#./}"
+    if [[ "$p" =~ $DOCS_RE ]]; then
+        DOC_HIT+=("$p")
+        continue
+    fi
     case "$p" in
         *Test.java)
             case "$p" in
@@ -93,11 +104,8 @@ for f in "${FILES[@]}"; do
             DOC_ONLY=0; FULL=1
             FULL_WHY="资源 / 布局 / 清单 / 构建配置（$p）影响面扫不出来"
             ;;
-        docs/*|*.md|version.json|.github/*|tools/*)
-            DOC_HIT+=("$p")
-            ;;
         *)
-            DOC_ONLY=0; FULL=1; FULL_WHY="无法归类（$p），保守回退全量"
+            DOC_ONLY=0; FULL=1; FULL_WHY="非纯文档 / 不在已知源码目录（$p），保守回退全量"
             ;;
     esac
 done
@@ -125,7 +133,7 @@ fi
 
 if [[ $FULL -eq 0 && $DOC_ONLY -eq 1 ]]; then
     echo "-- 不需要跑单测 --"
-    echo "  改动的 ${#FILES[@]} 个文件都只涉及文档 / 工具 / 数据：${FILES[*]}"
+    echo "  改动的 ${#FILES[@]} 个文件都是纯文档（docs/ 或根目录 *.md，判据与 CI 一致）：${FILES[*]}"
     echo "  建议：python3 tools/check_refs.py（文档引用）；涉及版本号再跑 python3 tools/check_version.py"
     exit 0
 fi
@@ -145,13 +153,5 @@ else
     ./gradlew testDebugUnitTest "${args[@]}" --console=plain
 fi
 
-python3 - <<'PY'
-import glob, sys, xml.etree.ElementTree as ET
-t = f = s = 0
-for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
-    r = ET.parse(p).getroot()
-    t += int(r.get('tests', 0)); s += int(r.get('skipped', 0))
-    f += int(r.get('failures', 0)) + int(r.get('errors', 0))
-print(f"  结果：{t} 条，失败 {f}，跳过 {s}")
-sys.exit(1 if f else 0)
-PY
+# 2026-11-15：与 release.sh / handoff.sh 共用 tools/test_summary.py 一份实现。
+python3 tools/test_summary.py --result

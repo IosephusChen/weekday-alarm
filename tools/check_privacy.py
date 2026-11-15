@@ -51,6 +51,12 @@ RULES = [
     ("NAS 地址", WEBDAV_URL_RE, True, None),
 ]
 
+# 会更新远端 git ref 的推送入口（2026-11-15）。这些脚本一跑就可能把仓库内容推上
+# public，每一个都必须先跑本脚本。新增推送通道时同步加进这张表，漏接会当场红。
+# tools/ship.sh 是发版编排，自己不直接推 ref，闸门落在它调用的这两个脚本上；
+# CI 那道是 push 之后才跑，拦不住「已经推上去」，所以不能算这道闸。
+PUSH_GATE_ENTRIES = ("tools/push.sh", "tools/push_via_api.py")
+
 
 def git(*args, check=False):
     p = subprocess.run(["git", "-c", "core.quotepath=false", *args],
@@ -202,13 +208,40 @@ def scan_commits():
     return findings
 
 
+def scan_push_gates():
+    """守门（2026-11-15）：每个会更新远端 ref 的推送入口都必须先跑本脚本。
+
+    发版主路径 tools/ship.sh 第 3/4 步走 tools/push_via_api.py，它以前不跑隐私扫描，
+    等于给 public 仓库留了个口子。把「入口接没接闸门」做成一条会自己红的检查：
+    谁以后删掉某一处调用、或新增推送通道忘了接，这里立刻变红。
+    CI 里也跑本脚本，但那时内容已经推上去了，只能报警、不能当闸门。
+    """
+    missing = []
+    for rel in PUSH_GATE_ENTRIES:
+        path = os.path.join(ROOT, rel)
+        try:
+            text = open(path, encoding="utf-8").read()
+        except OSError:
+            missing.append(rel + "（文件不存在）")
+            continue
+        if "check_privacy.py" not in text:
+            missing.append(rel)
+    return missing
+
+
 def main():
     findings = scan_tree() + scan_commits()
     files = len(git("ls-files", "-z").stdout.split("\0")) - 1
     print("== 隐私扫描（推送前） ==")
     print("  扫描 %d 个跟踪文件 + 未推送提交的元数据" % max(files, 0))
+    gates = scan_push_gates()
+    if gates:
+        for rel in gates:
+            findings.append(("推送入口 " + rel, "", "没接隐私闸门",
+                             "把 python3 tools/check_privacy.py 接在它更新 ref 之前"))
     if not findings:
-        print("  ok  未发现个人邮箱、凭据、私钥或 NAS 地址")
+        print("  ok  未发现个人邮箱、凭据、私钥或 NAS 地址；%d 个推送入口都接了闸门"
+              % len(PUSH_GATE_ENTRIES))
         print("== 通过 ==")
         return 0
     seen = set()

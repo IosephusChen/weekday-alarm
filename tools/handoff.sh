@@ -181,67 +181,9 @@ echo "-- PLAN.md 交接条 --"
 awk '/^## 交接条/{f=1;next} f&&/^## /{exit} f&&NF' PLAN.md
 
 echo
-res=$(python3 - <<'PY'
-import glob, subprocess, xml.etree.ElementTree as ET
-from datetime import datetime, timezone
-
-# 2026-11-08 修：原来只累加 tests 数，跑单个类也会把目录重写成那个类的条数
-# （Gradle 每次清空 test-results），于是 handoff 报出「9 用例」——比不报更危险。
-# 现在同时报「跑了几个测试类 / 共几个」与「是不是在代码最后一次提交之前跑的」。
-files = glob.glob('app/build/test-results/testDebugUnitTest/*.xml')
-if not files:
-    print("还没跑过（bash tools/setup-env.sh）")
-    print("NEED")
-    raise SystemExit
-
-t = f = s = 0
-newest = 0.0
-for p in files:
-    r = ET.parse(p).getroot()
-    t += int(r.get('tests', 0))
-    f += int(r.get('failures', 0)) + int(r.get('errors', 0))
-    s += int(r.get('skipped', 0))
-    ts = r.get('timestamp')
-    if ts:
-        dt = datetime.strptime(ts[:19], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
-        newest = max(newest, dt.timestamp())
-
-src = len(glob.glob('app/src/test/**/*Test.java', recursive=True))
-ran = len(files)
-now = datetime.now(timezone.utc).timestamp()
-
-
-def ago(sec):
-    sec = max(0, int(sec))
-    if sec < 120:
-        return "刚刚"
-    if sec < 3600:
-        return "%d 分钟前" % (sec // 60)
-    if sec < 86400:
-        return "%d 小时前" % (sec // 3600)
-    return "%d 天前" % (sec // 86400)
-
-
-warn = []
-if ran < src:
-    warn.append("只跑了 %d/%d 个测试类，不是全量" % (ran, src))
-try:
-    ct = int(subprocess.run(
-        ['git', 'log', '-1', '--format=%ct', '--', 'app/src', 'app/build.gradle'],
-        capture_output=True, text=True).stdout.strip() or 0)
-except Exception:
-    ct = 0
-if ct and newest and newest < ct:
-    warn.append("代码在这之后又提交过，结果可能过期")
-
-msg = "%d 用例 / %d 失败 / %d 跳过（%s" % (t, f, s, ago(now - newest) if newest else "时间未知")
-msg += "，" + "；".join(warn) + "）" if warn else "）"
-print(msg)
-# 第二行是给 shell 的机器可读标记，不给人看：NEED = 这份结果不能当基线
-# （没跑全量 / 有失败 / 在代码最后一次提交之前跑的）。末尾「下一步」用它决定要不要先补测试。
-print("NEED" if (warn or f) else "OK")
-PY
-)
+# 2026-11-15：三处 XML 汇总收敛到 tools/test_summary.py；本脚本用 --handoff 模式，
+# 它输出两行——第一行人读，第二行是 NEED/OK 机器标记（下面「下一步」要用）。
+res=$(python3 tools/test_summary.py --handoff)
 res_msg=$(sed -n '1p' <<<"$res")
 res_flag=$(sed -n '2p' <<<"$res")
 [ -n "$res_flag" ] || res_flag="OK"

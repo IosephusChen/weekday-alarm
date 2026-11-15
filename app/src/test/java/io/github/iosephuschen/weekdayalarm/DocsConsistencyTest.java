@@ -272,16 +272,24 @@ public class DocsConsistencyTest {
      *
      * <p>现在必须同时报「跑了几个测试类 / 共几个」和「是不是在代码最后一次提交之前跑的」。
      * 下面三个词就是那两段判据的实现，删掉任一段这里都会红。
+     *
+     * <p>2026-11-15：三处 XML 汇总收敛到 tools/test_summary.py，这段实现从 handoff.sh
+     * 搬了过去。守门跟着改落点：先确认 handoff.sh 确实委托给 test_summary.py --handoff，
+     * 再在汇总脚本里找那三个判据——否则「实现搬走了、断言还盯着旧文件」会假红，
+     * 或者反过来「脚本不再委托、旧断言却还在」会漏掉真的回归。
      */
     @Test
     public void handoff_reportsTestScopeNotJustCount() throws Exception {
         String sh = read(new File(root(), "tools/handoff.sh"));
-        assertTrue("handoff.sh 不再报「只跑了 N/M 个测试类」——跑单个类会把上次测试覆盖成那个类的条数",
-                sh.contains("只跑了"));
-        assertTrue("handoff.sh 不再报「结果可能过期」——测试早于代码提交时，那个数字没有意义",
-                sh.contains("结果可能过期"));
-        assertTrue("handoff.sh 没数全量测试类（app/src/test/**/*Test.java），无法判断是不是子集",
-                sh.contains("app/src/test/**/*Test.java"));
+        assertTrue("handoff.sh 没把「上次测试」委托给 tools/test_summary.py --handoff",
+                sh.contains("test_summary.py --handoff"));
+        String summary = read(new File(root(), "tools/test_summary.py"));
+        assertTrue("test_summary.py 不再报「只跑了 N/M 个测试类」——跑单个类会把上次测试覆盖成那个类的条数",
+                summary.contains("只跑了"));
+        assertTrue("test_summary.py 不再报「结果可能过期」——测试早于代码提交时，那个数字没有意义",
+                summary.contains("结果可能过期"));
+        assertTrue("test_summary.py 没数全量测试类（app/src/test/**/*Test.java），无法判断是不是子集",
+                summary.contains("app/src/test/**/*Test.java"));
     }
 
     /**

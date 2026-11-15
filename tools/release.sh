@@ -27,11 +27,13 @@ NAME=$(grep -m1 'versionName' app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
 echo "== 版本 v$NAME / $CODE =="
 
 # -- JDK 闸门（2026-11-13）--
-# Gradle 8.14.3 支持 17~24；闸门仍保守只切到 17~22。沙箱预装 JDK 25 时，测试进程会在 500 多条处
-# OutOfMemoryError，按 XML 汇总出来是「511 条失败」——看着像代码炸了，其实是环境。
-# 2026-11-13 连踩两次，每次白等十几分钟。
+# 2026-11-15：范围常量收敛到 tools/jdk-range.sh，与 setup-env.sh 共用一份
+# （原来这里 17~22、setup-env 17–21，同一事实两处写且不一致）。
+# 沙箱预装 JDK 25 时，测试进程会在 500 多条处 OutOfMemoryError，按 XML 汇总出来
+# 是「511 条失败」——看着像代码炸了，其实是环境。2026-11-13 连踩两次，每次白等十几分钟。
 # 不依赖调用方有没有 export：每个 Shell 调用都是新进程，export 活不过一次工具调用。
 # 这里自己找一遍，找到就换过去，找不到才退。
+. "$(dirname "$0")/jdk-range.sh"
 java_major() {
     env -u JAVA_TOOL_OPTIONS "$1/bin/java" -version 2>&1 | head -1 \
         | sed -E 's/.*"([0-9]+)[."].*/\1/'
@@ -41,19 +43,19 @@ if [[ "$(java_major "${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command
 else
     CUR=0
 fi
-if (( CUR < 17 || CUR > 22 )); then
+if (( CUR < JDK_MIN || CUR > JDK_MAX )); then
     echo "-- JDK 闸门 --"
-    echo "  当前 JDK $CUR，Gradle 8.14.3 支持 17~24（闸门取 17~22），找一个能用的"
+    echo "  当前 JDK $CUR，Gradle 8.14.3 支持 17~24（闸门取 $JDK_MIN~$JDK_MAX），找一个能用的"
     for d in /root/.local/share/mise/installs/java/*/ /root/.sdkman/candidates/java/*/; do
         v=$(java_major "${d%/}" 2>/dev/null || true)
-        if [[ "$v" =~ ^[0-9]+$ ]] && (( v >= 17 && v <= 22 )); then
+        if [[ "$v" =~ ^[0-9]+$ ]] && (( v >= JDK_MIN && v <= JDK_MAX )); then
             export JAVA_HOME="${d%/}"
             echo "  已切换到 JDK $v（$JAVA_HOME）"
             break
         fi
     done
-    if (( $(java_major "${JAVA_HOME:-/nonexistent}" 2>/dev/null || echo 0) < 17 )); then
-        echo "  FAIL 没有 17~22 的 JDK，先跑 bash tools/setup-env.sh"
+    if (( $(java_major "${JAVA_HOME:-/nonexistent}" 2>/dev/null || echo 0) < JDK_MIN )); then
+        echo "  FAIL 没有 $JDK_MIN~$JDK_MAX 的 JDK，先跑 bash tools/setup-env.sh"
         exit 1
     fi
 fi
@@ -150,17 +152,8 @@ PY
 
 echo "-- 全量测试 --"
 ./gradlew testDebugUnitTest --console=plain -q
-python3 - "$NAME" <<'PY'
-import glob, sys, xml.etree.ElementTree as ET
-t = f = s = 0
-for p in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
-    r = ET.parse(p).getroot()
-    t += int(r.get('tests', 0)); s += int(r.get('skipped', 0))
-    f += int(r.get('failures', 0)) + int(r.get('errors', 0))
-print(f"  {t} 条，失败 {f}，跳过 {s}")
-if f:
-    sys.exit(1)
-PY
+# 2026-11-15：三处 XML 汇总收敛到 tools/test_summary.py 一份实现，避免口径漂。
+python3 tools/test_summary.py
 
 echo "-- lint --"
 ./gradlew lintDebug --console=plain -q >/dev/null
@@ -255,14 +248,15 @@ echo
 #
 # 2026-11-09：CI 不再出包（密钥搬去 NAS 后没理由让 runner 再签一遍）。所以这个
 # 脚本产出的包**就是**要挂到 Release 上的那个包，不是"本地验证用的半成品"。
-echo "本地产出到此为止，远端一步都没走。接着做："
-echo "  1. git add -A && git commit"
-echo "  2. tools/push.sh                                          # 推 main（带重试）"
-echo "  3. git tag -a v$NAME -m \"<标题 + 要点>\" && tools/push_via_api.py --tag v$NAME"
-echo "  4. tools/publish_release.py --mapping --dry-run           # 先看一眼"
-echo "     去掉 --dry-run 真发（幂等，重跑不会重复建）——传的就是上面这个包"
-echo "  5. 验：releases/latest 是 v$NAME、资产 MD5 对得上、raw 与 jsDelivr 的 version.json 是新版"
-echo "  6. tools/nas.sh put \"$OUT\" apk/weekday-alarm-$NAME.apk    # 送手机"
+# 2026-11-15：发版编排收敛到 tools/ship.sh 一处。原来这里列了六步手工清单，
+# 和 ship.sh 的七步各写一遍，推 main 用哪条通道还不一致（push.sh vs push_via_api.py）。
+# 现在只指路：从一开始就用 ship.sh 全包办；本脚本已被单独跑过时从 --from=2 续。
+echo "本地产出到此为止，远端一步都没走。发版统一用 tools/ship.sh："
+echo "  bash tools/ship.sh -m \"release: v$NAME <一句话>\"          # 从出包开始七步全包办"
+echo "  本脚本已单独跑过出包时：bash tools/ship.sh --from=2 -m \"release: v$NAME <一句话>\""
+echo "  先 --dry-run 看命令，断在哪步就 --from=N 续；七步见 tools/ship.sh 与 AGENTS.md 第七节。"
 echo
-echo "  （CI 只在 push 时跑单测 + lint，不出包；lintVitalRelease 由本脚本的 assembleRelease 兜）"
+echo "  （ship.sh 第 3/4 步走 tools/push_via_api.py 的 API 通道，它已内置推送前隐私扫描，"
+echo "   与 push.sh 的闸门等价；CI 只在 push 时跑单测 + lint，不出包，"
+echo "   lintVitalRelease 由本脚本的 assembleRelease 兜。）"
 echo "  （灾备包不动，只在正式发布前刷）"

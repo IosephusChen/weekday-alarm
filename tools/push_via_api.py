@@ -283,6 +283,19 @@ def main():
     ap.add_argument("--tags", action="store_true", help="推本地全部标签")
     args = ap.parse_args()
 
+    # 2026-11-15：与 tools/push.sh 对齐，推送前先扫隐私。本脚本是 tools/ship.sh 发版
+    # 主路径第 3/4 步用的通道（不访问 github.com、比 git push 稳），却一直没这道闸——
+    # 仓库是 public，凭据混进提交就会直接推上去，事后只能重写历史、找 GitHub 清缓存。
+    # 放在拿 token / 发任何请求之前，命中就地退出、远端一行不动；dry-run 也扫
+    # （便于红绿验证），CI 里那份是 push 之后才跑，拦不住「已经推上去」。
+    here = os.path.dirname(os.path.abspath(__file__))
+    # cwd 用脚本位置推仓库根，不依赖调用方在哪、也不靠 git 返回（那样在非仓库目录
+    # 调用会拿到空串）；check_privacy.py 自己也按 __file__ 定位 ROOT，两重保险。
+    privacy = subprocess.run([sys.executable, os.path.join(here, "check_privacy.py")],
+                             cwd=os.path.dirname(here))
+    if privacy.returncode != 0:
+        sys.exit("隐私扫描未通过，已停止推送（远端未做任何改动）。")
+
     # 2026-11-08：优先读长期 PAT。connector 的 ghu_ 令牌 8 小时过期，
     # 发版发到一半 401 的根因就在这。文件在仓库外、权限 600，不进 git。
     token = os.environ.get("GITHUB_TOKEN", "")

@@ -42,12 +42,14 @@ die()  { printf '✗ %s\n' "$*" >&2; exit 1; }
 [[ -f gradlew ]] || die "请在仓库根目录运行：bash tools/setup-env.sh"
 
 # ---- 1. Java ---------------------------------------------------------------
-# Gradle 8.14.3 支持 17–24；这里仍按 17–21 选（SDK 36 的 Robolectric 测试要 21，当前测试钉 34）。
+# 2026-11-15：范围常量收敛到 tools/jdk-range.sh，与 release.sh 的 JDK 闸门共用一份
+# （原来这里 17–21、release 17–22，同一事实两处写）。取值依据见那个文件。
 # 2026-11-12 补：Trae 沙箱预装 JDK 25、没有 zulu 20
-# （WorkBuddy 才有），原逻辑在这里直接 die。改成先找现成的 17–21——JAVA_HOME →
+# （WorkBuddy 才有），原逻辑在这里直接 die。改成先找现成的范围内 JDK——JAVA_HOME →
 # zulu 20 → mise 预装的版本——一个都没有才用 mise 装 Temurin 21。
 # 版本判定要 `env -u JAVA_TOOL_OPTIONS`：下面注入的代理参数会把 `java -version`
 # 的输出行弄脏，导致版本号被读成一句英文（2026-11-12 实测踩过）。
+. "$(dirname "$0")/jdk-range.sh"
 java_ver() {
     env -u JAVA_TOOL_OPTIONS "$1/bin/java" -version 2>&1 | head -1 \
         | sed -E 's/.*"([0-9]+)[."].*/\1/'
@@ -56,7 +58,7 @@ java_ok() {
     local dir="$1" v
     [[ -n "$dir" && -x "$dir/bin/java" ]] || return 1
     v=$(java_ver "$dir")
-    [[ "$v" =~ ^[0-9]+$ ]] && (( v >= 17 && v <= 21 ))
+    [[ "$v" =~ ^[0-9]+$ ]] && (( v >= JDK_MIN && v <= JDK_MAX ))
 }
 find_java() {
     local d
@@ -73,11 +75,11 @@ JAVA_FOUND=$(find_java \
     /root/.local/share/mise/installs/java/*/ ) || true
 
 if [[ -z "$JAVA_FOUND" ]] && command -v mise >/dev/null 2>&1; then
-    info "没找到 17–21 的 JDK，用 mise 装 Temurin 21（约 208 MB）"
+    info "没找到 $JDK_MIN–$JDK_MAX 的 JDK，用 mise 装 Temurin 21（约 208 MB）"
     mise install java@temurin-21 >/dev/null 2>&1 || true
     JAVA_FOUND=$(find_java /root/.local/share/mise/installs/java/temurin-21*/) || true
 fi
-[[ -n "$JAVA_FOUND" ]] || die "找不到 JDK 17–21，也没有 mise 可以装——手动装一个再跑"
+[[ -n "$JAVA_FOUND" ]] || die "找不到 JDK $JDK_MIN–$JDK_MAX，也没有 mise 可以装——手动装一个再跑"
 
 JAVA_HOME="$JAVA_FOUND"
 export JAVA_HOME

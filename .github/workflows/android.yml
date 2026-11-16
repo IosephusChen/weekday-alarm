@@ -100,10 +100,14 @@ jobs:
       # 判定保守到近乎笨：只要有一个文件不在 docs/ 或根目录的 .md 里就走全量；
       # 拿不到 base commit（dispatch、force push、新建分支）也走全量。
       # 宁可白跑三分钟，不可漏跑一条。
+      # 2026-11-16：判据正则抽到 tools/docs-only-re.sh，本步骤与 tools/test.sh 都
+      # source 它取 $DOCS_RE，不再各写一份字面量（只改一边会静默漂移）；
+      # DocsConsistencyTest 盯住两边不许再写死。
       - name: Detect docs-only change
         id: scope
         if: ${{ github.event_name == 'push' }}
         run: |
+          . tools/docs-only-re.sh
           BASE="${{ github.event.before }}"
           if [ -z "$BASE" ] || ! git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
@@ -119,7 +123,7 @@ jobs:
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if echo "$CHANGED" | grep -qvE '^(docs/|[^/]+\.md$)'; then
+          if echo "$CHANGED" | grep -qvE "$DOCS_RE"; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
             echo "有代码改动，跑全量"
           else

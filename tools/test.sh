@@ -57,13 +57,13 @@ add_test() {  # app/src/test/java/.../FooTest.java → io.github...FooTest
     TESTS+=("${p//\//.}")
 }
 
-# 2026-11-15：纯文档判据与 CI 的 docs-only 判据对齐，共用同一条正则字面量。
+# 2026-11-15：纯文档判据与 CI 的 docs-only 判据对齐。
 # 原来这里还把 version.json / .github/* / tools/* 当成「不用跑单测」，而 CI
 # （.github/workflows/android.yml 的 Detect docs-only change）判它们要跑全量——
-# 同一件事两份白名单，本地说不用跑、CI 却跑全量还变红。现在按 CI 那条收敛。
-# 两处正则仍各写一遍（抽成共享工具要动 CI、需 Workflows 权限，属另一档范围），
-# 所以任何一边改这条正则，都要同步另一边：^(docs/|[^/]+\.md$)
-DOCS_RE='^(docs/|[^/]+\.md$)'
+# 同一件事两份白名单，本地说不用跑、CI 却跑全量还变红。
+# 2026-11-16：正则抽到 tools/docs-only-re.sh，这里与 CI 都 source 它取 $DOCS_RE，
+# 不再有第二份字面量可漂移；DocsConsistencyTest 盯住两边不许再写死。
+. tools/docs-only-re.sh
 for f in "${FILES[@]}"; do
     p="${f#./}"
     if [[ "$p" =~ $DOCS_RE ]]; then

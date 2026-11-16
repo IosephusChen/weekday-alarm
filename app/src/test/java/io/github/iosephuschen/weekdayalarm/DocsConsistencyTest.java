@@ -390,29 +390,41 @@ public class DocsConsistencyTest {
     }
 
     /**
-     * 本地 tools/test.sh 与 CI 的 docs-only 判据必须是同一条正则（2026-11-16）。
+     * 本地 tools/test.sh 与 CI 的 docs-only 判据必须只来自同一个共享源（2026-11-16）。
      *
-     * <p>两处各写一遍字面量（抽成共享实现要改 .github/workflows/、动发版唯一判据，
-     * 风险不对称），原来只靠 test.sh 里一行注释提醒「改一边要同步另一边」——那是靠记性。
-     * AGENTS.md 的规矩是「凡是下次一定，做成会自己红的东西」，所以把「只改一边」
-     * 变成当场红：本地判不用跑单测、CI 判跑全量，白跑还可能红。
+     * <p>原来两处各写一遍正则，只改一边就「本地不用跑单测、CI 跑全量还变红」；
+     * 2026-11-15 先加了「两边字面量相等」的守门兜着，2026-11-16 用户放开 CI 后，
+     * 正则抽到 tools/docs-only-re.sh，两边都 source 它取 $DOCS_RE，物理上不再有
+     * 第二份字面量可漂移。守门随之从「比相等」改成「防绕过」：
+     * 共享文件必须在、正则必须合法、两边必须引用它且不许再写死任何一份。
      *
-     * <p>锚点用字面量，不用抽出来的正则本身当尺子：否则改判据时尺子跟着变，
+     * <p>锚点一律用字面量，不用抽出来的正则本身当尺子：否则改判据时尺子跟着变，
      * 守门会和修复一起静默失效（check_refs.py 的自检踩过同一个坑）。
      */
     @Test
     public void docsOnlyRegex_staysInSyncBetweenTestShAndCi() throws Exception {
+        File shared = new File(root(), "tools/docs-only-re.sh");
+        assertTrue("共享判据文件 tools/docs-only-re.sh 不见了——两边会各自退化", shared.isFile());
+        Matcher def = Pattern.compile("(?m)^DOCS_RE='([^']+)'").matcher(read(shared));
+        assertTrue("tools/docs-only-re.sh 里找不到 DOCS_RE='…' 定义，判据可能改了写法",
+                def.find());
+        // 正则改坏时这里直接抛 PatternSyntaxException，测试当场红（别等 CI 静默走全量）
+        Pattern.compile(def.group(1));
+
         String sh = read(new File(root(), "tools/test.sh"));
         String yml = read(new File(root(), ".github/workflows/android.yml"));
-        Matcher local = Pattern.compile("(?m)^DOCS_RE='([^']+)'").matcher(sh);
-        Matcher ci = Pattern.compile("grep -qvE '([^']+)'").matcher(yml);
-        assertTrue("tools/test.sh 里找不到 DOCS_RE='…' 赋值，判据可能改了写法",
-                local.find());
-        assertTrue(".github/workflows/android.yml 里找不到 grep -qvE '…' 判据，可能改了写法",
-                ci.find());
-        assertEquals("本地 tools/test.sh 与 CI 的 docs-only 正则不一致——"
-                        + "只改一边会出现「本地不用跑单测、CI 跑全量还变红」，两处要一起改",
-                local.group(1), ci.group(1));
+        assertTrue("tools/test.sh 没有 source 共享判据（. tools/docs-only-re.sh）",
+                sh.contains(". tools/docs-only-re.sh"));
+        assertTrue(".github/workflows/android.yml 没有 source 共享判据（. tools/docs-only-re.sh）",
+                yml.contains(". tools/docs-only-re.sh"));
+        assertTrue("tools/test.sh 没用 $DOCS_RE 判定，可能绕过了共享源",
+                sh.contains("=~ $DOCS_RE"));
+        assertTrue("android.yml 没用 $DOCS_RE 判定，可能绕过了共享源",
+                yml.contains("grep -qvE \"$DOCS_RE\""));
+        assertTrue("tools/test.sh 又写死了 DOCS_RE 赋值——判据必须只来自共享文件",
+                !Pattern.compile("(?m)^\\s*DOCS_RE\\s*=").matcher(sh).find());
+        assertTrue("android.yml 又写死了 grep 的正则字面量——判据必须只来自共享文件",
+                !Pattern.compile("grep -qvE\\s+'").matcher(yml).find());
     }
 
     /**

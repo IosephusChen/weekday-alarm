@@ -14,6 +14,7 @@ import android.os.Looper;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -142,6 +143,76 @@ public class BedtimeDialogTest {
         assertTrue("关闭态第一张应选中", list.getChildAt(0).isSelected());
         assertEquals("关闭态最后一张不该带时刻",
                 "其他时间…", titleOf(list.getChildAt(EXPECTED.length - 1)));
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 关掉再打开：点「其他时间」滚轮从<b>上次用的时刻</b>起，不是重置成 22:00。
+     *
+     * <p>v1.49.0 定下的语义，v1.71.8 改「值 + 箭头」时随唯一的读者一起弄丢了，
+     * 2026-11-16 清死代码时才发现只剩一次空写，2026-11-17 按用户要求恢复。
+     * 关闭时 {@code bedtime_minutes} 是 -1，时刻只能从 {@code bedtime_last_minutes} 取。
+     */
+    @Test
+    public void offWheel_startsFromRememberedTime() {
+        Prefs.setBedtimeMinutes(ctx(), Prefs.BEDTIME_OFF);
+        Prefs.setBedtimeLast(ctx(), 23 * 60 + 30);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog main = openDialog(ctl);
+
+        list(main).getChildAt(EXPECTED.length - 1).performClick();
+        ShadowLooper.idleMainLooper();
+
+        AlertDialog wheel = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        NumberPicker hour = wheel.findViewById(R.id.np_hour);
+        NumberPicker minute = wheel.findViewById(R.id.np_minute);
+        assertNotNull("应叠了一个时间滚轮", hour);
+        assertEquals("小时从上次时刻起", 23, hour.getValue());
+        assertEquals("分钟从上次时刻起", 30, minute.getValue());
+
+        wheel.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+        assertEquals("滚轮确认后标题带上上次时刻",
+                "其他时间 · 23:30", titleOf(list(main).getChildAt(EXPECTED.length - 1)));
+        ctl.pause().stop().destroy();
+    }
+
+    /** 从没记过 → 兜成 22:00，不能拿 -1 去算滚轮。 */
+    @Test
+    public void offWheel_withoutHistory_fallsBackTo2200() {
+        Prefs.setBedtimeMinutes(ctx(), Prefs.BEDTIME_OFF);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog main = openDialog(ctl);
+
+        list(main).getChildAt(EXPECTED.length - 1).performClick();
+        ShadowLooper.idleMainLooper();
+
+        AlertDialog wheel = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        NumberPicker hour = wheel.findViewById(R.id.np_hour);
+        NumberPicker minute = wheel.findViewById(R.id.np_minute);
+        assertEquals("没记过 → 22 时", 22, hour.getValue());
+        assertEquals("没记过 → 0 分", 0, minute.getValue());
+        ctl.pause().stop().destroy();
+    }
+
+    /**
+     * 落盘时刻时顺手记住它——「关掉再打开」的回程票就靠这一次写入。
+     *
+     * <p>写入点在 {@code applyBedtime}：只有值真的变了才会走到那里，所以这里从
+     * 22:00 改成 23:00 再断言。
+     */
+    @Test
+    public void done_recordsLastTime() {
+        Prefs.setBedtimeMinutes(ctx(), 22 * 60);
+        ActivityController<SettingsActivity> ctl = openHome();
+        AlertDialog d = openDialog(ctl);
+
+        list(d).getChildAt(4).performClick();          // 23:00
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals("应存成 23:00", 23 * 60, Prefs.getBedtimeMinutes(ctx()));
+        assertEquals("并记住它", 23 * 60, Prefs.getBedtimeLast(ctx()));
         ctl.pause().stop().destroy();
     }
 

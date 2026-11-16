@@ -1238,9 +1238,29 @@ public final class Prefs {
         sp(c).edit().putString(KEY_BEDTIME_NOTICE_DAY, isoDay).apply();
     }
 
-    /** 上次开启时的睡前时刻（v0.60.0）。「关掉再打开回到原时刻」在 v1.71.8 随「值 + 箭头」
-     *  交互下线，读写方法已删；键保留（FrozenKeysTest 冻结），老机器上的值不主动清。 */
+    /**
+     * 上次开着时的睡前时刻（v0.60.0）。
+     *
+     * <p>关闭时 {@code KEY_BEDTIME_MINUTES} 存的是 -1，原值就丢了；下次打开要回到原时刻，
+     * 不是重置成 22:00。没记过就按 22:00——本就这个功能的默认值。
+     *
+     * <p>2026-11-16 清死代码时发现：v1.71.8 改「值 + 箭头」交互把唯一读者删了，
+     * 只剩一次空写，于是「关掉再打开回到原时刻」静默失效（关着进来点「其他时间」，
+     * 滚轮固定回 22:00）。2026-11-17 按用户要求恢复成真读真写。
+     */
     public static final String KEY_BEDTIME_LAST = "bedtime_last_minutes";
+
+    public static int getBedtimeLast(Context c) {
+        int v = sp(c).getInt(KEY_BEDTIME_LAST, 22 * 60);
+        // 兜底同 getBedtimeMinutes：手改坏的值不能让滚轮算出 25:00
+        return (v < 0 || v >= 24 * 60) ? 22 * 60 : v;
+    }
+
+    public static void setBedtimeLast(Context c, int minutesOfDay) {
+        if (minutesOfDay >= 0 && minutesOfDay < 24 * 60) {
+            sp(c).edit().putInt(KEY_BEDTIME_LAST, minutesOfDay).apply();
+        }
+    }
 
     /** 睡前提醒是否只在「明天要上班」时发送；默认 true（休息日不打扰）。 */
     public static boolean isBedtimeWorkdayOnly(Context c) {

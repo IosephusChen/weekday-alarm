@@ -296,9 +296,10 @@ final class SettingsReminderSection {
         }
 
         // 弹窗内的暂存状态：点卡片只动这三样，点「完成」才写 Prefs。
-        // custom 是「其他时间」选定的分钟数，-1 表示还没选过（关闭状态进来时）。
+        // custom 是「其他时间」选定的分钟数。关着进来时取上次用的时刻（v1.49.0；
+        // 2026-11-17 恢复），不是固定 22:00——「关掉再打开回到原时刻」就是这个意思。
         final int[] pick = {checked};
-        final int[] custom = {off ? -1 : cur};
+        final int[] custom = {off ? Prefs.getBedtimeLast(host) : cur};
         final boolean[] workday = {Prefs.isBedtimeWorkdayOnly(host)};
 
         // 「其他时间」选中时把具体时刻写进标题：只写「其他时间…」用户看不出自己设的是几点。
@@ -354,7 +355,8 @@ final class SettingsReminderSection {
                 if (idx == LAST) {
                     // v0.79.0：不先关主弹窗，滚轮叠在上面，取消就退回原弹窗接着选。
                     // v1.0.4：滚轮只负责「给一个值」，同样不落盘。
-                    pickCustomBedtime(custom[0] >= 0 ? custom[0] : 22 * 60, mins -> {
+                    // 初值就是 custom——关着进来时它已是「上次用的时刻」（v1.49.0）。
+                    pickCustomBedtime(custom[0], mins -> {
                         custom[0] = mins;
                         DialogKit.setOptionTitle(cards[LAST],
                                 host.getString(R.string.dialog_bedtime_custom_set,
@@ -406,7 +408,8 @@ final class SettingsReminderSection {
      * <p>v1.0.4：只回调选中的分钟数，<b>不落盘</b>——主弹窗改成确认制之后，
      * 滚轮确认只相当于「把这张卡的标题补上一个时刻」，真正写 Prefs 要等「完成」。
      *
-     * @param base     滚轮初始值（分钟数）；关着进来时调用方传 22:00
+     * @param base     滚轮初始值（分钟数）；关着进来时是上次用的时刻（v1.49.0），
+     *                 从没记过则由 {@link Prefs#getBedtimeLast} 兜成 22:00
      * @param onPicked 确认后回调；滚轮上按「取消」不会回调，主弹窗原样留着
      */
     private void pickCustomBedtime(int base, java.util.function.IntConsumer onPicked) {
@@ -432,6 +435,9 @@ final class SettingsReminderSection {
         // 以前只取消了下一天的调度，当前这条会一直留到 05:00 过期。
         if (cur == Prefs.BEDTIME_OFF) {
             BedtimeReminder.cancelNotice(host);
+        } else {
+            // 记住这次的时刻：关掉再打开要回到它，不是重置成 22:00（v1.49.0）
+            Prefs.setBedtimeLast(host, cur);
         }
     }
 }

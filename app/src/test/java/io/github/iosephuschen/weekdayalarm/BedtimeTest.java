@@ -117,6 +117,30 @@ public class BedtimeTest {
         assertEquals("关闭", BedtimeReminder.timeText(Prefs.BEDTIME_OFF));
     }
 
+    /**
+     * 「上次时刻」的存取与兜底（v1.49.0 语义，2026-11-17 恢复真读真写）。
+     *
+     * <p>它只在关闭态有意义：关闭时 {@code KEY_BEDTIME_MINUTES} 是 -1，原值只剩这里。
+     * 写坏值不许落盘，读坏值兜成 22:00——那是这个功能的默认时刻。
+     */
+    @Test
+    public void bedtimeLast_roundTripAndFallback() {
+        assertEquals("没记过 → 默认 22:00", 22 * 60, Prefs.getBedtimeLast(ctx()));
+
+        Prefs.setBedtimeLast(ctx(), 23 * 60 + 30);
+        assertEquals("存进去要能读回来", 23 * 60 + 30, Prefs.getBedtimeLast(ctx()));
+
+        Prefs.setBedtimeLast(ctx(), 24 * 60);
+        assertEquals("越界不落盘", 23 * 60 + 30, Prefs.getBedtimeLast(ctx()));
+        Prefs.setBedtimeLast(ctx(), -1);
+        assertEquals("负数不落盘", 23 * 60 + 30, Prefs.getBedtimeLast(ctx()));
+
+        // 手改坏的值（模拟旧版本/脏数据）读出来要兜成默认，不能让滚轮算出 25:00
+        ctx().getSharedPreferences("weekday_alarm", Context.MODE_PRIVATE).edit()
+                .putInt(Prefs.KEY_BEDTIME_LAST, 25 * 60).commit();
+        assertEquals("脏值兜成 22:00", 22 * 60, Prefs.getBedtimeLast(ctx()));
+    }
+
     // ================= 通知内容 =================
 
     @Test

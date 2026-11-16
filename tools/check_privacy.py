@@ -11,7 +11,8 @@
 - 常见凭据：NAS_PASS / PASSWORD 等赋值、`--pass=`、GitHub token、AKIA、私钥头；
 - NAS 地址：从 `/root/.nas_url` 取主机名（真值不进仓库），外加含 webdav 的 URL；
 - 运行时凭据：从 `/root/.nas_credentials` 取账号/口令原文，只用于比对，不打印；
-- 新提交：`origin/main..HEAD` 的作者/提交者邮箱与提交说明（没有 origin/main 时只扫 HEAD）。
+- 新提交：`origin/main..HEAD` 的作者/提交者邮箱与提交说明（没有 origin/main 时只扫 HEAD）；
+- 推送入口：`tools/` 下会更新远端 ref 的脚本是否都先跑了本脚本（自动发现，非手工表）。
 
 CI 里没有 `/root` 下的两个文件，运行时那两类自动跳过；其余规则照跑。
 只读，不改任何文件；命中 exit 1。
@@ -51,8 +52,15 @@ RULES = [
     ("NAS 地址", WEBDAV_URL_RE, True, None),
 ]
 
-# 会更新远端 git ref 的推送入口（2026-11-15）。这些脚本一跑就可能把仓库内容推上
-# public，每一个都必须先跑本脚本。新增推送通道时同步加进这张表，漏接会当场红。
+# 会更新远端 git ref 的强特征（2026-11-16）。这两个串是 git push 的 refspec 与
+# Git Data API 的 ref 路径，只出现在真正推 ref 的脚本里；实测 tools/ 下精确命中
+# push.sh / push_via_api.py 两个，只在注释里提「git push」的 handoff.sh、
+# release.sh、publish_release.py 都不含，零误报。
+REF_UPDATE_MARKERS = ("HEAD:refs/heads/", "/git/refs")
+
+# 已知入口的「地板」（2026-11-15 手工表降级而来）。入口主判据改成自动发现后，
+# 这张表只用来兜底：万一 push.sh 改写法、marker 消失，自动发现会漏掉它，
+# 而地板仍要求它被发现 → 自检当场红，不会静默退化成「谁都不用查」。
 # tools/ship.sh 是发版编排，自己不直接推 ref，闸门落在它调用的这两个脚本上；
 # CI 那道是 push 之后才跑，拦不住「已经推上去」，所以不能算这道闸。
 PUSH_GATE_ENTRIES = ("tools/push.sh", "tools/push_via_api.py")
@@ -208,25 +216,68 @@ def scan_commits():
     return findings
 
 
+def code_text(path):
+    """去掉 `#` 注释行后的代码文本。
+
+    判据一律只看代码行：注释里写一句「本脚本会调 /git/refs」不该把自己变成入口，
+    注释里写一句「不接 check_privacy.py」也不该把闸门骗过去。两个方向都要挡。
+    """
+    with open(path, encoding="utf-8") as f:
+        return "\n".join(l for l in f if not l.lstrip().startswith("#"))
+
+
+def discover_push_entries():
+    """自动发现会更新远端 ref 的推送入口（2026-11-16）。
+
+    原来靠 PUSH_GATE_ENTRIES 手工登记，新增第三条通道忘了登记就查不到。改成扫
+    tools/ 下所有 .sh/.py，代码行里含 REF_UPDATE_MARKERS 之一即视为入口。
+    本文件自身含这两个串作为判据常量，必须排除，否则会把自己当入口、又因为自己
+    不「调用」check_privacy.py 而永远红。
+    """
+    found = []
+    tools_dir = os.path.join(ROOT, "tools")
+    self_name = os.path.basename(__file__)
+    for name in sorted(os.listdir(tools_dir)):
+        if not name.endswith((".sh", ".py")) or name == self_name:
+            continue
+        try:
+            text = code_text(os.path.join(tools_dir, name))
+        except OSError:
+            continue
+        if any(m in text for m in REF_UPDATE_MARKERS):
+            found.append("tools/" + name)
+    return found
+
+
 def scan_push_gates():
-    """守门（2026-11-15）：每个会更新远端 ref 的推送入口都必须先跑本脚本。
+    """守门：每个会更新远端 ref 的推送入口都必须先跑本脚本。
 
     发版主路径 tools/ship.sh 第 3/4 步走 tools/push_via_api.py，它以前不跑隐私扫描，
-    等于给 public 仓库留了个口子。把「入口接没接闸门」做成一条会自己红的检查：
-    谁以后删掉某一处调用、或新增推送通道忘了接，这里立刻变红。
+    等于给 public 仓库留了个口子。2026-11-15 起把「入口接没接闸门」做成会自己红的
+    检查；2026-11-16 起入口清单改为自动发现（原手工表降级成地板，见下）。
     CI 里也跑本脚本，但那时内容已经推上去了，只能报警、不能当闸门。
+
+    返回 (检查过的入口, [(入口, 原因)])。
     """
+    discovered = set(discover_push_entries())
+    entries = sorted(discovered | set(PUSH_GATE_ENTRIES))
     missing = []
+    # 判据没失效：两个已知入口必须都被自动发现命中。用写死的地板当尺子，不用
+    # REF_UPDATE_MARKERS 自己——否则改判据时尺子跟着变，自检会一起静默失效
+    # （check_refs.py 的 check_plan_region_leak 踩过同一个坑）。
     for rel in PUSH_GATE_ENTRIES:
+        if rel not in discovered:
+            missing.append((rel, "自动发现没命中这个已知入口，判据或扫描范围可能已失效"))
+    for rel in entries:
         path = os.path.join(ROOT, rel)
         try:
-            text = open(path, encoding="utf-8").read()
+            text = code_text(path)
         except OSError:
-            missing.append(rel + "（文件不存在）")
+            missing.append((rel, "文件不存在"))
             continue
         if "check_privacy.py" not in text:
-            missing.append(rel)
-    return missing
+            missing.append((rel, "没接隐私闸门（代码里没有调用，注释里提一句不算）"))
+    return entries, missing
 
 
 def main():
@@ -234,14 +285,14 @@ def main():
     files = len(git("ls-files", "-z").stdout.split("\0")) - 1
     print("== 隐私扫描（推送前） ==")
     print("  扫描 %d 个跟踪文件 + 未推送提交的元数据" % max(files, 0))
-    gates = scan_push_gates()
-    if gates:
-        for rel in gates:
-            findings.append(("推送入口 " + rel, "", "没接隐私闸门",
-                             "把 python3 tools/check_privacy.py 接在它更新 ref 之前"))
+    entries, gate_missing = scan_push_gates()
+    for rel, why in gate_missing:
+        hint = ("把 python3 tools/check_privacy.py 接在它更新 ref 之前"
+                if "没接隐私闸门" in why else why)
+        findings.append(("推送入口 " + rel, "", why, hint))
     if not findings:
-        print("  ok  未发现个人邮箱、凭据、私钥或 NAS 地址；%d 个推送入口都接了闸门"
-              % len(PUSH_GATE_ENTRIES))
+        print("  ok  未发现个人邮箱、凭据、私钥或 NAS 地址；%d 个推送入口都接了闸门（自动发现）"
+              % len(entries))
         print("== 通过 ==")
         return 0
     seen = set()

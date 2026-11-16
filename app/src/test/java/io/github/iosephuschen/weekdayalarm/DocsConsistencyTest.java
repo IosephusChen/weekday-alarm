@@ -389,6 +389,52 @@ public class DocsConsistencyTest {
                 missing.isEmpty());
     }
 
+    /**
+     * 本地 tools/test.sh 与 CI 的 docs-only 判据必须是同一条正则（2026-11-16）。
+     *
+     * <p>两处各写一遍字面量（抽成共享实现要改 .github/workflows/、动发版唯一判据，
+     * 风险不对称），原来只靠 test.sh 里一行注释提醒「改一边要同步另一边」——那是靠记性。
+     * AGENTS.md 的规矩是「凡是下次一定，做成会自己红的东西」，所以把「只改一边」
+     * 变成当场红：本地判不用跑单测、CI 判跑全量，白跑还可能红。
+     *
+     * <p>锚点用字面量，不用抽出来的正则本身当尺子：否则改判据时尺子跟着变，
+     * 守门会和修复一起静默失效（check_refs.py 的自检踩过同一个坑）。
+     */
+    @Test
+    public void docsOnlyRegex_staysInSyncBetweenTestShAndCi() throws Exception {
+        String sh = read(new File(root(), "tools/test.sh"));
+        String yml = read(new File(root(), ".github/workflows/android.yml"));
+        Matcher local = Pattern.compile("(?m)^DOCS_RE='([^']+)'").matcher(sh);
+        Matcher ci = Pattern.compile("grep -qvE '([^']+)'").matcher(yml);
+        assertTrue("tools/test.sh 里找不到 DOCS_RE='…' 赋值，判据可能改了写法",
+                local.find());
+        assertTrue(".github/workflows/android.yml 里找不到 grep -qvE '…' 判据，可能改了写法",
+                ci.find());
+        assertEquals("本地 tools/test.sh 与 CI 的 docs-only 正则不一致——"
+                        + "只改一边会出现「本地不用跑单测、CI 跑全量还变红」，两处要一起改",
+                local.group(1), ci.group(1));
+    }
+
+    /**
+     * 推送前隐私闸门的入口清单必须是自动发现的，不能退回手工表（2026-11-16）。
+     *
+     * <p>PUSH_GATE_ENTRIES 只列了 push.sh / push_via_api.py 两个，新增第三条通道
+     * 忘了登记就没人查。这里锁住自动发现的实现别被悄悄删掉；真正的红绿验证由
+     * check_privacy.py 自己跑（造一个未登记的假入口，撤掉自动发现就不拦）。
+     */
+    @Test
+    public void privacyGate_discoversPushEntriesNotJustHardcoded() throws Exception {
+        String py = read(new File(root(), "tools/check_privacy.py"));
+        assertTrue("check_privacy.py 缺自动发现入口的实现",
+                py.contains("def discover_push_entries()"));
+        assertTrue("scan_push_gates 没把自动发现结果并进检查清单",
+                py.contains("entries = sorted(discovered | set(PUSH_GATE_ENTRIES))"));
+        assertTrue("强特征失效时缺地板自检，会静默退化成只查手工表",
+                py.contains("自动发现没命中这个已知入口"));
+        assertTrue("闸门判定没排除注释行，注释里提一句 check_privacy.py 就能骗过",
+                py.contains("def code_text("));
+    }
+
     private static List<File> javaFiles(File dir) {
         List<File> out = new ArrayList<>();
         File[] fs = dir.listFiles();

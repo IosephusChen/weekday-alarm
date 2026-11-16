@@ -57,7 +57,6 @@ public class ColorTokenTest {
 
     static {
         NIGHTLESS.add("widget_dim");
-        NIGHTLESS.add("widget_rest");
         NIGHTLESS.add("widget_holiday");
         NIGHTLESS.add("widget_makeup");
         NIGHTLESS.add("widget_vacation");

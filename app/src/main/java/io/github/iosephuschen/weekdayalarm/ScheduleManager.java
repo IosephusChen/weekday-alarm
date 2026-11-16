@@ -11,7 +11,6 @@ import androidx.core.app.NotificationManagerCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -37,9 +36,6 @@ import java.util.Set;
  * rescheduleAll 重新滚动补排，窗口随响铃不断前移，最终全部能排上。
  */
 public final class ScheduleManager {
-
-    public static final int HORIZON_DAYS = 90;
-    public static final long SNOOZE_MINUTES = 5;
 
     /**
      * 单次注册的闹钟实例上限。留出到 500 硬限的余量（系统闹钟图标/其他组件也可能

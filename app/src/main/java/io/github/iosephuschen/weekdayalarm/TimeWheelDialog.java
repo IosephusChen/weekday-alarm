@@ -4,7 +4,6 @@ import android.content.Context;
 import android.view.View;
 import android.widget.NumberPicker;
 
-import androidx.appcompat.app.AlertDialog;
 
 /**
  * 「时 / 分」双列滚轮时间选择对话框（v0.14.0 起用，v0.24.0 抽成公共类）。

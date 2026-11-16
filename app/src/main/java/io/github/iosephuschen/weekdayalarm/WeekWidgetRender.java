@@ -8,7 +8,6 @@ import androidx.core.content.ContextCompat;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 七格班表的算与画（v0.71.0）。

@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -264,7 +263,7 @@ final class AlarmRowRenderer {
             // v1.23.3：原来两种情况都画「—」，可它们说的不是一件事——
             // 「休」是「跟班表，今天轮休，明天照响」；「—」是「这条闹钟今天算不出时刻」，
             // 多半是班次没配全。同一个破折号让用户没法判断要不要去改设置。
-            // 「休」沿用 WeekGrid / ScheduleSheet 里同一个字，全 App 对休息只有这一种写法。
+            // 「休」沿用 ScheduleSheet 里那个字，全 App 对休息只有这一种写法。
             time.setText(timeSlotText(activity, resting, noTime, whenMin));
             // v0.74.0：闹钟配色取消后，时间大字统一用墨色（关掉的仍是灰字）——
             // 「灰不灰」这一个维度表达有没有开就够了

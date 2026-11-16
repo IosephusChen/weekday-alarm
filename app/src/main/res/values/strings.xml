@@ -12,7 +12,7 @@
     <string name="widget_month_minimal_desc">本月班表 · 极简（4×3）：整月班表，不要请假按钮、格子更宽松</string>
 
     <!-- ===== 设置页文案（v0.73.7 从布局内联迁入）===== -->
-    <!-- 闹钟行时间位：跟班表但今天轮休。与 WeekGrid / ScheduleSheet 的「休」同字 -->
+    <!-- 闹钟行时间位：跟班表但今天轮休。与 ScheduleSheet 的「休」同字 -->
     <string name="alarm_time_rest">休</string>
     <string name="settings_page_title">设置</string>
     <string name="settings_section_alarm">响铃</string>
@@ -24,8 +24,6 @@
          没授权时点一下就是申请，开关在授权成功后才变成开。
          2026-11-14：支持但没授权时在开关左边写「未授权」——HyperOS 3 上开关打不开，
          只给一个关着的开关，分不清是没授权还是坏了。 -->
-    <string name="settings_power_off_on">已开启</string>
-    <string name="settings_power_off_off">已关闭</string>
     <string name="settings_power_off_unsupported">这款机型不支持</string>
     <string name="settings_power_off_ungranted">未授权</string>
     <!-- v1.24.1：关机后第三方 App 不会响——进程没了就没有代码在跑。

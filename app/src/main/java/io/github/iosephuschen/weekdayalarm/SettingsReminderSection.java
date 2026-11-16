@@ -432,9 +432,6 @@ final class SettingsReminderSection {
         // 以前只取消了下一天的调度，当前这条会一直留到 05:00 过期。
         if (cur == Prefs.BEDTIME_OFF) {
             BedtimeReminder.cancelNotice(host);
-        } else {
-            // 记住这次的时刻：关掉再打开要回到它，不是重置成 22:00
-            Prefs.setBedtimeLast(host, cur);
         }
     }
 }

@@ -165,10 +165,6 @@ public final class Prefs {
         return sp(c).getBoolean(KEY_WEEK_BIG, true);
     }
 
-    public static void setWeekBig(Context c, boolean big) {
-        sp(c).edit().putBoolean(KEY_WEEK_BIG, big).apply();
-    }
-
     /** 基准周六：必须是一个「大周的周六」。 */
     public static LocalDate getAnchor(Context c) {
         String s = sp(c).getString(KEY_ANCHOR, null);
@@ -521,18 +517,6 @@ public final class Prefs {
         sp(c).edit().putBoolean(KEY_SOLAR_TERMS, on).apply();
     }
 
-    public static int getAlarmHour(Context c) {
-        return sp(c).getInt(KEY_ALARM_HOUR, 7);
-    }
-
-    public static int getAlarmMin(Context c) {
-        return sp(c).getInt(KEY_ALARM_MIN, 30);
-    }
-
-    public static void setAlarmTime(Context c, int hour, int min) {
-        sp(c).edit().putInt(KEY_ALARM_HOUR, hour).putInt(KEY_ALARM_MIN, min).apply();
-    }
-
     // ================= 多闹钟（v0.11.0 起）=================
 
     /**
@@ -786,15 +770,6 @@ public final class Prefs {
         if (keep.size() != s.size()) {
             sp(c).edit().putStringSet(KEY_SKIP_ONCE, keep).apply();
         }
-    }
-
-    /** 全屏意图权限引导：只弹一次，避免用户已授权后仍反复提示（MIUI 上该权限检测不可靠）。 */
-    public static boolean isFsiGuided(Context c) {
-        return sp(c).getBoolean(KEY_FSI_GUIDED, false);
-    }
-
-    public static void setFsiGuided(Context c, boolean v) {
-        sp(c).edit().putBoolean(KEY_FSI_GUIDED, v).apply();
     }
 
     /** 弹窗权限引导：用户点击「我已开启」后置 true，不再反复提示。 */
@@ -1263,19 +1238,9 @@ public final class Prefs {
         sp(c).edit().putString(KEY_BEDTIME_NOTICE_DAY, isoDay).apply();
     }
 
-    /** 上次开启时的睡前时刻（v0.60.0）：关掉再打开要回到原来的时间，不是重置成 22:00。 */
+    /** 上次开启时的睡前时刻（v0.60.0）。「关掉再打开回到原时刻」在 v1.71.8 随「值 + 箭头」
+     *  交互下线，读写方法已删；键保留（FrozenKeysTest 冻结），老机器上的值不主动清。 */
     public static final String KEY_BEDTIME_LAST = "bedtime_last_minutes";
-
-    public static int getBedtimeLast(Context c) {
-        int v = sp(c).getInt(KEY_BEDTIME_LAST, 22 * 60);
-        return (v < 0 || v >= 24 * 60) ? 22 * 60 : v;
-    }
-
-    public static void setBedtimeLast(Context c, int minutesOfDay) {
-        if (minutesOfDay >= 0 && minutesOfDay < 24 * 60) {
-            sp(c).edit().putInt(KEY_BEDTIME_LAST, minutesOfDay).apply();
-        }
-    }
 
     /** 睡前提醒是否只在「明天要上班」时发送；默认 true（休息日不打扰）。 */
     public static boolean isBedtimeWorkdayOnly(Context c) {

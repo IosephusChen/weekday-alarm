@@ -55,6 +55,9 @@ public final class Changelog {
      * 一版四条加起来已经顶满一屏。{@code ChangelogTest.latestEntries_stayShort} 守着这条线。
      */
     private static final Entry[] ENTRIES = {
+            new Entry(332, "1.27.4", "2026/11/17", "睡前提醒记住上次时间",
+                    "关掉睡前提醒再打开，滚轮停在上次设的时刻",
+                    "不再固定回到 22:00"),
             new Entry(331, "1.27.3", "2026/11/14", "关机说明修正，包体更小",
                     "关机闹钟没授权时，设置页会直接写「未授权」",
                     "帮助页与使用说明改成支持、不支持、没授权三种情况",

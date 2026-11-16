@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 日历下方那条一次性提示的底（v1.23.20）。
 
-     和 bg_action_emphasis 同一族色（action_bg 底 + action_line 描边），只把圆角
+     和强调卡（action_bg 底 + action_line 描边）同一族色，只把圆角
      改成 999dp——那条是「卡片」，这条是「一句话」，胶囊形状才不像又一张卡。
 
      日夜两套色跟着 colors.xml 里那两个 token 走，不要再写死 #EEF0FE：

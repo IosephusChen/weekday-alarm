@@ -183,27 +183,6 @@ def diff_between_trees(tree_a, tree_b):
     return out
 
 
-def create_tree(api, base, payload, workflow_paths):
-    """建 tree，并把一种特殊 404 翻译成人话。
-
-    2026-11-06 实测：令牌缺 `workflow` scope 时，任何「会改到 .github/workflows/」的
-    tree 请求都返回 404 Not Found（不是 403），同一批其他路径全是 201。看着像仓库
-    不存在或路径写错，实际只是权限——为这一条反复排查了两轮。
-    """
-    r = api.s.post(API + base + "/git/trees", json=payload, timeout=120)
-    if r.status_code == 404 and workflow_paths:
-        sys.exit(
-            "建 tree 返回 404。改动里有 %d 个 .github/workflows/ 下的文件，而当前令牌\n"
-            "  没有 workflow scope——GitHub 对这种情况返回 404 而不是 403，看起来像仓库\n"
-            "  或路径不存在，实际是权限。受影响：%s\n"
-            "  出路：① 在网页上改这几个文件（浏览器会话不受此限）；\n"
-            "        ② 换一个带 Workflows: Read and write 的 fine-grained PAT。"
-            % (len(workflow_paths), ", ".join(sorted(workflow_paths)[:4])))
-    if r.status_code not in (200, 201):
-        sys.exit("HTTP %d  POST %s/git/trees\n%s" % (r.status_code, base, r.text[:500]))
-    return r.json()["sha"]
-
-
 def push_tag(api, base, name, dry_run):
     """把本地标签重建到远端（v0.91.3）。
 
